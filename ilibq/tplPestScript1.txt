@@ -1,0 +1,123 @@
+import os,time,sys 
+from pylab import loadtxt,savetxt,average,array
+mdir='ppmdir' 
+fdir='ppfdir' 
+fname='ppfname'
+
+sys.path.append(mdir) 
+from ilibq import core 
+from ilibq import geometry as gm
+md = core.Core() 
+md.openModel(fdir,fname)
+nmedia = gm.getNmedia(md)
+
+# change the values in the model to initial ones and writes the files
+prtMF,prtMT,prtPH=False,False,False
+kparm=[];parm=[];sparm=[];mparm=[];pparm=[];uparm=[];iparm=[]
+
+f1=open(fdir+os.sep+'pest_run.txt','r');
+for l in f1:
+    if len(l)>3: parm.append(l.split())
+f1.close()
+
+for pl in parm:
+    v0 = float(pl[1])
+    line,a1 = pl[0].split('_')
+    typ,a,b = a1[0],a1[1],a1[2:]
+    if typ=='b': catg,imedia = a,int(b) # here catg = m
+    elif typ=='z': catg,zname = a,b
+    if line in md.dickword['Modflow'].lines: grp = 'MF';prtMF=True;modName = 'Modflow'
+    if line in md.dickword['Mt3dms'].lines: grp = 'MT';prtMT=True; modName = 'Mt3dms'
+    if line in md.dickword['Pht3d'].lines: grp = 'PH'
+    if grp in['MF','MT']:
+        if catg=='x': # xcoord of the zone center
+            iz = md.diczone[modName].getIndexFromName(line,zname)
+            coo = md.diczone[modName].dic[line]['coords'][iz]
+            x,y = zip(*coo);ctr=average(x)
+            x1 = array(x) + v0-ctr
+            md.diczone[modName].dic[line]['coords'][iz] = zip(x1,y)
+        elif catg=='y': # ycoord of the zone center
+            iz = md.diczone[modName].getIndexFromName(line,zname)
+            coo = md.diczone[modName].dic[line]['coords'][iz]
+            x,y = zip(*coo);ctr=average(y)
+            y1 = array(y) + v0-ctr
+            md.diczone[modName].dic[line]['coords'][iz] = zip(x,y1)
+        elif catg =='v':
+            md.diczone[modName].setValueFromName(line,zname,str(v0))
+        else : # this is for backgound value
+            if imedia==-1:
+                for im in range(nmedia):
+                    md.dicval[modName][line][im]=v0
+            else :
+                md.dicval[modName][line][imedia]=v0
+    elif grp=='PH':
+        prtPH=True
+        if catg=='P':
+            pn=name[3:];
+            md.setValueFromName('Mt3dms',dicCatg[pn],v0)
+        if catg=='k':
+            pn=name[3:];pn=pn[:-1] # last is for the parm number
+            kparm.append((pn,int(name[-1:]),v0))
+        if catg=='s':
+            pn=name[3:];pn=pn[:-1] # last is for the solution number
+            sparm.append((pn,int(name[-1:]),v0)) # last for the solution nb
+        if catg=='p':
+            pn=name[3:];pn=pn[:-1] # last is for the solution number
+            pparm.append((pn,int(name[-1:]),v0)) # last for the solution nb
+        if catg=='m':
+            pn=name[3:];pn=pn[:-1] # last is for the solution number
+            mparm.append((pn,int(name[-1:]),v0)) # last for the solution nb
+        if catg=='u':
+            pn=name[3:];pn=pn[:-1] # last is for the solution number
+            uparm.append((pn,int(name[-1:]),v0)) # last for the solution nb
+        if catg=='i':
+            pn=name[3:];pn=pn[:-1] # last is for the solution number
+            iparm.append((pn,int(name[-1:]),v0)) # last for the solution nb
+            
+if prtMF: md.writeModel('Modflow',info=False)
+if prtMT: md.writeModel('Mt3dms',info=False)
+if prtPH:
+        kdict=md.addin.pht3d.getChemDict('Rates')
+        sdict=md.addin.pht3d.getChemDict('Solutions')
+        mdict=md.addin.pht3d.getChemDict('Kinetic_Minerals')
+        pdict=md.addin.pht3d.getChemDict('Phases')
+        udict=md.addin.pht3d.getChemDict('Surface')
+        #idict=md.addin.pht3d.getImmobDict('Solutions')
+        if len(kparm)>0:
+            lesp,nparm,lval=zip(*kparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=kdict['rows'].index(sp);
+                kdict['data'][ind][int(nparm[i])+1]=lval[i]
+            md.addin.pht3d.setChemDict('Rates',kdict)
+        if len(sparm)>0:
+            lesp,nparm,lval=zip(*sparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=sdict['rows'].index(sp);
+                sdict['data'][ind][int(nparm[i])+1]=lval[i]
+            md.addin.pht3d.setChemDict('Solutions',sdict)
+        if len(mparm)>0:
+            lesp,nparm,lval=zip(*mparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=mdict['rows'].index(sp);
+                mdict['data'][ind][int(nparm[i])+1]=lval[i]
+            md.addin.pht3d.setChemDict('Kinetic_Minerals',mdict)
+        if len(pparm)>0:
+            lesp,nparm,lval=zip(*pparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=pdict['rows'].index(sp);
+                pdict['data'][ind][int(nparm[i]+1)*2]=lval[i]
+            md.addin.pht3d.setChemDict('Phases',pdict)
+        if len(uparm)>0:
+            lesp,nparm,lval=zip(*uparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=udict['rows'].index(sp);
+                udict['data'][ind][int(nparm[i])+1]=lval[i]
+            md.addin.pht3d.setChemDict('Surface',udict)
+        if len(iparm)>0:
+            lesp,nparm,lval=zip(*iparm)
+            for i in range(len(lesp)):
+                sp=lesp[i];ind=idict['rows'].index(sp);
+                idict['data'][ind][int(nparm[i])+1]=lval[i]
+            md.addin.pht3d.setImmobDict('Solutions',idict)
+        md.writeModel('Pht3d',info=False)
+md.saveModel()

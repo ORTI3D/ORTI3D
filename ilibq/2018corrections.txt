@@ -1,0 +1,27 @@
+10/09 OA
+- qtValueDialog.py : for QStrings in value dialog, modified qtValueDialog/getValues l 107 and 109 added str()
+- valueDialog.py : in value dialog : no reset when clik on apply button : valueDialog/OnsetNewVal added line 114 boxkeys.setVisible(False)
+- config.py / core.py : for mainDir, baseDir... commented lines 20-24 in config.py, removed line 42-43 in core (not tested for exe)
+- qtdialogs.py zone dialog cannot switch from transient to steady: qtdialogs/zonePanel/onTRansient, added line 482 484, 485
+
+13/09 OA
+- mtphtwriter.py : exceptions l165 change write format to %
+- geometry.py : add rch.2 in blockRegular l.397 - modification l.597-599 - modification l.620-623 - modification l.629, 630, 634
+- modflowUNS.py : modification l.38, 39, 124, 195
+- modflowwriter.py : modification l.165, 166, 802, 807-810, 826-830
+
+17/09 EV
+- orti3dv2.pyw : changed Qtwidgets by QtGui l.2 - change app title l.11 - set app geometry at 0.8 of the screenshape l.15,16
+- orti3dGui.py : added save option before closing l.171-173, 95
+- orti3dGui.py : removed help in help menu l.142-144 - changed "data" by "User Species" in import menu l.111
+- orti3dGui.py : changed visual stuff 
+- qtTopBar.py : changed visual stuff - changed .gif by .png for button image l.241, 303
+- qtParameters.py : changed visual stuff - changed .gif by .png for button image l.47, 71, 86 - In class Box() changed stuff l.82-102 to put particle button after the orthers
+- parameters.py : changed .gif by .png for button image l.62, 64
+- QtShow.py : changed visual stuff - changed .gif by .png for button image l.30, 35, 36
+- qtVisualisation.py : removed 'print' l.366
+- addin.py : onInitialChemistryDialog tstep added
+- mtphwriter.py : tstep for initial chemistry added l.126, 270
+- qtDialogs.py : changed visual stuff 
+- qtValueDialog.py : changed visual stuff 
+

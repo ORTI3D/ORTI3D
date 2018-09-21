@@ -1,0 +1,64 @@
+import os,time,sys 
+from scipy import concatenate,log10,sqrt,array,where,amin,amax,ones
+from scipy.linalg import solve
+
+from pylab import loadtxt,savetxt 
+mdir='ppmdir' 
+fdir='ppfdir' 
+fname='ppfname' 
+tlist=pptime
+sys.path.append(mdir) 
+from ilibq import core
+md=core.Core() 
+md.fileDir,md.fileName=fdir,fname
+md.openModel(fdir,fname) 
+lnames=pponames
+iper=md.getTlist2();
+spec=ppospec;
+
+fn=fdir+os.sep+'pest_out.txt' 
+f1=open(fn,'w') 
+
+diczObs = md.diczone['Observation'].dic['obs.1']
+grd  = md.addin.getFullGrid()
+dx,dy = array(grd['dx']), array(grd['dy']);
+iper, ilay, timep = 0,9, 2
+md.addin.particle['direction'] = 1
+md.addin.particle['type'] = 'steady'
+
+for iz in range(len(lnames)): # list of obs zones names
+    n=0
+    zname,e=lnames[iz],spec[iz]
+    a = zname.split('$')
+    if len(a)>1: 
+        layer = int(a[1]);zname=a[0]
+    else : layer=0
+    if e =='Head': typ='B0';group='Flow';
+    elif e =='Tracer': typ='B1';group='Transport';
+    else: typ='B1';group='Chemistry';
+    if e != 'Part':t,d1,labels=md.onPtObs(typ,iper,group,zname,[e],layer) 
+    t2=tlist[iz]
+    for it in range(len(t)):
+        if n>len(t2)-1:break
+        if abs(t[it]-float(t2[n]))<1e-3:  
+            f1.write('%9.4f '%(t[it]))  
+            if e == 'Tracer':
+                if md.dicval['Pest']['obs.1']==[0]:
+                    f1.write('%9.4f '%(d1[it]))
+                elif md.dicval['Pest']['obs.1']==[1]:
+                    f1.write('%9.4f '%(max(log10(d1[it]),-3)))
+                elif md.dicval['Pest']['obs.1']==[2]:
+                    f1.write('%9.4f '%(sqrt(d1[it])))
+            elif e=='Part':
+                idx = diczObs['name'].index(zname)
+                pcoo =  diczObs['coords'][idx]
+                xp0,yp0 = pcoo[0];#print xp0,yp0
+                data = array([grd['x0'],grd['y0'],xp0,yp0])
+                xp,yp,tp,cu,nt = md.addin.calcPartGrid(data,dx,dy,timep,iper,ilay)
+                xp,yp,tp = xp[:nt],yp[:nt],tp[:nt];#plot(xp,yp)
+                s0 = sum(dstPointPoly(pcoo,zip(xp,yp)))
+                f1.write('%9.4f '%(s0))
+            else :
+                f1.write('%9.4f '%(d1[it]))
+            f1.write('\n');n+=1 
+f1.close() 
