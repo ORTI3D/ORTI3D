@@ -103,6 +103,7 @@ class addin:
         name = 'InitialChemistry' # to set specific initial chemistry
         self.core.dicaddin[name] = {'name':'','formula':'value =','tstep':''}
         self.grd = makeGrid(self.core,self.core.dicaddin['Grid'])
+        self.mesh = 'None'  # OA added 25.9.18
         self.setChemType()
         self.setMfUnstruct()
         self.fit = instant(self.gui,self.core)

@@ -2,7 +2,7 @@
 panel, visualisation panel and visuChoose panel are included.
 it uses core for the major job of storing and retrieving the data
 writer/readers are available for different models"""
-import os, sys #wx
+import os, sys,traceback # traceback added OA 25/9/18
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 #from PyQt5.QtWidgets import *
@@ -10,11 +10,11 @@ from qtVisualisation import *
 from qtShow import *
 from qtParameters import *
 from qtTopBar import *
+from qtDialogs import *
 from menus import *
 from core import *
 from addin import *
 import config
-#import wx.lib.inspection
 
 class orti3dGui(QMainWindow):
     
@@ -60,6 +60,11 @@ class orti3dGui(QMainWindow):
 
         self.setCentralWidget(self.widget)
         self.setWindowTitle(title)
+        sys.excepthook = self.myExceptionHandler
+        
+    def myExceptionHandler(self, type, value, trace_back): # OA added 25/9/18
+        """Catch exceptions and show error dialog"""     
+        onMessage(self,traceback.format_exc())
         
     def on3D(self,bool):
         pass

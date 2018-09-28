@@ -76,8 +76,14 @@ class Ui_Var(object):
         self.backg = QLineEdit(self.hlWidget)
         #self.backg.setSizePolicy(policy)
         self.backg.setMaximumWidth(40);
-        self.backg.returnPressed.connect(self.onBackOk)
+        #self.backg.returnPressed.connect(self.onBackOk) # OA removed 25/9/18
         self.gridLayout.addWidget(self.backg)
+        
+        self.butOK = QPushButton(self.hlWidget) # OA added 25/9/18
+        self.butOK.setMaximumWidth(25)    # OA added 25/9/18         
+        self.butOK.setText('Ok')    # OA added 25/9/18         
+        self.butOK.clicked.connect(self.onBackOk)  # OA added 25/9/18
+        self.gridLayout.addWidget(self.butOK)  # OA added 25/9/18
 
         label = QLabel(self.hlWidget)
         label.setText(" Type")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
@@ -305,7 +311,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 20/09/2018 ")
+        version = QLabel("       version 28/09/2018 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()
@@ -408,9 +414,6 @@ class Ui_ModifZone(object):
     def onDelAllZones(self):
         znb = len(self.currentZlist['name'])
         ok = onQuestion(self.gui,'Caution you will destroy all zones')
-        #wx.MessageDialog(self,"Caution you will destroy all zones","Attention",style = \
-        #        wx.ICON_INFORMATION|wx.CENTRE|wx.OK|wx.CANCEL)
-        #retour=dlg.ShowModal()
         if ok : #retour==wx.ID_OK:
             for i in range(znb-1,-1,-1):
                 self.core.diczone[self.gui.currentModel].delZone(self.gui.currentLine,i)
