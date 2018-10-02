@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.Qt import QFrame
-import PyQt4.Qwt5 as Qwt
-from config import *
-from geometry import *
-#from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.Qt import QFrame
+import qwt
+from .config import *
+from .geometry import *
+from PyQt5.QtWidgets import *
 
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 def onQuestion(gui,text):  
@@ -142,7 +142,8 @@ class myFileDialog:
             fileName = dlg.getOpenFileName(gui,title,' ',filter=filt)
         elif self.opt in ['New','Save']:
             dlg.setFileMode(QFileDialog.AnyFile)
-            fileName = dlg.getSaveFileName(gui,title,' ',filter=filt)       
+            fileName = dlg.getSaveFileName(gui,title,' ',filter=filt)
+        fileName = fileName[0] # OA 1/10 for python 3
         fName = fileName.split('/')[-1]
         fDir = fileName.replace(fName,'')
         fName = fName.split('.')[0]
@@ -163,7 +164,7 @@ class myNoteBookCheck(QDialog):
         nb = QTabWidget(glWidget)
         nb.setGeometry(QRect(5, 5, 450,520))
         self.dwidget = {}
-        for n in dicIn.keys():
+        for n in list(dicIn.keys()):
             if dicIn[n]==None:continue
             if len(dicIn[n])==0: continue
             nbChk = len(dicIn[n])
@@ -205,13 +206,13 @@ class myNoteBookCheck(QDialog):
     def getValues(self):
         self.exec_()
         for k in list(self.dicIn.keys()):
-            if k in self.pages.keys():
-                names,boo = zip(*self.dicIn[k])
+            if k in list(self.pages.keys()):
+                names,boo = list(zip(*self.dicIn[k]))
                 lout = []
                 items = self.dwidget[k]
                 for item in items:
                     lout.append(item.checkState())
-                self.dicOut[k] = zip(names,lout)
+                self.dicOut[k] = list(zip(names,lout))
         if self.state == 'accept': return self.dicOut
         else : return None
 
@@ -227,7 +228,7 @@ class myNoteBook(QDialog):
         glWidget = QWidget(self)
         nb = QTabWidget(glWidget)
         nb.setGeometry(QRect(5, 20, self.screenShape.width()*.4,self.screenShape.height()*.50))
-        for n in dicIn.keys():
+        for n in list(dicIn.keys()):
             if dicIn[n]==None:continue
             if len(dicIn[n]['rows'])==0 and n!='Species': continue
             pg = myNBpanelGrid(gui,nb,dicIn[n]) #,size=(450,500))
@@ -249,7 +250,7 @@ class myNoteBook(QDialog):
     def getValues(self):
         self.exec_()
         for k in list(self.dicIn.keys()):
-            if k in self.pages.keys():
+            if k in list(self.pages.keys()):
                 #onMessage(self.gui,k)
                 self.dicOut[k] = self.pages[k].getValues()
         return self.dicOut
@@ -317,8 +318,8 @@ class myNBpanelGrid(QTableWidget):
 
             elif e.key() == Qt.Key_C: #copy
                 s = ""
-                for r in xrange(selected[0].topRow(),selected[0].bottomRow()+1):
-                    for c in xrange(selected[0].leftColumn(),selected[0].rightColumn()+1):
+                for r in range(selected[0].topRow(),selected[0].bottomRow()+1):
+                    for c in range(selected[0].leftColumn(),selected[0].rightColumn()+1):
                         try:
                             s += str(self.item(r,c).text()) + "\t"
                         except AttributeError:
@@ -747,7 +748,7 @@ class plotxy(QDialog):
         layout.addWidget(lab)
         glWidget = QWidget(self)
         glWidget.setGeometry(QRect(0, 0, 200, 300))
-        self.cnv = Qwt.QwtPlot(glWidget);
+        self.cnv = qwt.QwtPlot(glWidget);
         x,arry = transpose(array(x,ndmin=2)),array(arry) # x en vertical
         self.lignes,cols = [],['red','blue','green','orange','cyan','black']*5
         # verify size of input vectors
@@ -762,24 +763,24 @@ class plotxy(QDialog):
         colors = [Qt.black,Qt.red,Qt.blue,Qt.green,Qt.cyan,Qt.magenta,Qt.darkGreen,Qt.darkRed]
         if ny==1:
             if typ=='-': 
-                gobj = Qwt.QwtPlotCurve(legd[0])
+                gobj = qwt.QwtPlotCurve(legd[0])
                 gobj.setData(x2,arry2)
             else : #n xy plot
-                gobj = Qwt.QwtPlotCurve() #legd[1])]
+                gobj = qwt.QwtPlotCurve() #legd[1])]
             self.lignes.append(gobj)
         else :
             for i in range(ny):
                 if typ=='-': 
-                    gobj = Qwt.QwtPlotCurve(legd[i])
+                    gobj = qwt.QwtPlotCurve(legd[i])
                     gobj.setPen(QPen(colors[mod(i,8)]))
                     gobj.setData(x2,arry2[:,i])
                 else : 
-                    gobj = Qwt.QwtPlotCurve(legd[i])
+                    gobj = qwt.QwtPlotCurve(legd[i])
                     gobj.setPen(QPen(colors[mod(i,8)]))
                 self.lignes.append(gobj)
-        self.cnv.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.RightLegend)
-        self.cnv.setAxisTitle(Qwt.QwtPlot.xBottom, Xtitle)
-        self.cnv.setAxisTitle(Qwt.QwtPlot.yLeft, Ytitle)
+        self.cnv.insertLegend(qwt.QwtLegend(), Qwt.QwtPlot.RightLegend)
+        self.cnv.setAxisTitle(qwt.QwtPlot.xBottom, Xtitle)
+        self.cnv.setAxisTitle(qwt.QwtPlot.yLeft, Ytitle)
         # insert curves
         for ligne in self.lignes : ligne.attach(self.cnv)
         layout.addWidget(self.cnv)

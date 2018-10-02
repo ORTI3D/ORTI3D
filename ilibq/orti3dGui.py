@@ -3,18 +3,18 @@ panel, visualisation panel and visuChoose panel are included.
 it uses core for the major job of storing and retrieving the data
 writer/readers are available for different models"""
 import os, sys,traceback # traceback added OA 25/9/18
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 #from PyQt5.QtWidgets import *
-from qtVisualisation import *
-from qtShow import *
-from qtParameters import *
-from qtTopBar import *
-from qtDialogs import *
-from menus import *
-from core import *
-from addin import *
-import config
+from .qtVisualisation import *
+from .qtShow import *
+from .qtParameters import *
+from .qtTopBar import *
+from .qtDialogs import *
+from .menus import *
+from .core import *
+from .addin import *
+from . import config
 
 class orti3dGui(QMainWindow):
     
@@ -62,9 +62,10 @@ class orti3dGui(QMainWindow):
         self.setWindowTitle(title)
         sys.excepthook = self.myExceptionHandler
         
-    def myExceptionHandler(self, type, value, trace_back): # OA added 25/9/18
-        """Catch exceptions and show error dialog"""     
-        onMessage(self,traceback.format_exc())
+    def myExceptionHandler(self, type, value, trace_b): # OA added 25/9/18
+        """Catch exceptions and show error dialog"""
+        f = traceback.format_tb(trace_b, limit=1) # OA modif 1/10
+        onMessage(self,'\n'.join(f)+'\n'+str(value))
         
     def on3D(self,bool):
         pass
@@ -74,7 +75,7 @@ class orti3dGui(QMainWindow):
     def onSetMediaNb(self,nbM,nbL):
         self.varBox.choice3D.clear()
         for i in range(nbM): self.varBox.choice3D.addItem(str(i))
-        self.guiShow.setNames('Model_Layer_L',range(nbL))
+        self.guiShow.setNames('Model_Layer_L',list(range(nbL)))
         
     def onRCT(self,bool):
         pass
@@ -209,7 +210,6 @@ class orti3dGui(QMainWindow):
         self.topSizer = QHBoxLayout()
         self.topSizer.setGeometry(QRect(0,0,(self.screenShape.width()*0.8),45)) #900
         width = self.screenShape.width()*0.8
-        self.topSizer.setMargin(0)
         self.topSizer.setSpacing(2)
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         qwt1 = QGroupBox()

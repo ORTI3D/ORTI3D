@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from PyQt4.QtGui import *
+from PyQt5.QtGui import *
 import os
-from qtDialogs import *
-from geometry import *
-from core import *
-from config import *
-from topBar import BaseTop
+from .qtDialogs import *
+from .geometry import *
+from .core import *
+from .config import *
+from .topBar import BaseTop
 
 class Observer(object):
     '''this tool serve to observe what happens somewhere and when some object
@@ -35,7 +35,7 @@ class Ui_Var(object):
         self.hlWidget = QWidget(Var) #(self.group)
         self.hlWidget.setGeometry(QRect(5, 20,(width*0.55), 25))
         self.gridLayout = QHBoxLayout(self.hlWidget)
-        self.gridLayout.setMargin(1)
+        self.gridLayout.setContentsMargins(1,1,1,1)
         self.gridLayout.setSpacing(2)
 
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -140,7 +140,7 @@ class Ui_Var(object):
         '''to show only the groups that contain arrays'''
         lmodOut = []
         for grp in lmodules:
-            if grp in self.gui.linesDic[model].keys(): 
+            if grp in list(self.gui.linesDic[model].keys()): 
                 lmodOut.append(grp)
         return lmodOut
         
@@ -149,7 +149,7 @@ class Ui_Var(object):
         curGroup = str(self.choiceG.currentText())
         self.gui.currentGroup = curGroup
         self.choiceL.clear()
-        if curGroup not in self.gui.linesDic[self.gui.currentModel].keys() : return
+        if curGroup not in list(self.gui.linesDic[self.gui.currentModel].keys()) : return
         lines = self.gui.linesDic[self.gui.currentModel][curGroup]
         indx = self.base.testConditions(self.gui.currentModel,lines)
         lcomm = self.gui.linesCommDic[self.gui.currentModel][curGroup]
@@ -231,7 +231,7 @@ class Ui_AddZone(object):
         self.hlWidget = QWidget(AddZone)
         self.hlWidget.setGeometry(QRect(4, 20, 135, 25))
         zoneSizer = QHBoxLayout(self.hlWidget)
-        zoneSizer.setMargin(1)
+        zoneSizer.setContentsMargins(1,1,1,1)
         zoneSizer.setSpacing(2)
 
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -279,7 +279,7 @@ class Ui_ModifZone(object):
         self.hlWidget = QWidget(ModifZone)
         self.hlWidget.setGeometry(QRect(4, 20, 475, 25))
         zoneSizer = QHBoxLayout(self.hlWidget)
-        zoneSizer.setMargin(1)
+        zoneSizer.setContentsMargins(1,1,1,1)
         zoneSizer.setSpacing(2)
 
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -335,7 +335,7 @@ class Ui_ModifZone(object):
         # mise a jour de la liste de zone pour la nouvelle variable selectionnee
         # sur un milieu donne
         dicz = self.core.diczone[self.gui.currentModel].dic
-        if (line == None) or (line not in dicz.keys()): 
+        if (line == None) or (line not in list(dicz.keys())): 
             self.setChoiceList(self.choice,[''])
             return
         #self.valZ.SetLabel(line+' :')

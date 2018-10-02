@@ -4,7 +4,7 @@ Created on Thu Feb 20 23:43:54 2014
 
 @author: olive
 """
-from geometry import *
+from .geometry import *
 
 
 from PyQt4.QtCore import *
@@ -27,7 +27,7 @@ class qtVisu:
     def initDomain(self): 
         """initalize the grid and all cells in Qgis"""
         for modName in self.core.modelList:
-            self.linelist.append(self.core.dickword[modName].lines.keys())
+            self.linelist.append(list(self.core.dickword[modName].lines.keys()))
         allLayers = self.canvas.layers()
         layer = QgsVectorLayer("Polygon", 'Grid',  "memory")
         QgsMapLayerRegistry.instance().addMapLayer(layer)
@@ -94,7 +94,7 @@ class qtVisu:
         self.linelist.append(line)
         # finds the dickword of the current line
         for modName in self.core.modelList:
-            if line in self.core.dickword[modName].lines.keys():
+            if line in list(self.core.dickword[modName].lines.keys()):
                 dick = self.core.dickword[modName]
                 break
         if line in ptlist: typList=[('Linestring','line'),('Point','pts')]
@@ -159,7 +159,7 @@ class qtVisu:
                 if typ0=='pts': typP='asPoint()'
             if line not in self.linelist : continue
             for modName in self.core.modelList:
-                if line in self.core.dickword[modName].lines.keys():
+                if line in list(self.core.dickword[modName].lines.keys()):
                     dicz = self.core.diczone[modName]
                     break
             feats = layer.getFeatures()
@@ -179,7 +179,7 @@ class qtVisu:
         layers with layers and features"""
         for modName in self.core.modelList:
             dicz = self.core.diczone[modName]
-            lines = dicz.dic.keys()
+            lines = list(dicz.dic.keys())
             for line in lines:
                 nz = dicz.getNbZones(line)
                 # get layer or layers

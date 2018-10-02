@@ -4,22 +4,19 @@
 #
 # Created: Sat Feb 15 15:09:21 2014
 #      by: PyQt4 UI code generator 4.8.6
-
-
-
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 import os
-from parameters import *
-from menus import *
-from qtDialogs import *
-from geometry import *
-from qgisVisu import *
-from core import *
-from config import *
-from guiShow import *
-from topBar import *
+from .parameters import *
+from .menus import *
+from .qtDialogs import *
+from .geometry import *
+from .qgisVisu import *
+from .core import *
+from .config import *
+from .guiShow import *
+from .topBar import *
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
@@ -29,6 +26,7 @@ class Ui_Main(object):
         self.gui = QWidget(Main)
         self.gui.setGeometry(QRect(5, 15, 195, 480)) #left,top,w,h
         self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
+        self.gui.mainDir = plugin_dir
         core = Core(self.gui)
         cfg = Config(core)
         self.dialogs = cfg.dialogs
@@ -77,7 +75,7 @@ class Ui_Main(object):
     def onSetMediaNb(self,nbM,nbL):
         self.gui.varBox.choice3D.clear()
         for i in range(nbM): self.gui.varBox.choice3D.addItem(str(i))
-        self.gui.dlgShow.setNames('Model_Layer_L',range(nbL))
+        self.gui.dlgShow.setNames('Model_Layer_L',list(range(nbL)))
         
     def resetCurVar(self):
         global curVar
@@ -98,7 +96,7 @@ class Ui_File(object):
 
         llabel=['File','Import','Export','Add_in','?']
         litems=[["","New","Open","Save", "Save as"],["","Solutions","User Species"],
-                ["","Current variable"],[],["","Help","Download new v.","Back to old v."]]
+                ["","Current variable"],[],["","Help","Download stable","Download develop"]]
         self.combo= []
         for i,lab in enumerate(llabel):
             label = QLabel(self.gridLayoutWidget)
@@ -132,8 +130,8 @@ class Ui_File(object):
         elif n=='User Species': self.menus.OnImportUserSpecies()
         elif n=='Current variable': self.menus.OnExportVar()
         elif n=='Help': self.menus.OnHelp()
-        elif n=='Download new v.':self.menus.OnDownload()
-        elif n=='Back to old v.': self.menus.OnBackVersion()
+        elif n=='Download stable':self.menus.OnDownloadLast()
+        elif n=='Download develop': self.menus.OnDownloadDev()
         else : self.added[n]() # the method shall be in selfadded from addin
 
 class Ui_Parameters(object):
@@ -145,7 +143,7 @@ class Ui_Parameters(object):
         Parameters.setWindowTitle( "Parameters")
         self.ignoreButtons = ['Map']
         self.dictBox={}
-        skey = self.base.groups.keys(); skey.sort()
+        skey = list(self.base.groups.keys()); skey.sort()
         for i,g in enumerate(skey): 
             self.dictBox[g] = Box(Parameters,self,g,i)
         QMetaObject.connectSlotsByName(Parameters)
@@ -331,7 +329,7 @@ class Ui_Var(object):
     def onChoiceGroup(self,evt):
         curGroup = self.choiceG.currentText()
         self.choiceL.clear()
-        if curGroup not in self.gui.linesDic[self.gui.currentModel].keys() : return
+        if curGroup not in list(self.gui.linesDic[self.gui.currentModel].keys()) : return
         lines = self.gui.linesDic[self.gui.currentModel][curGroup]
         indx = self.testConditions(self.gui.currentModel,lines)
         lcomm = self.gui.linesCommDic[self.gui.currentModel][curGroup]
@@ -445,7 +443,7 @@ class showBox:
         self.hlWidget.setGeometry(QRect(5,5 ,195, ln*24))
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.setMargin(1)
-        self.buts = range(len(names))
+        self.buts = list(range(len(names)))
         for i,n in enumerate(names):
             if type(n)==type([1,2]): #cas liste -> choix
                 text = QLabel(self.hlWidget)
@@ -485,9 +483,9 @@ class showBox:
         if name == 'Plane': 
             exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
             #self.changeIcOri(retour)
-            if retour =='Z' : self.setNames('Model_Layer_L',range(nz-1))
-            if retour =='Y' : self.setNames('Model_Layer_L',range(ny-1))
-            if retour =='X' : self.setNames('Model_Layer_L',range(nx-1))
+            if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
+            if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
+            if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
             self.guiShow.dicVisu['Model']['Layer']=0
         self.guiShow.onClick2(group,name,retour)
 

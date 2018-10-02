@@ -1,7 +1,7 @@
 import os
-from config import *
+from .config import *
 from copy import deepcopy
-from geometry import *
+from .geometry import *
 
 class Min3p:
     """A class that gathers thhe actions for min3p chemistry, except writing that is left to
@@ -125,7 +125,7 @@ class Min3p:
         l = []
         Bchem = self.Base['MChemistry']
         if group==None:
-            for k in Bchem.keys():
+            for k in list(Bchem.keys()):
                 for i,r in enumerate(Bchem[k]['rows']):
                     #print 'min3p l 145',k,i,r
                     if Bchem[k]['data'][i][0]: l.append(r)
@@ -192,10 +192,10 @@ class Min3p:
         #sorting database
         for n in keyw:
             #print n,dicDB[n]
-            str_list,sec_list = zip(*dicDB[n])
+            str_list,sec_list = list(zip(*dicDB[n]))
             temp = sorted(zip(str_list, sec_list), key=lambda x: len(x[0]))
-            str_list, sec_list = map(list, zip(*temp))  
-            dicDB[n] = zip(str_list, sec_list)
+            str_list, sec_list = list(map(list, list(zip(*temp))))  
+            dicDB[n] = list(zip(str_list, sec_list))
         #print dicDB
         self.temp['Dbase'] = dicDB
         self.temp['Dbadd'] = dicAdd
@@ -234,11 +234,11 @@ class Min3p:
         compnames = [name for (name,boo) in Db['comp'] if boo]  # OA 24/5 added to read complexes
         compnames.extend(['h2o','h+','oh-'])
         lins = 'linear sorption'
-        if lins not in Db.keys(): 
+        if lins not in list(Db.keys()): 
             Db[lins]=deepcopy(Db['comp'])
             self.Base['MChemistry'][lins]={'rows':Db['comp']}
         #print Dbadd
-        for n in Db.keys():
+        for n in list(Db.keys()):
             base = {'rows':[],'cols':[],'data':[],'text':[]}
             bIn = deepcopy(self.Base['MChemistry'][n])
             rowtrue = [name for (name,boo) in Db[n] if boo];#print rowtrue
@@ -391,7 +391,7 @@ class Min3p:
             if name in ['redox','mineral']:
                 s += '!\n\n\''+ek +'\''+ '\n' # name of the species                
             if ek in ['ph','pe']: continue
-            if dicKin.has_key('text'): s += dicKin['text'][i]
+            if 'text' in dicKin: s += dicKin['text'][i]
         if name=='mineral': return s + '!\n! end of database\n!\n\'end\''
         else : return s + '\n!end'
         

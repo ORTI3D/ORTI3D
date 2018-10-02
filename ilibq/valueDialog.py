@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-from geometry import *
-from qtValueDialog import *
+from .geometry import *
+from .qtValueDialog import *
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 
 class valueDialog:
@@ -40,14 +40,14 @@ class valueDialog:
         """at the model loadings look into the self.val dictionnary
         and gets all value that need to be stored as keywords
         """
-        for ll in self.Mkword.lines.keys():
+        for ll in list(self.Mkword.lines.keys()):
             #print 'valdlg l47',ll
             lk=self.Mkword.lines[ll];
             for i,kwd in enumerate(lk['kw']):
-                if ll not in self.val.keys(): continue
+                if ll not in list(self.val.keys()): continue
                 if i<len(self.val[ll]): val=self.val[ll][i]
                 else : val=0
-                if type(val) in [type('r'),type(u'r')]: continue
+                if type(val) in [type('r'),type('r')]: continue
                 if lk['type'][0][:3]=='arr': continue # do not store array
                 kwd=kwd.split('(')[0]
                 exec('self.'+kwd+'='+str(val))
@@ -60,7 +60,7 @@ class valueDialog:
             a=kwd.split('(')
             if len(a)>=1: kwd=a[0]
             val=self.val[l][i]
-            if type(val) not in [type('r'),type(u'r')]:
+            if type(val) not in [type('r'),type('r')]:
                 exec('self.'+kwd+'='+str(val));#print 'valdlg 67',l,i,kwd,val,self.LAYWET
 
     def testConditions(self,lstL):
@@ -90,10 +90,10 @@ class valueDialog:
         """ action when a line choice is clicked : change the interface"""
         lines=self.Mkword.lines
         name = name.split('-')[0]
-        if name in lines.keys():
+        if name in list(lines.keys()):
             n=str(name);
             self.currentLine = n
-            if lines[n].has_key('detail'): details = lines[n]['detail']
+            if 'detail' in lines[n]: details = lines[n]['detail']
             else : details = [None]*len(self.val[n])
             if len(details)==0: details = [None]*len(self.val[n])
             self.changeButtons(name,lines[n]['kw'],self.val[n],details,lines[n]['type'])

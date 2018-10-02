@@ -25,3 +25,14 @@
 - qtDialogs.py : changed visual stuff 
 - qtValueDialog.py : changed visual stuff 
 
+30/09
+all to python 3 with lib2to3
+- in Qtlayout setMargin - setContentsMargins
+this version sent to elicia
+
+1/10
+- qtDialogs l 146 added filename=fileName[0]
+- qtVisualisation l 408 createContour clabel color -> colors
+- don't forget, to print something in v3 print()
+- ortiGui excpt handler added line 67
+- in menus donwload, replaced urllib by requests, l 194-197

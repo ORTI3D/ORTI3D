@@ -6,8 +6,8 @@ Created on Thu Feb 20 23:43:54 2014
 This is the visualization tol box for qgis that creates the link between orti3d
 and Qgis
 """
-from geometry import *
-from config import *
+from .geometry import *
+from .config import *
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -59,7 +59,7 @@ class qgisVisu:
     def initDomain(self): 
         """initalize the grid and all cells in Qgis"""
         for modName in self.core.modelList:
-            self.linelist.append(self.core.dickword[modName].lines.keys())
+            self.linelist.append(list(self.core.dickword[modName].lines.keys()))
         allLayers = self.canvas.layers()
         for layer in allLayers:
             if layer.name() == 'Grid' :
@@ -185,7 +185,7 @@ class qgisVisu:
         self.gui.currentModel = self.gui.varBox.base.modelFromLine(categ,line)
         # retrieve coordinates
         dicz = self.core.diczone[self.gui.currentModel]
-        if dicz.dic.has_key(line):
+        if line in dicz.dic:
             nf = len(dicz.dic[line]['name'])
         else : 
             nf = 0
@@ -252,7 +252,7 @@ class qgisVisu:
                 if typ0=='point': typP='asPoint()'
             if line not in self.linelist : continue
             for modName in self.core.modelList:
-                if line in self.core.dickword[modName].lines.keys():
+                if line in list(self.core.dickword[modName].lines.keys()):
                     dicz = self.core.diczone[modName]
                     break
             feats = layer.getFeatures()
@@ -272,7 +272,7 @@ class qgisVisu:
         done during model opening, uses createLayer and fill the attributes here"""
         for modName in self.core.modelList:
             dicz = self.core.diczone[modName]
-            lines = dicz.dic.keys()
+            lines = list(dicz.dic.keys())
             for line in lines:
                 nz = dicz.getNbZones(line)
                 # get layer or layers
@@ -377,7 +377,7 @@ class qgisVisu:
             ycoo = self.mesh.ely
             nnodes = len(xcoo)
             for ir in range(nnodes):
-                coo = zip(xcoo[ir],ycoo[ir])
+                coo = list(zip(xcoo[ir],ycoo[ir]))
                 strcoo = ','.join([str(a).replace('(','').replace(')','').replace(',','') for a in coo])            
                 s += str(ir+1)+';POLYGON(('+ strcoo+ '))\n'
                 #lcoord =[]

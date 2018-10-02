@@ -11,8 +11,8 @@ import os
 from numpy.linalg import solve
 from scipy.stats import tvar as variance
 from scipy.spatial import Delaunay
-from geometry import *
-from config import *
+from .geometry import *
+from .config import *
 #from pykrige.ok import OrdinaryKriging
 #import pykrige.kriging_tools as kt
 
@@ -99,7 +99,7 @@ from numpy.linalg import lstsq
 def polyfit2d(x, y, z, order=3):
     ncols = (order + 1)**2
     G = zeros((x.size, ncols))
-    ij = itertools.product(range(order+1), range(order+1))
+    ij = itertools.product(list(range(order+1)), list(range(order+1)))
     for k, (i,j) in enumerate(ij):
         G[:,k] = x**i * y**j
     m, _, _, _ = lstsq(G, z)
@@ -107,7 +107,7 @@ def polyfit2d(x, y, z, order=3):
 
 def polyval2d(x, y, m):
     order = int(sqrt(len(m))) - 1
-    ij = itertools.product(range(order+1), range(order+1))
+    ij = itertools.product(list(range(order+1)), list(range(order+1)))
     z = zeros_like(x)
     for a, (i,j) in zip(m, ij):
         z += a * x**i * y**j
@@ -185,7 +185,7 @@ def getPolyList(listP,xb,yb):
     x=r_[x,arange(xb[0],xb[1],xb[1]/4)];y=r_[y,zeros(4)+yb[1]] # top
     y=r_[y,arange(yb[1],yb[0],-yb[1]/4)];x=r_[x,zeros(4)+xb[1]] # right
     x=r_[x,arange(xb[1],xb[0],-xb[1]/4)];y=r_[y,zeros(4)+yb[0]] # botm
-    listP.extend(zip(x,y))
+    listP.extend(list(zip(x,y)))
     delauny = Delaunay(listP)
     segments = voronoi(delauny)
     for i in range(len(listP[:-16])): 

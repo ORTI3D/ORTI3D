@@ -1,6 +1,6 @@
 import os
-from config import * # oa 8/6/17
-from geometry import * #OA 9/6/17
+from .config import * # oa 8/6/17
+from .geometry import * #OA 9/6/17
 
 class PHT3D:
     """A class that gathers thhe actions for Pht3d, except writing that is left to
@@ -114,7 +114,7 @@ class PHT3D:
         self.Base['Chemistry'] = dic;#print dic
         
         ##################### for immobile : dual domain poro
-        if self.Base.has_key('Immobile'): old=self.Base['Immobile'].copy()
+        if 'Immobile' in self.Base: old=self.Base['Immobile'].copy()
         else : old={'Solutions':None,'Phases':None,'Exchange':None,'Surface':None}
         dic={};
         # add poro and exch to solutions
@@ -139,9 +139,9 @@ class PHT3D:
     def updateDict(self,dic,old,kw,dbkw,lcols,lexclude=None):
         """change the dictionnaries when a new database is imported, to keep
         the values already entered in the dictionnaries"""
-        if kw not in old.keys():
+        if kw not in list(old.keys()):
             old[kw]=None; return dic
-        lrows=self.tempDbase[dbkw].keys();lrows.sort();lrows2=[]
+        lrows=list(self.tempDbase[dbkw].keys());lrows.sort();lrows2=[]
         if lexclude!=None:
             for r in lrows:
                 if r not in lexclude: lrows2.append(r)
@@ -218,7 +218,7 @@ class PHT3D:
         short=['kp','p','e','s','g']
         for ik in range(len(kw)):
             dicE[short[ik]]=[]
-            if kw[ik] not in chem.keys(): chem[kw[ik]]=None
+            if kw[ik] not in list(chem.keys()): chem[kw[ik]]=None
             if chem[kw[ik]]!=None:
                 d=chem[kw[ik]];
                 for ir in range(len(d['rows'])):
@@ -292,7 +292,7 @@ class PHT3D:
                         
             if curkw=='RATES': # kinetics
                 li3=li2.strip()
-                if (li3 in master.keys()) or (li3 in dicDB['PHASES']):
+                if (li3 in list(master.keys())) or (li3 in dicDB['PHASES']):
                     cursp=li3
                 else: bufr=bufr+li
                 if li2[:4]=='-end': # store data
@@ -311,15 +311,15 @@ class PHT3D:
                 a=li.split()
                 dicDB[curkw][a[0]]=0
                     
-        elts=master.keys();
+        elts=list(master.keys());
         # remove base species if redox are present
         for esp in elts:
             if len(esp.split('('))>1:
                 debut=esp.split('(')[0];
-                if master.has_key(debut):
+                if debut in master:
                     master.pop(debut);
         for n in ['E','O(-2)']:
-            if master.has_key(n): master.pop(n)
+            if n in master: master.pop(n)
         master['pH']='';master['pe']='';
         dicDB[keyw[0]]=master;
         f1.close(); 

@@ -5,16 +5,15 @@
 # Created: Sat Feb 15 15:09:21 2014
 #      by: PyQt4 UI code generator 4.8.6
 
-from PyQt4.QtCore import QMetaObject
-from PyQt4.QtGui import QWidget,QGroupBox,QHBoxLayout,QVBoxLayout,QComboBox,QLabel,QCheckBox,\
-        QPushButton
-
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 import os
-from qtDialogs import *
-from geometry import *
-from core import *
-from config import *
-from guiShow import guiShow
+from .qtDialogs import *
+from .geometry import *
+from .core import *
+from .config import *
+from .guiShow import guiShow
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
@@ -105,9 +104,9 @@ class Ui_Show(object):
             else : nz,nn = a;nz +=1; nx,ny = 1,1 # for ogs these are nod layers
             exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
             #self.changeIcOri(retour)
-            if retour =='Z' : self.setNames('Model_Layer_L',range(nz-1))
-            if retour =='Y' : self.setNames('Model_Layer_L',range(ny-1))
-            if retour =='X' : self.setNames('Model_Layer_L',range(nx-1))
+            if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
+            if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
+            if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
             self.guiShow.dicVisu['Model']['Layer']=0
         self.guiShow.onClick2(group,name,retour)
             
@@ -121,7 +120,7 @@ class Ui_Show(object):
         #if item2 != None: name=item2.GetStringSelection()
         color = self.guiShow.getGlist(group,name)['color']
         value = self.guiShow.getGlist(group,name)['value']
-        if name in change.keys(): # case different than contours
+        if name in list(change.keys()): # case different than contours
             if color == None : color = (0,0,0)
             lst0=[(name,'Color',color)]
             if change[name] != None:
@@ -156,7 +155,7 @@ class Ui_Show(object):
             lesp.extend(self.getNames('Chemistry_User_L'))
         elif group=='Flow': lesp=['Head','Flux','Wcontent']
         else : lesp=['Transport']
-        data = zip(lesp,['Check']*len(lesp),[False]*len(lesp))
+        data = list(zip(lesp,['Check']*len(lesp),[False]*len(lesp)))
         #dialog to choose species to plot
         if len(lesp)>1: 
             dlg = genericDialog(self.gui,'species',data)
@@ -214,7 +213,7 @@ class showBox:
         self.hlWidget.setGeometry(QRect(3,15 ,self.screenShape.width()*0.1, 20+ln*22))
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.alignment()
-        boxGrid.setMargin(0)
+        boxGrid.setContentsMargins(0,0,0,0)
         boxGrid.setSpacing(0)
         self.buts = list(range(len(names)))
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)

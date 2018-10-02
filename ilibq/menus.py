@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-from config import *
-from importExport import *
+from .config import *
+from .importExport import *
 import zipfile as zp
-import urllib as url
+import requests # OA 1/10
 import shutil
 
 class Menus:
@@ -31,7 +31,7 @@ class Menus:
         if self.core.fileDir!=None:
             self.askSave(evt)
         dlg = self.dialogs.myFileDialog('Open')
-        fDir,fName =dlg.getsetFile(self.gui,'Open','*.iqpht;*.orti');#print fDir,fName
+        fDir,fName =dlg.getsetFile(self.gui,'Open','*.iqpht;*.orti');
         if fDir == None: return
         self.core.openModel(fDir,fName)
         a = self.core.makeTtable()
@@ -70,13 +70,13 @@ class Menus:
         fDir,fName = dlg.getsetFile(self.gui,'Save as',"*.iqpht")
         self.core.saveModel(str(fDir),str(fName))
        
-    def OnImportVersion1(self,evt):
+    def OnImportVersion1(self,evt=None):
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open',"*.ipht");#print fDir,fName
         importer = impFile(self.gui,self.core)
         importer.impVersion1(fDir,fName)
         
-    def OnImportModflowAscii(self,evt):
+    def OnImportModflowAscii(self,evt=None):
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open',"*.nam");#print fDir,fName
         importer = impAsciiModflow(self.core,fDir,fName)
@@ -89,7 +89,7 @@ class Menus:
         else : return
         #message.Destroy()
                 
-    def OnImportData(self,evt):
+    def OnImportData(self,evt=None):
         """import external data to be used for representation"""  
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open data file',"*.txt")
@@ -98,7 +98,7 @@ class Menus:
             self.core.importData(fDir,fName)
             self.dialogs.onMessage(self.gui,'Data imported')
         
-    def OnImportSolutions(self,evt):
+    def OnImportSolutions(self,evt=None):
         """import a text file to store solutions"""
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open solutions',"*.txt")
@@ -108,14 +108,14 @@ class Menus:
             self.dialogs.onMessage(self.gui,'Solutions imported')
             #self.gui.OnMessage("Fichier donnees importe")
             
-    def OnImportUserSpecies(self,evt):
+    def OnImportUserSpecies(self,evt=None):
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open solutions',"*.txt;*.out")
         if fDir == None: return
         elif fName == 'selected' :
             d = self.core.addin.pht3d.readSelectOut(fDir)
             #self.gui.guiShow.userSpecies = d
-            self.gui.guiShow.setNames('Chemistry_User_L',d.keys())
+            self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
         else : 
             f1= open(fDir+os.sep+fName+'.txt')
             dicSp = {}
@@ -124,10 +124,10 @@ class Menus:
                     a,b=l.split('=');dicSp[a]=b
             self.gui.guiShow.setUserSpecies(dicSp)    
             nameBox = 'Chemistry_User_L'
-            self.gui.guiShow.setNames(nameBox,dicSp.keys())
+            self.gui.guiShow.setNames(nameBox,list(dicSp.keys()))
         self.dialogs.onMessage(self.gui,'User Species imported')
             
-    def OnExportParm(self,evt): # added 28/3/17 oa
+    def OnExportParm(self,evt=None): # added 28/3/17 oa
         model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
         name = line.replace('.','')
         fname = self.core.fileDir+os.sep+ name
@@ -135,7 +135,7 @@ class Menus:
         savetxt(fname+'.txt',data)  
         self.dialogs.onMessage(self.gui,'file '+name+' saved')
 
-    def OnExportResu(self,evt): # modif 28/3/17 oa for correct name
+    def OnExportResu(self,evt=None): # modif 28/3/17 oa for correct name
         if self.gui.guiShow.curSpecies != True :
             name = self.gui.guiShow.curName+self.gui.guiShow.curSpecies;# OA modified 10/5/17
         else : name = self.gui.guiShow.curName
@@ -144,7 +144,7 @@ class Menus:
         savetxt(fname+'.txt',data)  
         self.dialogs.onMessage(self.gui,'file '+name+' saved')
         
-    def OnExportParmVtk(self,evt): # added 28/3/17 oa
+    def OnExportParmVtk(self,evt=None): # added 28/3/17 oa
         dlg = self.dialogs.myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
         model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
@@ -154,25 +154,25 @@ class Menus:
         f1=open(fDir+os.sep+fName,'w');f1.write(s);f1.close()
         self.dialogs.onMessage(self.gui,'file '+fName+' saved')
         
-    def OnExportResuVtk(self,evt): # modif 28/3/17 oa for correct name
+    def OnExportResuVtk(self,evt=None): # modif 28/3/17 oa for correct name
         dlg = self.dialogs.myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
-        data = self.gui.guiShow.arr3;print 'menu 151',shape(data)
+        data = self.gui.guiShow.arr3;print('menu 151',shape(data))
         s = writeVTKstruct(self.core,data)
         f1=open(fDir+os.sep+fName,'w');f1.write(s);f1.close()
         self.dialogs.onMessage(self.gui,'file '+fName+' saved')
             
-    def OnHelp(self,evt): #,lang):
+    def OnHelp(self,evt=None): #,lang):
         """calling help file"""
         os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"iPht3dDoc_En.chm")
             
-    def OnDownloadLast(self,evt):
+    def OnDownloadLast(self,evt=None):
         self.onDownload('master')
         
-    def OnDownloadDev(self,evt):
+    def OnDownloadDev(self,evt=None):
         self.onDownload('develop')
         
-    def OnDownloadLocal(self,evt):
+    def OnDownloadLocal(self,evt=None):
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.zip');#print fDir,fName
         self.onDownload(fDir+os.sep+fName,'local')
@@ -190,13 +190,16 @@ class Menus:
             os.system('copy '+dirutil+os.sep+'newlib.zip '+dirutil+os.sep+'oldlib.zip')
         f2=dirutil+os.sep+'newlib.zip'
         if opt=='web':
-            lb=url.urlretrieve('https://www.github.com/ORTI3D/ORTI3D_code/archive/'+fname+'.zip',f2)
+            htname = 'https://www.github.com/ORTI3D/ORTI3D/archive/'+fname+'.zip'
+            r = requests.get(htname)
+            with open(f2,"wb") as code: # OA 1/10
+                code.write(r.content) # OA 1/10
         else :
             f2 = fname+'.zip'
         znew=zp.ZipFile(f2,'r')
         if self.cfg.typInstall=='python': #the python version
             znew.extractall(dirutil)
-            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D_code-'+fname+os.sep+'iliblast '+dirlib)            
+            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+os.sep+'ilibq '+dirlib)            
             for n in os.listdir(dirlib):
                 if ('.chm' in n) or ('.pdf' in n): 
                     os.system('move '+dirlib+os.sep+n+' '+dirdoc)
@@ -208,7 +211,7 @@ class Menus:
             zlib.close()
             shutil.rmtree(maindir+os.sep+'temp'+os.sep+'ilibq')
             znew.extractall(maindir+os.sep+'ilib1')
-            os.system('xcopy /Y '+maindir+os.sep+'ilib1'+os.sep+'ORTI3D_code-'+fname+os.sep+'iliblast '+maindir+os.sep+'temp'+os.sep+'ilibq')            
+            os.system('xcopy /Y '+maindir+os.sep+'ilib1'+os.sep+'ORTI3D-'+fname+os.sep+'iliblast '+maindir+os.sep+'temp'+os.sep+'ilibq')            
             self.zip_folder(maindir+os.sep+'temp',maindir+os.sep+'zout.zip')
             os.chdir(maindir)
             os.system('del '+dirlib)
@@ -236,7 +239,7 @@ class Menus:
                 relative_path= relative_path.replace('temp\\','')
                 zip_file.write(absolute_path, relative_path)
         
-    def OnBackVersion(self,evt):
+    def OnBackVersion(self,evt=None):
         dirutil=self.gui.mainDir+os.sep+'utils'
         lf=os.listdir(dirutil)
         if 'oldlib.zip' not in lf: self.dialogs.onMessage('sorry no old lib')

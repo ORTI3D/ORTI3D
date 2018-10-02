@@ -5,7 +5,7 @@ Created on Wed Apr 15 18:21:30 2015
 @author: olive
 """
 import os
-from geometry import *
+from .geometry import *
 
 class opgeoWriter:
 
@@ -52,7 +52,7 @@ class opgeoWriter:
             if line[:4]=='flow': mod = 'OpgeoFlow'
             elif line[:5]=='trans' : mod = 'OpgeoTrans'
             nbz = 0
-            if self.core.diczone[mod].dic.has_key(line):
+            if line in self.core.diczone[mod].dic:
                 dicz = self.core.diczone[mod].dic[line]
                 nbz = len(dicz['name'])
             for iz in range(nbz):
@@ -79,7 +79,7 @@ class opgeoWriter:
         '''write the bc values'''
         s = ''
         for nb in ['flow.2']: #,'flow.3','flow.4'
-            if nb not in self.core.diczone['OpgeoFlow'].dic.keys(): continue
+            if nb not in list(self.core.diczone['OpgeoFlow'].dic.keys()): continue
             dicz = self.core.diczone['OpgeoFlow'].dic[nb]
             nbz,s = len(dicz['name']),''
             for iz in range(nbz):
@@ -175,7 +175,7 @@ class opgeoWriter:
     def writeSt(self):
         """write teh source term, up to now only flow wells"""
         s = ''
-        if self.core.diczone['OpgeoFlow'].dic.has_key('flow.9'):
+        if 'flow.9' in self.core.diczone['OpgeoFlow'].dic:
             dicz = self.core.diczone['OpgeoFlow'].dic['flow.9']
             nbwells = len(dicz['value'])
             for iw in range(nbwells):

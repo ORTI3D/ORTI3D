@@ -1,7 +1,7 @@
 from os import sep
-from geometry import *
-from qtDialogs import *
-from config import *
+from .geometry import *
+from .qtDialogs import *
+from .config import *
     
 class BaseTop:
     def __init__(self,gui,core):
@@ -29,7 +29,7 @@ class BaseTop:
         """returns the model corresponding to a given line name"""
         lmodels = self.modlistFromGroup(categ)
         for md in lmodels:
-            if line in self.core.dickword[md].lines.keys(): return md
+            if line in list(self.core.dickword[md].lines.keys()): return md
 
     def testConditions(self,modName,lstL):
         """ test if the lines indices given in lstL sastify the condition

@@ -11,14 +11,14 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 import os
-from parameters import BaseParms
-from menus import *
-from qtDialogs import *
-from geometry import *
-from qtVisu import *
-from core import *
-from config import *
-from guiShow import guiShow
+from .parameters import BaseParms
+from .menus import *
+from .qtDialogs import *
+from .geometry import *
+from .qtVisu import *
+from .core import *
+from .config import *
+from .guiShow import guiShow
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
@@ -120,7 +120,7 @@ class Ui_Parameters(object):
         Parameters.resize(197, 348)
         Parameters.setWindowTitle( "Parameters")
         self.dictBox={}
-        skey = self.base.groups.keys(); skey.sort()
+        skey = list(self.base.groups.keys()); skey.sort()
         for i,g in enumerate(skey): 
             self.dictBox[g] = Box(Parameters,self,g,i)
         QMetaObject.connectSlotsByName(Parameters)
@@ -301,7 +301,7 @@ class Ui_Var(object):
     def onChoiceGroup(self,evt):
         curGroup = self.choiceG.currentText()
         self.choiceL.clear()
-        if curGroup not in self.gui.linesDic[self.currentModel].keys() : return
+        if curGroup not in list(self.gui.linesDic[self.currentModel].keys()) : return
         lines = self.gui.linesDic[self.currentModel][curGroup]
         indx = self.testConditions(self.currentModel,lines)
         lcomm = self.gui.linesCommDic[self.currentModel][curGroup]
@@ -431,7 +431,7 @@ class showBox:
         self.hlWidget.setGeometry(QRect(5,5 ,195, ln*24))
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.setMargin(1)
-        self.buts = range(len(names))
+        self.buts = list(range(len(names)))
         for i,n in enumerate(names):
             if type(n)==type([1,2]): #cas liste -> choix
                 text = QLabel(self.hlWidget)
@@ -470,9 +470,9 @@ class showBox:
         if name == 'Plane': 
             exec('self.parent.'+name+'=\"'+str(retour)+'\"')
             #self.changeIcOri(retour)
-            if retour =='Z' : self.setNames('Model_Layer_L',range(nz-1))
-            if retour =='Y' : self.setNames('Model_Layer_L',range(ny-1))
-            if retour =='X' : self.setNames('Model_Layer_L',range(nx-1))
+            if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
+            if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
+            if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
             self.parent.dicVisu['Model']['Layer']=0
         self.parent.onClick2(group,name,retour)
 

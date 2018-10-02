@@ -4,7 +4,7 @@ Created on Wed Aug 26 21:52:19 2015
 
 @author: olive
 """
-from geometry import *
+from .geometry import *
 import matplotlib.tri as mptri
 import os
 

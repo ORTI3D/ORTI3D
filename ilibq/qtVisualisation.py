@@ -25,8 +25,8 @@ import time
 from scipy.interpolate import interp1d
 import numpy.ma as ma
 
-from geometry import *
-from qtDialogs import *
+from .geometry import *
+from .qtDialogs import *
 #from mayavi.mlab import *
 
 def smoo(v):
@@ -71,7 +71,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         # liste de variables, sert pour la GUI et le combobox sur les variables
         self.listeNomVar= []
         for mod in self.core.modelList:
-            for k in gui.linesDic[mod].keys():
+            for k in list(gui.linesDic[mod].keys()):
                 self.listeNomVar.extend(gui.linesDic[mod][k])
         self.curVar,self.curContour = None,'Charge' # variable courante selectionne       
         self.curMedia,self.curOri, self.curPlan,self.curGroupe=0,'Z',0,None
@@ -252,7 +252,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         if self.mesh != None:# case irregular mesh (from matplotlib2dviewer)
             xcoo = self.mesh.elx
             ycoo = self.mesh.ely
-            lines = [zip(x,y) for x,y in list(zip(xcoo,ycoo))]
+            lines = [list(zip(x,y)) for x,y in list(zip(xcoo,ycoo))]
             self.Grid[0] = LineCollection(lines)
             self.Grid[1] = LineCollection(lines[:2])
             self.Triangles = self.mesh.trg
@@ -320,7 +320,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             vts=self.mesh.myv.cverts # for mfU
             xyv=self.mesh.myv.xyverts
             nnod,a = shape(self.mesh.myv.nodes)
-            pc=[zip(xyv[vts[i],0],xyv[vts[i],1]) for i in range(nnod)]
+            pc=[list(zip(xyv[vts[i],0],xyv[vts[i],1])) for i in range(nnod)]
             self.polyC = PolyCollection(pc,facecolors=cm.jet(data_sc))
             if len(self.cnv.collections)==3:
                 self.cnv.collections.append(self.polyC) #self.polyC
@@ -405,7 +405,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         if value==None: fmt = '%1.3f' 
         else : fmt = '%1.'+ str(int(value[3]))+'f'
         #print fmt
-        cl = pl.clabel(c,color='black',fontsize=9,fmt=fmt)
+        cl = pl.clabel(c,colors='black',fontsize=9,fmt=fmt)
         self.Contour = c
         self.ContourF = cf
         self.ContourLabel = cl
@@ -663,7 +663,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def delZone(self, Variable, ind):
         """methode de suppression de la zone d'indice ind de Variable
         """
-        if self.listeZone.has_key(Variable)==False: return
+        if (Variable in self.listeZone)==False: return
         if len(self.listeZone[Variable])>ind:
             self.listeZone[Variable][ind].set_visible(False)
             self.visibleText(self.listeZoneText[Variable][ind],False)
@@ -747,7 +747,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def setAllZones(self,dicZone):
         """updates all zones when a file is imported
         """
-        for var in dicZone.keys():
+        for var in list(dicZone.keys()):
             self.listeZone[var]=[]
             self.curVar = var
             lz = dicZone[var];

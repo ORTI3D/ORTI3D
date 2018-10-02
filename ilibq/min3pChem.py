@@ -1,5 +1,5 @@
 import os
-from config import *
+from .config import *
 from copy import deepcopy
 
 class Min3pChem:
@@ -42,7 +42,7 @@ class Min3pChem:
         l = []
         Bchem = self.Base['MChemistry']
         if group==None:
-            for k in Bchem.keys():
+            for k in list(Bchem.keys()):
                 for i,r in enumerate(Bchem[k]['rows']):
                     if Bchem[k]['data'][i][0]: l.append(r)
         else :
@@ -92,10 +92,10 @@ class Min3pChem:
             f1.close()
         #sorting database
         for n in keyw:
-            str_list,sec_list = zip(*dicDB[n])
+            str_list,sec_list = list(zip(*dicDB[n]))
             temp = sorted(zip(str_list, sec_list), key=lambda x: len(x[0]))
-            str_list, sec_list = map(list, zip(*temp))  
-            dicDB[n] = zip(str_list, sec_list)
+            str_list, sec_list = list(map(list, list(zip(*temp))))  
+            dicDB[n] = list(zip(str_list, sec_list))
         #print dicDB
         self.temp['Dbase'] = dicDB
 
@@ -124,11 +124,11 @@ class Min3pChem:
         }
         #print Db
         lins = 'linear sorption'
-        if lins not in Db.keys(): 
+        if lins not in list(Db.keys()): 
             Db[lins]=deepcopy(Db['comp'])
             nrows = len(Db['comp'])
             self.Base['MChemistry'][lins]={'rows':Db['comp']}
-        for n in Db.keys():
+        for n in list(Db.keys()):
             base = {'rows':[],'cols':[],'data':[],'text':[]}
             bIn = deepcopy(self.Base['MChemistry'][n])
             rowtrue = [name for (name,boo) in Db[n] if boo];#print rowtrue
@@ -243,7 +243,7 @@ class Min3pChem:
             if name in ['redox','mineral']:
                 s += '!\n\n\''+ek +'\''+ '\n' # name of the species                
             if ek in ['ph','pe']: continue
-            if dicKin.has_key('text'): s += dicKin['text'][i]
+            if 'text' in dicKin: s += dicKin['text'][i]
         if name=='mineral': return s + '!\n! end of database\n!\n\'end\''
         else : return s + '\n!end'
         

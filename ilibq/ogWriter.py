@@ -5,7 +5,7 @@ Created on Wed Apr 15 18:21:30 2015
 @author: olive
 """
 import os
-from geometry import *
+from .geometry import *
 
 class ogWriter:
 
@@ -54,7 +54,7 @@ class ogWriter:
             if line[:4]=='flow': mod = 'OpgeoFlow'
             elif line[:5]=='trans' : mod = 'OpgeoTrans'
             nbz = 0
-            if self.core.diczone[mod].dic.has_key(line):
+            if line in self.core.diczone[mod].dic:
                 dicz = self.core.diczone[mod].dic[line]
                 nbz = len(dicz['name'])
             for iz in range(nbz):
@@ -89,7 +89,7 @@ class ogWriter:
         '''write the bc values'''
         s = ''
         for nb in ['flow.2']: #,'flow.3','flow.4'
-            if nb not in self.core.diczone['OpgeoFlow'].dic.keys(): continue
+            if nb not in list(self.core.diczone['OpgeoFlow'].dic.keys()): continue
             dicz = self.core.diczone['OpgeoFlow'].dic[nb]
             nbz,s = len(dicz['name']),''
             for iz in range(nbz):
@@ -198,10 +198,10 @@ class ogWriter:
         s += '$DIS_TYPE\n  NEAREST_VALUE ; or GEOMETRIC_MEAN\n'
         s += '$CONVERSION_FACTOR \n  1.0 \n $DATA \n'   
         # creates the x,y,z,k  matrix
-        V = self.core.getValueLong(modName,line,0);print 'ogwrite 178',amax(V)
+        V = self.core.getValueLong(modName,line,0);print('ogwrite 178',amax(V))
         b = zeros((self.opgeo.nel,4))
         xc, yc = self.opgeo.elcenters[:,0],self.opgeo.elcenters[:,1]
-        b[:,0],b[:,1],b[:,3] = xc,yc,V;print 'opw 189',shape(b)
+        b[:,0],b[:,1],b[:,3] = xc,yc,V;print('opw 189',shape(b))
         s += self.opgeo.arr2string1(b)+'\n#STOP\n'
         f1 = open(self.fDir+os.sep+fname,'w');f1.write(s);f1.close()
         
@@ -218,7 +218,7 @@ class ogWriter:
         """write the source term, up to now only flow wells"""
         s = ''
         dct = self.core.diczone['OpgeoFlow'].dic
-        if dct.has_key('flow.7'):
+        if 'flow.7' in dct:
             dicz = self.core.diczone['OpgeoFlow'].dic['flow.7']
             nbwells = len(dicz['value'])
             if nbwells>0:

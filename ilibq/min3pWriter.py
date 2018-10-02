@@ -7,8 +7,8 @@ Created on Sun Oct 19 12:54:49 2014
 from array import array as arr2
 import os
 from pylab import savetxt,loadtxt
-from geometry import *
-from timeperiod import *
+from .geometry import *
+from .timeperiod import *
 
 class min3pWriter:
     
@@ -123,7 +123,7 @@ class min3pWriter:
                         else : choi, sep = Dict.lines[line]['detail'][ik][0],'\'' 
                     elif choi == 'no': 
                         choi,sep = '',''
-                    elif Dict.lines[line].has_key('print'):
+                    elif 'print' in Dict.lines[line]:
                         choi,sep = '\''+detail[0]+'\'\n\''+detail[value+1]+'\'\n',''
                     else :
                         sep =  '\''
@@ -136,7 +136,7 @@ class min3pWriter:
                     if line == 'out.1':
                         value = self.getTimeList()
                     s += str(value)+'\n'
-        if self.addKey.has_key(grp):
+        if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
         return s+'\n\'done\'\n\n'
         
@@ -173,7 +173,7 @@ class min3pWriter:
         lznames,lzcoords = [],[]  # OA 24/5
         for line in llist1: #then write zones
             if line=='engp.3': mod='Min3pTrans'
-            if line not in self.core.diczone[mod].dic.keys(): continue # no zones
+            if line not in list(self.core.diczone[mod].dic.keys()): continue # no zones
             dicz = self.core.diczone[mod].dic[line]
             nbzline = len(dicz['value']);#print line, nbzline,self.allRectZones(dicz)# nb of zones for this line
             nbz=1 # OA 31/05
@@ -247,7 +247,7 @@ class min3pWriter:
         flagDis = False #write read from file if necessary
         if self.min3p.nodes==None: # read from file only for structured grid
             for line in llist: 
-                if (line not in self.core.diczone[mod].dic.keys()): continue
+                if (line not in list(self.core.diczone[mod].dic.keys())): continue
                 dicz = self.core.diczone[mod].dic[line]
                 if self.allRectZones(dicz)==False: # or self.core.dictype[mod][0]=='formula': # spatial data can be stored in a file if they contain zones
                     self.writeDistributedFile(line,self.getFileKwd(line,1))
@@ -264,7 +264,7 @@ class min3pWriter:
                 cond=Dict.lines[line]['cond'];#the conditio to test if the line shall be printed
                 if self.core.testCondition(mod,cond)==False : continue
                 info = Dict.lines[line]['comm'].split('(')[0]
-                if line not in dictop.keys():  # no zones in that line
+                if line not in list(dictop.keys()):  # no zones in that line
                     s += '\''+info+'\'\n'+ self.getValue(mod,line,None,0,'whole')                    
                     continue
                 elif znam not in dictop[line]['name']: #there are zones but not the right one
@@ -283,7 +283,7 @@ class min3pWriter:
         nbz,nbztot = 0,self.getNbZonesBCs(mod,llist)   #normally BC zoens are "rect" (in fact line)
         s = str(nbztot)+'\n'
         for line in llist: 
-            if line not in self.core.diczone[mod].dic.keys(): continue # no zones
+            if line not in list(self.core.diczone[mod].dic.keys()): continue # no zones
             dicz = self.core.diczone[mod].dic[line]
             nbzline = len(dicz['value'])# nb of zones for this line
             for iz in range(nbzline):
@@ -310,14 +310,14 @@ class min3pWriter:
         elif mod =='Min3pTrans': Dkeys = self.core.dickword['Min3pTrans']
         elif mod =='Min3pChem': Dkeys = self.core.dickword['Min3pChem']
         prefx=''
-        if Dkeys.lines[line].has_key('prefx'): prefx = Dkeys.lines[line]['prefx']
+        if 'prefx' in Dkeys.lines[line]: prefx = Dkeys.lines[line]['prefx']
         suffx=''
-        if Dkeys.lines[line].has_key('suffx'): suffx = Dkeys.lines[line]['suffx']
+        if 'suffx' in Dkeys.lines[line]: suffx = Dkeys.lines[line]['suffx']
         s = ''
         dicz = self.core.diczone[mod].dic
         # several variables, work only with zones
         #print line, Dkeys.lines[line]
-        if Dkeys.lines[line].has_key('names') and dicz.has_key(line): # several variables in one line, with same zone
+        if 'names' in Dkeys.lines[line] and line in dicz: # several variables in one line, with same zone
             vals = dicz[line]['value'][iz].split('$')[1].split('\n')
             longnames = Dkeys.lines[line]['longNames'];#print line,vals,longnames
             for i in range(len(longnames)):
@@ -413,7 +413,7 @@ class min3pWriter:
         nbz,names = 0,[] # OA 24/5 added names
         dicz = self.core.diczone[mod]
         for line in llist:
-            if dicz.dic.has_key(line):
+            if line in dicz.dic:
                 dz1 = dicz.dic[line]
                 if self.allRectZones(dz1) != True:continue # OA 22/6
                 for iz in range(len (dz1['coords'])):
@@ -430,13 +430,13 @@ class min3pWriter:
         nbz=0
         dicz = self.core.diczone[mod]
         for line in llist:
-            if dicz.dic.has_key(line):
+            if line in dicz.dic:
                 nbz += dicz.getNbZones(line)
         return nbz
 
     def getDomainCoords(self):
         s = ''
-        lst=range(6)
+        lst=list(range(6))
         for i in lst: s+= str(self.domn[i])+'  '
         return s
 
@@ -447,14 +447,14 @@ class min3pWriter:
         if self.isRectZone(coolist): #squared zones
             s = '\'\n'
             coolist = self.coord2BC(coolist) # OA 25/5 removed the if, may apply to all
-            xl,yl = zip(*coolist);#print 'bc l 273',xl,yl
+            xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
             s0 = str(min(xl))+' '+str(max(xl))+' '
             s1 = str(min(yl))+' '+str(max(yl))+' '
             if self.xsect : s += s0+str(self.domn[2])+'  '+str(self.domn[3])+'  '+s1
             else : s += s0+s1+str(self.domn[4])+'  '+str(self.domn[5])+'  '
         else : # usntructured non squared
             s = ': '+opt+' nodes in polygon\'\n\'read data\'\n'
-            xl,yl = zip(*coolist);#print 'bc l 273',xl,yl
+            xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
             npts = len(xl)
             s += str(npts)+'\n'
             zl = [0]*npts
@@ -473,7 +473,7 @@ class min3pWriter:
         
     def isRectZone(self,coolist):
         rect = True
-        x,y = zip(*coolist)
+        x,y = list(zip(*coolist))
         if len(unique(x))>2 or len(unique(y))>2: rect = False
         return rect
            

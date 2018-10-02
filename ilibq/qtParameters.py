@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 import os
-from parameters import BaseParms
-from qtDialogs import *
-from core import *
-from config import *
+from .parameters import BaseParms
+from .qtDialogs import *
+from .core import *
+from .config import *
 
 class Ui_Parameters(object):
     def setupUi(self, Parameters,gui,core,plugin_dir):
@@ -34,7 +34,7 @@ class Box(): #QGroupBox):
         self.box.setTitle(gr)
         self.hl = QHBoxLayout(self.box)
         self.hl.setSpacing(0)
-        self.hl.setMargin(1)
+        self.hl.setContentsMargins(1,1,1,1)
         dirutils = parent.plugin_dir+os.sep+'utils'
         #self.parent.gui.dialogs.onMessage(self.parent.gui,os.listdir(dirutils)[0])
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)

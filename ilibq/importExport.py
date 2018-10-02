@@ -1,7 +1,7 @@
 #from config import *
 import os
 import xml.dom.minidom as xdom
-from geometry import *
+from .geometry import *
 #from wxDialogs import *
 
 class impFile:
@@ -82,7 +82,7 @@ class impFile:
             keys = d.getElementsByTagName("key")
             for k in keys: # groups of zones
                 kname = k.getElementsByTagName("name")[0].childNodes[0].data
-                if kname not in zonkwd.keys(): continue
+                if kname not in list(zonkwd.keys()): continue
                 modName,line = zonkwd[kname]
                 k0 = k.getElementsByTagName("content")[0].childNodes[0].data
                 exec('zgroup ='+k0)
@@ -333,7 +333,7 @@ class impAsciiModflow:
         self.core.dicaddin['Grid'] = grd
         if nlay>1:
             self.core.dicaddin['Model']['dimension']='3D'
-            self.core.dicaddin['3D']['topMedia']=range(nlay,0,-1)
+            self.core.dicaddin['3D']['topMedia']=list(range(nlay,0,-1))
         print ('done')
         return dic1
         

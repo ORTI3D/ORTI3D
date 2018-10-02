@@ -1,32 +1,31 @@
 #
 import os,subprocess,time,base64
-import PyQt4
 from numpy import frombuffer,float64
-from modflowWriter import *
-from mtphtWriter import *
-from min3pWriter import *
-from sutraWriter import *
-from ogWriter import *
+from .modflowWriter import *
+from .mtphtWriter import *
+from .min3pWriter import *
+#from .sutraWriter import *
+from .ogWriter import *
 import xml.dom.minidom as xdom
-from geometry import *
-from importExport import *
-from addin import *
-from timeperiod import *
+from .geometry import *
+from .importExport import *
+from .addin import *
+from .timeperiod import *
 from pylab import loadtxt,size
 from numpy import savez_compressed
 from numpy import load as npload
-from config import *
-from modflowKeywords import Mf
-from mtPhtKeywords import Mt
-from pht3dKeywords import Ph
-from min3pFlowKeywords import m3F
-from min3pTransKeywords import m3T
-from min3pChemKeywords import m3C
-from ogFlowKeywords import ogF
-from ogTransKeywords import ogT
-from sutraKeywords import suK
-from obsKeywords import Obs
-from pestKeywords import Pst
+from .config import *
+from .modflowKeywords import Mf
+from .mtPhtKeywords import Mt
+from .pht3dKeywords import Ph
+from .min3pFlowKeywords import m3F
+from .min3pTransKeywords import m3T
+from .min3pChemKeywords import m3C
+from .ogFlowKeywords import ogF
+from .ogTransKeywords import ogT
+from .sutraKeywords import suK
+from .obsKeywords import Obs
+from .pestKeywords import Pst
 
 class Core:
     """this is the central class that makes the link between all objects
@@ -206,7 +205,7 @@ class Core:
             d = self.addin.pht3d.readSelectOut(self.fileDir)
             if self.gui != None:
                 self.gui.guiShow.setUserSpecies(d);#print 'core203',d
-                self.gui.guiShow.setNames('Chemistry_User_L',d.keys())
+                self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
                 
     def saveModel(self,fDir = None,fName = None):
         """save the model"""
@@ -635,7 +634,7 @@ class Core:
             labels = zlist['name']
             mes0=self.data['data'][:,indCol]; # OA 20/6 added three lines here to reorder and get labels
             npts = len(mes0)
-            mes1,pt1,idx,pt0 = mes0*0,zeros((1,npts)),0,pt[0];print(mes0,self.data['rows'],labels,pt[0])
+            mes1,pt1,idx,pt0 = mes0*0,zeros((1,npts)),0,pt[0];print((mes0,self.data['rows'],labels,pt[0]))
             for i in range(len(labels)): 
                if labels[i] in self.data['rows']:
                    mes1[idx] = mes0[self.data['rows'].index(labels[i])]

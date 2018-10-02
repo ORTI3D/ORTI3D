@@ -73,7 +73,7 @@ class MT3DMS:
         self.Base['Chemistry'] = dic;#print dic
         
         # for immobile : dual domain poro
-        if self.Base.has_key('Immobile'): old=self.Base['Immobile'].copy()
+        if 'Immobile' in self.Base: old=self.Base['Immobile'].copy()
         else : old={'Solutions':None,'Phases':None,'Exchange':None,'Surface':None}
         dic={};
         # add poro and exch to solutions

@@ -2,7 +2,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from scipy.special import erf,erfc
 from scipy.stats import norm
-from config import *
+from .config import *
 import os,time
 #from rflow import *
 
@@ -85,7 +85,7 @@ class instantFit():
         aL,aT  =  self.aL,self.aT
         poro = 0.25
         vx,vy = q[0][:,:-1]/poro, q[1][:-1,:]/poro # to have arrays of the same size
-        xy  =  self.Sourcexy;x, y = zip(*xy); x=list(x); y=list(y);
+        xy  =  self.Sourcexy;x, y = list(zip(*xy)); x=list(x); y=list(y);
         yp0 = erfc(-0.08*arange(26))-1
         #yp0 = erfc(-0.06*arange(18))-1
         yp0 = yp0*0.999/yp0[-1]
@@ -175,7 +175,7 @@ class instantFit():
         # finds the coefficient for the lines in xp0,yp0
         self.lcoefs= [];a,b = str(xp0),str(yp0)
         for ip in range(np): 
-            self.lcoefs.append(self.getLcoefs(zip(xp0[:,ip],yp0[:,ip])))
+            self.lcoefs.append(self.getLcoefs(list(zip(xp0[:,ip],yp0[:,ip]))))
         # then for each point find the width
         wdth,mdle = zeros((nt,np-1)),int((np-1)/2)
         wdth[0,:] = sqrt((xp0[0,:-1]-xp0[0,1:])**2+(yp0[0,:-1]-yp0[0,1:])**2)
@@ -232,13 +232,13 @@ class instantFit():
                     put2next(f0,dff,Cy,vloc,wdth,jmx,np,i)
                     n +=1
         '''
-        print 'inst 235',amax(Cy)
+        print('inst 235',amax(Cy))
         return [xp0,yp0,tp0,cua,cub,vloc,wdth,Cy]
         
     def getLcoefs(self,poly):
         '''finds the list of coefficients of the equation of each line 
         segment in a polygon'''
-        x,y = zip(*poly); #a,b = str(x),str(y)
+        x,y = list(zip(*poly)); #a,b = str(x),str(y)
         n = len(x)
         lcoefs,a=zeros((2,n-1)),zeros((2,2))
         for i in range(n-1): # lcoefs are the coefficient of the lines ax+by=1

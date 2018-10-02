@@ -4,7 +4,7 @@ Created on Wed Aug 26 21:52:19 2015
 
 @author: olive
 """
-from geometry import *
+from .geometry import *
 import os
 
 class Opgeo:
@@ -23,7 +23,7 @@ class Opgeo:
             return None # rectangular
         dct = self.core.diczone['OpgeoFlow'].dic
         dicD = dct['domn.4']
-        if dct.has_key('flow.5'): dicK = dct['flow.5'] # K hydraul
+        if 'flow.5' in dct: dicK = dct['flow.5'] # K hydraul
         else : dicK = {'name':[]}
         s = gmeshString(self.core,dicD,dicK)
         os.chdir(self.core.fileDir)
@@ -94,7 +94,7 @@ class Opgeo:
         nod2 = zeros((nlay*nnod,4))
         for il in range(nlay):
             nod2[nnod*il:nnod*(il+1),:] = c_[nod1[:,:3],zb[il:il+1].T]
-        nod2[:,0] = range(nnod*nlay)
+        nod2[:,0] = list(range(nnod*nlay))
         self.nnod = nnod*nlay
         return nod2
         
@@ -104,14 +104,14 @@ class Opgeo:
         up to now nlay = nmedia!!!!!
         there are node layers (=phys layer +1) and elts layers (=physical layers)
         seem to be correct'''
-        nlay,nel = self.nlay,self.nel;print nel, nnod0
+        nlay,nel = self.nlay,self.nel;print(nel, nnod0)
         elts1 = self.elements
         elts2 = zeros(((nlay-1)*self.nel,9)).astype('int')
         elts2[:,2] = -100
         for il in range(nlay-1):
             elts2[nel*il:nel*(il+1),3:] = c_[elts1[:,3:]+nnod0*il,elts1[:,3:]+nnod0*(il+1)]
         nel3 = nel*(nlay-1)
-        elts2[:,0] = range(nel3)
+        elts2[:,0] = list(range(nel3))
         # need to retrieve the true material nb per layer as gmsh built it in 2D
         for il in range(nlay-1):
             zindx = zone2mesh(self.core,'OpgeoFlow','flow.5',il,iper=0,loc='elements',val='nb')

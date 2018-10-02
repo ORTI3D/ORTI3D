@@ -1,6 +1,6 @@
-from config import *
+from .config import *
 from matplotlib import pylab as pl
-from myInterpol import *
+from .myInterpol import *
 import matplotlib.tri as mptri
 
 """all geometrical operations are performed here
@@ -97,7 +97,7 @@ def makeLayers(core):
         dzL = []
         for im in range(nbM):
             dzL.append([])
-            if type(lilay[im]) in [type('a'),type(u'a')]: 
+            if type(lilay[im]) in [type('a'),type('a')]: 
                 if len(lilay[im].split())>1:
                     dz0, dz1 = lilay[im].split(); #[:2]
                     dzL[im] = calcGriVar(0,1,float(dz0),float(dz1))
@@ -320,7 +320,7 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     nbc = mesh.getNumber(loc);
     value = ones(nbc)*vbase
     dicz = core.diczone[modName].dic#;print 'geom 292 shapval',shape(value),dicz
-    if line not in dicz.keys():
+    if line not in list(dicz.keys()):
         return value
     dicz = dicz[line]
     pindx = zeros(nbc) # this will be the index, 0 for the background, then poly number
@@ -350,7 +350,7 @@ def zmesh(core,dicz,media,i):
     xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
     xarray, yarray = mesh.elx,mesh.ely
     poly = dicz['coords'][i];#print poly
-    x,y = zip(*poly)
+    x,y = list(zip(*poly))
     if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
     llcoefs = lcoefsFromPoly(poly)
     zmedia = dicz['media'][i] # a media or a list of media for the zone
@@ -419,7 +419,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         arr = core.dicarray[modName][line];#print 'geom zone2g type arr',line
         if len(shape(arr))==3: arr = arr[media]
         return arr
-    elif line in core.diczone[modName].dic.keys():
+    elif line in list(core.diczone[modName].dic.keys()):
         diczone = core.diczone[modName].dic[line]
     else : 
         return array(m0) # returns an array of vbase
@@ -433,19 +433,19 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         if type(zmedia)!=type([5]): zmedia=[zmedia]
         zmedia = [int(a) for a in zmedia]
         if int(media) not in zmedia: continue # the zone is not in the correct media
-        if line in core.ttable.keys(): zv0=float(core.ttable[line][iper,i])
+        if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
         if len(xy)==1:  # case point
-            x,y=zip(*xy)
+            x,y=list(zip(*xy))
             ix,iy = minDiff(x[0],xvect),minDiff(y[0],yvect)
             m0[iy,ix] = zv0
             
         else: # other shapes
             ndim=len(xy[0])
-            if ndim==3: x,y,z = zip(*xy) # there are z values (variable polygon)
+            if ndim==3: x,y,z = list(zip(*xy)) # there are z values (variable polygon)
             else :
-                x,y = zip(*xy)
+                x,y = list(zip(*xy))
                 z=[zv0]*len(xy)
             nxp,nyp,nzp=zone2index(core,x,y,z);
             put(m0,nyp*nx+nxp,nzp)
@@ -568,7 +568,7 @@ def gmeshString(core,dicD,dicM):
         p_list.append(pt)
     npt = i+1
     # domain lines
-    s+= stringLine(p_link,range(ldom),1,opt='close')
+    s+= stringLine(p_link,list(range(ldom)),1,opt='close')
     #other points: present in domain, name shall start by point
     indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='point']
     p_coord = [dicD['coords'][iz] for iz in indx]
@@ -585,7 +585,7 @@ def gmeshString(core,dicD,dicM):
             p_dens = dicD['value'][iz]
             p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
             s1+=sa
-            p_range = range(npt,npt+len(p_coord))
+            p_range = list(range(npt,npt+len(p_coord)))
             s1+= stringLine(p_link,p_range,npt)
             npt += len(p_coord)
     # add the material zones (opgeo), but don't add points twice!!
@@ -593,14 +593,14 @@ def gmeshString(core,dicD,dicM):
     for iz in range(len(dicM['name'])):
         if (dicM['name'][iz] == 'domain')  or (dicM['name'][iz][0]=='_'): continue
         p_coord = dicM['coords'][iz];#print 'geom 517',iz,p_coord
-        x,y = zip(*p_coord); x,y = array(x),array(y)
+        x,y = list(zip(*p_coord)); x,y = array(x),array(y)
         #dens = str(min(max(x)-min(x),max(y)-min(y))/1.5)[:6]
         d = sqrt((x[1:]-x[:-1])**2+(y[1:]-y[:-1])**2)
         dens = str(min(d)*2)[:6];#print 'geom 599 dens',dicM['name'],dens
         if len(p_coord)>2: # don't take points, just lines
             p_list,p_link,spt,ss = stringPoints(p_list,p_coord,dens,npt)
             s2+=ss
-            p_range = range(npt,npt+len(p_coord))
+            p_range = list(range(npt,npt+len(p_coord)))
             s2+= stringLine(p_link,p_range,isurf,'close')
             npt += len(p_coord)
             s2+='Plane Surface('+str(isurf)+')={'+str(isurf)+'}; \n';
@@ -618,7 +618,7 @@ def gmeshString(core,dicD,dicM):
 def stringPoints(p_list,p_coord,p_dens,istart):    
     '''creates lines of points from coordinates and returns the point list'''
     def isCooInList(coo,lst,eps):
-        x,y = zip(*lst);x,y = array(x),array(y)
+        x,y = list(zip(*lst));x,y = array(x),array(y)
         #d = sqrt((x[1:]-x[:-1])**2+(y[1:]-y[:-1])**2)
         #eps = min(d)/20
         for i,c1 in enumerate(lst):
@@ -626,7 +626,7 @@ def stringPoints(p_list,p_coord,p_dens,istart):
         return -1
         
     s,spt,p_link='','',[]
-    x,y = zip(*p_list)
+    x,y = list(zip(*p_list))
     eps = min(max(x)-min(x),max(y)-min(y))/500
     if type(p_dens) != type([5]): 
         p_dens = [p_dens]*len(p_coord)
@@ -646,7 +646,7 @@ def stringLine(p_link,p_range,il,opt='None'):
     '''creates a line string from a list of points number
     it has to consider pre-existing points'''
     s,pnew,pold='',[],[]
-    if len(p_link)>0: pnew,pold = zip(*p_link) # get the new and old ref of the same points
+    if len(p_link)>0: pnew,pold = list(zip(*p_link)) # get the new and old ref of the same points
     s+='// p '+str(pnew)+'  '+str(pold)+'\n'
     l_link = []
     #print pnew,pold
@@ -663,7 +663,7 @@ def stringLine(p_link,p_range,il,opt='None'):
         s+='Line('+str(p_range[-1]+1)+')={'+str(a)+','+str(b)+'}; \n'
     if opt=='None': p_range = p_range[:-1]
     v,lnew,lold='',[],[]
-    if len(l_link)>0:lnew,lold = zip(*l_link)
+    if len(l_link)>0:lnew,lold = list(zip(*l_link))
     s+='// l'+str(lnew)+'  '+str(lold)+'\n'
     for ip in p_range:
         if ip in lnew: v+=str(lold[lnew.index(ip)]+1)+','
@@ -719,7 +719,7 @@ def planeFromPoints(poly):
     '''coordonnees d'un plan a partir de n points sur poly
     sur http://www.les-mathematiques.net/phorum/read.php?13,728203,728210
     renvoie les fact a,b,c,d tels que ax+by+cz+d = 0 (ou z=-(d+ax+by)/c) eq plan'''
-    x,y,z = zip(*poly)
+    x,y,z = list(zip(*poly))
     xg,yg,zg = mean(x),mean(y),mean(z)
     x,y,z = r_[x,x[0]],r_[y,y[0]],r_[z,z[0]]
     a = sum((y[:-1]-y[1:])*(z[:-1]+z[1:]))
@@ -739,7 +739,7 @@ def planesFromPointMat(xmat,ymat,zmat):
 def isPolyClockw(lpoints): 
     '''verifies if a poly is clockwise or not, lpoints is a list of pts
     does NOT work for complex polygons, but here it is only for the domain'''
-    x,y = zip(*lpoints)
+    x,y = list(zip(*lpoints))
     x,y = array(x.append(x[0])),array(y.append(y[0]))
     clock = sum(x[1:]-x[:-1])*(y[1:]+y[:-1]) # if that sum is >0 it is clockw
     return clock>0
@@ -747,7 +747,7 @@ def isPolyClockw(lpoints):
 def lcoefsFromPoly(poly):
     '''finds the list of coefficients for the equation of each line 
     segment in a polygon'''
-    x,y = zip(*poly)
+    x,y = list(zip(*poly))
     n = len(x)
     lcoefs,a=zeros((2,n-1)),zeros((2,2))
     for i in range(n-1): # lcoefs are the coefficient of the lines ax+by=1
@@ -761,7 +761,7 @@ def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
     we use an horizontal line that start from the ptx,pty point
     lcoefs [2,n] for n pts in poly are the eq of ax+by=1 with a,b=lcoefs[:,i]
     polygon is in a trigo direction and must be closed'''
-    x,y = zip(*poly)
+    x,y = list(zip(*poly))
     n,count = len(x),ptx*0
     for i in range(n-1):
         ymin,ymax = min(y[i:i+2]),max(y[i:i+2])
@@ -772,7 +772,7 @@ def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
 
 def dstPointPoly(lpts,pol):
     '''finds the shortest distance from each point in a list (lpts) to a polygon (pol)'''   
-    xpo,ypo = zip(*pol);
+    xpo,ypo = list(zip(*pol));
     dst,i = [],0
     for x,y in lpts[1:]:
     #if 3>2:
@@ -804,7 +804,7 @@ def cellsUnderPoly(xarray,yarray,poly,lcoefs):
     #print 'geom 718',poly,shape(xc),len(poly),len(indx),lcoefs
     indx = xarray[:,0]*0
     for i in range(len(poly)-1):
-        x,y = zip(*poly[i:i+2])
+        x,y = list(zip(*poly[i:i+2]))
         pos = sign(lcoefs[0,i]*xarray+lcoefs[1,i]*yarray-1)
         dpos = abs(amax(pos,axis=1)-amin(pos,axis=1))
         indx += (dpos>0)*(xmn<max(x))*(xmx>min(x))*(ymn<max(y))*(ymx>min(y))*1
@@ -872,7 +872,7 @@ def zone2interp(core,modName,line,media,option,refer=None):
         xc, yc = ravel(xm),ravel(ym)
         if refer != None : refer = ravel(refer)
     m = zeros(len(xc)) + float(vbase)
-    if line in core.diczone[modName].dic.keys():
+    if line in list(core.diczone[modName].dic.keys()):
         diczone = core.diczone[modName].dic[line]
         coords = diczone['coords']
         nz = len(coords)
@@ -888,12 +888,12 @@ def zone2interp(core,modName,line,media,option,refer=None):
         if media not in lmed : continue
         xy = coords[iz]
         if len(xy[0])==2: #normal zone
-            x,y = zip(*xy)
+            x,y = list(zip(*xy))
             if variable != None: z = float(diczone['value'][iz].split('$')[1].split('\n')[variable])
             else : z = float(diczone['value'][iz])
             z = [z]*len(x);#print i,z
         elif len(xy[0])==3: # variable polygon
-            x,y,z = zip(*xy)
+            x,y,z = list(zip(*xy))
         xpt.extend(list(x));ypt.extend(list(y));zpt.extend(list(z))            
     xpt,ypt,zpt = array(xpt),array(ypt),array(zpt);#print 'geom, xpt',xpt,ypt,zpt
 
@@ -918,7 +918,7 @@ def zone2interp(core,modName,line,media,option,refer=None):
         m2 = m0+m1 
 
     elif option =='interp. Kr':
-        print 'krige vrange,vtype',vrange,vtype
+        print('krige vrange,vtype',vrange,vtype)
         mxdist = sqrt((max(xc)-min(xc))**2+(max(yc)-min(yc))**2)
         if vrange==None: rg = mxdist/4.
         else : rg = vrange
@@ -926,14 +926,14 @@ def zone2interp(core,modName,line,media,option,refer=None):
         else : m2 = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
         
     elif option=='interp. Th': # Thissen polygons
-        print 'thiessen'
-        listP = zip(xpt,ypt)
+        print('thiessen')
+        listP = list(zip(xpt,ypt))
         xb,yb = [min(xc),max(xc)],[min(yc),max(yc)]
         polylist = getPolyList(listP,xb,yb);#print 'geom 830 thiess',polylist
         m2 = ones(len(xc))*vbase
         for i,poly in enumerate(polylist):
             if poly==None: continue
-            x,y = zip(*poly);z=[0]*len(x);#plot(x,y)
+            x,y = list(zip(*poly));z=[0]*len(x);#plot(x,y)
             nxp,nyp,nzp=zone2index(core,x,y,z);
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m2, ind==1, [zpt[i]]);#print 'geom 611',xpt[i],ypt[i],zpt[i],poly

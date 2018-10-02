@@ -1,18 +1,19 @@
 import os, sys, inspect
-from config import *
-from Pht3d import *
-from Min3p import *
-from modflowUNS import *
-from geometry import *
+from .config import *
+from .Pht3d import *
+from .Min3p import *
+from .modflowUNS import *
+from .geometry import *
 from matplotlib import pylab # for having grafs in batch
-from Pest import *
-from Opgeo import *
-from instantFit import *
-from modflowWriter import *
+from .Pest import *
+from .Opgeo import *
+from .instantFit import *
+from .modflowWriter import *
 
-from matplotlib.tri import CubicTriInterpolator
-from PyQt4.QtGui import *
-from PyQt4 import Qt
+#from matplotlib.tri import CubicTriInterpolator
+from PyQt5.QtGui import *
+from PyQt5 import Qt
+from PyQt5.QtWidgets import *
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 
 class addin:
@@ -126,10 +127,10 @@ class addin:
         
     def update1(self,dict1):
         cdict = self.core.dicaddin.copy()
-        for k in dict1.keys():
-            if k not in cdict.keys(): continue
+        for k in list(dict1.keys()):
+            if k not in list(cdict.keys()): continue
             if type(dict1[k])==type({'d':1}):
-                for k1 in dict1[k].keys():
+                for k1 in list(dict1[k].keys()):
                     cdict[k][k1] = dict1[k][k1]
             elif k[:5]=='usedM': # some moduls can have been added in new version
                 lmod,val = cdict[k]
@@ -300,7 +301,7 @@ class addin:
             dic2 = dialg.getValues()
             #print dic2
             if dic2 != None:
-                for k in dic2.keys(): self.chem.Base[nameB][k] = dic2[k]
+                for k in list(dic2.keys()): self.chem.Base[nameB][k] = dic2[k]
             self.core.dicaddin[nameB] = self.chem.Base
         
         if actionName == 'Ad_Pback':
@@ -355,7 +356,7 @@ class addin:
             if (modName=='Mt3dms') & (n not in data[0]): 
                 data[0].append(n);data[1].append(False)
         typ = ['Check']*len(data[0])
-        dialg = self.dialogs.genericDialog(self.gui,'Select Modules',zip(data[0],typ,data[1]))
+        dialg = self.dialogs.genericDialog(self.gui,'Select Modules',list(zip(data[0],typ,data[1])))
         chkStates = dialg.getValues()
         if chkStates != None:
             self.core.dicaddin['usedM_'+modName] = [data[0],chkStates]
@@ -396,7 +397,7 @@ class addin:
         if retour != None:
             txt = retour #dialg.GetTextAsList()
             self.lastBatch=txt
-            txt1=txt.replace('core','self.core');print type(txt1)
+            txt1=txt.replace('core','self.core');print(type(txt1))
             exec(txt1)
         else : return
 
@@ -407,17 +408,17 @@ class addin:
         self.txt+= '\n#name=Ca, value=ones((25,30))*5e-4'
         self.txt+= '\n#name=All, value=importUCN, tstep=0'
         self.txt+= '\n#name=Hfo_w, value=core.importLayerValues(\'Hfo_layers.txt\',\'Hfo_w\')'
-        print self.txt
+        print(self.txt)
         dialg = self.dialogs.textDialog(self.gui,'Initial chemistry',(500,300),self.txt)
         retour = dialg.getText();#print retour text() or currentText()
         if retour != None:
-            print 'ok'
+            print('ok')
             #txt = dialg.getText()
             name = self.txt.split('\n')[0].split('=')[1].strip()
             f0 = self.txt.split('#')[0]
             formula = f0.split('\n')[1]
             tstep = f0.split('\n')[2].split('=')[1].strip()
-            print name, formula, tstep
+            print(name, formula, tstep)
             self.core.dicaddin['InitialChemistry']={'name':name,'formula':formula,'tstep':tstep}
         else : return
         #dialg.Destroy()
@@ -540,7 +541,7 @@ class addin:
         cols = ['SP1','SP2','RC1','RC2']
         data,rowIn,dataIn = [],[],[]
         mtreact = self.core.dicaddin['MtReact']
-        if mtreact.has_key('rows'): 
+        if 'rows' in mtreact: 
             rowIn,dataIn = mtreact['rows'],mtreact['data']
         for sp in rows :
             if sp in rowIn: 
@@ -719,13 +720,13 @@ class addin:
         for iel in lelt:
             inod = mesh.elements[iel,-3:]
             inod1 = r_[inod, inod[0]] # to close the polygon
-            poly = zip(mesh.nodes[inod1,1],mesh.nodes[inod1,2])
+            poly = list(zip(mesh.nodes[inod1,1],mesh.nodes[inod1,2]))
             cf = array(mesh.lcoefs[iel]).T
             if pointsInPoly(array([xp0]),array([yp0]),poly,cf)[0]: break
             
         x,y = xp0,yp0
         for it in range(80): # loop on 80 triangles
-            print iel
+            print(iel)
             vx,vy = vxin[iel],vyin[iel]
             inod=mesh.elements[iel,-3:]
             dref = sqrt(mesh.carea[iel])
@@ -777,7 +778,7 @@ class instant(object):
     def update(self, obs_value):
         #print 'instant gui',self,self.gui
         if self.react :
-            self.fitter.calculate(self.dic_options,obs_value);print 'addin 723, calculate'
+            self.fitter.calculate(self.dic_options,obs_value);print('addin 723, calculate')
             if self.dic_options['type']=='Tracer':
                 xp1, yp1 = self.fitter.xp1,self.fitter.yp1
                 # particle visu
@@ -845,13 +846,13 @@ class oldstuff:
         for iel in lelt:
             inod = m1.elements[iel,-3:]
             inod1 = r_[inod, inod[0]] # to close the polygon
-            poly = zip(m1.nodes[inod1,1],m1.nodes[inod1,2])
+            poly = list(zip(m1.nodes[inod1,1],m1.nodes[inod1,2]))
             cf = array(m1.lcoefs[iel]).T
             if pointsInPoly(array([xp0]),array([yp0]),poly,cf)[0]: break
                 
         x,y = xp0,yp0
         for it in range(80): # loop on 80 triangles
-            print iel
+            print(iel)
             inod=m1.elements[iel,-3:]
             xn,yn=m1.nodes[inod,1],m1.nodes[inod,2]
             #un,vn = velo[0][0,nodes],velo[1][0,nodes]
@@ -903,13 +904,13 @@ class oldstuff:
         for iel in lelt:
             inod = mesh.elements[iel,-3:]
             inod1 = r_[inod, inod[0]] # to close the polygon
-            poly = zip(mesh.nodes[inod1,1],mesh.nodes[inod1,2])
+            poly = list(zip(mesh.nodes[inod1,1],mesh.nodes[inod1,2]))
             cf = array(mesh.lcoefs[iel]).T
             if pointsInPoly(array([xp0]),array([yp0]),poly,cf)[0]: break
             
         x,y = xp0,yp0
         for it in range(80): # loop on 80 triangles
-            print iel
+            print(iel)
             inod=mesh.elements[iel,-3:]
             #xno,yno=mesh.nodes[inod,1],mesh.nodes[inod,2]
             # find gradH

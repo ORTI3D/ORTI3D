@@ -1,5 +1,5 @@
-from config import *
-from geometry import *
+from .config import *
+from .geometry import *
 
 class guiShow:
     def __init__(self,gui,core):
@@ -60,8 +60,8 @@ class guiShow:
 
     def getGlist(self,group,name):
         #print 'guish 55',group,name,self.Glist
-        if self.Glist.has_key(group):
-            if self.Glist[group].has_key(name): return self.Glist[group][name] 
+        if group in self.Glist:
+            if name in self.Glist[group]: return self.Glist[group][name] 
             else :
                 self.Glist[group][name] = {'value':None,'color':None,'calc':False}
         else :
@@ -75,8 +75,8 @@ class guiShow:
         
     def resetGlist(self):
         """reset all Glist tags 'calc' to False"""
-        for group in self.Glist.keys():
-            for name in self.Glist[group].keys(): 
+        for group in list(self.Glist.keys()):
+            for name in list(self.Glist[group].keys()): 
                 self.Glist[group][name]['calc'] = False
 
     def onClick2(self,group,name,retour):
@@ -121,7 +121,7 @@ class guiShow:
         #print 'guish 116', name,species,self.userSpecies
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
-            if species in self.userSpecies.keys():
+            if species in list(self.userSpecies.keys()):
                 dataM = self.getUserSpecies(species,plane,layer)
             else :
                 dataM = self.getArray2D(Cgroup,self.arr3,plane,layer)
@@ -142,15 +142,15 @@ class guiShow:
 
     def resetDicContour(self):
         # put all cntour values to non
-        for k in self.dicVisu.keys():
-            for k1 in self.dicVisu[k].keys():
+        for k in list(self.dicVisu.keys()):
+            for k1 in list(self.dicVisu[k].keys()):
                 if k1 in self.Vtypes['Array']:
                     self.dicVisu[k][k1] = False
  
     def getCurrentContour(self):   
         #returns the contour that is currently visible
-        for k in self.dicVisu.keys():
-            for k1 in self.dicVisu[k].keys():
+        for k in list(self.dicVisu.keys()):
+            for k1 in list(self.dicVisu[k].keys()):
                 if k1 in self.Vtypes['Array']:
                     if self.dicVisu[k][k1] != False :  
                         return k,k1,self.dicVisu[k][k1]
@@ -181,7 +181,7 @@ class guiShow:
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
                 arr = self.core.transReader.readUCN(self.core,'Pht3d',tstep,iesp,spec) #iesp=0
             elif name=='User':
-                print self.userSpecies
+                print(self.userSpecies)
                 arr = self.userSpecies[spec][tstep]
         return arr
         
@@ -293,7 +293,7 @@ class guiShow:
         mod = self.gui.varBox.parent.currentModel
         line = self.gui.varBox.parent.currentLine
         media, opt, iper = 0,None,0; #print 'guisho 275',line,self.curVar
-        if self.curVar.has_key(line): 
+        if line in self.curVar: 
             mat = self.curVar[line]*1
         else:
             mat = self.core.getValueLong(mod,line,0)*1;#print 'show 260',shape(mat)

@@ -4,9 +4,9 @@ Created on Sun Aug 02 10:22:05 2015
 
 @author: olive
 """
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-#from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
         
 class qtValueDialog(QDialog):
     def __init__(self, parent,gui,core,modName):

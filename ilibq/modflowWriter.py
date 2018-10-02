@@ -1,10 +1,10 @@
 #import scipy.io.array_import as IOAscii
 from array import array as arr2
 import os
-from modflowKeywords import Mf
-from geometry import *
-from timeperiod import *
-from modflowUNS import *
+from .modflowKeywords import Mf
+from .geometry import *
+from .timeperiod import *
+from .modflowUNS import *
 
 class modflowWriter:
     
@@ -29,7 +29,7 @@ class modflowWriter:
         self.writeLmtFile()
         self.writeOcFile()
         #print 'mfwrite',self.ttable
-        if 'bas.5' in self.ttable['Transient'].keys(): #in bas.5 initial head there are variable zones
+        if 'bas.5' in list(self.ttable['Transient'].keys()): #in bas.5 initial head there are variable zones
             if self.ttable['Transient']['bas.5']:
                 self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
@@ -76,7 +76,7 @@ class modflowWriter:
                 f1.write('EVT     35     ' + self.fName + '.evt\n')
         if self.core.diczone['Modflow'].getNbZones('wel.1')>0:
             f1.write('WEL     36     ' + self.fName + '.wel\n')
-        if 'bas.5' in self.ttable['Transient'].keys():
+        if 'bas.5' in list(self.ttable['Transient'].keys()):
             if self.ttable['Transient']['bas.5']:
                 f1.write('CHD     37     ' + self.fName + '.chd\n')
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
@@ -307,7 +307,7 @@ class modflowWriter:
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
         if xy == '': return None,None,None
-        x,y = zip(*xy)
+        x,y = list(zip(*xy))
         z=x*1
         imed = core.diczone['Modflow'].getMediaList(line,iz)
         ilay = media2layers(core,imed)
@@ -489,7 +489,7 @@ class modflowReader:
         in free flow Thksat from flo file must be added (not done)"""    
         if core.mfUnstruct:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
-            hd=zeros((nlay,ncell));print 'mfw 491', shape(hd)
+            hd=zeros((nlay,ncell));print('mfw 491', shape(hd))
         else :
             nlay,ncol,nrow = self.getGeom(core)
             ncell = ncol*nrow
@@ -805,7 +805,7 @@ class modflowReader:
             ic1 = int(ic-il*ncell)
             q = array(data[pos[ic]:pos[ic+1]])
             if q[0]!=0: 
-                print ic
+                print(ic)
                 continue # not fair but there seems to be some values where ln does not correpsond to data!!!
             q1 = q[1:ln[ic1]-i3d] # use ic1 to keep it 2d
             s0 = sign(q1)

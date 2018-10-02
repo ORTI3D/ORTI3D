@@ -5,7 +5,7 @@ Created on Mon Dec 09 22:30:16 2013
 @author: olive
 This module is to deal with transient things
 """
-from config import *
+from .config import *
 import numpy as np
 
 def makeTransientTable(core):
@@ -18,7 +18,7 @@ def makeTransientTable(core):
     # make the list of times from zones
     for mod in core.modelList:
         diczin = core.diczone[mod].dic
-        llines = diczin.keys() # gives the lines where they are zones
+        llines = list(diczin.keys()) # gives the lines where they are zones
         for line in llines: 
             nz = len(diczin[line]['name']);#print 'timeper',line
             for iz in range(nz):
@@ -51,7 +51,7 @@ def makeTransientTable(core):
     #create the list of transient zones and their values along time
     for mod in core.modelList:    
         diczin = core.diczone[mod].dic
-        llines = diczin.keys() # gives the lines where they are zones
+        llines = list(diczin.keys()) # gives the lines where they are zones
         for line in llines: # loop into var to get transient values for each zone
             #print 'timep 47',line
             dZone['Transient'][line]=False # says if the line has transient zones or not

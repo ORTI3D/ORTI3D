@@ -2,8 +2,8 @@
 from array import array as arr2
 import os,time
 #from phtDbase import *
-from mtPhtKeywords import Mt
-from geometry import *
+from .mtPhtKeywords import Mt
+from .geometry import *
 
 class mtphtWriter:
 
@@ -294,12 +294,12 @@ class mtphtWriter:
                     listC.append(value)
                     continue
                 # set background value
-                rcol=range(2,ncol) # the range of columns to be read
+                rcol=list(range(2,ncol)) # the range of columns to be read
                 if longn[i] in ['Phases','Gases']: 
                     m0=pht*0.+float(data[inde][2])
-                    rcol=range(4,ncol,2)
+                    rcol=list(range(4,ncol,2))
                 else : m0=pht*0.+float(data[inde][1])
-                if longn[i]=='Surface': rcol=range(2,ncol-3)
+                if longn[i]=='Surface': rcol=list(range(2,ncol-3))
                 for c in rcol:
                     if longn[i] in ['Phases','Gases']: 
                         m0[m1==(c/2-1)]=float(data[inde][c])
@@ -322,7 +322,7 @@ class mtphtWriter:
         listE=self.core.addin.pht3d.getDictSpecies()
         chm = self.core.addin.pht3d.Base['Chemistry']['Solutions']
         data,rows = chm['data'],chm['rows']
-        ncol=len(data[0]);rcol=range(2,ncol) # the range of columns to be read
+        ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
         pht = block(self.core,'Pht3d',line,False,None,iper).astype('int') # solution number
         for kw in['k','i','kim']:
             for e in listE[kw]:
@@ -336,7 +336,7 @@ class mtphtWriter:
         gases = self.core.addin.pht3d.Base['Chemistry']['Gases']
         data,rows = gases['data'],gases['rows']
         if len(gases['rows'])>0:
-            ncol=len(data[0]);rcol=range(2,ncol,2)
+            ncol=len(data[0]);rcol=list(range(2,ncol,2))
             for e in listE['g']:
                 names.append(e)
                 inde=rows.index(e) # finds the index of the species e
@@ -414,17 +414,17 @@ class mtphtWriter:
         if opt == 'Mt3dms' :  line = 'btn.13' # line for concentrations
         elif opt =='Pht3d' : line = 'ph.4'  # line for concentrations for ssm
         nzones = 0
-        if self.ttable.has_key(line):
+        if line in self.ttable:
             clist = self.ttable[line];#print "mfw transient",line,clist
             zones = core.diczone[opt].dic[line]
             nzones = len(zones['name'])
         lpts,buff = [],''
         
-        typ = range(nzones);npts=0
+        typ = list(range(nzones));npts=0
         for iz in range(nzones):
             #print "mfw transient",core.diczone
             xy = zones['coords'][iz];s='';lpts.append([])
-            x,y = zip(*xy)
+            x,y = list(zip(*xy))
             z=x*1 # dummy value for zone2index
             icol,irow,a = zone2index(core,x,y,z);
             irow,icol = where(fillZone(nx,ny,icol,irow,a)>0)
@@ -579,7 +579,7 @@ class mtphtWriter:
         s += '%9i %9i\n' %(0,0)
         ## nb units are useless because pht3d considers that it is always days
         Chem = core.addin.pht3d.Base['Chemistry']
-        if Chem.has_key('Rates'):
+        if 'Rates' in Chem:
             rates=Chem['Rates'];
             for nom in listE['k']:
                 iek = rates['rows'].index(nom);
@@ -594,7 +594,7 @@ class mtphtWriter:
             #if optsu.strip() == n: add=' charge'
             s += n.replace('(+','(')+add+'\n' # que reac isntant et AE, pH pe
         # kinetic immobile
-        if Chem.has_key('Rates'):
+        if 'Rates' in Chem:
             rates=Chem['Rates'];
             for nom in listE['kim']:
                 iek = rates['rows'].index(nom);
@@ -612,7 +612,7 @@ class mtphtWriter:
             s += p+'  '+str(Chem['Phases']['data'][ip][1])+' \n' # phase name + SI backgrd
         # exchanger
         for n in listE['e']: s += n+' -1 \n' 
-        if Chem.has_key('Surface'): # surface
+        if 'Surface' in Chem: # surface
             su=Chem['Surface']
             for esp in listE['s']:
                 icol=su['cols'].index('Specif_area')
@@ -626,7 +626,7 @@ class mtphtWriter:
                 su_opt = self.core.getValueFromName('Pht3d','SU_OPT')
                 if su_opt in ['no_edl','diffuse_layer','Donnan','cd_music']:
                     s+= '-'+su_opt+'\n'
-        if Chem.has_key('Kinetic_Minerals'):
+        if 'Kinetic_Minerals' in Chem:
             kp=Chem['Kinetic_Minerals']
             for nom in listE['kp']:
                 iek = kp['rows'].index(nom);

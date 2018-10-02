@@ -27,7 +27,7 @@ for each pest run, the python script is run"""
 # all imports
 import os,sys
 from pylab import loadtxt,savetxt
-from config import *
+from .config import *
 
 class Pest:
     def __init__(self,core):
@@ -43,9 +43,9 @@ class Pest:
             return self.core.dicaddin['Pback1']
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
-            for md in dic.keys() :
-                l0 = self.core.dickword[md].lines.keys()
-                dic[md] = zip(l0,[False]*len(l0))
+            for md in list(dic.keys()) :
+                l0 = list(self.core.dickword[md].lines.keys())
+                dic[md] = list(zip(l0,[False]*len(l0)))
             return dic
 
     def getDicBack2(self):
@@ -54,7 +54,7 @@ class Pest:
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             cols = ['Use','media','value','min','max','Group']
-            for md in dic.keys() :
+            for md in list(dic.keys()) :
                 #print 'pest 58 dict',self.core.dicaddin['Pback1'][md]
                 a = self.core.dicaddin['Pback1'][md]
                 lines = [x[0] for x in a if x[1]!=0]
@@ -71,9 +71,9 @@ class Pest:
             return self.core.dicaddin['Pzones1']
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
-            for md in dic.keys() :
-                l0 = self.core.diczone[md].dic.keys()
-                dic[md] = zip(l0,[False]*len(l0))
+            for md in list(dic.keys()) :
+                l0 = list(self.core.diczone[md].dic.keys())
+                dic[md] = list(zip(l0,[False]*len(l0)))
             return dic
 
     def getDicZones2(self):
@@ -88,23 +88,23 @@ class Pest:
         #print dicPzones,dicline
         cols = ['Use','media','value','min','max','Transf','Group','UseX','value','min','max',\
             'UseY','value','min','max']
-        for md in dicline.keys():
+        for md in list(dicline.keys()):
             a = dicline[md];
             llist = [x[0] for x in a if x[1]!=0] 
             for line in llist : 
-                if line not in dicPzones.keys(): dicPzones[line] = {'rows':[]}
+                if line not in list(dicPzones.keys()): dicPzones[line] = {'rows':[]}
                 dicz = self.core.diczone[md].dic[line]
                 nzone = len(dicz['name'])
                 dicout[line] = {'cols': cols,'rows': dicz['name'],'data':['a']*nzone}
                 xmn,xmx,ymn,ymx = 1e8, -1e8, 1e8, -1e8
                 for coo in dicz['coords']:
-                    x,y = zip(*coo)
+                    x,y = list(zip(*coo))
                     xmn,xmx = min(xmn,amin(x)),max(xmx,amax(x))
                     ymn,ymx = min(ymn,amin(y)),max(ymx,amax(y))
                 dx, dy = (xmx-xmn)/100,(ymx-ymn)/100
                 for i,n in enumerate(dicz['name']):
-                    val = float(dicz['value'][i]);print line,n
-                    x,y = zip(*dicz['coords'][i])
+                    val = float(dicz['value'][i]);print(line,n)
+                    x,y = list(zip(*dicz['coords'][i]))
                     xm,ym = mean(x),mean(y)
                     if n not in dicPzones[line]['rows']: # a zone has been added
                         vmin,vmax,xmin,xmax,ymin,ymax = str(val/5),str(val*5),str(xm-dx)[:6],str(xm+dx)[:6],str(ym-dy)[:6],str(ym+dy)[:6]
@@ -133,7 +133,7 @@ class Pest:
         self.pparm=[] #list of parameter scale - offset - dercom
         self.ptied=[] #tied parameters
         prunstring ='' # the base to write pest_run.txt
-        for md in dicPback.keys(): # here the keys are the models
+        for md in list(dicPback.keys()): # here the keys are the models
             #if dicPback[md] != {}: pref = md[:2].upper()
             for i,line in enumerate(dicPback[md]['rows']):
                 dp = dicPback[md]['data'][i]
@@ -142,7 +142,7 @@ class Pest:
                     self.pvalbnd.append(dp[2:5])
                     self.ptrans.append('none')
                     self.pgrp.append(dp[5])
-        for line in dicPzones.keys(): # here the keys are the lines
+        for line in list(dicPzones.keys()): # here the keys are the lines
             cols = dicPzones[line]['cols']
             i1,ix,iy = cols.index('Use'),cols.index('UseX'),cols.index('UseY')
             for i,zname in enumerate(dicPzones[line]['rows']):
@@ -194,7 +194,7 @@ class Pest:
             s+='python scriptPest2.py'
             f1=open(self.fdir+os.sep+'runmod.bat','w')
             f1.write(s);f1.close()
-            print 'runmod.bat written'
+            print('runmod.bat written')
         if self.core.dicval['Pest']['sys.1']==[1]:
             s='#!/bin/sh \n'
             s+='## \n'
@@ -212,7 +212,7 @@ class Pest:
             s+='python scriptPest2.py'
             f1=open(self.fdir+os.sep+'runmodel','w')
             f1.write(s);f1.close()
-            print 'runmodel written'
+            print('runmodel written')
         #else : ###### implement linux
         
                     
@@ -236,7 +236,7 @@ class Pest:
         self.nobs = len(self.onames)  # number of observation
         self.nobsgrp = len(unique(self.ogrp)) # number off observation group
         f1.close()
-        print 'observation read'
+        print('observation read')
 
     def writeInst(self):
     # write the instruction files (from ev)
@@ -250,7 +250,7 @@ class Pest:
             s+='['+str(self.ospec[i][:2])+str(self.onames[i])+'_'+str(i)+']'+str(11)+':'+str(22)+' '
             s+=' \n';n+=1
         f1.write(s);f1.close()
-        print 'instruction file written'
+        print('instruction file written')
 
     def writePyscript(self):
     # writes the pyton script to write data before model run
@@ -291,7 +291,7 @@ class Pest:
             s=s.replace('ppobstrans',str("f1.write('%.11f '%(sqrt(abs(d1[it,0]))))"))
         f1=open(self.fdir+os.sep+'scriptPest2.py','w')
         f1.write(s);f1.close()
-        print 'pyscripts written'
+        print('pyscripts written')
         
     def writePst(self):
     # Writes the pst file
@@ -373,7 +373,7 @@ class Pest:
             s+= 'ins/pest.ins ../model/pest_out.txt \n'
         f1=open(self.fdir+os.sep+self.fname+'.pst','w')
         f1.write(s);f1.close()
-        print 'Pst file written'
+        print('Pst file written')
         
     def writeRegPst(self):
         self.Reg = False
@@ -409,7 +409,7 @@ class Pest:
             s=s.replace('1.3   1.0e-2     1',reg3)
             f1=open(self.fname+'r.pst','w')
             f1.write(s);f1.close()
-            print 'Reg pst file written'
+            print('Reg pst file written')
 
     def writeFiles(self):
         d0,self.fname = self.core.fileDir,self.core.fileName

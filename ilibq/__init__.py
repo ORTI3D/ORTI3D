@@ -6,4 +6,4 @@ __all__ = ["orti3dGui","config",
            "geometry","core","timeperiod","Pest","myInterpol","importExport",
            "guiShow","menus","topbar",
            "valueDialog","parameters",           
-           "wxDialogs","wxValueDialog","wxParameters","wxShow","wxVisualisation"]
+           "qtDialogs","qtValueDialog","qtParameters","qtShow","qtVisualisation"]

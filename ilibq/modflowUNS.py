@@ -7,9 +7,9 @@ Created on Sun Sep 17 07:08:20 2017
 #from scipy.spatial import Voronoi
 from scipy import pi
 from operator import itemgetter
-from config import *
-from geometry import *
-from myInterpol import *
+from .config import *
+from .geometry import *
+from .myInterpol import *
 import matplotlib.tri as mptri
 
 class modflowUNS:
@@ -28,7 +28,7 @@ class modflowUNS:
         dcoo = dicD['coords'][idom]
         if dcoo[-1]==dcoo[0]: dcoo=dcoo[:-1]
         dicD['coords'][idom] = dcoo
-        if dct.has_key('lpf.8'): dicK = dct['lpf.8'] # K hydraul
+        if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
         else : dicK = {'name':[]}
         if opt=='new':
             s = gmeshString(self.core,dicD,dicK)

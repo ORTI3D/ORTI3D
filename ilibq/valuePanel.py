@@ -1,10 +1,10 @@
 import wx
 #import wx.grid as wgrid
 import os
-from modflowWriter import *
-from geometry import *
-import core as corebase
-from myDialogs import *
+from .modflowWriter import *
+from .geometry import *
+from . import core as corebase
+from .myDialogs import *
 
 class valuePanel(wx.Panel):
     """ main frame"""
@@ -47,14 +47,14 @@ class valuePanel(wx.Panel):
         """at the model loadings look into the self.val dictionnary
         and gets all value that need to be stored as keywords
         """
-        for ll in self.Mkword.lines.keys():
+        for ll in list(self.Mkword.lines.keys()):
             lk=self.Mkword.lines[ll];
             for i in range(len(lk['kw'])):
                 kwd=lk['kw'][i]
-                if ll not in self.val.keys(): continue
+                if ll not in list(self.val.keys()): continue
                 if len(self.val[ll])>i: val=self.val[ll][i]
                 else : val = lk['default'][i]
-                if type(val) in [type('r'),type(u'r')]: continue
+                if type(val) in [type('r'),type('r')]: continue
                 if lk['type'][0][:3]=='arr': continue # do not store array
                 kwd=kwd.split('(')[0]
                 exec('self.'+kwd+'='+str(val))
@@ -107,11 +107,11 @@ class valuePanel(wx.Panel):
         groups=self.Mkword.groups
         item = self.FindWindowById(evt.GetId());
         n = item.GetStringSelection().split('-')[0]; 
-        if n in lines.keys():
+        if n in list(lines.keys()):
             n=str(n);
             self.currentLine=n
             details=None;lname=lines[n]['kw'];nkw=len(lname)
-            if lines[n].has_key('detail'): details = lines[n]['detail']
+            if 'detail' in lines[n]: details = lines[n]['detail']
             vtype=lines[n]['type']
             self.boxkeys.title.SetLabel(n)
             self.boxkeys.addButtons(lname,self.val[n],details,vtype)
@@ -266,7 +266,7 @@ class boxKeys(wx.Panel):
         zkeys = ['backg','number','name','coords','media','value','type']
         #make the dialog
         ll=self.currentLine
-        if self.parent.zone.has_key(ll)==False: 
+        if (ll in self.parent.zone)==False: 
             zone = {}
             for k in zkeys : zone[k] = []
         else : zone=self.parent.zone[ll]
