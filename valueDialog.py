@@ -50,7 +50,7 @@ class valueDialog:
                 if type(val) in [type('r'),type('r')]: continue
                 if lk['type'][0][:3]=='arr': continue # do not store array
                 kwd=kwd.split('(')[0]
-                exec('self.'+kwd+'='+str(val))
+                setattr(self,kwd,str(val))  # OA 3/10/18
     
     def changeStoredValues(self):
         """change the value of the keywords stored in the model"""
@@ -61,7 +61,7 @@ class valueDialog:
             if len(a)>=1: kwd=a[0]
             val=self.val[l][i]
             if type(val) not in [type('r'),type('r')]:
-                exec('self.'+kwd+'='+str(val));#print 'valdlg 67',l,i,kwd,val,self.LAYWET
+                setattr(self,kwd,str(val)); # OA 3/10/18
 
     def testConditions(self,lstL):
         """ test if the lines indices given in lstL satisfy the condition"""
@@ -134,8 +134,7 @@ class valueDialog:
             txt=str(a[0])+'('
             b=a[1][:-1].split(',')
             for s in b:
-                exec('n=self.'+s)
-                txt+=str(n)+','
+                txt+=str(getattr(self,s))+','  # OA 3/10/18
             txt=txt[:-1]+')'
         #make the choice lists
         curVal = value

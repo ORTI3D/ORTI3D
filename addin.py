@@ -104,7 +104,7 @@ class addin:
         name = 'InitialChemistry' # to set specific initial chemistry
         self.core.dicaddin[name] = {'name':'','formula':'value =','tstep':''}
         self.grd = makeGrid(self.core,self.core.dicaddin['Grid'])
-        self.mesh = 'None'  # OA added 25.9.18
+        self.mesh = None  # OA added 25.9.18
         self.setChemType()
         self.setMfUnstruct()
         self.fit = instant(self.gui,self.core)
@@ -397,7 +397,7 @@ class addin:
         if retour != None:
             txt = retour #dialg.GetTextAsList()
             self.lastBatch=txt
-            txt1=txt.replace('core','self.core');print(type(txt1))
+            txt1=txt.replace('core','self.core');#print(type(txt1))
             exec(txt1)
         else : return
 
@@ -408,17 +408,17 @@ class addin:
         self.txt+= '\n#name=Ca, value=ones((25,30))*5e-4'
         self.txt+= '\n#name=All, value=importUCN, tstep=0'
         self.txt+= '\n#name=Hfo_w, value=core.importLayerValues(\'Hfo_layers.txt\',\'Hfo_w\')'
-        print(self.txt)
+        #print(self.txt)
         dialg = self.dialogs.textDialog(self.gui,'Initial chemistry',(500,300),self.txt)
         retour = dialg.getText();#print retour text() or currentText()
         if retour != None:
-            print('ok')
+            #print('ok')
             #txt = dialg.getText()
             name = self.txt.split('\n')[0].split('=')[1].strip()
             f0 = self.txt.split('#')[0]
             formula = f0.split('\n')[1]
             tstep = f0.split('\n')[2].split('=')[1].strip()
-            print(name, formula, tstep)
+            #print(name, formula, tstep)
             self.core.dicaddin['InitialChemistry']={'name':name,'formula':formula,'tstep':tstep}
         else : return
         #dialg.Destroy()

@@ -37,6 +37,7 @@ class Core:
                 'OpgeoFlow','OpgeoTrans','Sutra','Observation','Pest']
         self.gui = gui
         self.baseDir = os.getcwd(); # OA 11/9/18 2 lines below modfiied
+        #gui.iface.messageBar().pushMessage('core l40 gtyp',gui.gtyp)
         if gui!=None:
             if gui.gtyp=='qgis': self.baseDir= self.gui.plugin_dir
         self.dicval = {}
@@ -494,8 +495,10 @@ class Core:
                 if numtype[3:] in ['float','int']: # case of only one value
                     value = block(self,modName,line,intp=False) #value = ones(size)*valIn
         elif vtype in ['formula','interpolate']: # case of a formula
-            exec(self.dicformula[modName][line][0])
-            value = array(value,ndmin=3) ; #print 'core 501',amax(value)# all spatial arrays are three dim
+            dct = {} # modif OA 3/10/18
+            form = 'from scipy import *;'+self.dicformula[modName][line][0];print(form)
+            exec(form,dct) # modif OA 3/10/18
+            value = array(dct['value'],ndmin=3) ; # modif OA 3/10/18# all spatial arrays are three dim
         elif vtype=='array':
             value = self.dicarray[modName][line]
             if type(value)==type([5]):value = value[0]

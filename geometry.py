@@ -382,8 +382,8 @@ def blockRegular(core,modName,line,intp,opt,iper):
         m0 = ones((nlayers,ny,nx))
         lay = 0
         for im in range(nmedia): # 3D case, includes 2D
-            if intp[im] :
-                a = zone2interp(core,modName,line,im,opt)
+            if intp[im]>0 :
+                a = zone2interp(core,modName,line,im,opt,ityp=intp[im])
             else :
                 a = zone2grid(core,modName,line,im,opt,iper)
             for il in range(int(lilay[im])): # several layers can exist in each media
@@ -845,13 +845,14 @@ def writeVTKstruct(core,data):
     
 ###################### INTERPOLATION ####################
 
-def zone2interp(core,modName,line,media,option,refer=None):
+def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
     """ interpolation case from points or zones to matrix
     option interp. ID or interp. Kr
     for interp. Kr, you can add range and type : 'interp. Kr;vrange=2.;vtype=\'spher\''
     type are presently spher for spherical and gauss for gaussian
     if refer is not None, it is a reference grid and the interpolation will be done
-    on the difference btw the present variable and the reference"""
+    on the difference btw the present variable and the reference
+    itpy = 1 normal interpolation, ityp=2 log10"""
     #print 'interp 512', line,media, option
     # find the interpolation options
     vrange,vtype,variable = None,None,None
@@ -862,8 +863,7 @@ def zone2interp(core,modName,line,media,option,refer=None):
     vbase=float(core.dicval[modName][line][media])
     # create the vector of points on which interpolation will be done
     if modName[:5] == 'Opgeo':
-        mod0 = modName[:-4].lower()
-        exec('mesh = core.addin.'+mod0) # for other case of meshes
+        mesh = core.addin.opgeo  # OA 3/10/18
         xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
     else :
         nx,ny,xv,yv = getXYvects(core);nz=0
@@ -918,12 +918,14 @@ def zone2interp(core,modName,line,media,option,refer=None):
         m2 = m0+m1 
 
     elif option =='interp. Kr':
-        print('krige vrange,vtype',vrange,vtype)
+        #print('krige vrange,vtype',vrange,vtype)
         mxdist = sqrt((max(xc)-min(xc))**2+(max(yc)-min(yc))**2)
         if vrange==None: rg = mxdist/4.
         else : rg = vrange
+        if ityp==2: zpt=log10(zpt)
         if len(xpt)<5: m2 = m
         else : m2 = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
+        if iytp==2 : m2 = 10**m2
         
     elif option=='interp. Th': # Thissen polygons
         print('thiessen')
@@ -944,7 +946,7 @@ def zone2interp(core,modName,line,media,option,refer=None):
         if option=='interp. Th':   #smoothing of thiessen polys     
             for n in range(vrange): m2 = smoo2d(m2)
 
-    m2 = clip(m2,amin(zpt)*0.9,amax(zpt)*1.1);#print amin(amin(m2))
+    if ityp!=2: m2 = clip(m2,amin(zpt)*0.9,amax(zpt)*1.1);#print amin(amin(m2))
 
     return m2
     

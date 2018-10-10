@@ -262,7 +262,7 @@ class guiShow:
                 if e in formula0: 
                     rp ='self.getArray3D(\'Chemistry\',\'Species\','+tsp+',\''+e+'\')'
                     formula1 = formula1.replace(e,rp)
-            exec('arr3 ='+formula1);#print arr3
+            arr3 =eval(formula1); # OA  3/10/18
         return self.getArray2D('Chemistry',arr3,plane,layer)        
         
     def get3Dvectors(self,tstep):

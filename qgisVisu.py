@@ -9,8 +9,8 @@ and Qgis
 from .geometry import *
 from .config import *
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
 from osgeo import ogr
 
@@ -74,7 +74,7 @@ class qgisVisu:
         if self.core.mfUnstruct: 
             self.mesh = self.core.addin.mfU
         layer = QgsVectorLayer('Polygon', 'Grid', "memory")
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        QgsProject.instance().addMapLayer(layer)
         layer.startEditing()
         layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
         layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
@@ -128,7 +128,8 @@ class qgisVisu:
                 layer = QgsVectorLayer(tp+"?crs=" + crs.authid(), layerName, "memory")#, "delimitedtext")
             else:
                 layer = QgsVectorLayer(tp, layerName, "memory")
-            QgsMapLayerRegistry.instance().addMapLayer(layer)
+            #QgsMapLayerRegistry.instance().addMapLayer(layer)
+            QgsProject.instance().addMapLayer(layer) # OA added 2/10
             layer.startEditing()
             layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
             layer.dataProvider().addAttributes( [QgsField("name", QVariant.String) ] )
@@ -203,7 +204,7 @@ class qgisVisu:
         #self.dialogs.onMessage(self.gui,name+' '+str(value))
         #self.layer.startEditing()
         layer.beginEditCommand("modify")
-        f.setAttributes([nf,name,value,media,0])
+        f.setAttributes([name,value,media,0]) # OA 2/10 nf removed
         coords = dicz.getValue(line,'coords',nf)
         lcoord = [QgsPoint(float(c[0]),float(c[1])) for c in coords]
         f.setGeometry(QgsGeometry.fromPolyline(lcoord));
@@ -235,7 +236,7 @@ class qgisVisu:
         nnodes,nc = shape(nodes)
         for ir in range(nnodes):
             feat = QgsFeature();
-            feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(nodes[ir,0],nodes[ir,1])));
+            feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(nodes[ir,0],nodes[ir,1])));
             feat.setAttributes([ir,0.])
             provider.addFeatures([feat]);
         layer.commitChanges()
@@ -282,22 +283,22 @@ class qgisVisu:
                 # add zones in the layer(s)
                 for i in range(nz):
                     coords = dicz.getValue(line,'coords',i)
-                    lcoord = []
-                    for pt in coords:
-                        a=QgsPoint(float(pt[0]),float(pt[1]))
-                        lcoord.append(a)
                     name = str(dicz.getValue(line,'name',i))
                     try: value = float(dicz.getValue(line,'value',i))
                     except ValueError: value=0
                     media = dicz.getValue(line,'media',i)
                     feat = QgsFeature()
-                    if len(lcoord)==1:
-                        feat.setGeometry(QgsGeometry.fromPoint(lcoord[0]));
+                    if len(coords)==1:
+                        pt = coords[0]
+                        feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(float(pt[0]),float(pt[1]))));
                         provider = providerList[typList.index('Point')]
                     else :
-                        feat.setGeometry(QgsGeometry.fromPolyline(lcoord));
+                        lcoords = []
+                        for pt in coords:
+                            lcoords.append(QgsPoint(float(pt[0]),float(pt[1])))
+                        feat.setGeometry(QgsGeometry.fromPolyline(lcoords));
                         provider = providerList[typList.index('LineString')]
-                    feat.setAttributes([i,name,value,media,0])
+                    feat.setAttributes([name,value,media,0])
                     provider.addFeatures([feat])
                     
     def findTypList(self,modName,line):
@@ -316,7 +317,7 @@ class qgisVisu:
         """creates a coutour or image object using the Grid layer 
         of Qgis"""
         allLayers = self.canvas.layers()
-        colorRamp = QgsVectorGradientColorRampV2.create({'color1':'255,0,0,255', 'color2':'0,0,255,255','stops':'0.25;255,255,0,255:0.50;0,255,0,255:0.75;0,255,255,255'})
+        colorRamp = QgsGradientColorRamp.create({'color1':'255,0,0,255', 'color2':'0,0,255,255','stops':'0.25;255,255,0,255:0.50;0,255,0,255:0.75;0,255,255,255'})
         X,Y,Z = data
         d0,i = {},1
         if self.mesh != None:
@@ -324,10 +325,10 @@ class qgisVisu:
                     d0[i]={0:i,1:float(Z[i])}                
             for layer in allLayers:
                 if layer.name()=='NodeResults': break
-            symbol = QgsMarkerSymbolV2()
-            mode = QgsGraduatedSymbolRendererV2.Jenks
-            renderer = QgsGraduatedSymbolRendererV2.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
-            renderer.setMode( QgsGraduatedSymbolRendererV2.Custom )
+            symbol = QgsMarkerSymbol()
+            mode = QgsGraduatedSymbolRenderer.Jenks
+            renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
+            renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
         else :
             ny,nx = shape(Z)
             for ix in range(nx):
@@ -336,15 +337,15 @@ class qgisVisu:
                     i+=1
             for layer in allLayers:
                 if layer.name()=='Grid': break
-            symbol = QgsFillSymbolV2()
-            mode = QgsGraduatedSymbolRendererV2.Jenks
-            renderer = QgsGraduatedSymbolRendererV2.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
-            renderer.setMode( QgsGraduatedSymbolRendererV2.Custom )
+            symbol = QgsFillSymbol()
+            mode = QgsGraduatedSymbolRenderer.Jenks
+            renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
+            renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
         pr = layer.dataProvider();
         #QgsMessageLog.logMessage('type layer '+str(layer.name())+' '+str(d0), 'MyPlugin')
         layer.startEditing()
         pr.changeAttributeValues(d0)
-        layer.setRendererV2(renderer)        
+        layer.setRenderer(renderer)        
         layer.commitChanges()
         layer.triggerRepaint()
         self.iface.mapCanvas().refresh() 

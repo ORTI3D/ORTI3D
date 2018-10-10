@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'ui_file.ui'
 #
 # Created: Sat Feb 15 15:09:21 2014
-#      by: PyQt4 UI code generator 4.8.6
+#      by: PyQt5 UI code generator 4.8.6
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *

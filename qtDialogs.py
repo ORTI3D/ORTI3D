@@ -3,7 +3,7 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.Qt import QFrame
-import qwt
+#import qwt
 from .config import *
 from .geometry import *
 from PyQt5.QtWidgets import *
@@ -56,7 +56,7 @@ class genericDialog(QDialog):
         self.glWidget.setGeometry(QRect(5, 5, self.screenShape.width()*.15, nb*20+y0*160+30))
         #self.glWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gl = QGridLayout(self.glWidget)
-        self.gl.setMargin(2)
+        self.gl.setContentsMargins(1,1,1,1) # OA 3/10/18
         self.gl.setSpacing(2)
         i=0;
         self.item = [0]*nb
@@ -103,7 +103,7 @@ class genericDialog(QDialog):
         self.glWidget2 = QWidget(self)
         self.glWidget2.setGeometry(QRect(5, nb*20+y0*160+30, self.screenShape.width()*.15, 40))
         self.gl2 = QGridLayout(self.glWidget2)
-        self.gl2.setMargin(0)
+        self.gl2.setContentsMargins(0,0,0,0)
         self.gl2.addWidget(self.buttonBox) #,nb,1,2,1)
         self.buttonBox.accepted.connect(self.accept1)
         self.buttonBox.rejected.connect(self.reject1)
@@ -171,7 +171,7 @@ class myNoteBookCheck(QDialog):
             pg = QWidget(nb)
             lay = QGridLayout(pg)
             self.layouts[n]= lay
-            lay.setMargin(0);lay.setSpacing(0)
+            lay.setContentsMargins(0,0,0,0);lay.setSpacing(0)
             self.dwidget[n] = [0]*nbChk
             for i in range(nbChk):
                 ic = mod(i,4);il = i/4
@@ -602,7 +602,7 @@ class dialogContour(QDialog):
         self.glWidget = QWidget(self)
         self.glWidget.setGeometry(QRect(5, 5, 250, 10*35+50))
         self.gl = QGridLayout(self.glWidget)
-        self.gl.setMargin(2)
+        self.gl.setContentsMargins(1,1,1,1)
         self.gl.setSpacing(2)
         # boite pour calcul automatique
         txt = QLabel(self.glWidget);txt.setText('Automatic')
@@ -694,7 +694,7 @@ class instantFitDialog(QDialog):
         self.setWindowTitle("Instant fit")
         self.glWidget = QWidget(self)
         self.gl = QGridLayout(self.glWidget)
-        self.gl.setMargin(2)
+        self.gl.setContentsMargins(1,1,1,1)
         self.gl.setSpacing(2)
         txt = QLabel(self.glWidget);txt.setText('type') 
         self.gl.addWidget(txt,0,0,1,1)

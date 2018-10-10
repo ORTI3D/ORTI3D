@@ -7,10 +7,10 @@ Created on Thu Feb 20 23:43:54 2014
 from .geometry import *
 
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
-from PyQt4 import *
+from PyQt5 import *
 
 class qtVisu:
     def __init__(self,iface,gui,core):

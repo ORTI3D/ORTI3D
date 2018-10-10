@@ -344,7 +344,6 @@ class modflowWriter:
         thick = zb[:-1]-zb[1:]
         ka=ones(len(ilay))*0.;#print 'mfi permsc',shape(ka),shape(K),ilay,irow,icol
         mh = self.core.addin.mesh
-        ncell = mh.getNumber('elements')
         for i in range(len(ilay)):
             if self.core.addin.getDim() in ['Xsection','Radial']: 
                 vol=dx[icol[i]]*dy[ny-ilay[i]-1]
@@ -353,6 +352,7 @@ class modflowWriter:
                     vol=dx[icol[i]]*dy[irow[i]]*thick[ilay[i],irow[i],icol[i]]
                     ka[i]=K[ilay[i],irow[i],icol[i]]*vol
                 else : 
+                    ncell = mh.getNumber('elements') # OA 3/10/18 moved from above
                     irow1 = mod(irow[i],ncell)
                     vol = mh.carea1[irow[i]]*thick[ilay[i],irow1] # irow is the cell nb
                     ka[i] = K[ilay[i],irow1*vol]

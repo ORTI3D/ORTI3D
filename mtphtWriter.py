@@ -74,10 +74,9 @@ class mtphtWriter:
                 'rct.1']
         lexceptions.extend(['uzt.'+str(a) for a in range(2,11)])
         for grp in self.core.getUsedModulesList('Mt3dms'):
-            if grp=='RCT' and self.rct==0: continue
+            if grp == 'RCT' and self.rct==0: continue
             if grp == 'SSMs': continue
-            ext=grp
-            f1=open(self.fDir+os.sep+opt +'.'+ ext.lower(),'w')
+            f1=open(self.fDir+os.sep+opt +'.'+ grp.lower(),'w')
             llist=self.Mkey.groups[grp];#print n1,name
             for ll in llist:
                 cond=self.Mkey.lines[ll]['cond'];#print 'mtw 72',ll
@@ -402,13 +401,14 @@ class mtphtWriter:
         mxpts = (nBC+nwells)*self.nper;#print type(BC),nBC,mxpts,self.nper
         if opt=='Pht3d' : self.createConcStrings()
         # writes first line with flags
+        flg = {}
         for n in ['WEL','DRN','RCH','EVT','RIV','GHB']:
             if n in core.getUsedModulesList('Modflow'): 
                 f1.write(' T')
-                exec('i'+n+'=True')
+                flg['i'+n] =True # modfi OA 3/10
             else : 
                 f1.write(' F')
-                exec('i'+n+'=False')
+                flg['i'+n] = False # modfi OA 3/10
         f1.write('\n')
         
         if opt == 'Mt3dms' :  line = 'btn.13' # line for concentrations
@@ -460,7 +460,7 @@ class mtphtWriter:
         for ip in range(self.nper):
             #print 'mfw trans',ip
             npts, s0,s1 = 0, '',''
-            if iRCH:
+            if flg['iRCH']: # modfi OA 3/10
                 if opt =='Mt3dms' :
                     rch = block(self.core,opt,'btn.23',intp=False,opt=None,iper=ip)
                     s0 = '    1\n' + self.formatBlockMt3d(rch[0],'rech')
@@ -469,7 +469,7 @@ class mtphtWriter:
                     nsp, s0 = len(rch),'    1\n'
                     for i in range(nsp):
                         s0 += self.formatBlockMt3d(rch[i][0],names[i])
-            if iEVT:
+            if flg['iEVT']: # modfi OA 3/10
                 s0 += '   1\n'
                 for i in range(self.nesp):
                     s0 += '       0       0        #evt\n'
@@ -661,7 +661,7 @@ class mtphtWriter:
         s = ''
         if len(shape(m))<=1: return self.formatVecMt3d(m,name)
         [l,c] = shape(m);ln=3;a=str(type(m[0,0]))
-        if a[13:16]=='int': typ='I'
+        if 'int' in a: typ='I'  # OA 3/10/18
         else : typ='G'
         if amin(amin(m))==amax(amax(m)):
             if typ=='I':s = '         0 %8i #'%(amin(amin(m))) +name[:6]+'\n'

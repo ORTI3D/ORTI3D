@@ -85,7 +85,7 @@ class impFile:
                 if kname not in list(zonkwd.keys()): continue
                 modName,line = zonkwd[kname]
                 k0 = k.getElementsByTagName("content")[0].childNodes[0].data
-                exec('zgroup ='+k0)
+                zgroup = eval(k0)
                 if len(zgroup)==0 : continue
                 # kdata is a dict of zones 
                 diczone = self.core.diczone[modName]

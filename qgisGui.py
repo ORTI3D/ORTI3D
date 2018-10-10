@@ -3,22 +3,20 @@
 # Form implementation generated from reading ui file 'ui_file.ui'
 #
 # Created: Sat Feb 15 15:09:21 2014
-#      by: PyQt4 UI code generator 4.8.6
-
-
-
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+#      by: PyQt5 UI code generator 4.8.6
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 import os
-from .parameters import BaseParms
+from .parameters import *
 from .menus import *
 from .qtDialogs import *
 from .geometry import *
-from .qtVisu import *
+from .qgisVisu import *
 from .core import *
 from .config import *
-from .guiShow import guiShow
+from .guiShow import *
+from .topBar import *
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
@@ -26,8 +24,10 @@ class Ui_Main(object):
         Main.resize(200,560)
         Main.setWindowTitle("qORTi3d")
         self.gui = QWidget(Main)
+        self.gui.iface = iface
         self.gui.setGeometry(QRect(5, 15, 195, 480)) #left,top,w,h
-        self.gui.gtyp,self.gui.plugin_dir = 'qt',plugin_dir
+        self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
+        self.gui.mainDir = plugin_dir
         core = Core(self.gui)
         cfg = Config(core)
         self.dialogs = cfg.dialogs
@@ -38,14 +38,15 @@ class Ui_Main(object):
         self.gui.on3D,self.gui.onRCT,self.gui.onSetMediaNb = self.on3D,self.onRCT,self.onSetMediaNb
         
         core.addin.setGui(self.gui)
-        self.gui.visu = qtVisu(iface,self.gui,core)
+        self.gui.visu = qgisVisu(iface,self.gui,core)
         
         self.toolBox = QToolBox(self.gui)
         self.toolBox.setGeometry(QRect(0, 0, 195, 480))
 
         self.page0 = QWidget()        
-        self.pFile = Ui_File()
-        self.pFile.setupUi(self.page0,self.gui,core)
+        self.gui.file = Ui_File()
+        self.gui.addMenu = self.gui.file.addMenu
+        self.gui.file.setupUi(self.page0,self.gui,core)
         self.toolBox.addItem(self.page0,"Files and tools")
         
         self.page1 = QWidget()
@@ -62,16 +63,29 @@ class Ui_Main(object):
         self.gui.dlgShow = Ui_Show()
         self.gui.dlgShow.setupUi(self.page3,self.gui,core)
         self.toolBox.addItem(self.page3,"Results")
-
+        
         QMetaObject.connectSlotsByName(Main)
             
-    def on3D(self,dm): pass
+    def on3D(self,dm): 
+        """if true the model is 3D, false : 2D"""
+        bu3D = self.pParameters.dictBox['1.Model'].hlWidget.findChild(QPushButton,'Ad_3D')
+        if dm : bu3D.setEnabled(True)
+        else : bu3D.setEnabled(False)
+        
     def onRCT(self,bool): pass # for compatibility with wx
-    def onSetMediaNb(self,nbM,nbL): pass
+    def onSetMediaNb(self,nbM,nbL):
+        self.gui.varBox.choice3D.clear()
+        for i in range(nbM): self.gui.varBox.choice3D.addItem(str(i))
+        self.gui.dlgShow.setNames('Model_Layer_L',list(range(nbL)))
+        
+    def resetCurVar(self):
+        global curVar
+        curVar = {}        
         
 class Ui_File(object):
     def setupUi(self,File,gui,core):
         self.menus = Menus(gui,core)
+        self.added = {}
 #        File.setObjectName("File")
         self.File,self.gui,self.core = File,gui,core
         
@@ -83,7 +97,7 @@ class Ui_File(object):
 
         llabel=['File','Import','Export','Add_in','?']
         litems=[["","New","Open","Save", "Save as"],["","Solutions","User Species"],
-                ["","Current variable"],[],["","Help","Download new v.","Back to old v."]]
+                ["","Current variable"],[],["","Help","Download stable","Download develop"]]
         self.combo= []
         for i,lab in enumerate(llabel):
             label = QLabel(self.gridLayoutWidget)
@@ -96,21 +110,30 @@ class Ui_File(object):
         
         QMetaObject.connectSlotsByName(File)
         #self.core.openModel('E://ipht3d//exv2//test','iqexer1')
+        self.core.addin.initMenus()
+        
+    def addMenu(self,num,menuName,methd):
+        self.combo[3].addItem(menuName)
+        #self.combo[3].activated['QString'].connect(self.onClick)
+        self.added[menuName] = methd
 
     def onClick(self):
         obj = self.File.sender()
         n = obj.currentText();
         #self.gui.dialogs.onMessage(self.gui,n)
         if n=="New": self.menus.OnNew()
-        if n=="Open": self.menus.OnOpen()
-        if n=="Save": self.menus.OnSave()
-        if n=="Save as": self.menus.OnSaveAs()
-        if n=='Solutions': self.menus.OnImportSolutions()
-        if n=='User Species': self.menus.OnImportUserSpecies()
-        if n=='Current variable': self.menus.OnExportVar()
-        if n=='Help': self.menus.OnHelp()
-        if n=='Download new v.':self.menus.OnDownload()
-        if n=='Back to old v.': self.menus.OnBackVersion()
+        elif n=="Open": self.menus.OnOpen()
+        elif n=="Save": 
+            QgsProject.instance().writeEntry('qORTI3d', 'file', self.core.fileName) # to use to save project
+            self.menus.OnSave()
+        elif n=="Save as": self.menus.OnSaveAs()
+        elif n=='Solutions': self.menus.OnImportSolutions()
+        elif n=='User Species': self.menus.OnImportUserSpecies()
+        elif n=='Current variable': self.menus.OnExportVar()
+        elif n=='Help': self.menus.OnHelp()
+        elif n=='Download stable':self.menus.OnDownloadLast()
+        elif n=='Download develop': self.menus.OnDownloadDev()
+        else : self.added[n]() # the method shall be in selfadded from addin
 
 class Ui_Parameters(object):
     def setupUi(self, Parameters,gui,core,plugin_dir):
@@ -119,6 +142,7 @@ class Ui_Parameters(object):
         Parameters.setObjectName("Parameters")
         Parameters.resize(197, 348)
         Parameters.setWindowTitle( "Parameters")
+        self.ignoreButtons = ['Map']
         self.dictBox={}
         skey = list(self.base.groups.keys()); skey.sort()
         for i,g in enumerate(skey): 
@@ -141,8 +165,9 @@ class Box:
         #self.parent.gui.dialogs.onMessage(self.parent.gui,os.listdir(dirutils)[0])
 
         butA = parent.core.addin.addButton(self,gr) # a list of buttons
-        if butA !=None:
+        if butA !=None: # here are hte buttons that appear before the model ones
             for short,name,pos in butA : 
+                if short in self.parent.ignoreButtons : continue
                 if pos==1 : continue
                 buta = QPushButton(self.hlWidget)
                 shortName = 'Ad_'+short+'.gif'
@@ -159,6 +184,7 @@ class Box:
 
         for i in range(len(parent.base.groups[gr])):
             n=parent.base.groups[gr][i]
+            if n in self.parent.ignoreButtons : continue
             shortName = gr[2:4]+'_'+n
             but = QPushButton(self.hlWidget)
             but.setToolTip(n)
@@ -169,8 +195,9 @@ class Box:
             but.clicked.connect(self.onButton)
             self.hl.addWidget(but)
 
-        if butA !=None:
+        if butA !=None: # here are the buttons that appear after the model ones
             for short,name,pos in butA : 
+                if short in self.parent.ignoreButtons : continue
                 if pos==0 : continue
                 buta = QPushButton(self.hlWidget)
                 shortName = 'Ad_'+short+'.gif'
@@ -193,9 +220,10 @@ class Box:
 class Ui_Var(object):
     def setupUi(self, Var,gui,core):
         self.gui,self.core = gui,core
+        self.base = BaseTop(gui,core)
         Var.setObjectName("Var")
         #Var.resize(177, 104)
-        Var.setWindowTitle(QApplication.translate("Var", "Var", None, QApplication.UnicodeUTF8))
+        Var.setWindowTitle("Var")
         self.gridLayoutWidget = QWidget(Var)
         self.gridLayoutWidget.setGeometry(QRect(0, 0, 180, 180))
         #self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
@@ -203,7 +231,7 @@ class Ui_Var(object):
         self.gridLayout.setMargin(0)
         #self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
 
-        categories = ['Modflow series','Min3p','OpGeo']
+        categories = ['Modflow series','Min3p','Opgeo']
         label = QLabel(self.gridLayoutWidget)
         label.setText("Category")
         self.gridLayout.addWidget(label, 0, 0, 1, 1)
@@ -237,6 +265,7 @@ class Ui_Var(object):
         label.setText("Media")
         self.gridLayout.addWidget(label, 4, 0, 1, 1)
         self.choice3D = QComboBox(self.gridLayoutWidget)
+        self.choice3D.addItems(['0'])
         self.choice3D.activated['QString'].connect(self.onChoiceMedia)
         self.gridLayout.addWidget(self.choice3D, 4, 1, 1, 1)
 
@@ -262,7 +291,7 @@ class Ui_Var(object):
         self.blind = {}
         for k in self.core.modelList: self.blind[k] = []
         self.blind['Mt3dms']=['btn.9','btn.10','uzt.3','uzt.4']
-        self.currentMedia = 0
+        self.gui.currentMedia = 0
 
     def retranslateUi(self, Var): pass
     
@@ -277,9 +306,9 @@ class Ui_Var(object):
         self.chooseCategory(c0)
         
     def chooseCategory(self,c0):
-        self.currentCategory = c0;#print c0,self.core.modelList
-        lshort = ['Sutra','Min3p','Fipy']
-        lshort2 = ['Sutr','Min3','Fipy']
+        self.gui.currentCategory = c0;#print c0,self.core.modelList
+        lshort = ['Sutra','Min3p','Opgeo']
+        lshort2 = ['Sutr','Min3','Opge']
         if c0 in lshort:
             lmodels = [x for x in self.core.modelList if x[:4]==c0[:4]]
         else :
@@ -294,21 +323,21 @@ class Ui_Var(object):
             m1 = m0.lower();mod = m1[0].upper()+m1[1:];
         else :
             mod = m0
-        self.currentModel = mod
+        self.gui.currentModel = mod
         lmodules = self.core.addin.getUsedModulesList(mod); #print 'topbar,l84',lmodules# to set the groups
         self.setChoiceList(self.choiceG,lmodules)
         
     def onChoiceGroup(self,evt):
         curGroup = self.choiceG.currentText()
         self.choiceL.clear()
-        if curGroup not in list(self.gui.linesDic[self.currentModel].keys()) : return
-        lines = self.gui.linesDic[self.currentModel][curGroup]
-        indx = self.testConditions(self.currentModel,lines)
-        lcomm = self.gui.linesCommDic[self.currentModel][curGroup]
+        if curGroup not in list(self.gui.linesDic[self.gui.currentModel].keys()) : return
+        lines = self.gui.linesDic[self.gui.currentModel][curGroup]
+        indx = self.testConditions(self.gui.currentModel,lines)
+        lcomm = self.gui.linesCommDic[self.gui.currentModel][curGroup]
         for il in indx: 
-            if lines[il] in self.blind[self.currentModel]: continue
+            if lines[il] in self.blind[self.gui.currentModel]: continue
             self.choiceL.addItem(lines[il]+' '+lcomm[il])
-        self.currentLine = lines[0]
+        self.gui.currentLine = lines[0]
         
     def testConditions(self,modName,lstL):
         """ test if the lines indices given in lstL sastify the condition"""
@@ -321,62 +350,46 @@ class Ui_Var(object):
 
     def onChoiceLine(self,evt):
         line = str(self.choiceL.currentText().split()[0])
-        self.currentLine = line
-        media = self.currentMedia
-        vallist = self.core.dicval[self.currentModel][line];#print 'topbar valist',vallist
+        self.gui.currentLine = line
+        media = self.gui.currentMedia
+        vallist = self.core.dicval[self.gui.currentModel][line];#print 'topbar valist',vallist
         nval = len(vallist)
         nmedia = getNmedia(self.core)
         if nval<nmedia : vallist.extend([vallist[0]]*(nmedia-nval))
         self.backg.setText(str(vallist[media])) # set to the new value
-        typ = self.core.dictype[self.currentModel][line][0]
+        typ = self.core.dictype[self.gui.currentModel][line][0]
         i = self.choiceT.findText(typ)
         self.choiceT.setCurrentIndex(i)
             
     def onChoiceMedia(self,evt):
         """changes the media in visualization and stores the current media"""
         media = self.choice3D.currentIndex()
-        self.currentMedia = media
-        line = self.currentLine
-        vallist = self.core.dicval[self.currentModel][line]
-        self.backg.SetValue(str(vallist[media]))
+        self.gui.currentMedia = media
+        line = self.gui.currentLine
+        vallist = self.core.dicval[self.gui.currentModel][line]
+        self.backg.setText(str(vallist[media]))
+        self.gui.visu.showVar(line,media)
         
     def onBackOk(self):
-        line = self.currentLine
-        media = self.currentMedia
-        self.core.setValue(self.currentModel,line,media,float(self.backg.text()))
+        line = self.gui.currentLine
+        media = self.gui.currentMedia
+        self.core.setValue(self.gui.currentModel,line,media,float(self.backg.text()))
         
     def onChoiceType(self,evt):
-        line = self.currentLine
+        line,modName = self.gui.currentLine,self.gui.currentModel
         choice = str(self.choiceT.currentText()); #print choice
-        self.core.dictype[self.currentModel][line] = [choice]
-        if choice =='zone': self.gui.visu.createLayer(line)
-        elif choice == 'import': self.onImport(evt)
+        self.core.dictype[modName][line] = [choice]
+        typList = self.gui.visu.findTypList(modName,line)
+        if choice =='zone': self.gui.visu.createLayer(modName,line,typList)
+        elif choice == 'interpolate': self.base.onInterpolate()
         elif choice == 'edit': self.onEdit(evt)
-        elif choice == 'formula': self.onFormula(evt)
+        elif choice == 'formula': self.base.onFormula(evt)
         elif choice == 'importZones': 
-            self.onImportZones(evt)
-            self.core.dictype[self.currentModel][line] = ['zone']
+            self.base.onImportZones(evt)
+            self.core.dictype[modName][line] = ['zone']
         
-    def onImportZones(self,evt):
-        fdialg = myFileDialogOpen()
-        fileDir,fileName = fdialg.getFile(self.gui,evt,'choose zone file','*.txt')
-        self.core.importZones(fileDir,fileName,self.currentModel,self.currentLine)
-
     def onEdit(self,evt):
         pass
-
-    def onFormula(self,evt):
-        """opens a dialog to ask for python formula and executes them
-        to get the value of the given keyword in the last line
-        """
-        ll = self.currentLine
-        formula = self.core.getFormula(self.currentModel,ll)[0]; #print formula
-        dialg = textDialog(self,'input python formula',(340,300),str(formula))
-        retour = dialg.getText()
-        if retour != None:
-            formula = retour;
-            self.core.dicformula[self.currentModel][ll]=[str(formula)]
-            self.core.dictype[self.currentModel][ll]=['formula']
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
@@ -421,8 +434,8 @@ class Ui_Show(object):
         if tag=='B': item.setCheckState(bool)
 
 class showBox:
-    def __init__(self,Show,parent,names,g,pos):
-        self.Show,self.parent = Show,parent
+    def __init__(self,Show,guiShow,names,g,pos):
+        self.Show,self.guiShow = Show,guiShow
         self.group = QGroupBox(Show)
         self.group.setTitle(g)
         ln = len(names)
@@ -458,23 +471,24 @@ class showBox:
         item = self.Show.sender()
         n = item.objectName(); 
         [group,name,tag]=n.split('_');#print 'guish onclick',group,name,tag
-        if tag=='L': 
+        if tag == 'L': 
             if name in ['Layer','Tstep']: 
                 retour = item.currentIndex()
             else :
                 retour = item.currentText() # case of list, retour is the name
-        else: retour = item.isChecked() # a check box retour is True or False 
-        if name in self.parent.Vtypes['Array']: self.parent.resetDicContour()
-        self.parent.dicVisu[group][name]=retour
-        nz,ny,nx = shape(self.parent.core.Zblock)
+        else: 
+            retour = item.isChecked() # a check box retour is True or False 
+        if name in self.guiShow.Vtypes['Array']: self.guiShow.resetDicContour()
+        self.guiShow.dicVisu[group][name]=retour
+        nz,ny,nx = shape(self.guiShow.core.Zblock)
         if name == 'Plane': 
-            exec('self.parent.'+name+'=\"'+str(retour)+'\"')
+            exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
             #self.changeIcOri(retour)
             if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
             if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
             if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
-            self.parent.dicVisu['Model']['Layer']=0
-        self.parent.onClick2(group,name,retour)
+            self.guiShow.dicVisu['Model']['Layer']=0
+        self.guiShow.onClick2(group,name,retour)
 
     def setNames(self,nameBox,names,opt='strings'):
-        self.parent.setNames(nameBox,names)
+        self.guiShow.setNames(nameBox,names)
