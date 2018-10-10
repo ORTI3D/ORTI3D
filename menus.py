@@ -19,7 +19,7 @@ class Menus:
         #self.askSave(evt)
         dlg = self.dialogs.myFileDialog('New')
         self.core.fileDir,self.core.fileName = dlg.getsetFile(self.gui,'New Model',"*.iqpht;*.orti")
-        if self.core.fileDir == None: return
+        if self.core.fileDir == '': return
         self.core.addin.initAddin()
         self.core.initAll()
         if self.gtyp =='qt':
@@ -32,7 +32,7 @@ class Menus:
             self.askSave(evt)
         dlg = self.dialogs.myFileDialog('Open')
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.iqpht;*.orti');
-        if fDir == None: return
+        if fName == '': return
         self.core.openModel(fDir,fName)
         a = self.core.makeTtable()
         listSpec = self.core.addin.chem.getListSpecies() # just the names
@@ -67,7 +67,8 @@ class Menus:
             
     def OnSaveAs(self,evt=None):
         dlg = self.dialogs.myFileDialog('Save')
-        fDir,fName = dlg.getsetFile(self.gui,'Save as',"*.iqpht")
+        fDir,fName = dlg.getsetFile(self.gui,'Save as','*.iqpht;*.orti')
+        if fName == '': return
         self.core.saveModel(str(fDir),str(fName))
        
     def OnImportVersion1(self,evt=None):
@@ -172,7 +173,7 @@ class Menus:
     def OnDownloadDev(self,evt=None):
         self.onDownload('develop')
         
-    def OnDownloadLocal(self,evt=None):
+    def OnDownloadLocal(self,evt=None): # Remove from orti3dGui.py EV 10/10/18
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.zip');#print fDir,fName
         self.onDownload(fDir+os.sep+fName,'local')

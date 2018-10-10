@@ -40,7 +40,7 @@ class textDialog(QDialog):
 
     def getText(self):
         self.exec_()
-        return str(self.txed.document().toPlainText())
+        return str(self.txed.document().toPlainText())     
         
 class genericDialog(QDialog):
     def __init__(self, gui, title, data):
@@ -137,19 +137,20 @@ class myFileDialog:
     def __init__(self,opt='Open'):
         self.opt = opt
     def getsetFile(self,gui,title,filt):
+        settings = QSettings("ORTI3D_team","ORTI3D")
+        folder = settings.value("last_file")
+        if folder=='' : folder = ' '
         dlg = QFileDialog()
         if self.opt=='Open':
-            fileName = dlg.getOpenFileName(gui,title,' ',filter=filt)
+            fileName = dlg.getOpenFileName(gui,title,folder,filter=filt)#, QFileDialog.DontUseNativeDialog)
         elif self.opt in ['New','Save']:
             dlg.setFileMode(QFileDialog.AnyFile)
-            fileName = dlg.getSaveFileName(gui,title,' ',filter=filt)
+            fileName = dlg.getSaveFileName(gui,title,folder,filter=filt)
         fileName = fileName[0] # OA 1/10 for python 3
         fName = fileName.split('/')[-1]
         fDir = fileName.replace(fName,'')
         fName = fName.split('.')[0]
-        #onMessage(gui,str(fDir)+' '+str(fName))
-        #settings = QSettings()
-        #settings.setValue("last_file", fDir)# QVariant(QString(fDir)))
+        if fDir!='' : settings.setValue("last_file", fDir)# QVariant(QString(fDir)))
         return str(fDir),str(fName)
 
 class myNoteBookCheck(QDialog):

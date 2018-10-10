@@ -2,8 +2,7 @@ import sys
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
-#from orti3dGui import *
-from ilibq.orti3dGui import *
+from orti3dGui import *
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)

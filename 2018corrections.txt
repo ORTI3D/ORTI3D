@@ -62,3 +62,10 @@ this version sent to elicia
 
 4/10
 - in core getValuelong l.499 changed exec for formula by adding from scipy import * to allow any formula
+
+10/01
+- in menu.py OnSaveAs l.70 added '.orti' type file 
+- ORTI3D_v3_start.py l.4,11-13,20,21 / qtDialogs.py getsetFile l.140-142,145,148,153 added Qsettings functions to open file directly on the last opened directory
+- in menu.py OnNew, OnOpen, OnSaveAs, l.22,35,71 changed or added return to avoid error message when push cancel button
+- in orti3dGui.py makeMenus l.157-159,163 put "#" in front of "Download local" menu 
+- in addin.py initMenus l.150 put '#' in front of 'Interactive fitting' option

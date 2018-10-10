@@ -154,13 +154,13 @@ class orti3dGui(QMainWindow):
         dwndAction = QAction("&Download develop", self, 
                 statusTip="download development version from github",
                 triggered=self.menus.OnDownloadDev)
-        dwnlAction = QAction("&Download local", self, 
-                statusTip="download any version from local file",
-                triggered=self.menus.OnDownloadLocal)
+        #dwnlAction = QAction("&Download local", self, 
+                #statusTip="download any version from local file",
+                #triggered=self.menus.OnDownloadLocal)
         #menuHelp.addAction(hAction)
         menuHelp.addAction(dwnsAction)
         menuHelp.addAction(dwndAction)
-        menuHelp.addAction(dwnlAction)
+        #menuHelp.addAction(dwnlAction)
 
     def enableMenu(self,nomM,bool):
         pass

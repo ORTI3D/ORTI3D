@@ -30,4 +30,5 @@ class Config():
             if 'ilibq' in lfi: self.typInstall = 'python' # oa 29/3/17
             else : self.typInstall = 'exe' # oa 29/3/17
             self.curVar={}
+            
 

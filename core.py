@@ -146,6 +146,7 @@ class Core:
         self.fileDir,self.fileName = fDir,fName
         self.initAll()
         fullName = fDir+os.sep+fName; print(fullName)
+        #if fName == '' : return
         if fName+'.orti' in os.listdir(self.fileDir): fullName +='.orti'
         else : fullName +='.iqpht'
         flgArr = False
