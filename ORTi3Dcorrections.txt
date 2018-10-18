@@ -1,0 +1,77 @@
+Help 
+gcc -o rflowC_gll.so -shared -fPIC rflowC_dll.c
+
+Follow-up ORTI3d modifs
+-> develop
+23/5 
+- remove in topbar l57 the choice of model category, done in open and change model in addin
+- min3pchem l118 added area to keff in table title
+- min3pwriter l265 : was not writing initial chem for inic
+- min3pwriter l137 : don't write here conc input for inic
+- min3pwriter l146-50,instead of starting z1 make all zones except the one called domain (already wrtiten). the zones for poro were not writing
+- min3pwriter : adding ion exchange l309-316 in getStringFromSolution and l522-528 in writegeochem
+- min3pwriter in writeDatabases removed the specific writing of mineral and redox, bad results -> the files are written only if not here (no overwrite)
+- min3pTRanskw : dispersivities gathered
+24/5
+- min3pchem removed, it wa snot used
+- min3p in update chemistry linames modif to have several exchangers + l226 add cec and rho_b to lines
+- min3pwriter getStringSolution lines exchange modified fto consider above modfis
+- min3pwrtier writegeochme l511 don't write cec and rhob here but only the conerned species
+- min3p in importDB l164 changed n-> echange to remember the exchanger when ticked
+- min3pwriter getNbZonesMedia 3 modifs to count only the zones that don't have the same name
+- min3p wirteMedia 3 adding not ot write zoens that have the same name
+- min3p writer : several changes in complexes wirtten from the dbase now (l530.. in writegeochem removed)
+- min3p in importDB l167 keep the complex composition for reuse in select complexes, create useComplex for this
+(nb does not remember exisitng exchange species during db import)
+- min3pwriter : added writeSpat to consider vairable grid
+- min3pwriter in readerUCN chemistry can read a name now (indx -> name)
+25/5
+- min3pwriter in getcoords 397 removed the if, can be used by every line
+- min3pwriter 295 getValue : nbsolu = v (for background to be different from 0)
+- core l552 onPtObs : added the option different for pht3d and min3p for the read UCN
+- ortiGui _init_ 25-27 change to make correct mainDir for both win and python versions 
+- min3p updateChemistry remove the adding of ph and pe , useless
+- min3pwrtier wrtiegeochem removed the removal of ph and pe as they are not added anymore
+26/5
+- min3pwriter getValue firs tlines : added 3 lines to get the Dbkeys directly, if not they can try to find engp in flow part
+consequently all calls to getValue were modified
+- min3pwriter : writemin3pfiles l57 changed Fkey to core.dickword and not importing directly the module (same reference)
+- min3pwriter writemedia 1st line : made a copy of llist to llist1 not to modify the original
+- min3pwriter writebyzones l229 change the nb of the added zone, z nb 1 is the domain
+#- guishow getarray2D l207, added lines for radial and xsect for min3p which has different shape
+- addin setgridinmodel, xsect to change coord added for radial (it is the same)
+- adding the whole evaporation control group!!! (min3pTranskeyw)
+- added a key in global to state if we want to use evapotranspiration (my own keyword)
+- in min3pwriter writeGeneral l107 : do not print if only one kw set to 'no'
+- lost in change i did not write everything done... mainly for keywords in mn3p
+30/5
+- min3p writer split writeMedia in 2 : media and ini (was too complicated)
+8/6
+- added a reader for postscript species that go into the user species if there is a postfix file
+  (readselctout in pht3d, two lines in userspecies in guishow and four lines in parameters runmodel)
+  9/6
+- change Xsection to Cross section in addin
+- change log time in timeperiod (the time step in log is now the first time step and there is always 100 tsteps)
+12/6
+- added gas decay for min3p
+- removed EJ coeffs.. if diffusion is classical in min3p
+14/6 in develop
+- min3p change for surface keywords, 
+- menu for postfix (elicia)
+- added surface parameters
+16/6
+- in isntntFit removed particles
+- in topbar added l429 430 so the instnatfit can react a value of a zone is modified
+20/6
+-for XYplots,in core onptobs, ordering corrected and got labels
+- wxdialog, labels for xyplot added
+- lot of changes to make correct eschange and sorptionin min3p
+22/6
+- removed core runmodel line 258-9 for win dist modlfow not runninng: this was an error!
+- min3p modified discretefile wirter to consider Xsections
+27/6
+- for the exe version corrected to be able to run modflow, line 258-9 above remodified
+27/6
+- for compatilibty with conda added all=['plot'] in __init_  in wx.lib
+- added in wxVisu start replace Color by Colour
+- wxShow replace evt.checked by item.IsChaeckd() onClick l56 
