@@ -45,7 +45,7 @@ class Box(): #QGroupBox):
             for short,name,pos in butA : 
                 if pos==1 : continue
                 buta = QPushButton()
-                shortName = name+'.png'#;print 'a', shortName
+                shortName = name+'.png'#;print ('a', shortName)
                 if shortName in os.listdir(dirutils):
                     icon = QIcon()
                     icon.addPixmap(QPixmap(dirutils+os.sep+shortName), QIcon.Normal, QIcon.Off)
@@ -65,7 +65,7 @@ class Box(): #QGroupBox):
 
         for i in range(len(parent.base.groups[gr])):
             n=parent.base.groups[gr][i]
-            shortName = gr[2:4]+'_'+n;#print i,shortName
+            shortName = gr[2:4]+'_'+n;#print (i,shortName)
             but = QPushButton(self.box) #hlWidget)
             but.setToolTip(n)
             icon = QIcon()

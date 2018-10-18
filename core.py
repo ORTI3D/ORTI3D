@@ -4,7 +4,7 @@ from numpy import frombuffer,float64
 from .modflowWriter import *
 from .mtphtWriter import *
 from .min3pWriter import *
-#from .sutraWriter import *
+from .sutraWriter import *
 from .ogWriter import *
 import xml.dom.minidom as xdom
 from .geometry import *

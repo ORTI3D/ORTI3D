@@ -21,11 +21,11 @@ from .topBar import *
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
         Main.setObjectName("Main")
-        Main.resize(200,560)
+        Main.resize(255,790)
         Main.setWindowTitle("qORTi3d")
         self.gui = QWidget(Main)
         self.gui.iface = iface
-        self.gui.setGeometry(QRect(5, 15, 195, 480)) #left,top,w,h
+        self.gui.setGeometry(QRect(5, 15, 245, 760)) #left,top,w,h
         self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
         self.gui.mainDir = plugin_dir
         core = Core(self.gui)
@@ -41,7 +41,7 @@ class Ui_Main(object):
         self.gui.visu = qgisVisu(iface,self.gui,core)
         
         self.toolBox = QToolBox(self.gui)
-        self.toolBox.setGeometry(QRect(0, 0, 195, 480))
+        self.toolBox.setGeometry(QRect(0, 0, 245, 760))
 
         self.page0 = QWidget()        
         self.gui.file = Ui_File()
@@ -73,6 +73,7 @@ class Ui_Main(object):
         else : bu3D.setEnabled(False)
         
     def onRCT(self,bool): pass # for compatibility with wx
+    
     def onSetMediaNb(self,nbM,nbL):
         self.gui.varBox.choice3D.clear()
         for i in range(nbM): self.gui.varBox.choice3D.addItem(str(i))
@@ -91,13 +92,13 @@ class Ui_File(object):
         
         File.resize(177, 104)
         self.gridLayoutWidget = QWidget(File)
-        self.gridLayoutWidget.setGeometry(QRect(0, 0, 180, 120))
+        self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 220))
         self.gridLayout = QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setMargin(0)
 
-        llabel=['File','Import','Export','Add_in','?']
+        llabel=['File','Import','Export','Add_in','Help']
         litems=[["","New","Open","Save", "Save as"],["","Solutions","User Species"],
-                ["","Current variable"],[],["","Help","Download stable","Download develop"]]
+                ["","Current variable"],[""],["","Download stable","Download develop"]] # EV 17.10.18 removed "Help"
         self.combo= []
         for i,lab in enumerate(llabel):
             label = QLabel(self.gridLayoutWidget)
@@ -140,7 +141,7 @@ class Ui_Parameters(object):
         self.gui,self.core,self.plugin_dir =gui, core,plugin_dir
         self.base = BaseParms(gui,core)
         Parameters.setObjectName("Parameters")
-        Parameters.resize(197, 348)
+        Parameters.resize(247, 348)
         Parameters.setWindowTitle( "Parameters")
         self.ignoreButtons = ['Map']
         self.dictBox={}
@@ -154,13 +155,13 @@ class Box:
         '''parent is the Ui_parameters class above'''
         self.box = QGroupBox(Parameters)
         self.Parameters,self.parent = Parameters,parent
-        y0=20+nb*60
-        self.box.setGeometry(QRect(5, y0, 170, y0+40))
+        #y0=20+nb*60
+        self.box.setGeometry(QRect(0, nb*70, 230, 60))#(QRect(5, y0, 220, y0+40))
         self.box.setTitle(gr)
         self.hlWidget = QWidget(self.box)
-        self.hlWidget.setGeometry(QRect(9, 15, 158, 28))
+        self.hlWidget.setGeometry(QRect(15, 25, 208, 28))
         self.hl = QHBoxLayout(self.hlWidget)
-        self.hl.setMargin(0)
+        self.hl.setMargin(1)
         dirutils = parent.plugin_dir+os.sep+'utils'
         #self.parent.gui.dialogs.onMessage(self.parent.gui,os.listdir(dirutils)[0])
 
@@ -170,14 +171,19 @@ class Box:
                 if short in self.parent.ignoreButtons : continue
                 if pos==1 : continue
                 buta = QPushButton(self.hlWidget)
-                shortName = 'Ad_'+short+'.gif'
+                shortName = name+'.png'
                 if shortName in os.listdir(dirutils):
                     icon = QIcon()
                     icon.addPixmap(QPixmap(dirutils+os.sep+shortName), QIcon.Normal, QIcon.Off)
                     buta.setIcon(icon)
+                    buta.setIconSize(QSize(25,25))
+                    buta.setMaximumWidth(25)
+                    buta.setMaximumHeight(25)
+                    buta.setFlat(True)
                 else :
                     buta.setText(short)
                 buta.setObjectName(name)
+                buta.setToolTip(name)
                 self.hl.addWidget(buta)
                 buta.clicked.connect(self.onButton)
                 parent.base.dicaction[name] = 'self.addin.doaction(\''+name+'\')'
@@ -189,8 +195,12 @@ class Box:
             but = QPushButton(self.hlWidget)
             but.setToolTip(n)
             icon = QIcon()
-            icon.addPixmap(QPixmap(dirutils+os.sep+shortName+'.gif'), QIcon.Normal, QIcon.Off)
+            icon.addPixmap(QPixmap(dirutils+os.sep+shortName+'.png'), QIcon.Normal, QIcon.Off)
             but.setIcon(icon)
+            but.setIconSize(QSize(25, 25))
+            but.setMaximumWidth(25)
+            but.setMaximumHeight(25)
+            but.setFlat(True)
             but.setObjectName(shortName) #_fromUtf8(n))
             but.clicked.connect(self.onButton)
             self.hl.addWidget(but)
@@ -200,14 +210,19 @@ class Box:
                 if short in self.parent.ignoreButtons : continue
                 if pos==0 : continue
                 buta = QPushButton(self.hlWidget)
-                shortName = 'Ad_'+short+'.gif'
+                shortName = name+'.png'
                 if shortName in os.listdir(dirutils):
                     icon = QIcon()
                     icon.addPixmap(QPixmap(dirutils+os.sep+shortName), QIcon.Normal, QIcon.Off)
                     buta.setIcon(icon)
+                    buta.setIconSize(QSize(25,25))
+                    buta.setFixedWidth(25)
+                    buta.setFixedHeight(25)
+                    buta.setFlat(True)
                 else :
                     buta.setText(short)
                 buta.setObjectName(name)
+                buta.setToolTip(name)
                 self.hl.addWidget(buta)
                 buta.clicked.connect(self.onButton)
                 parent.base.dicaction[name] = 'self.addin.doaction(\''+name+'\')'
@@ -225,7 +240,7 @@ class Ui_Var(object):
         #Var.resize(177, 104)
         Var.setWindowTitle("Var")
         self.gridLayoutWidget = QWidget(Var)
-        self.gridLayoutWidget.setGeometry(QRect(0, 0, 180, 180))
+        self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 300))
         #self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setMargin(0)
@@ -258,6 +273,8 @@ class Ui_Var(object):
         label.setText("Line")
         self.gridLayout.addWidget(label, 3, 0, 1, 1)
         self.choiceL = QComboBox(self.gridLayoutWidget)
+        view =  QListView() ; view.setMinimumWidth(250)
+        self.choiceL.setView(view)
         self.choiceL.activated['QString'].connect(self.onChoiceLine)
         self.gridLayout.addWidget(self.choiceL, 3, 1, 1, 1)
 
@@ -405,8 +422,8 @@ class Ui_Show(object):
                 if self.groups[g0][0]==ig: g=g0
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self.gui.guiShow,names,g,pos)
-            pos += len(names)*24+20
-        Show.resize(200,560)
+            pos += len(names)*28+35#24+20
+        #Show.resize(200,560)
         QMetaObject.connectSlotsByName(Show)
         
     def getCurrentTime(self):
@@ -439,9 +456,9 @@ class showBox:
         self.group = QGroupBox(Show)
         self.group.setTitle(g)
         ln = len(names)
-        self.group.setGeometry(QRect(0, pos, 195, pos+ln*24))
+        self.group.setGeometry(QRect(0, pos, 245,25+ln*28))# pos+ln*24))
         self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(5,5 ,195, ln*24))
+        self.hlWidget.setGeometry(QRect(5,15 ,240,20+ln*24))# ln*24))
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.setMargin(1)
         self.buts = list(range(len(names)))

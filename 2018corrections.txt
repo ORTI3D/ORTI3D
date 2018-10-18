@@ -25,19 +25,19 @@
 - qtDialogs.py : changed visual stuff 
 - qtValueDialog.py : changed visual stuff 
 
-30/09
+30/09 OA
 all to python 3 with lib2to3
 - in Qtlayout setMargin - setContentsMargins
 this version sent to elicia
 
-1/10
+1/10 OA
 - qtDialogs l 146 added filename=fileName[0]
 - qtVisualisation l 408 createContour clabel color -> colors
 - don't forget, to print something in v3 print()
 - ortiGui excpt handler added line 67
 - in menus donwload, replaced urllib by requests, l 194-197
 
-2/10 reformat qgis plugin
+2/10 reformat qgis plugin OA
 - qtDialogs removed import qwt (does not exist in qgis)
 - menus l.46 : commented visu.setVisu(core) !! may be usefull for qt
 - in qgisVisu l 131 removed replaced by 132 QgsProject (syntax has changed)
@@ -48,7 +48,7 @@ this version sent to elicia
 - l.329 qgisVisu QgsGraduatedSymbolRendererV2 -> QgsGraduatedSymbolRenderer, same for makersymbol, qgssymbol
 - qt visualisation matplotlib : backend_qt5
 
-3/10
+3/10 EV
 - margins in qtdialogs, l 59, 106, 174, 605,697
 - ortiGui modif to show errors
 - modflowWriter.getpermScaled l.345 moved to 355 to apply only to mesh
@@ -60,12 +60,24 @@ this version sent to elicia
 - guiShow l.265 exec replaced by eval
 - import export l.88 same
 
-4/10
+4/10 OA
 - in core getValuelong l.499 changed exec for formula by adding from scipy import * to allow any formula
 
-10/01
+10/01 EV
 - in menu.py OnSaveAs l.70 added '.orti' type file 
 - ORTI3D_v3_start.py l.4,11-13,20,21 / qtDialogs.py getsetFile l.140-142,145,148,153 added Qsettings functions to open file directly on the last opened directory
 - in menu.py OnNew, OnOpen, OnSaveAs, l.22,35,71 changed or added return to avoid error message when push cancel button
 - in orti3dGui.py makeMenus l.157-159,163 put "#" in front of "Download local" menu 
 - in addin.py initMenus l.150 put '#' in front of 'Interactive fitting' option
+
+17/10 OA
+- in menus onDownload, l.203 removed ilibq in the initial folder of the copy
+- menus line 224 removed dialog.destroy
+- in qgisVisu aded l310 to return something if nothing in the given line
+- in qgisVisu replaced all QgsMapRegistryLayer by QgcProject
+- qgisVisu l.196 (in feat_add) exec tranform in eval
+
+17/10 EV
+- in menus.py on download, l.229 added sys.exit(), l.228 changed app name ipht3d -> orti3d, l.185,186,191 added os.path.normpath to download new version from qgis
+- in qgisGui.py, l.24,28,44,95,159,162,179-182,200-204,218-221,243,276,277,425,459,461 changed / added visualisation stuff
+- in addin.py l.174 removed sutra 

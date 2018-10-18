@@ -6,15 +6,15 @@ Created on Sat Jan 03 21:53:13 2015
 """
 from array import array as arr2
 import os,time
-import sutraKeywords as Skey
-from geometry import *
+from .sutraKeywords import suK
+from .geometry import *
 import time
 
 class sutraWriter:
 
     def __init__(self,core,fDir, fName):
         self.core = core
-        self.fDir,self.fName = fDir,fName
+        self.fDir,self.fName,self.Skey = fDir,fName,suK()
 
     def writeSutraFiles(self):
         fn = self.fDir+os.sep+self.fName

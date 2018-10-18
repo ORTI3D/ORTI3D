@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os
+import os, sys
 from .config import *
 from .importExport import *
 import zipfile as zp
@@ -182,10 +182,13 @@ class Menus:
         maindir=self.gui.mainDir
         dirdoc=maindir+os.sep+'doc'
         dirutil=maindir+os.sep+'utils'
+        dirdoc=os.path.normpath(dirdoc)
+        dirutil=os.path.normpath(dirutil)
         if self.cfg.typInstall=='python': 
             dirlib=maindir+os.sep+'ilibq'
         else : 
             dirlib=maindir+os.sep+'library.zip'
+        dirlib=os.path.normpath(dirlib)
         lfu=os.listdir(dirutil)
         if 'newlib.zip' in lfu:
             os.system('copy '+dirutil+os.sep+'newlib.zip '+dirutil+os.sep+'oldlib.zip')
@@ -200,7 +203,9 @@ class Menus:
         znew=zp.ZipFile(f2,'r')
         if self.cfg.typInstall=='python': #the python version
             znew.extractall(dirutil)
-            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+os.sep+'ilibq '+dirlib)            
+            #os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+os.sep+'ilibq '+dirlib)   
+            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib)
+            print ('ok')
             for n in os.listdir(dirlib):
                 if ('.chm' in n) or ('.pdf' in n): 
                     os.system('move '+dirlib+os.sep+n+' '+dirdoc)
@@ -220,8 +225,8 @@ class Menus:
             shutil.rmtree('temp')
             shutil.rmtree('ilib1')
         znew.close()
-        self.dialogs.onMessage(self.gui,'lib changed, iPht3D will stop, then restart it')
-        self.gui.Destroy()
+        self.dialogs.onMessage(self.gui,'lib changed, ORTi3D will stop, then restart it')
+        sys.exit()
         
     def zip_folder(self,folder_path, output_path):
         parent_folder = os.path.dirname(folder_path)

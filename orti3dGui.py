@@ -236,7 +236,7 @@ class orti3dGui(QMainWindow):
     def makePanelParameters(self):
         self.paramSizer = QVBoxLayout()
         qwp = QWidget()
-        qwp.setMinimumWidth(self.screenShape.width()*0.08)
+        qwp.setMinimumWidth(self.screenShape.width()*0.085)
         self.dlgParameters = Ui_Parameters()
         self.dlgParameters.setupUi(qwp,self,self.core,self.mainDir)
         self.paramSizer.addWidget(qwp)
@@ -249,7 +249,7 @@ class orti3dGui(QMainWindow):
         #self.guiShow = guiShow(self,self.core)
         self.showSizer = QVBoxLayout()
         qws = QWidget()
-        qws.setMinimumWidth(self.screenShape.width()*0.11)
+        qws.setMinimumWidth(self.screenShape.width()*0.112)
         self.dlgShow = Ui_Show()
         self.dlgShow.setupUi(qws,self,self.core)     
         self.guiShow = self.dlgShow.guiShow

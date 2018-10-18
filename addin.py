@@ -171,7 +171,7 @@ class addin:
             m = self.core.dicaddin['Model']
             data = [('dimension','Choice',(m['dimension'],['2D','3D','Radial','Xsection'])),
                     ('type','Choice',(m['type'],['confined','free'])),
-                    ('group','Choice',(m['group'],['Modflow series','Modflow UNS','Min3p','Opgeo','Sutra']))
+                    ('group','Choice',(m['group'],['Modflow series','Modflow UNS','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
