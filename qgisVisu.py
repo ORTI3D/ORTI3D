@@ -54,7 +54,7 @@ class qgisVisu:
         """clear all layers, used when opening a new model"""
         allLayers = self.canvas.layers()
         for layer in allLayers:
-            QgsMapLayerRegistry.instance().removeMapLayer(layer)
+            QgsProject.instance().removeMapLayer(layer) # OA 17/10/18 map layer replaced by project
         
     def initDomain(self): 
         """initalize the grid and all cells in Qgis"""
@@ -63,7 +63,7 @@ class qgisVisu:
         allLayers = self.canvas.layers()
         for layer in allLayers:
             if layer.name() == 'Grid' :
-                QgsMapLayerRegistry.instance().removeMapLayer(layer)
+                QgsProject.instance().removeMapLayer(layer) # OA 17/10/18 map layer replaced by project
         self.grd = self.core.addin.getFullGrid()
         grp = self.core.addin.getModelGroup()
         self.mesh=None
@@ -158,14 +158,14 @@ class qgisVisu:
         #self.dialogs.onMessage(self.gui,'edit start')
         QSettings().setValue(
                 '/qgis/digitizing/disable_enter_attribute_values_dialog', True)
-        layer = QgsMapLayerRegistry.instance().sender()
+        layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
         layer.featureAdded.connect(self.feature_added)
         layer.beforeCommitChanges.connect(self.editing_stopped)
         #self.showzdlg = 1
-            
+        
     def editing_stopped(self):
         #self.dialogs.onMessage(self.gui,'before com change')
-        layer = QgsMapLayerRegistry.instance().sender()
+        layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
         QSettings().setValue(
                 '/qgis/digitizing/disable_enter_attribute_values_dialog', False)
         try : layer.featureAdded.disconnect()
@@ -175,7 +175,7 @@ class qgisVisu:
     def feature_added(self):
         """action when the feature editing is finished in Qgis, show the zone dialog
         and then set the values in Qgis"""
-        layer = QgsMapLayerRegistry.instance().sender()
+        layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
         #self.dialogs.onMessage(self.gui,'feat added')
         #if self.showzdlg == 0: return
         line = layer.name()[1:].split('_')[0]
@@ -192,12 +192,12 @@ class qgisVisu:
             nf = 0
         feats = layer.getFeatures() # list of existing features
         for i,f in enumerate(feats):
-            if i==0 : break
-        exec('coords = f.geometry().'+typP)
+            if i==0 : break  # the new one is the first in the list
+        coords = eval('f.geometry().'+typP) # OA 17/10/18 exec to eval
         if type(coords) != type([5]): coords = [coords] # for points
         self.gui.varBox.base.onZoneCreate(None, coords)
         #set attributes in QGis
-        name = str(dicz.getValue(line,'name',nf))
+        name = str(dicz.getValue(line,'name',nf)) # has been added in diczone in the last position
         try: value = float(dicz.getValue(line,'value',nf))
         except ValueError: value=0
         media = dicz.getValue(line,'media',nf)
@@ -211,9 +211,6 @@ class qgisVisu:
         layer.updateFeature(f)
         layer.commitChanges()   
         layer.endEditCommand()
-        # Re-enable attributes dialog
-        #QSettings().setValue(
-        #    '/qgis/digitizing/disable_enter_attribute_values_dialog', False)
             
     def createNodeResultLayer(self,nodes):
         """specifci to MIn3p when the results are given at nodes and not for elements"""
@@ -228,7 +225,7 @@ class qgisVisu:
             layer = QgsVectorLayer("Point?crs=" + crs.authid(), layerName, "memory") # "delimitedtext")
         else:
             layer = QgsVectorLayer("Point", layerName, "memory") # "delimitedtext")
-        QgsMapLayerRegistry.instance().addMapLayer(layer)
+        QgsProject.instance().addMapLayer(layer) # OA 17/10/18 map layer replaced by project
         layer.startEditing()
         provider = layer.dataProvider()
         provider.addAttributes( [QgsField("id", QVariant.Int) ] )
@@ -307,6 +304,7 @@ class qgisVisu:
         '''
         dicz = self.core.diczone[modName]
         ltyp = []
+        if line not in list(dicz.dic.keys()): return ['Points','Linestring'] # OA 17/10/18
         for coo in dicz.dic[line]['coords']:
             if len(coo)==1 and 'Point' not in ltyp: ltyp.append('Point')
             if len(coo)>1 and 'LineString' not in ltyp: ltyp.append('LineString')
