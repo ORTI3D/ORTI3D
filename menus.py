@@ -225,11 +225,8 @@ class Menus:
             shutil.rmtree('temp')
             shutil.rmtree('ilib1')
         znew.close()
-        if self.gui.gtyp!='qgis':
-            self.dialogs.onMessage(self.gui,'lib changed, ORTi3D will stop, then restart it')
-            sys.exit()
-        else : 
-            self.dialogs.onMessage(self.gui,'lib changed, please reloading qORTi3D plugin')
+        self.dialogs.onMessage(self.gui,'lib changed, ORTi3D will stop, then restart it')
+        sys.exit()
         
     def zip_folder(self,folder_path, output_path):
         parent_folder = os.path.dirname(folder_path)

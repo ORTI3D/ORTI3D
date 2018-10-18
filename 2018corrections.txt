@@ -78,9 +78,6 @@ this version sent to elicia
 - qgisVisu l.196 (in feat_add) exec tranform in eval
 
 17/10 EV
-- in menus.py onDownload, l.229 added sys.exit(), l.228 changed app name ipht3d -> orti3d, l.185,186,191 added os.path.normpath to download new version from qgis
+- in menus.py on download, l.229 added sys.exit(), l.228 changed app name ipht3d -> orti3d, l.185,186,191 added os.path.normpath to download new version from qgis
 - in qgisGui.py, l.24,28,44,95,159,162,179-182,200-204,218-221,243,276,277,425,459,461 changed / added visualisation stuff
 - in addin.py l.174 removed sutra 
-
-18/10 EV
-- in menu.py onDownload, l.228-232, added option for qgis message after download new version
