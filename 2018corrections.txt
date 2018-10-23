@@ -92,3 +92,7 @@ this version sent to elicia
 22/10/18 OA
 - in qgisGui added a connect l.71 to ask for save the orti file when saving a qgis project
 - in menus changed the wording of the askwasved method l.86-91
+
+22/10/18 EV
+- in core.py l.291-292 removed option of bin path for the ORTi3d windows version (same than python version now)
+- in menu.py l.190, 215-228 changed option for download new version with the ORTi3d windows version 

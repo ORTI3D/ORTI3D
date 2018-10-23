@@ -187,7 +187,7 @@ class Menus:
         if self.cfg.typInstall=='python': 
             dirlib=maindir+os.sep+'ilibq'
         else : 
-            dirlib=maindir+os.sep+'library.zip'
+            dirlib=maindir+os.sep+'lib'+os.sep+'ilibq' # EV 23/10/18 new exe version
         dirlib=os.path.normpath(dirlib)
         lfu=os.listdir(dirutil)
         if 'newlib.zip' in lfu:
@@ -212,18 +212,20 @@ class Menus:
                 if ('.gif' in n) or ('.dbs' in n): 
                     os.system('move '+dirlib+os.sep+n+' '+dirutil)
         else : # the windows version
-            zlib=zp.ZipFile(dirlib,'r'); #print 'menu dwnload 157', dirlib
-            zlib.extractall(maindir+os.sep+'temp')
-            zlib.close()
-            shutil.rmtree(maindir+os.sep+'temp'+os.sep+'ilibq')
-            znew.extractall(maindir+os.sep+'ilib1')
-            os.system('xcopy /Y '+maindir+os.sep+'ilib1'+os.sep+'ORTI3D-'+fname+os.sep+'iliblast '+maindir+os.sep+'temp'+os.sep+'ilibq')            
-            self.zip_folder(maindir+os.sep+'temp',maindir+os.sep+'zout.zip')
-            os.chdir(maindir)
-            os.system('del '+dirlib)
-            os.system('rename zout.zip library.zip')
-            shutil.rmtree('temp')
-            shutil.rmtree('ilib1')
+            znew.extractall(dirutil) # EV 23/10/18 new exe version
+            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib)
+            #zlib=zp.ZipFile(dirlib,'r'); #print 'menu dwnload 157', dirlib
+            #zlib.extractall(maindir+os.sep+'temp')
+            #zlib.close()
+            #shutil.rmtree(maindir+os.sep+'temp'+os.sep+'ilibq')
+            #znew.extractall(maindir+os.sep+'ilib1')
+            #os.system('xcopy /Y '+maindir+os.sep+'ilib1'+os.sep+'ORTI3D-'+fname+os.sep+'iliblast '+maindir+os.sep+'temp'+os.sep+'ilibq')            
+            #self.zip_folder(maindir+os.sep+'temp',maindir+os.sep+'zout.zip')
+            #os.chdir(maindir)
+            #os.system('del '+dirlib)
+            #os.system('rename zout.zip library.zip')
+            #shutil.rmtree('temp')
+            #shutil.rmtree('ilib1')
         znew.close()
         if self.gui.gtyp!='qgis':
             self.dialogs.onMessage(self.gui,'lib changed, ORTi3D will stop, then restart it')
