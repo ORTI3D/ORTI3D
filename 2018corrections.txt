@@ -84,3 +84,11 @@ this version sent to elicia
 
 18/10 EV
 - in menus.py on download, l.228-232 added option for qgis message after download new version
+
+20/10 OA
+- in qgisVisu lot of changes, l.93,94 added to connect the feature form button
+- in qgsiVisu feature_added completely changed to include the feature from button
+
+22/10/18 OA
+- in qgisGui added a connect l.71 to ask for save the orti file when saving a qgis project
+- in menus changed the wording of the askwasved method l.86-91

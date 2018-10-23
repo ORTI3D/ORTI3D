@@ -21,11 +21,11 @@ from .topBar import *
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
         Main.setObjectName("Main")
-        Main.resize(255,790)
+        Main.resize(255,590)
         Main.setWindowTitle("qORTi3d")
         self.gui = QWidget(Main)
         self.gui.iface = iface
-        self.gui.setGeometry(QRect(5, 15, 245, 760)) #left,top,w,h
+        self.gui.setGeometry(QRect(5, 15, 245, 560)) #left,top,w,h
         self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
         self.gui.mainDir = plugin_dir
         core = Core(self.gui)
@@ -41,7 +41,7 @@ class Ui_Main(object):
         self.gui.visu = qgisVisu(iface,self.gui,core)
         
         self.toolBox = QToolBox(self.gui)
-        self.toolBox.setGeometry(QRect(0, 0, 245, 760))
+        self.toolBox.setGeometry(QRect(0, 0, 245, 560))
 
         self.page0 = QWidget()        
         self.gui.file = Ui_File()
@@ -65,6 +65,10 @@ class Ui_Main(object):
         self.toolBox.addItem(self.page3,"Results")
         
         QMetaObject.connectSlotsByName(Main)
+        # make an event if qgis project is saved
+        self.menus = Menus(self.gui,core) # OA added 22/10/18
+        #QgsProject.instance().projectSaved.connect(self.onProjectSaved) # OA added 22/10/18
+        iface.mainWindow().findChild( QAction, 'mActionSaveProject' ).triggered.connect( self.onProjectSaved)
             
     def on3D(self,dm): 
         """if true the model is 3D, false : 2D"""
@@ -81,18 +85,21 @@ class Ui_Main(object):
         
     def resetCurVar(self):
         global curVar
-        curVar = {}        
-        
+        curVar = {}    
+            
+    def onProjectSaved(self): # OA added 22/10/18
+        self.menus.askSave()
+    
 class Ui_File(object):
     def setupUi(self,File,gui,core):
         self.menus = Menus(gui,core)
         self.added = {}
-#        File.setObjectName("File")
+        File.setObjectName("File")
         self.File,self.gui,self.core = File,gui,core
         
-        File.resize(177, 104)
+        #File.resize(177, 104)
         self.gridLayoutWidget = QWidget(File)
-        self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 220))
+        #self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 220))
         self.gridLayout = QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setMargin(0)
 
@@ -110,7 +117,6 @@ class Ui_File(object):
             self.combo[i].activated['QString'].connect(self.onClick)
         
         QMetaObject.connectSlotsByName(File)
-        #self.core.openModel('E://ipht3d//exv2//test','iqexer1')
         self.core.addin.initMenus()
         
     def addMenu(self,num,menuName,methd):
@@ -121,7 +127,6 @@ class Ui_File(object):
     def onClick(self):
         obj = self.File.sender()
         n = obj.currentText();
-        #self.gui.dialogs.onMessage(self.gui,n)
         if n=="New": self.menus.OnNew()
         elif n=="Open": self.menus.OnOpen()
         elif n=="Save": 
@@ -153,13 +158,14 @@ class Ui_Parameters(object):
 class Box:
     def __init__(self,Parameters,parent,gr,nb):
         '''parent is the Ui_parameters class above'''
+        icSize=25
         self.box = QGroupBox(Parameters)
         self.Parameters,self.parent = Parameters,parent
         #y0=20+nb*60
-        self.box.setGeometry(QRect(0, nb*70, 230, 60))#(QRect(5, y0, 220, y0+40))
+        self.box.setGeometry(QRect(0, nb*(icSize)*2.2, 230, icSize*2.1))#(QRect(5, y0, 220, y0+40))
         self.box.setTitle(gr)
         self.hlWidget = QWidget(self.box)
-        self.hlWidget.setGeometry(QRect(15, 25, 208, 28))
+        self.hlWidget.setGeometry(QRect(5, 5, 220, icSize*2.1)) # x0,y0, width,height
         self.hl = QHBoxLayout(self.hlWidget)
         self.hl.setMargin(1)
         dirutils = parent.plugin_dir+os.sep+'utils'
@@ -176,9 +182,9 @@ class Box:
                     icon = QIcon()
                     icon.addPixmap(QPixmap(dirutils+os.sep+shortName), QIcon.Normal, QIcon.Off)
                     buta.setIcon(icon)
-                    buta.setIconSize(QSize(25,25))
-                    buta.setMaximumWidth(25)
-                    buta.setMaximumHeight(25)
+                    buta.setIconSize(QSize(icSize,icSize))
+                    buta.setMaximumWidth(icSize)
+                    buta.setMaximumHeight(icSize)
                     buta.setFlat(True)
                 else :
                     buta.setText(short)
@@ -197,9 +203,9 @@ class Box:
             icon = QIcon()
             icon.addPixmap(QPixmap(dirutils+os.sep+shortName+'.png'), QIcon.Normal, QIcon.Off)
             but.setIcon(icon)
-            but.setIconSize(QSize(25, 25))
-            but.setMaximumWidth(25)
-            but.setMaximumHeight(25)
+            but.setIconSize(QSize(icSize, icSize))
+            but.setMaximumWidth(icSize)
+            but.setMaximumHeight(icSize)
             but.setFlat(True)
             but.setObjectName(shortName) #_fromUtf8(n))
             but.clicked.connect(self.onButton)
@@ -215,9 +221,9 @@ class Box:
                     icon = QIcon()
                     icon.addPixmap(QPixmap(dirutils+os.sep+shortName), QIcon.Normal, QIcon.Off)
                     buta.setIcon(icon)
-                    buta.setIconSize(QSize(25,25))
-                    buta.setFixedWidth(25)
-                    buta.setFixedHeight(25)
+                    buta.setIconSize(QSize(icSize,icSize))
+                    buta.setFixedWidth(icSize)
+                    buta.setFixedHeight(icSize)
                     buta.setFlat(True)
                 else :
                     buta.setText(short)
@@ -240,7 +246,7 @@ class Ui_Var(object):
         #Var.resize(177, 104)
         Var.setWindowTitle("Var")
         self.gridLayoutWidget = QWidget(Var)
-        self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 300))
+        #self.gridLayoutWidget.setGeometry(QRect(0, 0, 230, 300))
         #self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setMargin(0)
@@ -410,6 +416,7 @@ class Ui_Var(object):
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
+        icSize = 25
         self.Show = Show
         self.gui,self.core = gui,core
         self.gui.guiShow = guiShow(gui,core)
@@ -422,7 +429,7 @@ class Ui_Show(object):
                 if self.groups[g0][0]==ig: g=g0
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self.gui.guiShow,names,g,pos)
-            pos += len(names)*28+35#24+20
+            pos += len(names)*icSize+icSize
         #Show.resize(200,560)
         QMetaObject.connectSlotsByName(Show)
         
@@ -452,13 +459,14 @@ class Ui_Show(object):
 
 class showBox:
     def __init__(self,Show,guiShow,names,g,pos):
+        icSize = 22
         self.Show,self.guiShow = Show,guiShow
         self.group = QGroupBox(Show)
         self.group.setTitle(g)
         ln = len(names)
-        self.group.setGeometry(QRect(0, pos, 245,25+ln*28))# pos+ln*24))
+        self.group.setGeometry(QRect(0, pos, 245,icSize+ln*(icSize+2)))# pos+ln*24))
         self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(5,15 ,240,20+ln*24))# ln*24))
+        self.hlWidget.setGeometry(QRect(5,5 ,240,icSize-1+ln*icSize))# ln*24))
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.setMargin(1)
         self.buts = list(range(len(names)))

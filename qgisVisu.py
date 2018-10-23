@@ -8,6 +8,7 @@ and Qgis
 """
 from .geometry import *
 from .config import *
+from .qtDialogs import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -89,6 +90,8 @@ class qgisVisu:
             layer.addFeature(feat)
         layer.updateExtents()
         layer.commitChanges()
+        self.iface.digitizeToolBar().actions()[5].disconnect() # OA added 20/10/18
+        self.iface.digitizeToolBar().actions()[5].triggered.connect(self.attributeForm) # OA added 20/10/18
         #if self.mesh != None: self.createNodeResultLayer(nodes)
         
     def createAndShowObject(self,dataM,dataV,opt,value,color):
@@ -172,48 +175,66 @@ class qgisVisu:
         except TypeError: a=0
         #self.showzdlg = 0
 
-    def feature_added(self):
+    def feature_added(self): # OA completely modified 20/10/18
         """action when the feature editing is finished in Qgis, show the zone dialog
         and then set the values in Qgis"""
-        layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
-        #self.dialogs.onMessage(self.gui,'feat added')
-        #if self.showzdlg == 0: return
+        layer = self.iface.activeLayer() # OA 20/10/18 map
         line = layer.name()[1:].split('_')[0]
         if layer.name()[0] =='L': typP ='asPolyline()'
         else: typP='asPoint()'
+        feats = layer.getFeatures() # list of existing features
+        for i,feat in enumerate(feats):
+            if i==0 : break  # the new one is the first in the list
+        coords = eval('feat.geometry().'+typP) # OA 17/10/18 exec to eval
+        if type(coords) != type([5]): coords = [coords] # for points
+        dicz = self.prepare(line)
+        self.gui.varBox.base.onZoneCreate(None, coords)
+        if line in dicz.dic:
+            nf = len(dicz.dic[line]['name'])-1
+        else : 
+            nf = 0
+        self.setAttributesInQgis(layer,dicz,nf,feat)
+            
+    def attributeForm(self): # OA added 20/10/18
+        '''replace the attributefrom of Qgis by our zone dialog'''
+        layer = self.iface.activeLayer() # OA 20/10/18 map
+        line = layer.name()[1:].split('_')[0]
+        dicz = self.prepare(line)
+        feat = layer.selectedFeatures()[0]
+        fname = feat.attributes()[0] # this is the name
+        zlist = dicz.dic[line]
+        nf = zlist['name'].index(fname)
+        # make the dialog
+        dialg = zoneDialog(self,self.core,self.gui.currentModel,line,zlist,nf)
+        result = dialg.saveCurrent()
+        self.core.makeTtable()
+        self.setAttributesInQgis(layer,dicz,nf,feat)
+        
+    def prepare(self,line): # OA added 20/10/18
         categ = self.gui.currentCategory
         self.gui.currentLine = line
         self.gui.currentModel = self.gui.varBox.base.modelFromLine(categ,line)
-        # retrieve coordinates
         dicz = self.core.diczone[self.gui.currentModel]
-        if line in dicz.dic:
-            nf = len(dicz.dic[line]['name'])
-        else : 
-            nf = 0
-        feats = layer.getFeatures() # list of existing features
-        for i,f in enumerate(feats):
-            if i==0 : break  # the new one is the first in the list
-        coords = eval('f.geometry().'+typP) # OA 17/10/18 exec to eval
-        if type(coords) != type([5]): coords = [coords] # for points
-        self.gui.varBox.base.onZoneCreate(None, coords)
-        #set attributes in QGis
+        return dicz
+    
+    def setAttributesInQgis(self,layer,dicz,nf,feat): # OA added 20/10/18
+        #set attributes in QGis, nf is the feature/zone number
+        line = layer.name()[1:].split('_')[0]
         name = str(dicz.getValue(line,'name',nf)) # has been added in diczone in the last position
         try: value = float(dicz.getValue(line,'value',nf))
         except ValueError: value=0
         media = dicz.getValue(line,'media',nf)
-        #self.dialogs.onMessage(self.gui,name+' '+str(value))
-        #self.layer.startEditing()
         layer.beginEditCommand("modify")
-        f.setAttributes([name,value,media,0]) # OA 2/10 nf removed
+        feat.setAttributes([name,value,media,0]) # OA 2/10 nf removed
         coords = dicz.getValue(line,'coords',nf)
         lcoord = [QgsPoint(float(c[0]),float(c[1])) for c in coords]
-        f.setGeometry(QgsGeometry.fromPolyline(lcoord));
-        layer.updateFeature(f)
+        feat.setGeometry(QgsGeometry.fromPolyline(lcoord));
+        layer.updateFeature(feat)
         layer.commitChanges()   
         layer.endEditCommand()
             
     def createNodeResultLayer(self,nodes):
-        """specifci to MIn3p when the results are given at nodes and not for elements"""
+        """specific to MIn3p when the results are given at nodes and not for elements"""
         allLayers = self.canvas.layers();#print allLayers
         layerName = 'NodesResults'
         # search if the layer already exists, if yes, returns it

@@ -288,8 +288,8 @@ class Core:
         tabRes, sep = [],os.sep
         lf = os.listdir(self.fileDir) 
         cfg = Config(self);#print cfg.typInstall
-        if self.gui != None and 'dist' not in self.baseDir: #OA 22/6 modified
-            if cfg.typInstall=='exe': self.baseDir += os.sep+'dist'
+        #if self.gui != None and 'dist' not in self.baseDir: #OA 22/6 modified
+            #if cfg.typInstall=='exe': self.baseDir += os.sep+'dist'
         if modName[:4] not in ['Opge','Min3','Sutr'] and self.fileName+'.nam' not in lf: 
             return 'Files not written'
         try : 

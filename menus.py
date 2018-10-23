@@ -84,7 +84,7 @@ class Menus:
         importer.readAll()
         
     def askSave(self,evt=None):
-        message = self.dialogs.onQuestion(self.gui,"Do you want to save the project?")
+        message = self.dialogs.onQuestion(self.gui,"Do you want to save the Orti file?") # OA modif 22/10/18
         if message == 'Yes':
             self.OnSave(evt)
         else : return
