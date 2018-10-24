@@ -739,7 +739,74 @@ class instantFitDialog(QDialog):
         self.destroy()
 
 #/////////////////////////////////////////:  plot XY    ////////////////::
+from matplotlib.backends.qt_compat import QtCore, QtWidgets
+from matplotlib.backends.backend_qt5agg import (
+        FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.figure import Figure
 class plotxy(QDialog):
+    
+    def __init__(self,gui,x,arry,legd,title,Xtitle,Ytitle,typ='-'):
+        QDialog.__init__(self)
+        layout = QVBoxLayout(self)
+        self.gui,self.data,self.title,self.legd,self.Xtitle,self.x,self.arry = gui,3,title,legd,Xtitle,x,arry
+        lab = QLabel(title)
+        layout.addWidget(lab)
+        glWidget = QWidget(self)
+        glWidget.setGeometry(QRect(0, 0, 200, 300))
+        self.cnv = FigureCanvas(Figure(figsize=(5, 3)))
+        self._ax = self.cnv.figure.subplots()
+        x,arry = transpose(array(x,ndmin=2)),array(arry) # x en vertical
+        # verify size of input vectors
+        if len(shape(x))==1:
+            x1 = ones((len(x),1))+0.;
+        if len(shape(arry))==1:
+            arry1 = ones((len(arry),1))+0.; arry1[:,0]=arry; arry=arry1*1.;ny=1
+        else :
+            [nt,ny] = shape(arry)
+        x2 = x*1.; arry2 = arry*1.;
+        # creer les lignes
+        self._ax.plot(x2,arry2)
+        self._ax.ticklabel_format(style='sci',scilimits=(-4,4),axis='both')
+        layout.addWidget(self.cnv)
+             
+        basWidget = QWidget(self)
+        basLayout = QHBoxLayout(basWidget);
+        bexport = QPushButton(basWidget);bexport.setText('Export')
+        basLayout.addWidget(bexport)
+        bexport.clicked.connect(self.onExport)
+        bcancel = QPushButton(basWidget);bcancel.setText('Cancel')
+        basLayout.addWidget(bcancel)
+        bcancel.clicked.connect(self.reject)
+        layout.addWidget(basWidget) #,nb,1,2,1)
+        
+        QMetaObject.connectSlotsByName(self)
+
+    def showDialogAndDisconnect(self):
+        self.show()
+        self.gui.actionToggleEditing().triggered.disconnect(self.showDialogAndDisconnect)
+        
+    def getValues(self):
+        self.exec_()
+        return self.data
+    
+    def onExport(self,evt):
+        #print self.lignes
+        #core = self.gui.core
+        #fName = core.fileDir+os.sep+core.fileName+self.title+'.txt'
+        dlg = myFileDialog('Save')
+        fDir,fName = dlg.getsetFile(self.gui,'Save','*.txt')
+        if fDir == None: return
+        f1 = open(fDir+os.sep+fName+'.txt','w')
+        f1.write(self.Xtitle)
+        for n in self.legd: f1.write(' '+n)
+        f1.write('\n')
+        nt,ny = shape(self.arry)
+        arr = zeros((nt,ny+1))
+        arr[:,0]=self.x;arr[:,1:]=self.arry
+        savetxt(f1,arr)
+        f1.close()
+
+class plotxy_old(QDialog):
     
     def __init__(self,gui,x,arry,legd,title,Xtitle,Ytitle,typ='-'):
         QDialog.__init__(self)

@@ -84,7 +84,8 @@ class qtBoxKeys:
             else :
                 but = QLineEdit(self.layoutWidget)
                 but.setText(str(bcontent))
-                    
+            if names[i].split('(')[0] in self.parent.blind: 
+                but.setDisabled(True)        
             self.labl.append(txt)
             self.gridLayout.addWidget(txt,i,0,1,1)
             self.lValBut.append(but)

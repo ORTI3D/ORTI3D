@@ -95,4 +95,11 @@ this version sent to elicia
 
 22/10/18 EV
 - in core.py l.291-292 removed option of bin path for the ORTi3d windows version (same than python version now)
-- in menu.py l.190, 215-228 changed option for download new version with the ORTi3d windows version 
+- in menu.py l.190, 215-228 changed option for download new version with the ORTi3d windows version
+ 
+23/10/18 OA
+- in qtialogs modified plotxy to use matplotlib
+
+23/10/18 EV
+- in qtValueDialog.py l.87,88 added disabled option for some model parameter
+- in qtialogs modified plotxy to defined ticklabel format
