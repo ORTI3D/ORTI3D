@@ -102,4 +102,15 @@ this version sent to elicia
 
 23/10/18 EV
 - in qtValueDialog.py l.87,88 added disabled option for some model parameter
-- in qtialogs modified plotxy to defined ticklabel format
+- in qtialogs modified plotxy to define ticklabel format
+
+24/10/18 EV
+- ModflowKeywords added choice for dis.3 (l.44) and disu.5 (l.69) because it was layint variable without choise
+- ModflowKeywards modified type for lpf.2 from layint to arrint 
+- ModflowWriter l.91 added 'lpf.2' and l.208-213 added exception to write lpf.2 variable in lpf file
+- qtDialog in saveCurrent l.372-382 added try/except option for media number type
+- valueDialog.py l.24 added some spatial attributes variable to blind
+- core.py l.219,244 change ipht3d by ORTi3D
+- in qtialogs modified plotxy to define legend and axis labels
+- qtShow l.149 removed dialog. in front of onMessage
+

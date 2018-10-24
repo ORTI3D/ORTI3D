@@ -88,7 +88,7 @@ class modflowWriter:
         """to write all modflow file.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
-        lexceptions=['dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10']
+        lexceptions=['dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']
         lexceptions.extend(['disu.2','disu.3','disu.6','disu.9']) 
         lexceptions.extend(['lpf.'+str(a) for a in range(8,14)]) # when wirting by layers
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
@@ -204,7 +204,14 @@ class modflowWriter:
         if line in ['uzf.2','uzf.3','uzf.4','uzf.5','uzf.6','uzf.7']: # in uzf put only one value of these parameters
             m = self.core.getValueLong('Modflow',line,0)
             self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
-        
+            
+        if line in ['lpf.2']:
+            lval = self.core.dicval['Modflow'][line] #print ('lval',lval)
+            s=''
+            for i in range(len(lval)):
+                s+=' '+str(int(lval[i])).rjust(2) 
+            f1.write(s+'\n') 
+
         if ktyp[:3] == 'lay': # to print laycbd and others
             lval = self.core.dicval['Modflow'][line][0] # in 3D, should be a list of values
             s=''

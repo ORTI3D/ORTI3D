@@ -146,7 +146,7 @@ class Ui_Show(object):
         
     def onObservation(self,group,tstep):
         if group not in ['Flow','Transport','Chemistry']: 
-            self.dialogs.onMessage(self.gui,'choose one variable')
+            onMessage(self.gui,'choose one variable')
             return
         item = self.Show.findChild(QComboBox,'Observation_Type_L')
         typ = item.currentText()[0]  # B P or X

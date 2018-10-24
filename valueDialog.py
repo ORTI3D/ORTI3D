@@ -21,9 +21,9 @@ class valueDialog:
         #self.currentGroup,self.currentLine = self.gui.currentGroup,self.gui.currentLine
         self.dialg = qtValueDialog(self,gui,core,modName)
         # some lines will not be shown (they are in the addin)
-        self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER',
-                    'NCOMP','MCOMP','GCOMPN','KCOMPN','SP1','SP2','RC1','RC2',
-                    'SWC','SDH']
+        self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS',
+                    'NCOMP','MCOMP','GCOMPN','KCOMPN','HTOP','DZ','PRSTY','ICBUND','SCONC','MTRECH',
+                    'AL','TRPT','TRPV','DMCOEF','SP1','SP2','RC1','RC2','SWC','SDH']
         #print self.Mkword.lines
 
     def show(self):
@@ -102,6 +102,7 @@ class valueDialog:
         """sets the new values when user click on OK in key box"""
         values=self.dialg.boxkeys.getValues();#print 'vdialg, setnew',values
         for i in range(len(values)):
+            print (self.val[self.currentLine][i])
             self.val[self.currentLine][i]=values[i]
         names = []
         self.changeStoredValues();

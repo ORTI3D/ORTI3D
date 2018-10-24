@@ -369,9 +369,17 @@ class zoneDialog(QDialog):
         media = zp.media.text()
         if '-' in media :
             m1 = media.split('-')
-            m2 = list(range(int(m1[0]),int(m1[1])+1))
+            try :
+                m2 = list(range(int(m1[0]),int(m1[1])+1))
+            except ValueError: 
+                onMessage(self,"Enter an integer number for media")
+                return None
         else :
-            m2 = int(media)
+            try :
+                m2 = int(media)
+            except ValueError: 
+                onMessage(self,"Enter an integer number for media")
+                return None
         curzones['media'][self.nb] = m2;#onMessage(self.gui,str(zp.coords.getValues()['data']))
         curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
         val0 = ''
@@ -747,14 +755,17 @@ class plotxy(QDialog):
     
     def __init__(self,gui,x,arry,legd,title,Xtitle,Ytitle,typ='-'):
         QDialog.__init__(self)
+        self.setModal(False)
+        self.setWindowTitle('Plot of results')
         layout = QVBoxLayout(self)
-        self.gui,self.data,self.title,self.legd,self.Xtitle,self.x,self.arry = gui,3,title,legd,Xtitle,x,arry
+        self.gui,self.data,self.title,self.legd,self.Xtitle,self.Ytitle,self.x,self.arry = gui,3,title,legd,Xtitle,Ytitle,x,arry
         lab = QLabel(title)
         layout.addWidget(lab)
         glWidget = QWidget(self)
         glWidget.setGeometry(QRect(0, 0, 200, 300))
         self.cnv = FigureCanvas(Figure(figsize=(5, 3)))
-        self._ax = self.cnv.figure.subplots()
+        self._ax = self.cnv.figure.add_axes([0.1, 0.15, 0.7, 0.8])#subplots()
+        #self._ax = self.cnv.add_axes([0.1, 0.1, 0.6, 0.75])
         x,arry = transpose(array(x,ndmin=2)),array(arry) # x en vertical
         # verify size of input vectors
         if len(shape(x))==1:
@@ -766,7 +777,10 @@ class plotxy(QDialog):
         x2 = x*1.; arry2 = arry*1.;
         # creer les lignes
         self._ax.plot(x2,arry2)
+        self._ax.legend(self.legd,bbox_to_anchor=(1.05, 1),loc='upper left', borderaxespad=0.)
         self._ax.ticklabel_format(style='sci',scilimits=(-4,4),axis='both')
+        self._ax.set_xlabel(self.Xtitle)
+        self._ax.set_ylabel(self.Ytitle)
         layout.addWidget(self.cnv)
              
         basWidget = QWidget(self)
@@ -810,6 +824,8 @@ class plotxy_old(QDialog):
     
     def __init__(self,gui,x,arry,legd,title,Xtitle,Ytitle,typ='-'):
         QDialog.__init__(self)
+        self.setModal(False)
+        self.setWindowTitle(title)
         layout = QVBoxLayout(self)
         self.gui,self.data,self.title,self.legd,self.Xtitle,self.x,self.arry = gui,3,title,legd,Xtitle,x,arry
         lab = QLabel(title)

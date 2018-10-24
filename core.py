@@ -216,7 +216,7 @@ class Core:
         filename = self.fileDir+os.sep+self.fileName + '.orti'
         darray = {}
         farrname = self.fileDir+os.sep+'compressdata.npz'
-        f1 = open(filename,'w');str1 = '<ipht3ddoc>\n'
+        f1 = open(filename,'w');str1 = '<ORTi3Ddoc>\n'
         for md in self.modelList:
             for t in ['val','type','zone','formula','array']:
                 dic = eval('self.dic'+t+'[md]'); # OA 1/8/17 exec to eval for python3
@@ -241,7 +241,7 @@ class Core:
             str1 += '<key><name>'+k+'</name><content>'+str(self.dicaddin[k])+\
                 '</content></key>\n'
         str1+= '</dict>\n'
-        str1+= '</ipht3ddoc>'
+        str1+= '</ORTi3Ddoc>'
         f1.write(str1)
         f1.close()
         s = ' ' # will be a string giving the name of the keys for saving
