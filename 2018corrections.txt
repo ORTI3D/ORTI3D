@@ -123,3 +123,5 @@ this version sent to elicia
 - topBar.py l.130 removed 'line' as argument of fonction redraw
 - qtTopBar.py added self.gui in front of "please select a zone" l.386,395,412
 - qtDialogs.py l.401 put coma on None to allow cancel option of dialog zone
+- addin.py l.251 added 'else : return' and l.248-250 indent these lines for avoid message error on cancel button
+
