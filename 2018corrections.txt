@@ -114,3 +114,12 @@ this version sent to elicia
 - in qtialogs modified plotxy to define legend and axis labels
 - qtShow l.149 removed dialog. in front of onMessage
 
+25/10/18 EV
+- core.py l.671 removed limit size of comm dicLines
+- ModflowWriter l.184,188 added condition for lpf.11 following option in lpf.2
+- ModflowKeywords l.126 removed condition for lpf.11
+- Parameters.py l.63-68 changed return to avoid error message when push cancel button
+- Parameters.py l.67 modified onSetItem by onTickBox
+- topBar.py l.130 removed 'line' as argument of fonction redraw
+- qtTopBar.py added self.gui in front of "please select a zone" l.386,395,412
+- qtDialogs.py l.401 put coma on None to allow cancel option of dialog zone

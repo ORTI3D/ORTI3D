@@ -60,11 +60,12 @@ class BaseParms:
     def openMap(self):
         dlg = self.dialogs.myFileDialog('Open')
         fDir,fName = dlg.getsetFile(self.gui,'Choose map',"*.png")
+        if fDir == '': return
         if fDir != None:          
             self.gui.map = str(fDir)+os.sep+str(fName)+'.png' 
             self.gui.visu.createMap()
-            self.gui.guiShow.dlgShow.onSetItem('Model','Map','B',True)
-        else : return
+            self.gui.guiShow.dlgShow.onTickBox('Model','Map','B',True)
+        #else : return
 
     def getParameters(self,modName):
         """this method opens a valuedialog in a frame and enters all parameters"""

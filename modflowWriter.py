@@ -152,6 +152,7 @@ class modflowWriter:
         if line == 'disu.6':
             nodelay = int(self.core.getValueFromName('Modflow','NODELAY'))
             f1.write('CONSTANT    '+str(nodelay)+'\n')
+        
         if line in ['dis.8','disu.9']: # periods characteristics 4 values per period
             s1 = ''
             if line == 'disu.9':
@@ -180,9 +181,11 @@ class modflowWriter:
                 if self.testCondition(cond) == False : continue
                 v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
                 value.append(v0)
+            lval = self.core.dicval['Modflow']['lpf.2']
             for l in range(nlay):
                 for i in range(len(value)):
                     #print 'mfw 183',l,i,shape(value[i][l])
+                    if i==3 and lval[l]==0 : continue
                     self.writeMatModflow(value[i][l],f1,'arrfloat');f1.write('\n')
                     
         if line in ['rch.2','uzf.9']: # writes an array for each period with zero before
@@ -205,12 +208,14 @@ class modflowWriter:
             m = self.core.getValueLong('Modflow',line,0)
             self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
             
-        if line in ['lpf.2']:
+        if line == 'lpf.2':
             lval = self.core.dicval['Modflow'][line] #print ('lval',lval)
             s=''
             for i in range(len(lval)):
                 s+=' '+str(int(lval[i])).rjust(2) 
             f1.write(s+'\n') 
+            
+        #if line in ['lpf.11']
 
         if ktyp[:3] == 'lay': # to print laycbd and others
             lval = self.core.dicval['Modflow'][line][0] # in 3D, should be a list of values

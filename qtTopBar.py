@@ -55,7 +55,7 @@ class Ui_Var(object):
         view =  QListView() ; view.setMinimumWidth(300) # creat and set the width ListView
         self.choiceL.setView(view)
         #self.choiceL.setSizePolicy(policy)
-        self.choiceL.setMaximumWidth(210);
+        self.choiceL.setMaximumWidth(300);
         self.choiceL.activated['QString'].connect(self.onChoiceLine)
         self.gridLayout.addWidget(self.choiceL)#, 0, 2, 1, 1)
 
@@ -383,7 +383,7 @@ class Ui_ModifZone(object):
             self.visu.startMoveZone(self.gui.currentLine, self.izone)
             #self.modifZones(self.gui.currentLine)
         else :
-            onMessage ("please select a zone")
+            onMessage (self.gui,"Please select a zone")
         
     def onModifZone(self):
         """" start modification of zone after tests"""
@@ -392,7 +392,7 @@ class Ui_ModifZone(object):
             self.visu.modifZone(self.gui.currentLine, self.izone)
             #self.modifZones(self.gui.currentLine)
         else :
-            onMessage ("please select a zone")
+            onMessage (self.gui,"Please select a zone")
             
     # get back coordinates and change them
     def onModifZoneCoord(self, line, index, coord):
@@ -409,7 +409,7 @@ class Ui_ModifZone(object):
             self.visu.delZone(line,self.izone)
             self.updateChoiceZone(line)
         else :
-            onMessage("please select a zone")
+            onMessage(self.gui,"Please select a zone")
 
     def onDelAllZones(self):
         znb = len(self.currentZlist['name'])

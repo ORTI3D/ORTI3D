@@ -668,7 +668,7 @@ class dicZone:
             for ll in groups[g]:
                 if lines[ll]['type'][0][:3] == 'arr':
                     self.dicLines[g].append(ll)
-                    self.dicLinesComm[g].append(lines[ll]['comm'][:25])
+                    self.dicLinesComm[g].append(lines[ll]['comm'])#EV 25/10/2018 removed limit size of comm [:25])
             if len(self.dicLines[g])==0 : 
                 self.dicLines.pop(g,None)
                 self.dicLinesComm.pop(g,None)

@@ -398,7 +398,7 @@ class zoneDialog(QDialog):
             val = val.replace('\n','')
         curzones['value'][self.nb]= val0+val
         if self.state == 'accept': return 'OK'
-        else : return None
+        else : return 'None'
         
     def accept1(self): 
         self.close()

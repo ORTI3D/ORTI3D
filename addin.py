@@ -170,7 +170,7 @@ class addin:
         if actionName == 'Ad_Model':
             m = self.core.dicaddin['Model']
             data = [('dimension','Choice',(m['dimension'],['2D','3D','Radial','Xsection'])),
-                    ('type','Choice',(m['type'],['confined','free'])),
+                    ('type','Choice',(m['type'],['confined','free'])), # EV 24/10/18 removed lpf.2 in spatial attribute 
                     ('group','Choice',(m['group'],['Modflow series','Modflow UNS','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
@@ -245,9 +245,10 @@ class addin:
             if retour != None: 
                 if retour[0] == 'backward' : self.particle['direction'] = -1
                 self.particle['type'] = retour[1]
-            #self.gui.actions('zoneStart')
-            self.gui.visu.startParticles()
-            self.gui.guiShow.dlgShow.onTickBox('Flow','Particles','B',True)
+                #self.gui.actions('zoneStart')
+                self.gui.visu.startParticles()
+                self.gui.guiShow.dlgShow.onTickBox('Flow','Particles','B',True)
+            else : return
                 
         if actionName == 'Ad_MtSpecies':
             m = self.core.dicaddin['MtSpecies']
