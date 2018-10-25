@@ -1,6 +1,6 @@
 import ctypes as C
 import numpy,os
-from scipy import *
+#from scipy import *
 ''' to compile
 gcc -c -o rflowC_dll.o rflowC_dll.c
 gcc -shared -o rflowC_dll.dll rflowC_dll.c

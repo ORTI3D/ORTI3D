@@ -925,7 +925,7 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
         if ityp==2: zpt=log10(zpt)
         if len(xpt)<5: m2 = m
         else : m2 = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
-        if iytp==2 : m2 = 10**m2
+        if ityp==2 : m2 = 10**m2
         
     elif option=='interp. Th': # Thissen polygons
         print('thiessen')

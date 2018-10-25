@@ -1,5 +1,5 @@
 #
-import os,subprocess,time,base64
+import os,subprocess,time,base64,types # OA 25/10/18 add types
 from numpy import frombuffer,float64
 from .modflowWriter import *
 from .mtphtWriter import *
@@ -496,10 +496,8 @@ class Core:
                 if numtype[3:] in ['float','int']: # case of only one value
                     value = block(self,modName,line,intp=False) #value = ones(size)*valIn
         elif vtype in ['formula','interpolate']: # case of a formula
-            dct = {} # modif OA 3/10/18
-            form = 'from scipy import *;'+self.dicformula[modName][line][0];print(form)
-            exec(form,dct) # modif OA 3/10/18
-            value = array(dct['value'],ndmin=3) ; # modif OA 3/10/18# all spatial arrays are three dim
+            f = self.dicformula[modName][line][0]
+            value = array(self.formExec(f),ndmin=3) ; # modif OA 3/10/18
         elif vtype=='array':
             value = self.dicarray[modName][line]
             if type(value)==type([5]):value = value[0]
@@ -510,6 +508,14 @@ class Core:
         value = value.astype(numtype[3:])
         #print 'core',line,vtype,value
         return value
+        
+    def formExec(self,s):
+        s1 = s.replace('\n','\n\t')
+        s1 = 'def yoyo(self):\n\t'+s1+'\n\treturn value'
+        dct={}
+        exec(s1,globals(),dct)
+        b = types.MethodType(dct['yoyo'], self)
+        return b()
         
     def getUnits(self,modName,line,ik):   
         '''returns the units for a given line and keyword index'''

@@ -1,4 +1,4 @@
-import os, sys, inspect
+import os, sys, inspect,types
 from .config import *
 from .Pht3d import *
 from .Min3p import *
@@ -399,8 +399,16 @@ class addin:
             txt = retour #dialg.GetTextAsList()
             self.lastBatch=txt
             txt1=txt.replace('core','self.core');#print(type(txt1))
-            exec(txt1)
+            self.formExec(txt1) # OA 25/10/18
         else : return
+        
+    def formExec(self,s): # added OA 25/10/18
+        s1 = s.replace('\n','\n\t')
+        s1 = 'def yoyo(self):\n\t'+s1
+        dct={}
+        exec(s1,globals(),dct)
+        b = types.MethodType(dct['yoyo'], self)
+        b()
 
     def onInitialChemistryDialog(self,evt):
         self.head='calculate initial chemistry'

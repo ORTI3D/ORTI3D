@@ -11,10 +11,11 @@ import os
 from numpy.linalg import solve
 from scipy.stats import tvar as variance
 from scipy.spatial import Delaunay
+import pykrige
 from .geometry import *
 from .config import *
-#from pykrige.ok import OrdinaryKriging
-#import pykrige.kriging_tools as kt
+from pykrige.ok import OrdinaryKriging
+import pykrige.kriging_tools as kt
 
 
 def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
@@ -53,44 +54,43 @@ def invDistance(xpt,ypt,zpt,x,y,power=1.):
     return z0
     
 ######################   kriging  ############################ 
-def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     """ krige function to interpolate over a vector of points of x,y coords
     using the base points xpt ypt and the vario distance rg (range)"""
     #print 'geom kr l 522',len(xpt),rg
     n = len(x)
     z0=zeros(n)
     vari=0.5*variance(zpt);#print 'vari',vari
-    if vtype in ['spher',None]:
-        v_func='gam = 3/2.*d/rg-1/2.*(d/rg)**3.;gam[d>rg]=1'
-    elif vtype=='gauss':
-        v_func='gam=exp(-(d/rg)**2)'
-    elif vtype=='gauss3':
-        v_func='gam=exp(-(d/rg)**3)'
+    def gamma(vtype,d,rg): # OA 25/10/18
+        if vtype in ['spher',None]: gam = 3/2.*d/rg-1/2.*(d/rg)**3.;gam[d>rg]=1
+        elif vtype=='gauss': gam=exp(-(d/rg)**2)
+        elif vtype=='gauss3': gam=exp(-(d/rg)**3)
+        return gam
     for i in range(n):
-        x0=x[i];y0=y[i];#print x0,y0
+        x0=x[i];y0=y[i];
         d=sqrt((x0-xpt)**2+(y0-ypt)**2);
         ind=argsort(d)
         x1,y1,z1=xpt[ind[:16]],ypt[ind[:16]],zpt[ind[:16]];# select closest 16 points
         xm1,ym1=meshgrid(x1,y1)
         d=sqrt((xm1-transpose(xm1))**2.+(ym1-transpose(ym1))**2.)
-        exec(v_func)
+        gam=gamma(vtype,d,rg) # OA 25/10/18
         l1=len(x1)+1
-        A=ones((l1,l1)); #starting the matrix
+        A=ones((l1,l1)); #starting the A matrix
         A[:-1,:-1]=gam*vari
         A[-1,-1]=0.
         d = sqrt((x0-x1)**2.+(y0-y1)**2.)
-        exec(v_func)
+        gam=gamma(vtype,d,rg) # OA 25/10/18
         B = ones((l1,1))
-        B[:-1,0]=gam*vari#print i,j,len(A),len(B)
+        B[:-1,0]=gam*vari 
         lb=solve(A,B)
         z0[i]=sum(z1*transpose(lb[:-1]))
     #z0 = clip(z0,min(zpt)*0.9,max(zpt)*1.1)
     return z0
     
-def krige_ok(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     vparms = [0.5*variance(zpt),rg,0] # sill, range, nugget
-    OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model='spherical',
-        variogram_parameters=vparms, verbose=False, enable_plotting= False)
+    OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model='exponential',
+        variogram_parameters=vparms, verbose=False, enable_plotting= False)#'spherical'
     zvalues, sigmasq = OK.execute('points', x, y)
     return zvalues
     

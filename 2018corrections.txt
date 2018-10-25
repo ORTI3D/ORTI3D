@@ -125,3 +125,11 @@ this version sent to elicia
 - qtDialogs.py l.401 put coma on None to allow cancel option of dialog zone
 - addin.py l.251 added 'else : return' and l.248-250 indent these lines for avoid message error on cancel button
 
+25/10/18 OA
+- in valueDialog testConditions l71 added condition to remove all 'arr' lines
+- core added import types as the beginning
+- core added function formExec after getValueLong to replace the python2 exec statement
+- addin added a similar function (and import types) !! not tested!!
+- in rflow removed the from scipy import * (pb of mixed blcok function)
+- in geometry l.928 in zone2interp there was an error iytp instead ityp
+- in myInterpol/krige replaced the exec by a function

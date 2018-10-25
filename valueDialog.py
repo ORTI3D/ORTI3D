@@ -68,7 +68,8 @@ class valueDialog:
         lstout=[];
         for l in lstL:
             cond = self.Mkword.lines[l]['cond']; #print 'valudiag 75',l,cond
-            if self.core.testCondition(self.modName,cond):
+            ltyp = self.Mkword.lines[l]['type'][0] # OA added 25/10 + arr condition below
+            if (self.core.testCondition(self.modName,cond))&(ltyp[:3]!='arr'):
                 lstout.append(l); #print 'valudiag 75',l,cond, 'True'
         #print 'valdilg 80',lstout
         return lstout
