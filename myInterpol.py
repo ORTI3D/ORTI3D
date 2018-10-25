@@ -11,11 +11,10 @@ import os
 from numpy.linalg import solve
 from scipy.stats import tvar as variance
 from scipy.spatial import Delaunay
-import pykrige
 from .geometry import *
 from .config import *
-from pykrige.ok import OrdinaryKriging
-import pykrige.kriging_tools as kt
+#from pykrige.ok import OrdinaryKriging
+#import pykrige.kriging_tools as kt
 
 
 def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
@@ -54,7 +53,7 @@ def invDistance(xpt,ypt,zpt,x,y,power=1.):
     return z0
     
 ######################   kriging  ############################ 
-def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     """ krige function to interpolate over a vector of points of x,y coords
     using the base points xpt ypt and the vario distance rg (range)"""
     #print 'geom kr l 522',len(xpt),rg
@@ -87,7 +86,7 @@ def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     #z0 = clip(z0,min(zpt)*0.9,max(zpt)*1.1)
     return z0
     
-def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+def krige_ok(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     vparms = [0.5*variance(zpt),rg,0] # sill, range, nugget
     OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model='exponential',
         variogram_parameters=vparms, verbose=False, enable_plotting= False)#'spherical'
