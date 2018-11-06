@@ -230,7 +230,7 @@ class myNoteBook(QDialog): # Dialog used for add chemistry and pest parameters
         nb = QTabWidget(glWidget)
         nb.setGeometry(QRect(5, 20, self.screenShape.width()*.4,self.screenShape.height()*.50))
         for n in list(dicIn.keys()):
-            if dicIn[n]==None:print('rien');continue
+            if dicIn[n]==None:continue
             if len(dicIn[n]['rows'])==0 and n!='Species': continue
             pg = myNBpanelGrid(gui,nb,dicIn[n]) #,size=(450,500))
             self.pages[n] = pg

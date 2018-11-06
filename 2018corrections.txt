@@ -139,6 +139,8 @@ this version sent to elicia
 - in mtphtwriter writeexceptions l167 added[:10] in str if not can be too long
 
 5/11/18 EV
+- topBar.py l.53-54 replaced wx function by qt function myFileDialog and getSetFile and removed evt 
+- importExport.py impZones modified to allowed import zone on several media 
 - pest.py getDicBack1 added a list of parameters allowed in pest - added the "comm" of lines
 - pest.py getDicBack2 l.74-88 modified to refresh choice of parameters - l.78-93 added split(' ')[0] to split line and comm
 - pest.py getDicZone1 l.109-111 added the "comm" of lines
