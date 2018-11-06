@@ -1,17 +1,18 @@
 import os,time,sys 
 from scipy import concatenate,log10,sqrt,array,where,amin,amax,ones
 from scipy.linalg import solve
-
 from pylab import loadtxt,savetxt 
+
 mdir='ppmdir' 
-fdir='ppfdir' 
+fdir=os.getcwd() #fdir='ppfdir' 
 fname='ppfname' 
-tlist=pptime
 sys.path.append(mdir) 
 from ilibq import core
 md=core.Core() 
 md.fileDir,md.fileName=fdir,fname
 md.openModel(fdir,fname) 
+
+tlist=pptime
 lnames=pponames
 iper=md.getTlist2();
 spec=ppospec;
@@ -42,14 +43,14 @@ for iz in range(len(lnames)): # list of obs zones names
         if n>len(t2)-1:break
         if abs(t[it]-float(t2[n]))<1e-3:  
             f1.write('%9.4f '%(t[it]))  
-            if e == 'Tracer':
+            if e!='Part':#e == 'Tracer':
                 if md.dicval['Pest']['obs.1']==[0]:
                     f1.write('%9.4f '%(d1[it]))
                 elif md.dicval['Pest']['obs.1']==[1]:
                     f1.write('%9.4f '%(max(log10(d1[it]),-3)))
                 elif md.dicval['Pest']['obs.1']==[2]:
                     f1.write('%9.4f '%(sqrt(d1[it])))
-            elif e=='Part':
+            else:#elif e=='Part':
                 idx = diczObs['name'].index(zname)
                 pcoo =  diczObs['coords'][idx]
                 xp0,yp0 = pcoo[0];#print xp0,yp0
@@ -58,7 +59,7 @@ for iz in range(len(lnames)): # list of obs zones names
                 xp,yp,tp = xp[:nt],yp[:nt],tp[:nt];#plot(xp,yp)
                 s0 = sum(dstPointPoly(pcoo,zip(xp,yp)))
                 f1.write('%9.4f '%(s0))
-            else :
-                f1.write('%9.4f '%(d1[it]))
+            #else :
+                #f1.write('%9.4f '%(d1[it]))
             f1.write('\n');n+=1 
 f1.close() 

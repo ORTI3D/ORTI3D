@@ -43,21 +43,54 @@ class Pest:
             return self.core.dicaddin['Pback1']
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+            MFlist=['lpf.8','lpf.9','lpf.10','lpf.11','bas.5','rch.2','wel.1']
+            MTlist=['btn.11','btn.13','btn.23','dsp.2','dsp.3','dsp.4','vsc.3a']
+            PHlist=[]
+            modlist=[MFlist,MTlist,PHlist]
+            for i,md in enumerate (list(dic.keys())) :
+                Mlines=self.core.dickword[md].lines ; comm=[]
+                l0 = modlist[i]#list(self.core.dickword[md].lines.keys())
+                for line in l0:
+                    comm.append(str(line+' '+Mlines[line]['comm']))
+                dic[md] = list(zip(comm,[False]*len(l0)))
+            return dic
+        
+    def getDicBack1_old(self):
+        '''Return a dic to choose the lines that will be used to vary parameters'''
+        if self.core.dicaddin['Pback1'] != {}:
+            #print ('exist1', self.core.dicaddin['Pback1'])
+            return self.core.dicaddin['Pback1']
+        else :
+            dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             for md in list(dic.keys()) :
                 l0 = list(self.core.dickword[md].lines.keys())
                 dic[md] = list(zip(l0,[False]*len(l0)))
+            #print ('dic1',dic)
             return dic
 
     def getDicBack2(self):
+        dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+        cols = ['Use','media','value','min','max','Group']
         if self.core.dicaddin['Pback2'] != {}:
-            return self.core.dicaddin['Pback2']
+            dic_old = self.core.dicaddin['Pback2']
+            for md in list(dic.keys()) :
+                a = self.core.dicaddin['Pback1'][md]
+                lines = [x[0].split(' ')[0] for x in a if x[1]!=0]
+                data = []
+                for i,line in enumerate(lines):
+                    if line not in dic_old[md]['rows']:
+                        val = float(self.core.dicval[md][line][0])
+                        data.append([False,0,val,val/2,val*2,'G1'])
+                    else :
+                        ind = dic_old[md]['rows'].index(line)
+                        data.append(dic_old[md]['data'][ind])
+                dic[md] = {'cols':cols,'rows':lines,'data':data}
+            return dic
         else :
-            dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
-            cols = ['Use','media','value','min','max','Group']
             for md in list(dic.keys()) :
                 #print 'pest 58 dict',self.core.dicaddin['Pback1'][md]
                 a = self.core.dicaddin['Pback1'][md]
-                lines = [x[0] for x in a if x[1]!=0]
+                lines = [x[0].split(' ')[0] for x in a if x[1]!=0]
                 data = []
                 for i,line in enumerate(lines):
                     val = float(self.core.dicval[md][line][0])
@@ -73,51 +106,87 @@ class Pest:
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             for md in list(dic.keys()) :
                 l0 = list(self.core.diczone[md].dic.keys())
-                dic[md] = list(zip(l0,[False]*len(l0)))
+                Mlines=self.core.dickword[md].lines ; comm=[]
+                for line in l0:
+                    comm.append(str(line+' '+Mlines[line]['comm']))
+                dic[md] = list(zip(comm,[False]*len(l0)))
             return dic
 
     def getDicZones2(self):
         '''create a table from the selected zones (added 7/4/18)
         dicline is a dict for the lines the be used, may com from a dialog
         dicPzones contain the zones info to start Pest later'''
+        '''EV removed X, Y position of zone 05/11/18'''
         dicout,dicline = {},self.core.dicaddin['Pzones1']
         if self.core.dicaddin['Pzones2'] != {}:
             dicPzones = self.core.dicaddin['Pzones2']
         else :
             dicPzones = {}
         #print dicPzones,dicline
-        cols = ['Use','media','value','min','max','Transf','Group','UseX','value','min','max',\
-            'UseY','value','min','max']
+        cols = ['Use','media','value','min','max','Transf','Group']
         for md in list(dicline.keys()):
             a = dicline[md];
-            llist = [x[0] for x in a if x[1]!=0] 
+            llist = [x[0].split(' ')[0] for x in a if x[1]!=0] 
             for line in llist : 
                 if line not in list(dicPzones.keys()): dicPzones[line] = {'rows':[]}
                 dicz = self.core.diczone[md].dic[line]
                 nzone = len(dicz['name'])
                 dicout[line] = {'cols': cols,'rows': dicz['name'],'data':['a']*nzone}
-                xmn,xmx,ymn,ymx = 1e8, -1e8, 1e8, -1e8
-                for coo in dicz['coords']:
-                    x,y = list(zip(*coo))
-                    xmn,xmx = min(xmn,amin(x)),max(xmx,amax(x))
-                    ymn,ymx = min(ymn,amin(y)),max(ymx,amax(y))
-                dx, dy = (xmx-xmn)/100,(ymx-ymn)/100
                 for i,n in enumerate(dicz['name']):
                     val = float(dicz['value'][i]);print(line,n)
-                    x,y = list(zip(*dicz['coords'][i]))
-                    xm,ym = mean(x),mean(y)
                     if n not in dicPzones[line]['rows']: # a zone has been added
-                        vmin,vmax,xmin,xmax,ymin,ymax = str(val/5),str(val*5),str(xm-dx)[:6],str(xm+dx)[:6],str(ym-dy)[:6],str(ym+dy)[:6]
+                        vmin,vmax= str(val/5),str(val*5)
                         lst = [False,dicz['media'][i],str(val),vmin,vmax,'none','G2']
-                        lst.extend([False,str(xm)[:6],xmin,xmax]) # x coords
-                        lst.extend([False,str(ym)[:6],ymin,ymax]) # y coords
                     else : # get the corresponding limits from dicin
                         i_old = dicPzones[line]['rows'].index(n)
                         lst = dicPzones[line]['data'][i_old]
-                        lst[2],lst[8],lst[12] = val,str(xm)[:6],str(ym)[:6] # take current values of the zone
+                        lst[2]= val # take current values of the zone
                     dicout[line]['data'][i] = lst
         #print dicout
         return dicout
+    
+    def getDicZones2_old(self):
+            '''create a table from the selected zones (added 7/4/18)
+            dicline is a dict for the lines the be used, may com from a dialog
+            dicPzones contain the zones info to start Pest later'''
+            dicout,dicline = {},self.core.dicaddin['Pzones1']
+            if self.core.dicaddin['Pzones2'] != {}:
+                dicPzones = self.core.dicaddin['Pzones2']
+            else :
+                dicPzones = {}
+            #print dicPzones,dicline
+            cols = ['Use','media','value','min','max','Transf','Group','UseX','value','min','max',\
+                'UseY','value','min','max']
+            for md in list(dicline.keys()):
+                a = dicline[md];
+                llist = [x[0] for x in a if x[1]!=0] 
+                for line in llist : 
+                    if line not in list(dicPzones.keys()): dicPzones[line] = {'rows':[]}
+                    dicz = self.core.diczone[md].dic[line]
+                    nzone = len(dicz['name'])
+                    dicout[line] = {'cols': cols,'rows': dicz['name'],'data':['a']*nzone}
+                    xmn,xmx,ymn,ymx = 1e8, -1e8, 1e8, -1e8
+                    for coo in dicz['coords']:
+                        x,y = list(zip(*coo))
+                        xmn,xmx = min(xmn,amin(x)),max(xmx,amax(x))
+                        ymn,ymx = min(ymn,amin(y)),max(ymx,amax(y))
+                    dx, dy = (xmx-xmn)/100,(ymx-ymn)/100
+                    for i,n in enumerate(dicz['name']):
+                        val = float(dicz['value'][i]);print(line,n)
+                        x,y = list(zip(*dicz['coords'][i]))
+                        xm,ym = mean(x),mean(y)
+                        if n not in dicPzones[line]['rows']: # a zone has been added
+                            vmin,vmax,xmin,xmax,ymin,ymax = str(val/5),str(val*5),str(xm-dx)[:6],str(xm+dx)[:6],str(ym-dy)[:6],str(ym+dy)[:6]
+                            lst = [False,dicz['media'][i],str(val),vmin,vmax,'none','G2']
+                            lst.extend([False,str(xm)[:6],xmin,xmax]) # x coords
+                            lst.extend([False,str(ym)[:6],ymin,ymax]) # y coords
+                        else : # get the corresponding limits from dicin
+                            i_old = dicPzones[line]['rows'].index(n)
+                            lst = dicPzones[line]['data'][i_old]
+                            lst[2],lst[8],lst[12] = val,str(xm)[:6],str(ym)[:6] # take current values of the zone
+                        dicout[line]['data'][i] = lst
+            #print dicout
+            return dicout
                                
     def dic2parms(self,dicPback,dicPzones):
         '''transform the data in the dictionnary from the dialog to a format
@@ -144,21 +213,23 @@ class Pest:
                     self.pgrp.append(dp[5])
         for line in list(dicPzones.keys()): # here the keys are the lines
             cols = dicPzones[line]['cols']
-            i1,ix,iy = cols.index('Use'),cols.index('UseX'),cols.index('UseY')
+            #i1,ix,iy = cols.index('Use'),cols.index('UseX'),cols.index('UseY')
+            i1 = cols.index('Use')
             for i,zname in enumerate(dicPzones[line]['rows']):
                 dp = dicPzones[line]['data'][i]
                 if dp[i1]: #zone selected
-                    self.pnames.append(line+'_zv'+zname)
+                    #self.pnames.append(line+'_zv'+zname)
+                    self.pnames.append(line+'_'+zname)
                     self.pvalbnd.append(dp[i1+2:i1+5])
                     self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
-                if dp[ix]: #x zone selected
-                    self.pnames.append(line+'_zx'+zname)
-                    self.pvalbnd.append(dp[ix+1:ix+4])
-                    self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
-                if dp[iy]: #y zone selected
-                    self.pnames.append(line+'_zy'+zname)
-                    self.pvalbnd.append(dp[iy+1:iy+4])
-                    self.ptrans.append(dp[5]);self.pgrp.append(dp[6])                    
+                #if dp[ix]: #x zone selected
+                 #   self.pnames.append(line+'_zx'+zname)
+                  #  self.pvalbnd.append(dp[ix+1:ix+4])
+                   # self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
+                #if dp[iy]: #y zone selected
+                 #   self.pnames.append(line+'_zy'+zname)
+                  #  self.pvalbnd.append(dp[iy+1:iy+4])
+                   # self.ptrans.append(dp[5]);self.pgrp.append(dp[6])                    
         for i in range(len(self.pnames)):
             self.pchglim.append('factor')
             self.pparm.append(['1','0','1']);self.ptied.append('')
@@ -262,7 +333,7 @@ class Pest:
             s=s.replace('ppmdir',self.mdir)
         else : 
             s=s.replace('ppmdir',str(self.core.dicval['Pest']['sys.2'][0]))
-        s=s.replace('ppfdir',self.fdir)
+        #s=s.replace('ppfdir',self.fdir)
         s=s.replace('ppfname',self.fname)
         f1=open(self.fdir+os.sep+'scriptPest1.py','w')
         f1.write(s);f1.close()
@@ -275,7 +346,7 @@ class Pest:
             s=s.replace('ppmdir',self.mdir)
         else : 
             s=s.replace('ppmdir',str(self.core.dicval['Pest']['sys.2'][0]))
-        s=s.replace('ppfdir',self.fdir)
+        #s=s.replace('ppfdir',self.fdir)
         s=s.replace('ppfname',self.fname)
         tlist=[]
         for i in range(len(self.obs)):
@@ -283,12 +354,12 @@ class Pest:
         s=s.replace('pptime',str(tlist))
         s=s.replace('pponames',str([str(a) for a in self.onames]))
         s=s.replace('ppospec',str(self.ospec))
-        if self.core.dicval['Pest']['obs.1']==[0]:
-            s=s.replace('ppobstrans',str("f1.write('%.11f '%(d1[it,0]))"))
-        if self.core.dicval['Pest']['obs.1']==[1]:
-            s=s.replace('ppobstrans',str("f1.write('%.11f '%(d1[it,0])) if d1[it,0] == 0.0 else f1.write('%.11f '%(log10(d1[it,0])))"))
-        if self.core.dicval['Pest']['obs.1']==[2]:
-            s=s.replace('ppobstrans',str("f1.write('%.11f '%(sqrt(abs(d1[it,0]))))"))
+        #if self.core.dicval['Pest']['obs.1']==[0]:
+            #s=s.replace('ppobstrans',str("f1.write('%.11f '%(d1[it,0]))"))
+        #if self.core.dicval['Pest']['obs.1']==[1]:
+            #s=s.replace('ppobstrans',str("f1.write('%.11f '%(d1[it,0])) if d1[it,0] == 0.0 else f1.write('%.11f '%(log10(d1[it,0])))"))
+        #if self.core.dicval['Pest']['obs.1']==[2]:
+            #s=s.replace('ppobstrans',str("f1.write('%.11f '%(sqrt(abs(d1[it,0]))))"))
         f1=open(self.fdir+os.sep+'scriptPest2.py','w')
         f1.write(s);f1.close()
         print('pyscripts written')

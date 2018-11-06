@@ -300,7 +300,7 @@ class addin:
                 dic = self.chem.Base[nameB].copy()
             dialg = self.dialogs.myNoteBook(self.gui,"Chemistry",dic)
             dic2 = dialg.getValues()
-            #print dic2
+            #print ('dic2 chem',dic2)
             if dic2 != None:
                 for k in list(dic2.keys()): self.chem.Base[nameB][k] = dic2[k]
             self.core.dicaddin[nameB] = self.chem.Base
@@ -311,7 +311,9 @@ class addin:
             dic2 = dialg.getValues();#print 'addin 304',dic2
             if dic2 != None:
                 self.core.dicaddin['Pback1'] = dic2
+            else : return
             dic = self.pest.getDicBack2() # provide the values for the selected lines
+            #print ('dic2 pest',dic2)
             dialg = self.dialogs.myNoteBook(self.gui,"Pest background",dic)
             dic2 = dialg.getValues()
             if dic2 != None:
@@ -323,6 +325,7 @@ class addin:
             dic2 = dialg.getValues();#print 'addin 304',dic2
             if dic2 != None:
                 self.core.dicaddin['Pzones1'] = dic2
+            else : return
             dic = self.pest.getDicZones2()
             dialg = self.dialogs.myNoteBook(self.gui,"Pest zones",dic)
             dic2 = dialg.getValues()

@@ -1,9 +1,9 @@
 import os,time,sys 
 from pylab import loadtxt,savetxt,average,array
-mdir='ppmdir' 
-fdir='ppfdir' 
-fname='ppfname'
 
+mdir='ppmdir' 
+fdir=os.getcwd() #fdir='ppfdir' 
+fname='ppfname'
 sys.path.append(mdir) 
 from ilibq import core 
 from ilibq import geometry as gm

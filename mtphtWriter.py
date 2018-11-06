@@ -164,8 +164,8 @@ class mtphtWriter:
             lval2 = self.core.dicval['Mt3dms']['btn.22']
             s=''
             for ip in range(len(self.per)):
-                s+=str(self.per[ip]).rjust(10)+str(lval[1]).rjust(10)+\
-                    str(lval[2]).rjust(10)
+                s+=str(self.per[ip])[:10].rjust(10)+str(lval[1]).rjust(10)+\
+                    str(lval[2]).rjust(10)  # OA 3/11/18
                 if len(lval)>3: s+=str(lval[3]).rjust(10)+'\n'
                 else : s+='\n'
                 for i in range(4): s+=str(lval2[i]).rjust(10)

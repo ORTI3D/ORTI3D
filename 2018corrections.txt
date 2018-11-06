@@ -133,3 +133,15 @@ this version sent to elicia
 - in rflow removed the from scipy import * (pb of mixed blcok function)
 - in geometry l.928 in zone2interp there was an error iytp instead ityp
 - in myInterpol/krige replaced the exec by a function
+
+3/11/18 OA
+- in modflowkeywd modi disu names for nstp because copy from modflow to mt3dms does not work (updateDicts in parameters)
+- in mtphtwriter writeexceptions l167 added[:10] in str if not can be too long
+
+5/11/18 EV
+- pest.py getDicBack1 added a list of parameters allowed in pest - added the "comm" of lines
+- pest.py getDicBack2 l.74-88 modified to refresh choice of parameters - l.78-93 added split(' ')[0] to split line and comm
+- pest.py getDicZone1 l.109-111 added the "comm" of lines
+- pest.py getDicZone2 removed X and Y position of zone - l.129 added split(' ')[0] to split line and comm
+- addin.py l.314-328 added else : return to avoid error when cancel
+- qtDialogs.py l.178 replaced 4 by 1 to get one colum instead of 4 in the dialog

@@ -74,7 +74,7 @@ class Mf:
                         'type':['arrfloat'],'default':[10.],'units':['L']},
         'disu.8':{'comm':'Bottom','cond':'','kw':['BOTM(NLAY,NROW,NCOL)'],'detail':[],
                         'type':['arrfloat'],'default':[0.],'units':['L']},
-        'disu.9':{'comm':'Periods characteristics','cond':'','kw':['PERLEN','NSTP','TSMULT','SsTr'],
+        'disu.9':{'comm':'Periods characteristics','cond':'','kw':['PERLENu','NSTPu','TSMULTu', 'SsTru'], # OA 3/11/18 
                 'detail':['Period length','internal steps','multiplier',['type','Steady state','transient']],
                 'type':['float','int','float','choice'],
                 'default':[1.,1,1.,0],'units':['T','','','']},

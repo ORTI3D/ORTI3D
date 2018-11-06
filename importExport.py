@@ -26,6 +26,39 @@ class impFile:
         name,val,med,coords=[],[],[],[]
         for ll in f1:
             l1=ll.split('\t');
+            name.append(l1[1]) 
+            val.append(l1[3])
+            if len(l1[5])==1 :
+                med.append(l1[5])
+            else : 
+                m=l1[5].split(',')
+                m = [int(i) for i in m]
+                med.append(m)
+            c0=l1[7:];a=[] 
+            for j in range(0,len(c0),2):
+                a.append((float(c0[j]),float(c0[j+1])))
+            coords.append(a)
+        for i in range(len(name)):
+            dicz = self.core.diczone[modName]
+            dicz.addZone(line)
+            iz = dicz.getNbZones(line)-1
+            dicz.dic[line]['name'][iz] = name[i]
+            dicz.dic[line]['value'][iz] = val[i]
+            dicz.dic[line]['media'][iz] = med[i]
+            dicz.dic[line]['coords'][iz] = coords[i]
+            self.gui.visu.addZone(med[i],name[i], val[i], coords[i])
+        self.gui.visu.redraw()
+
+    def impZones_old(self,fileDir,fileName,modName,line):
+        """ import a tabulated file with cols : 'name',name of zone,'value',
+        value attached to the zone,'coord', and as many colums as coordinates
+        organissed x1 y1 x2 y2...
+        then add the zoens to the aquifer and visu"""
+        fullName = fileDir+os.sep+fileName+'.txt'
+        f1=open(fullName,'r');
+        name,val,med,coords=[],[],[],[]
+        for ll in f1:
+            l1=ll.split('\t');
             name.append(l1[1])
             val.append(l1[3])
             med.append(l1[5])

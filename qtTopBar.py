@@ -200,7 +200,7 @@ class Ui_Var(object):
         elif choice == 'formula': self.base.onFormula()
         elif choice == 'interpolate': self.base.onInterpolate()
         elif choice == 'importZones': 
-            self.base.onImportZones(evt)
+            self.base.onImportZones()
             self.core.dictype[self.gui.currentModel][line] = ['zone']
         if line in list(self.cfg.curVar.keys()): 
             self.cfg.curVar.pop(line);#print line,self.curVar.keys() # when a type is selected, it removes the stored  view

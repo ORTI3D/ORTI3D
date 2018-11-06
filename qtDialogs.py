@@ -14,7 +14,7 @@ def onQuestion(gui,text):
     if q1 == QMessageBox.Yes: return 'Yes'
     elif q1 == QMessageBox.No: return 'No'
 
-class textDialog(QDialog):
+class textDialog(QDialog): # Text dialog for batch, formula, initial chemistry
     def __init__(self,gui, title, tsize, text):
         QDialog.__init__(self)
         self.setWindowTitle(title)
@@ -42,7 +42,7 @@ class textDialog(QDialog):
         self.exec_()
         return str(self.txed.document().toPlainText())     
         
-class genericDialog(QDialog):
+class genericDialog(QDialog): # Dialog for addin parameters and options for plot results
     def __init__(self, gui, title, data):
         self.gui,self.data = gui,data
         QDialog.__init__(self)
@@ -132,8 +132,8 @@ class genericDialog(QDialog):
                 val[i] = v0.split('\n')            
         if self.state =='accept' : return val
         else : return None
-        
-class myFileDialog:
+
+class myFileDialog: # Dialog to open or save a file 
     def __init__(self,opt='Open'):
         self.opt = opt
     def getsetFile(self,gui,title,filt):
@@ -153,7 +153,7 @@ class myFileDialog:
         if fDir!='' : settings.setValue("last_file", fDir)# QVariant(QString(fDir)))
         return str(fDir),str(fName)
 
-class myNoteBookCheck(QDialog):
+class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
     def __init__(self, gui,title, dicIn):
         QDialog.__init__(self)
         self.setWindowTitle(title)
@@ -175,7 +175,7 @@ class myNoteBookCheck(QDialog):
             lay.setContentsMargins(0,0,0,0);lay.setSpacing(0)
             self.dwidget[n] = [0]*nbChk
             for i in range(nbChk):
-                ic = mod(i,4);il = i/4
+                ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
                 ch.setText(dicIn[n][i][0])
                 ch.setCheckState(dicIn[n][i][1])
@@ -217,7 +217,7 @@ class myNoteBookCheck(QDialog):
         if self.state == 'accept': return self.dicOut
         else : return None
 
-class myNoteBook(QDialog):
+class myNoteBook(QDialog): # Dialog used for add chemistry and pest parameters
     def __init__(self, gui,title, dicIn):
         QDialog.__init__(self)
         self.setWindowTitle(title)
@@ -230,7 +230,7 @@ class myNoteBook(QDialog):
         nb = QTabWidget(glWidget)
         nb.setGeometry(QRect(5, 20, self.screenShape.width()*.4,self.screenShape.height()*.50))
         for n in list(dicIn.keys()):
-            if dicIn[n]==None:continue
+            if dicIn[n]==None:print('rien');continue
             if len(dicIn[n]['rows'])==0 and n!='Species': continue
             pg = myNBpanelGrid(gui,nb,dicIn[n]) #,size=(450,500))
             self.pages[n] = pg
@@ -294,7 +294,7 @@ class myNBpanelGrid(QTableWidget):
             #if self.item(il,0)==None: continue
             l0=[]
             for ic in range(self.columnCount()):
-                #print 'qtdl 269',il,ic,self.item(il,ic),self.type[ic]
+                #print ('qtdl 269',il,ic,self.item(il,ic),self.type[ic])
                 if self.type[ic]=='Text':
                     l0.append(str(self.item(il,ic).text()))
                 else :
@@ -331,7 +331,7 @@ class myNBpanelGrid(QTableWidget):
 '''##########################" FOR ZONES  ###############################""
 '''
 
-class zoneDialog(QDialog):
+class zoneDialog(QDialog): # Dialog for zone
     def __init__(self, parent, core,model,line, curzones, nb):
         QDialog.__init__(self)
         self.gui, self.core, self.model, self.line,  = parent.gui, core,model,line

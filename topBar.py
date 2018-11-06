@@ -49,9 +49,9 @@ class BaseTop:
         media = self.gui.currentMedia
         self.visu.showVar(line, media)        
         
-    def onImportZones(self,evt):
-        fdialg = myFileDialogOpen()
-        fileDir,fileName = fdialg.getFile(self.gui,evt,'choose zone file','*.txt')
+    def onImportZones(self):
+        fdialg = myFileDialog()
+        fileDir,fileName = fdialg.getsetFile(self.gui,'choose zone file','*.txt')
         self.core.importZones(fileDir,fileName,self.gui.currentModel,self.gui.currentLine)
 
     def onFormula(self):
