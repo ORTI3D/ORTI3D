@@ -416,8 +416,6 @@ class Pest:
         s+='1 1 1 \n' # l8 ICOV ICOR IEIG
     # SVD section
         if self.core.dicval['Pest']['svd.1'][0]>0:
-            SingVal=[x for x in range(len(self.ptrans)) if self.ptrans[x]!='tied']
-            self.core.dicval['Pest']['svd.1'][0]=int(SingVal)
             s+='* singular value decomposition \n'
             s+=str(self.core.dicval['Pest']['svd.1'][0])+'\n' ## l1
             if self.core.dicval['Pest']['svd.2'][0]=='' :  ## l2
