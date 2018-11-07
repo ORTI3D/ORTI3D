@@ -73,7 +73,8 @@ class qtBoxKeys:
         #self.parent.gui.onMessage(str(names)+' '+str(values)+' '+str(details))
         
         for i in range(nb):
-            bname,btype,bcontent,bselect=self.parent.makeButton(names[i],values[i],details[i],types[i])
+            bname,bcontent,bselect,btype=self.parent.makeButton(names[i],values[i],details[i],types[i])
+            #print(bname,bcontent,bselect,btype)
             txt = QLabel(self.layoutWidget)
             txt.setText(bname)
             if btype == 'choice': 
@@ -97,7 +98,7 @@ class qtBoxKeys:
             but = self.lValBut[i]
             val = self.values[i]
             #print but,val,self.labl[i],self.types[i]
-            if self.types[i] in ['choice','layint']:
+            if self.types[i] in ['choice']: #,'layint']: OA 6/11/18 removed layint
                 self.values[i] = but.currentIndex()
                 continue
             if but.text() not in ['formula','zone','array']:

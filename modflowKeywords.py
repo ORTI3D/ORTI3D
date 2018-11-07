@@ -36,7 +36,7 @@ class Mf:
         # layint layfloat : a vector of integers for layers that a re-written in lnes of 40 values
         self.lines={
         #DIS
-        'dis.1':{'comm':'Title','cond':'','kw':['title'],'detail':[],'type':['title']},
+        'dis.1':{'comm':'Domain','cond':'','kw':['MFDOMN'],'detail':[],'type':['arrfloat'],'default':['#']},
         'dis.2':{'comm':'Model properties','cond':'','kw':['NLAY','NROW','NCOL','NPER','ITMUNI','LENUNI'],
                'detail':['Nb of layers','Nb of rows','Nb of columns','Nb of periods',['time units','-','sec','min','hours','days','years'],
                 ['length units','-','ft','m','cm']],'type':['int','int','int','int','choice','choice'],

@@ -88,7 +88,7 @@ class modflowWriter:
         """to write all modflow file.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
-        lexceptions=['dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']
+        lexceptions=['dis.1','dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']#EV 06/11 added 'dis.1'
         lexceptions.extend(['disu.2','disu.3','disu.6','disu.9']) 
         lexceptions.extend(['lpf.'+str(a) for a in range(8,14)]) # when wirting by layers
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])

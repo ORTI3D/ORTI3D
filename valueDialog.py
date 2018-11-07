@@ -142,7 +142,7 @@ class valueDialog:
         curVal = value
         bselect = None
         if detail not in [None,[]]: 
-            if type(detail) == type([5]): #typ == choice doe snot work'
+            if type(detail) == type([5]): #typ == choice does not work'
                 txt+=' : '+detail[0]
                 bcontent = detail[1:] #1st item is title line
                 bselect = curVal
@@ -156,4 +156,5 @@ class valueDialog:
                 bcontent = str(curVal)
         else :
             bcontent = str(curVal)
-        return txt,typ,bcontent,bselect
+            typ = 'text'
+        return txt,bcontent,bselect,typ # OA 6/11/18 changed order

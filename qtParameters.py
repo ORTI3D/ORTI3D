@@ -3,6 +3,7 @@
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 import os
 from .parameters import BaseParms
@@ -15,12 +16,18 @@ class Ui_Parameters(object):
         self.gui,self.core,self.plugin_dir =gui, core,plugin_dir
         self.base = BaseParms(gui,core)
         Parameters.setObjectName("Parameters")
-        #Parameters.resize(150, 500)
-        Parameters.setWindowTitle( "Parameters")
+        self.mainbx = QVBoxLayout(Parameters) # this and 5 lines below added OA 6/11
+        title = QLabel(Parameters)
+        title.setText("Parameters")
+        font = QFont();font.setPointSize(10);font.setBold(True)
+        title.setFont(font)
+        title.setMaximumHeight(30)
+        self.mainbx.addWidget(title)
         self.dictBox={}
         skey = list(self.base.groups.keys()); skey.sort()
         for i,g in enumerate(skey): 
             self.dictBox[g] = Box(Parameters,self,g,i)
+        self.mainbx.addStretch(0) # OA 6/11
         QMetaObject.connectSlotsByName(Parameters)
         
 class Box(): #QGroupBox):
@@ -36,6 +43,7 @@ class Box(): #QGroupBox):
         self.hl.setSpacing(0)
         self.hl.setContentsMargins(1,1,1,1)
         dirutils = parent.plugin_dir+os.sep+'utils'
+        parent.mainbx.addWidget(self.box) # OA 6/11/18
         #self.parent.gui.dialogs.onMessage(self.parent.gui,os.listdir(dirutils)[0])
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
 

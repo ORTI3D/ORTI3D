@@ -147,3 +147,35 @@ this version sent to elicia
 - pest.py getDicZone2 removed X and Y position of zone - l.129 added split(' ')[0] to split line and comm
 - addin.py l.314-328 added else : return to avoid error when cancel
 - qtDialogs.py l.178 replaced 4 by 1 to get one colum instead of 4 in the dialog
+
+6/11/18 OA
+- guishow getpointvalue l.23 change format '%g'
+- qtValueDialog/getvalues l.101 removed layint from the list, it is in a linedit box it has no index
+- valueDialog/makebutton l.160 change the order of output to mimic the input one
+- qtDialogs/ploxy l.757 added ,gui to know the parent window and l.803 replace exec- by show to have a non modal dialog
+- qtShow/setupUI l.29-34 lines to add title results
+- qtParameters/setupUI l.19-24 et 45 to show title (45 added because i added a box)
+- in qtparameters adding a streatch to the box at the end of the setupUI push everybody tot he top
+- in modflowkeywords the dis.1 line is iused for the domain, if it contains a zone it will use it as a base for the grid
+- in addin/doaction l.197::201 added to use the domain zone for the base of the grid
+
+6/11/18 EV
+- pest.py getDicBack2 l.74,83,88,101 added option to get line for each media
+- pest.py getDicBack2 and getDicZones2 l.85,103,145,146 added format number "{:.5}".format()
+- pest.py dic2parms l.204-128, l.232,233,241,246 added keywords for lines
+- pest.py dic2parms l.248,253,257 removed z for zone in parameter name
+- pest.py writePyscript l.366-371 added keywords for lines in scriptPest1.py
+- addin.py l.576-593 added setPestParm() function to set the number and name of parameter group
+- modflowWriter.py l.91 added 'dis.1' in exception to not write this line 
+- tplPestScript1.txt l.14 added dicCatgMod to added keywords for lines
+- tplPestScript1.txt l.27-30 modified to suit new name parameter format
+- tplPestScript2.txt l.46,62,63 modified to allow obs transformation for head and chemistry
+
+7/11/18 EV
+- core.py runModel l.358-368 added to run pest
+- addin.py l.601-604 added onPestchek function
+- addin.py initAddin l.104-105 added Pestchek button
+- pest.py l.559-575 added Pestchek function
+- pest.py l.516-557 added writePestpp function
+- pestKeywords.py l.43 put SVD on by default - l.44,47 put condition for svd.2 and svd.3
+- pest.py dic2parms l.241-242,251 added condition for X Y zone 

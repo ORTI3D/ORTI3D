@@ -308,7 +308,14 @@ class Core:
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine(self.fileName+'.lst') #+'\nModflow run done'
+                try : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[5]
+                    time_last=self.getTlist2()[-1]
+                    if float(time_out)==float(time_last):
+                        return ('Normal termination of MODFLOW-2000')#self.getTxtFileLastLine(self.fileName+'.lst',3) #+'\nModflow run done'
+                    else: return('Model fail to converge')
+                except IndexError:
+                    return('Model fail to converge')
         if modName == 'Mt3dms':
             mod1,mod2 = 'mt3dms5b','Mt3dms'
             if 'VDF' in self.getUsedModulesList('Mt3dms'): 
@@ -317,25 +324,25 @@ class Core:
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('Mt3dms.out')#+'\n Mt3dms run done'
+                return self.getTxtFileLastLine('Mt3dms.out',5)#+'\n Mt3dms run done'
         if modName == 'Pht3d':
             s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('Pht3d.out')
+                return self.getTxtFileLastLine('Pht3d.out',5)
         if modName == 'Sutra':
             s=self.baseDir+sep+'bin'+sep+'sutra_2_2.exe'
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine(self.fileName+'.lst')
+                return self.getTxtFileLastLine(self.fileName+'.lst',5)
         if modName[:5] == 'Opgeo':
             s=self.baseDir+sep+'bin'+sep+'ogs.exe '+self.fileName+' >logfile.txt'
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('logfile.txt')
+                return self.getTxtFileLastLine('logfile.txt',5)
         if modName[:5] =='Min3p':
             if self.getValueFromName('Min3pFlow','P_Uns')==0:
                 s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s
@@ -347,13 +354,25 @@ class Core:
             #outp = pop.communicate(self.fileName+'\n')[0]
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine(self.fileName+'.log')
+                return self.getTxtFileLastLine(self.fileName+'.log',5)
+        if modName[:5] == 'Pest': #EV 07/11
+            if self.dicval['Pest']['ctd.1'][1]==0:
+                s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName ; print(s)
+            else : s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' ; print(s)
+            os.chdir(self.fileDir)
+            #os.system(s)
+            subprocess.call('start /wait '+s, shell=True)
+            if info !=False :
+                if self.dicval['Pest']['ctd.1'][1]==0:
+                    return self.getTxtFileLastLine(self.fileName+'.rec',5)
+                else : return self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
             
-    def getTxtFileLastLine(self,fname):
+            
+    def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
         a= f1.read().split('\n')
         f1.close()
-        return '\n'.join(a[-5:])
+        return a[-line]
         
 #********************** import and export functions *****************
     def importData(self,fileDir,fileName):

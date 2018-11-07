@@ -282,7 +282,7 @@ class qgisVisu:
                 dicz.setValue(line,'value',i,f['value'])
                 dicz.setValue(line,'name',i,f['name'])
                 dicz.setValue(line,'media',i,f['media'])
-                exec('coords = f.geometry().'+typP)
+                coords = eval('f.geometry().'+typP) # OA 6/11/18
                 if type(coords) != type([5]): coords = [coords] # for points
                 dicz.setValue(line,'coords',i,coords)
                 

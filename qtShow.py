@@ -26,6 +26,12 @@ class Ui_Show(object):
         self.screenShape = QDesktopWidget().screenGeometry()
         tWidget.setGeometry(QRect(0, 0, self.screenShape.width()*0.105, 45)) 
         topHBox = QHBoxLayout(tWidget)
+        title = QLabel(Show) # this and 5 lines below added OA 6/11
+        title.setText("Results")
+        font = QFont();font.setPointSize(10);font.setBold(True)
+        title.setFont(font)
+        title.setMaximumHeight(30)
+        topHBox.addWidget(title)
         but1 = QPushButton()
         but1.setIcon(QIcon(gui.u_dir+os.sep+'Vis_OriZ.png'))
         but1.setIconSize(QSize(25, 25))
@@ -49,7 +55,7 @@ class Ui_Show(object):
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
             pos += len(names)*20+45
-        #Show.resize(200,560)
+        topHBox.addStretch(0)
         QMetaObject.connectSlotsByName(Show)
         
     def switchImg(self,evt):

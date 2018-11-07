@@ -230,9 +230,9 @@ class guiShow:
         ix=where(d==amin(d1))[0][0]
         d=y-y0; d1=d[d>0.]
         if len(d1)==0 : return ' '
-        iy=where(d==amin(d1))[0][0]
-        zvalue = str(self.data[2][iy,ix])[:6]
-        return zvalue
+        iy=where(d==amin(d1))[0][0] 
+        zval = self.data[2][iy,ix]
+        return '%g'%zval # OA 6/11/18
             
     def getXyHeadFree(self,arr3,Y):
         """modifies the Y coord to show the elevation of the water table

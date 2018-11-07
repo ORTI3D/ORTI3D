@@ -11,6 +11,8 @@ md = core.Core()
 md.openModel(fdir,fname)
 nmedia = gm.getNmedia(md)
 
+dicCatgMod 
+
 # change the values in the model to initial ones and writes the files
 prtMF,prtMT,prtPH=False,False,False
 kparm=[];parm=[];sparm=[];mparm=[];pparm=[];uparm=[];iparm=[]
@@ -22,27 +24,28 @@ f1.close()
 
 for pl in parm:
     v0 = float(pl[1])
-    line,a1 = pl[0].split('_')
-    typ,a,b = a1[0],a1[1],a1[2:]
-    if typ=='b': catg,imedia = a,int(b) # here catg = m
-    elif typ=='z': catg,zname = a,b
+    keyN,a1 = pl[0].split('_',1) 
+    typ = a1[0] 
+    if typ=='b' : imedia = int(a1[1]) 
+    else : zname = a1[1:] 
+    line = dicCatg[keyN] 
     if line in md.dickword['Modflow'].lines: grp = 'MF';prtMF=True;modName = 'Modflow'
     if line in md.dickword['Mt3dms'].lines: grp = 'MT';prtMT=True; modName = 'Mt3dms'
     if line in md.dickword['Pht3d'].lines: grp = 'PH'
     if grp in['MF','MT']:
-        if catg=='x': # xcoord of the zone center
+        if typ=='x': # xcoord of the zone center
             iz = md.diczone[modName].getIndexFromName(line,zname)
             coo = md.diczone[modName].dic[line]['coords'][iz]
             x,y = zip(*coo);ctr=average(x)
             x1 = array(x) + v0-ctr
             md.diczone[modName].dic[line]['coords'][iz] = zip(x1,y)
-        elif catg=='y': # ycoord of the zone center
+        elif typ=='y': # ycoord of the zone center
             iz = md.diczone[modName].getIndexFromName(line,zname)
             coo = md.diczone[modName].dic[line]['coords'][iz]
             x,y = zip(*coo);ctr=average(y)
             y1 = array(y) + v0-ctr
             md.diczone[modName].dic[line]['coords'][iz] = zip(x,y1)
-        elif catg =='v':
+        elif typ =='v':
             md.diczone[modName].setValueFromName(line,zname,str(v0))
         else : # this is for backgound value
             if imedia==-1:

@@ -25,7 +25,7 @@ format in a txt file (out_..)
 for each pest run, the python script is run"""
 
 # all imports
-import os,sys
+import os,sys, subprocess
 from pylab import loadtxt,savetxt
 from .config import *
 
@@ -44,7 +44,7 @@ class Pest:
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             MFlist=['lpf.8','lpf.9','lpf.10','lpf.11','bas.5','rch.2','wel.1']
-            MTlist=['btn.11','btn.13','btn.23','dsp.2','dsp.3','dsp.4','vsc.3a']
+            MTlist=['btn.11','btn.13','dsp.2','dsp.3','dsp.4','vsc.3a']
             PHlist=[]
             modlist=[MFlist,MTlist,PHlist]
             for i,md in enumerate (list(dic.keys())) :
@@ -71,31 +71,38 @@ class Pest:
     def getDicBack2(self):
         dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
         cols = ['Use','media','value','min','max','Group']
+        nbMed = len(self.core.dicaddin['3D']['topMedia']) #EV 06/11
         if self.core.dicaddin['Pback2'] != {}:
             dic_old = self.core.dicaddin['Pback2']
             for md in list(dic.keys()) :
                 a = self.core.dicaddin['Pback1'][md]
                 lines = [x[0].split(' ')[0] for x in a if x[1]!=0]
-                data = []
+                data = []; linesm=[]
                 for i,line in enumerate(lines):
                     if line not in dic_old[md]['rows']:
-                        val = float(self.core.dicval[md][line][0])
-                        data.append([False,0,val,val/2,val*2,'G1'])
+                        for m in range(nbMed): #EV 06/11
+                            val = float(self.core.dicval[md][line][m])
+                            data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'G1']) #EV 06/11
+                            linesm.append(line)
                     else :
-                        ind = dic_old[md]['rows'].index(line)
-                        data.append(dic_old[md]['data'][ind])
-                dic[md] = {'cols':cols,'rows':lines,'data':data}
+                        for m in range(nbMed): #EV 06/11
+                            ind = dic_old[md]['rows'].index(line)+m
+                            data.append(dic_old[md]['data'][ind])
+                            linesm.append(line)
+                dic[md] = {'cols':cols,'rows':linesm,'data':data}
             return dic
         else :
             for md in list(dic.keys()) :
                 #print 'pest 58 dict',self.core.dicaddin['Pback1'][md]
                 a = self.core.dicaddin['Pback1'][md]
                 lines = [x[0].split(' ')[0] for x in a if x[1]!=0]
-                data = []
-                for i,line in enumerate(lines):
-                    val = float(self.core.dicval[md][line][0])
-                    data.append([False,0,val,val/2,val*2,'G1'])
-                dic[md] = {'cols':cols,'rows':lines,'data':data}
+                data = [] ; linesm=[]
+                for i,line in enumerate(lines): #EV 06/11
+                    for m in range(nbMed):
+                        val = float(self.core.dicval[md][line][m])
+                        data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'G1']) #EV 06/11
+                        linesm.append(line)
+                dic[md] = {'cols':cols,'rows':linesm,'data':data}
             return dic
             
     def getDicZones1(self):
@@ -133,10 +140,10 @@ class Pest:
                 nzone = len(dicz['name'])
                 dicout[line] = {'cols': cols,'rows': dicz['name'],'data':['a']*nzone}
                 for i,n in enumerate(dicz['name']):
-                    val = float(dicz['value'][i]);print(line,n)
+                    val = float(dicz['value'][i])#;print(line,n)
                     if n not in dicPzones[line]['rows']: # a zone has been added
-                        vmin,vmax= str(val/5),str(val*5)
-                        lst = [False,dicz['media'][i],str(val),vmin,vmax,'none','G2']
+                        vmin,vmax= str("{:.5}".format(val/5)),str("{:.5}".format(val*5)) #EV 06/11
+                        lst = [False,dicz['media'][i],str("{:.5}".format(val)),vmin,vmax,'none','G2'] #EV 06/11
                     else : # get the corresponding limits from dicin
                         i_old = dicPzones[line]['rows'].index(n)
                         lst = dicPzones[line]['data'][i_old]
@@ -145,7 +152,7 @@ class Pest:
         #print dicout
         return dicout
     
-    def getDicZones2_old(self):
+    def getDicZones2_XY(self):
             '''create a table from the selected zones (added 7/4/18)
             dicline is a dict for the lines the be used, may com from a dialog
             dicPzones contain the zones info to start Pest later'''
@@ -159,7 +166,7 @@ class Pest:
                 'UseY','value','min','max']
             for md in list(dicline.keys()):
                 a = dicline[md];
-                llist = [x[0] for x in a if x[1]!=0] 
+                llist = [x[0].split(' ')[0] for x in a if x[1]!=0] 
                 for line in llist : 
                     if line not in list(dicPzones.keys()): dicPzones[line] = {'rows':[]}
                     dicz = self.core.diczone[md].dic[line]
@@ -172,7 +179,7 @@ class Pest:
                         ymn,ymx = min(ymn,amin(y)),max(ymx,amax(y))
                     dx, dy = (xmx-xmn)/100,(ymx-ymn)/100
                     for i,n in enumerate(dicz['name']):
-                        val = float(dicz['value'][i]);print(line,n)
+                        val = float(dicz['value'][i])#;print(line,n)
                         x,y = list(zip(*dicz['coords'][i]))
                         xm,ym = mean(x),mean(y)
                         if n not in dicPzones[line]['rows']: # a zone has been added
@@ -194,6 +201,21 @@ class Pest:
         format for background ['MF,MT,PH]_line_bk_m_[media nb] (i media =-1 all)
         format for zones ['MF,MT,PH]_line_zo_[v,x,y]_zname
         if PH [k,s,p,m,u,i]'''
+        self.dicCatg={ #EV 06/11
+           'lpf.8': 'Kh',   #value of horizontal hydraulic conductivity 
+           'lpf.9': 'Kv',   #value of vertical hydraulic conductivity
+           'lpf.10': 'Ss',  #value of 1nd storage coefficient
+           'lpf.11': 'Sy',  #value of 2nd storage coefficient
+           'bas.5': 'H',    #value of initial and fixed head
+           'rch.2': 'Rc',   #value of recharge
+           'wel.1': 'W',    #value of flux rate for well
+           'btn.13': 'C',   #value of MT3DMS zone source concentration
+           'btn.11': 'n',   #value of effective porosity
+           'dsp.2': 'aL',   #value of longitudinal dispersivity
+           'dsp.3': 'aT',   #value of transverse dispersivity
+           'dsp.4': 'aZ',   #value of vertical dispersivity
+           'vsc.3a': 'v',   #value of viscosity coefficient
+           }   
         self.pnames=[]; # list of parameter names
         self.ptrans=[]; # list of parameter transformation
         self.pchglim=[] #list of parameter change limit
@@ -207,7 +229,8 @@ class Pest:
             for i,line in enumerate(dicPback[md]['rows']):
                 dp = dicPback[md]['data'][i]
                 if dp[0]:
-                    self.pnames.append(line+'_bm'+str(dp[1]))
+                    keyN=self.dicCatg[line] #EV 06/11 keywords for lines
+                    self.pnames.append(keyN+'_b'+str(dp[1])) #EV 06/11 keywords for lines
                     self.pvalbnd.append(dp[2:5])
                     self.ptrans.append('none')
                     self.pgrp.append(dp[5])
@@ -215,21 +238,25 @@ class Pest:
             cols = dicPzones[line]['cols']
             #i1,ix,iy = cols.index('Use'),cols.index('UseX'),cols.index('UseY')
             i1 = cols.index('Use')
+            if 'UseX' in cols : #EV 07/11
+                ix,iy = cols.index('UseX'),cols.index('UseY') 
+            keyN=self.dicCatg[line] #EV 06/11 keywords for lines
             for i,zname in enumerate(dicPzones[line]['rows']):
                 dp = dicPzones[line]['data'][i]
                 if dp[i1]: #zone selected
                     #self.pnames.append(line+'_zv'+zname)
-                    self.pnames.append(line+'_'+zname)
+                    self.pnames.append(keyN+'_v'+zname) #EV 06/11 keywords for lines and removed z for zone
                     self.pvalbnd.append(dp[i1+2:i1+5])
                     self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
-                #if dp[ix]: #x zone selected
-                 #   self.pnames.append(line+'_zx'+zname)
-                  #  self.pvalbnd.append(dp[ix+1:ix+4])
-                   # self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
-                #if dp[iy]: #y zone selected
-                 #   self.pnames.append(line+'_zy'+zname)
-                  #  self.pvalbnd.append(dp[iy+1:iy+4])
-                   # self.ptrans.append(dp[5]);self.pgrp.append(dp[6])                    
+                if 'UseX' in cols :#EV 07/11
+                    if dp[ix]: #x zone selected
+                        self.pnames.append(keyN+'_x'+zname) #EV 06/11 keywords for lines and removed z for zone
+                        self.pvalbnd.append(dp[ix+1:ix+4])
+                        self.ptrans.append(dp[5]);self.pgrp.append(dp[6])
+                    if dp[iy]: #y zone selected
+                        self.pnames.append(keyN+'_y'+zname) #EV 06/11 keywords for lines and removed z for zone
+                        self.pvalbnd.append(dp[iy+1:iy+4])
+                        self.ptrans.append(dp[5]);self.pgrp.append(dp[6])                    
         for i in range(len(self.pnames)):
             self.pchglim.append('factor')
             self.pparm.append(['1','0','1']);self.ptied.append('')
@@ -244,7 +271,9 @@ class Pest:
         self.prtMF,self.prtMT,self.prtPH=False,False,False
         s='ptf @ \n'
         for name in self.pnames:
-            line = name.split('_')[0]
+            keyN = name.split('_')[0] ; print(keyN)
+            r_dicCatg = dict(map(reversed, self.dicCatg.items()))
+            line=r_dicCatg[keyN] ; print(line)
             s+=name+' @'+name+'@ \n'
             if line in self.core.dickword['Modflow'].lines: self.prtMF=True
             if line in self.core.dickword['Mt3dms'].lines: self.prtMT=True
@@ -285,8 +314,7 @@ class Pest:
             f1.write(s);f1.close()
             print('runmodel written')
         #else : ###### implement linux
-        
-                    
+                            
     def getObsPt(self):
     # get the observation files and gathers data in one dict from ev
         os.chdir(self.fdir)
@@ -335,6 +363,12 @@ class Pest:
             s=s.replace('ppmdir',str(self.core.dicval['Pest']['sys.2'][0]))
         #s=s.replace('ppfdir',self.fdir)
         s=s.replace('ppfname',self.fname)
+        r_dicCatg = dict(map(reversed, self.dicCatg.items()))  #EV 06.11
+        dC=('dicCatg = {\n') 
+        for k in sorted (r_dicCatg.keys()): 
+            dC+=("'%s':'%s',\n" % (k, r_dicCatg[k]))
+        dC+=("}")
+        s=s.replace('dicCatgMod',dC)
         f1=open(self.fdir+os.sep+'scriptPest1.py','w')
         f1.write(s);f1.close()
     # writes the pyton script to retrieve data after model run
@@ -382,6 +416,8 @@ class Pest:
         s+='1 1 1 \n' # l8 ICOV ICOR IEIG
     # SVD section
         if self.core.dicval['Pest']['svd.1'][0]>0:
+            SingVal=[x for x in range(len(self.ptrans)) if self.ptrans[x]!='tied']
+            self.core.dicval['Pest']['svd.1'][0]=int(SingVal)
             s+='* singular value decomposition \n'
             s+=str(self.core.dicval['Pest']['svd.1'][0])+'\n' ## l1
             if self.core.dicval['Pest']['svd.2'][0]=='' :  ## l2
@@ -481,8 +517,69 @@ class Pest:
             f1=open(self.fname+'r.pst','w')
             f1.write(s);f1.close()
             print('Reg pst file written')
+            
+    def writePestpp(self): #EV 07/11     
+    # PEST ++ command
+        s= '++# PEST ++ command \n'
+        if self.core.dicval['Pest']['ppp.1'][0]!='':
+            s+='++ MAX_N_SUPER = '+str(int(self.core.dicval['Pest']['ppp.1'][0]))+'\n'
+        if self.core.dicval['Pest']['ppp.1'][1]!='':
+            s+='++ SUPER_EIGTHRES = '+str(float(self.core.dicval['Pest']['ppp.1'][1]))+'\n'
+        if self.core.dicval['Pest']['ppp.1'][2]!='':
+            s+='++ N_ITER_BASE = '+str(int(self.core.dicval['Pest']['ppp.1'][2]))+'\n'
+        if self.core.dicval['Pest']['ppp.1'][3]!='':
+            s+='++ N_ITER_SUPER = '+str(int(self.core.dicval['Pest']['ppp.1'][3]))+'\n'
+        if self.core.dicval['Pest']['ppp.1'][4]!='':
+            s+='++ SVD_PACK = '+str(self.core.dicval['Pest']['ppp.1'][4])+'\n'
+        if self.core.dicval['Pest']['ppp.1'][5]!='':
+            s+='++ MAX_SUPER_FRZ_ITER = '+str(int(self.core.dicval['Pest']['ppp.1'][5]))+'\n'
+        if self.core.dicval['Pest']['ppp.1'][6]!='':
+            s+='++ MAT_INV = '+str(self.core.dicval['Pest']['ppp.1'][6])+'\n'
+        if self.core.dicval['Pest']['ppp.1'][7]!='':
+            s+='++ SUPER_RELPARMAX = '+str(float(self.core.dicval['Pest']['ppp.1'][7]))+'\n'
+        if self.core.dicval['Pest']['ppp.2'][0]!='':
+            s+='++ AUTO_NORM = '+str(int(self.core.dicval['Pest']['ppp.2'][0]))+'\n'
+        if self.core.dicval['Pest']['ppp.2'][1]!='':
+            s+='++ LAMBDAS = '+str(self.core.dicval['Pest']['ppp.2'][1])+'\n'
+        if self.core.dicval['Pest']['ppp.2'][2]!='':
+            s+='++ MAX_REG_ITER = '+str(int(self.core.dicval['Pest']['ppp.2'][2]))+'\n'
+        if self.core.dicval['Pest']['ppp.2'][3]!='':
+            s+='++ MAX_RUN_FAIL = '+str(int(self.core.dicval['Pest']['ppp.2'][3]))+'\n'
+        if self.core.dicval['Pest']['ppp.2'][4]!='':
+            s+='++ ITERATION_SUMMARY = '+str(int(self.core.dicval['Pest']['ppp.2'][4]))+'\n'
+        if self.core.dicval['Pest']['ppp.2'][5]!='':
+            s+='++ DER_FORGIVE = '+str(int(self.core.dicval['Pest']['ppp.2'][5]))+'\n'
+        if self.core.dicval['Pest']['ppp.3'][0]!='':
+            s+='++ UNCERTAINTY = '+str(int(self.core.dicval['Pest']['ppp.3'][0]))+'\n'
+        if self.core.dicval['Pest']['ppp.3'][1]!='':
+            s+='++ FORECASTS = '+str(self.core.dicval['Pest']['ppp.3'][1])+'\n'
+        if self.core.dicval['Pest']['ppp.3'][2]!='':
+            s+='++ PARAMETER_COVARIANCE = '+str(self.core.dicval['Pest']['ppp.3'][2]) +'\n'                         
+        f1=open(self.fdir+os.sep+self.fname+'.pst','a')
+        f1.write(s);f1.close()
+        if self.Reg==True :
+            f1=open(self.fdir+os.sep+self.fname+'r.pst','a')
+            f1.write(s);f1.close()
+            
+    def Pestchek(self): #EV 07/11
+        d0=self.core.baseDir # main directory
+        d1=d0.split(os.sep)
+        self.mdir = '//'.join(d1)
+        d0,self.fname = self.core.fileDir,self.core.fileName
+        d1=d0.split(os.sep)
+        self.fdir = '//'.join(d1)
+        os.chdir(self.fdir)
+        if self.core.dicval['Pest']['ctd.1'][1]==2:
+            s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'r.pst'
+            os.system(s+ " & pause")
+            return (self.fname+'r.pst file checked')
+        else :
+            s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'.pst'
+            os.system(s+ " & pause")
+            #subprocess.Popen('start /wait '+s+ " & pause", shell=True)
+            return (self.fname+'.pst file checked')
 
-    def writeFiles(self):
+    def writeFiles(self): 
         d0,self.fname = self.core.fileDir,self.core.fileName
         d1=d0.split(os.sep)
         self.fdir = '//'.join(d1)

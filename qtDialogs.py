@@ -754,7 +754,7 @@ from matplotlib.figure import Figure
 class plotxy(QDialog):
     
     def __init__(self,gui,x,arry,legd,title,Xtitle,Ytitle,typ='-'):
-        QDialog.__init__(self)
+        QDialog.__init__(self,gui) # OA 6/11/18 added gui
         self.setModal(False)
         self.setWindowTitle('Plot of results')
         layout = QVBoxLayout(self)
@@ -800,7 +800,7 @@ class plotxy(QDialog):
         self.gui.actionToggleEditing().triggered.disconnect(self.showDialogAndDisconnect)
         
     def getValues(self):
-        self.exec_()
+        self.show() # OA 6/11/18 replace exec by show
         return self.data
     
     def onExport(self,evt):

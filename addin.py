@@ -100,6 +100,9 @@ class addin:
         self.core.dicaddin['Pzones1'] = {}
         self.core.dicaddin['Pzones2'] = {}
         self.structure['button']['5.Pest'].append({'name':name,'pos':0,'short':'Pz'})
+        
+        name = 'Pestchek' # run Pestchek EV 07/11
+        self.structure['button']['5.Pest'].append({'name':name,'pos':0,'short':'Pz'})
 
         name = 'InitialChemistry' # to set specific initial chemistry
         self.core.dicaddin[name] = {'name':'','formula':'value =','tstep':''}
@@ -194,11 +197,16 @@ class addin:
                 
         if actionName =='Ad_Grid':
             g = self.core.dicaddin['Grid']
+            x0,x1,y0,y1 = g['x0'],g['x1'],g['y0'],g['y1'] # OA 6/11/18
+            dicz = self.core.diczone['Modflow'].dic # OA 6/11/18
+            if 'dis.1' in dicz.keys(): # OA 6/11/18
+                x,y = zip(*dicz['dis.1']['coords'][0]) # OA 6/11/18
+                x0,x1,y0,y1 = min(x),max(x),min(y),max(y) # OA 6/11/18
             dvert = 'dy';vert='Y'
             if self.getDim() in ['Radial','Xsection']:
                 dvert = 'dz';vert = 'Z'
-            data = [('Xmin','Text',g['x0']),(vert+'min','Text',g['y0']),
-                    ('Xmax','Text',g['x1']),(vert+'max','Text',g['y1']),
+            data = [('Xmin','Text',x0),(vert+'min','Text',y0),
+                    ('Xmax','Text',x1),(vert+'max','Text',y1),
                     ('dx','Textlong',g['dx']),(dvert,'Textlong',g['dy'])]
             dialg = self.dialogs.genericDialog(self.gui,'Grid',data)
             retour = dialg.getValues()
@@ -318,6 +326,7 @@ class addin:
             dic2 = dialg.getValues()
             if dic2 != None:
                 self.core.dicaddin['Pback2'] = dic2
+                self.setPestParm()
 
         if actionName == 'Ad_Pzones':
             dic = self.pest.getDicZones1() # choose the line to modify
@@ -331,7 +340,11 @@ class addin:
             dic2 = dialg.getValues()
             if dic2 != None:
                 self.core.dicaddin['Pzones2'] = dic2
-            
+                self.setPestParm()
+        
+        if actionName == 'Ad_Pestchek':
+            self.onPestchek()
+
     def getUsedModulesList(self,modName):
         """returns only the modules that are used as a list"""
         #print self.core.dicaddin['usedM_'+modName]
@@ -563,7 +576,32 @@ class addin:
         self.core.dicaddin['MtReact']={'rows':rows,'cols':cols,'data':data}
         
     def getMtSpecies(self): return self.core.dicaddin['MtSpecies']
+    
     def getMtReact(self): return self.core.dicaddin['MtReact']
+    
+    def setPestParm(self): #EV 06/11
+        self.pgrp = [] #list of parameter group
+        self.dicPback= self.core.dicaddin['Pback2']
+        self.dicPzones=self.core.dicaddin['Pzones2']
+        for md in list(self.dicPback.keys()):
+            for i,line in enumerate(self.dicPback[md]['rows']):
+                dp = self.dicPback[md]['data'][i]
+                if dp[0]:self.pgrp.append(dp[5])
+        for line in list(self.dicPzones.keys()):
+            cols = self.dicPzones[line]['cols']
+            i1 = cols.index('Use')
+            for i,zname in enumerate(self.dicPzones[line]['rows']):
+                dp = self.dicPzones[line]['data'][i]
+                if dp[i1]:self.pgrp.append(dp[6])
+        self.nparmgrp = len(unique(self.pgrp))
+        self.core.dicval['Pest']['pgr.1'][0]= self.nparmgrp 
+        for i in range(self.nparmgrp):
+            self.core.dicval['Pest']['pgr.'+str(i+2)][0]=str(unique(self.pgrp)[i])
+            
+    def onPestchek(self): #EV 07/11
+        pest=Pest(self.core)
+        message=pest.Pestchek()
+        self.dialogs.onMessage(self.gui,message)
             
 ###################### CALCULATION OF PARTICLES #################
     def calcParticle(self,xp0,yp0,zoneMatrix=None):

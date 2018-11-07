@@ -40,11 +40,11 @@ class Pst:
                 ,'float','int','int','float','int'],'default':[30, .005, 4, 4, .005, 4]},
         #SVD
         'svd.1':{'comm':'svd l1','cond':'','kw':['SVDMODE'],'detail':[['activate svd',
-                'no','yes']],'type':['choice'],'default':[0]},
-        'svd.2':{'comm':'svd l2','cond':'','kw':['MAXSING', 'EIGTHRESH'],
+                'no','yes']],'type':['choice'],'default':[1]}, # EV 07/11
+        'svd.2':{'comm':'svd l2','cond':'SVDMODE > 0','kw':['MAXSING', 'EIGTHRESH'], # EV 07/11
                'detail':['nb of singular value','eigenvalue ratio threshold'],'type':
                  ['string','float'],'default':['',5e-7]},
-        'svd.3':{'comm':'svd l3','cond':'','kw':['EIGWRITE'],
+        'svd.3':{'comm':'svd l3','cond':'SVDMODE > 0','kw':['EIGWRITE'], # EV 07/11
                'detail':['svd output file'],'type':['int'],'default':[0]},
         #PGR
         'pgr.1':{'comm':'Nb of parameter group','cond':'','kw':['NBPARGP'],'detail':
