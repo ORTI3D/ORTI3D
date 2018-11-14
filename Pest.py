@@ -147,7 +147,7 @@ class Pest:
                     else : # get the corresponding limits from dicin
                         i_old = dicPzones[line]['rows'].index(n)
                         lst = dicPzones[line]['data'][i_old]
-                        lst[2]= val # take current values of the zone
+                        lst[2]= "{:.5}".format(val) # take current values of the zone
                     dicout[line]['data'][i] = lst
         #print dicout
         return dicout
@@ -271,9 +271,9 @@ class Pest:
         self.prtMF,self.prtMT,self.prtPH=False,False,False
         s='ptf @ \n'
         for name in self.pnames:
-            keyN = name.split('_')[0] ; print(keyN)
+            keyN = name.split('_')[0] #; print(keyN)
             r_dicCatg = dict(map(reversed, self.dicCatg.items()))
-            line=r_dicCatg[keyN] ; print(line)
+            line=r_dicCatg[keyN] #; print(line)
             s+=name+' @'+name+'@ \n'
             if line in self.core.dickword['Modflow'].lines: self.prtMF=True
             if line in self.core.dickword['Mt3dms'].lines: self.prtMT=True
@@ -298,8 +298,8 @@ class Pest:
         if self.core.dicval['Pest']['sys.1']==[1]:
             s='#!/bin/sh \n'
             s+='## \n'
-            s+='cd ../model \n'
-            s+='## \n'
+            #s+='cd ../model \n' #EV 08/11 removed 
+            #s+='## \n'
             s+='python scriptPest1.py \n'
             s+='## \n'
             if self.prtMF: s+='mf2k '+self.fname+'\n'
@@ -409,7 +409,7 @@ class Pest:
             s+= 'norestart estimation\n'
         s+=str(self.nparm)+' '+str(self.nobs)+' '+str(self.nparmgrp)+' 0 '+str(self.nobsgrp)+'\n' ## l2
         s+=str(self.ntfiles)+' '+str(self.nifiles)+' single point 1 0 0 \n' ## l3
-        s+='10.0 2.0 0.3 0.03 10\n' ## l4 RLAMBDAl RLAMFAC !PHIRATSUF !PHIREDLAM !NUMLAM
+        s+='10.0 -3.0 0.3 0.03 10\n' ## l4 RLAMBDAl RLAMFAC !PHIRATSUF !PHIREDLAM !NUMLAM
         s+=' '.join([str(x) for x in self.core.dicval['Pest']['ctd.4']])+'\n' ## l5 RELPARMAX FACPARMAX FACORIG 
         s+=str(self.core.dicval['Pest']['ctd.5'][0])+'\n'  ## l6 PHIREDSWH
         s+=' '.join([str(x) for x in self.core.dicval['Pest']['ctd.6']])+'\n'  ## l7 NOPTMAX PHIREDSTP NPHISTP NPHINORED RELPARSTP NRELPAR
@@ -454,11 +454,11 @@ class Pest:
         s+='* observation data \n'
         for i in range(len(self.onames)):
             s+=self.ospec[i][:2]+self.onames[i]+'_'+str(i)+' '
-            if self.ospec[i] not in ['Head','Part']:
+            if self.ospec[i] not in ['Part']: # EV 08/11 Trans OK for Head
                 if self.core.dicval['Pest']['obs.1']==[0]:
                     s+=str(float(self.obs[i][1]))+' '
                 elif self.core.dicval['Pest']['obs.1']==[1]:
-                    s+=str(log10(float(self.obs[i][1])))+' '
+                    s+=str(max(log10(float(self.obs[i][1])),-3))+' ' # EV 14/11 add max -3
                 elif self.core.dicval['Pest']['obs.1']==[2]:
                     s+=str(sqrt(float(self.obs[i][1])))+' ' 
             else :
@@ -474,8 +474,10 @@ class Pest:
         else :
             s+='* model command line \n./runmodel \n'
             s+='* model input/output \n'
-            s+='tpl/pest_tpl.txt  ../model/pest_run.txt \n'
-            s+= 'ins/pest.ins ../model/pest_out.txt \n'
+            s+='pest_tpl.txt  pest_run.txt \n' # EV 08/11
+            s+= 'pest.ins pest_out.txt \n'
+            #s+='tpl/pest_tpl.txt  ../model/pest_run.txt \n'
+            #s+= 'ins/pest.ins ../model/pest_out.txt \n'
         f1=open(self.fdir+os.sep+self.fname+'.pst','w')
         f1.write(s);f1.close()
         print('Pst file written')

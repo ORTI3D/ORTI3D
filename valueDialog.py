@@ -103,7 +103,7 @@ class valueDialog:
         """sets the new values when user click on OK in key box"""
         values=self.dialg.boxkeys.getValues();#print 'vdialg, setnew',values
         for i in range(len(values)):
-            print (self.val[self.currentLine][i])
+            #print (self.val[self.currentLine][i])
             self.val[self.currentLine][i]=values[i]
         names = []
         self.changeStoredValues();

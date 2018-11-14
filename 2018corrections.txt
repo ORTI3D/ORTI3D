@@ -179,3 +179,13 @@ this version sent to elicia
 - pest.py l.516-557 added writePestpp function
 - pestKeywords.py l.43 put SVD on by default - l.44,47 put condition for svd.2 and svd.3
 - pest.py dic2parms l.241-242,251 added condition for X Y zone 
+
+8/11/18 EV
+- pestKeywords.py l.105 modified PHIMACCEPT default value
+- pest.py l.477-480 modified command line for linux
+
+
+13/11/18 EV
+- pht3d.py l.65 replace >0 by !=0 because error '>' not supported between instances of 'str' and 'int'
+- core.py runModel l.311-320, l.329-335, l.341-347, l.381-391 show 'Model fail to converge' for modflow, mt3dms, pht3d and pest
+- pest.py l.461 modified to avoid -inf for negative observation value in log10

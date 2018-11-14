@@ -62,7 +62,7 @@ class PHT3D:
         for n in kmin['rows']:
             iek=kmin['rows'].index(n);mxp=0
             for ip in range(1,len(kmin['cols'])): # compter le nb de parametres
-                if kmin['data'][iek][ip]>0:mxp=ip
+                if kmin['data'][iek][ip]!=0:mxp=ip #EV 13/11 replace >0 by !=0
             parmk[n]=mxp
             if mxp>npk: npk=mxp
         return parmk

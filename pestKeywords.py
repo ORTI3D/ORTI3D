@@ -102,7 +102,7 @@ class Pst:
         'reg.1':{'comm':'reg l1','cond':'PESTMODE ==2','kw':['PHIMLIM','PHIMACCEPT',
                 'FRACPHIM','MEMSAVE'],'detail':['target obj fct','acceptable obj fct',
                 'fraction of obj fct',['conservation of memory','-','memsave','nomemsave']],
-                 'type':['float','float','float','choice'],'default':[1e-12,1e-12,0.1,0]},
+                 'type':['float','float','float','choice'],'default':[1e-12,1.1e-12,0.1,0]},
         'reg.2':{'comm':'reg l2','cond':'PESTMODE==2','kw':['WFINIT','WFMIN','WFMAX',
                 'LINREG','REGCONTINUE'],'detail':['reg weight factor',
                 'min reg weight factor','max reg weight factor',['reg constraint','-',

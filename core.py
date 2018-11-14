@@ -282,7 +282,7 @@ class Core:
             self.flowReader.read = False
         if modName == 'Pest':
             self.addin.pest.writeFiles()
-        if info !=False :return 'files written'            
+        if info !=False :return 'Files written'            
       
     def runModel(self,modName,info=True):
         tabRes, sep = [],os.sep
@@ -308,8 +308,10 @@ class Core:
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                try : 
-                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[5]
+                try :  # EV 13/11 "show model fail to converge"
+                    time_model=self.dicval['Modflow']['dis.2'][4]
+                    if time_model==0 : time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[4]
+                    else : time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[(time_model+1)]
                     time_last=self.getTlist2()[-1]
                     if float(time_out)==float(time_last):
                         return ('Normal termination of MODFLOW-2000')#self.getTxtFileLastLine(self.fileName+'.lst',3) #+'\nModflow run done'
@@ -324,13 +326,25 @@ class Core:
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('Mt3dms.out',5)#+'\n Mt3dms run done'
+                try : # EV 13/11 "show model fail to converge"
+                    line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
+                    if line_out=='END':
+                        return ('Normal termination of MT3DMS')
+                    else: return('Model fail to converge') #return self.getTxtFileLastLine('Mt3dms.out',3)#+'\n Mt3dms run done'
+                except IndexError:
+                    return('Model fail to converge')
         if modName == 'Pht3d':
             s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('Pht3d.out',5)
+                try : # EV 13/11 "show model fail to converge"
+                    line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
+                    if line_out=='END':
+                        return ('Normal termination of PHT3D')
+                    else: return('Model fail to converge') #return self.getTxtFileLastLine('Pht3d.out',3)
+                except IndexError:
+                    return('Model fail to converge')
         if modName == 'Sutra':
             s=self.baseDir+sep+'bin'+sep+'sutra_2_2.exe'
             os.chdir(self.fileDir)
@@ -360,13 +374,21 @@ class Core:
                 s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName ; print(s)
             else : s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' ; print(s)
             os.chdir(self.fileDir)
-            #os.system(s)
-            subprocess.call('start /wait '+s, shell=True)
+            os.system(s)
+            #subprocess.call('start /wait '+s, shell=True)
             if info !=False :
                 if self.dicval['Pest']['ctd.1'][1]==0:
-                    return self.getTxtFileLastLine(self.fileName+'.rec',5)
-                else : return self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
-            
+                    try : # EV 13/11 "show model fail to converge"
+                        line_out=self.getTxtFileLastLine(self.fileName+'.rec',5)
+                        if line_out=='': return ('Normal termination of Pest')
+                        else : return ('Pest run failed')
+                    except : return ('Pest run failed')
+                else : 
+                    try : 
+                        line_out=self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
+                        if line_out=='': return ('Normal termination of Pest')
+                        else : return ('Pest run failed')
+                    except : return ('Pest run failed')
             
     def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
