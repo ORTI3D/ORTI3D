@@ -66,6 +66,7 @@ class addin:
         grid = {'x0':'0','y0':'0','x1':'100','y1':'50','dx':'5','dy':'2'} # default grid
         self.core.dicaddin[name] = grid
         self.structure['button']['1.Model'].append({'name':name,'pos':0,'short':'G'})
+        self.checkDomain = False # do not consider the diczone in dis.1 as domain limit OA 14/11/18
         name = '3D'
         dim = {'zmin':0.,'topMedia':[10],'listLayers':[1]}
         self.core.dicaddin[name] = dim
@@ -200,8 +201,13 @@ class addin:
             x0,x1,y0,y1 = g['x0'],g['x1'],g['y0'],g['y1'] # OA 6/11/18
             dicz = self.core.diczone['Modflow'].dic # OA 6/11/18
             if 'dis.1' in dicz.keys(): # OA 6/11/18
-                x,y = zip(*dicz['dis.1']['coords'][0]) # OA 6/11/18
-                x0,x1,y0,y1 = min(x),max(x),min(y),max(y) # OA 6/11/18
+                data = [('Use the dis.1 domain zone?','Check',self.checkDomain)]
+                dlg1 = self.dialogs.genericDialog(self.gui,'domain zone',data) # OA 14/11
+                retour = dlg1.getValues() # OA 14/11
+                if retour[0] : # dilg returns true OA 14/11
+                    self.checkDomain = True
+                    x,y = zip(*dicz['dis.1']['coords'][0]) # OA 6/11/18
+                    x0,x1,y0,y1 = min(x),max(x),min(y),max(y) # OA 6/11/18
             dvert = 'dy';vert='Y'
             if self.getDim() in ['Radial','Xsection']:
                 dvert = 'dz';vert = 'Z'
@@ -212,6 +218,9 @@ class addin:
             retour = dialg.getValues()
             if retour != None:
                 g['x0'],g['y0'],g['x1'],g['y1'],g['dx'],g['dy'] = retour;#print g
+                if self.checkDomain:
+                    x0,x1,y0,y1 = float(g['x0']),float(g['x1']),float(g['y0']),float(g['y1']) # OA 14/11
+                    dicz['dis.1']['coords'][0] = list(zip([x0,x1,x1,x0,x0],[y1,y1,y0,y0,y1])) # OA 14/11 set dis.1 domain new bdy
                 self.setGridInModel('new')
                 if self.gtyp == 'wx':
                     self.gui.guiShow.dlgShow.onTickBox('Model','Grid','B',True)

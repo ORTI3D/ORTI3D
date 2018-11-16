@@ -189,3 +189,8 @@ this version sent to elicia
 - pht3d.py l.65 replace >0 by !=0 because error '>' not supported between instances of 'str' and 'int'
 - core.py runModel l.311-320, l.329-335, l.341-347, l.381-391 show 'Model fail to converge' for modflow, mt3dms, pht3d and pest
 - pest.py l.461 modified to avoid -inf for negative observation value in log10
+
+14/11/18 OA
+- addin init l.71 added a self.checkDomain bool set to False
+- addin l.203-208 in action Ad_Grid added a dialog to use dis.1 zone for domain bdy
+- addin l.221 modif dis.1 first zone if changed in grid dialog
