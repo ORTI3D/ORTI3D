@@ -381,7 +381,10 @@ class zoneDialog(QDialog): # Dialog for zone
                 onMessage(self,"Enter an integer number for media")
                 return None
         curzones['media'][self.nb] = m2;#onMessage(self.gui,str(zp.coords.getValues()['data']))
-        curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
+        if self.line != 'dis.1': # OA 20/11/18 this is to create modflow domain
+            curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
+        else : # OA 20/11/18
+            curzones['coords'][self.nb]= zp.coords.getValues()['data']
         val0 = ''
         if self.typO: val0 = self.getOpt()
         #print 'qtdlg 366',self.typS

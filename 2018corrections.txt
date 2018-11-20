@@ -194,3 +194,6 @@ this version sent to elicia
 - addin init l.71 added a self.checkDomain bool set to False
 - addin l.203-208 in action Ad_Grid added a dialog to use dis.1 zone for domain bdy
 - addin l.221 modif dis.1 first zone if changed in grid dialog
+	
+20/11/18  OA
+- qtdialogs zonedialog getvalues l.384 : the coord correction is done for all zones except dis.1
