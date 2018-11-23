@@ -161,7 +161,8 @@ def makeZblock(core):
         if core.dictype['Modflow']['dis.6'][0] =='formula': 
             formula = core.dicformula['Modflow']['dis.6'][0]
             if 'interp' not in formula: # in top all values are given by one formula
-                exec(formula.replace('self','core'))
+                value=core.formExec(formula) #EV 21/11/18
+                #exec(formula.replace('self','core'))
                 return value # returns the whole block
             else : #case of interpolation, try to get the parameters
                for2 = formula.split('\n')
@@ -534,18 +535,21 @@ def zone2index(core,x,y,z,opt=None):
         return nxp[ind].astype(int),nyp[ind].astype(int),nzp[ind],nsn[ind],ncs[ind]
 
 def minDiff(x,xvect):
-    d=x-xvect; d1=d[d>0.];
+    d=x-xvect; d1=d[d>0.]; #print('d',d)
     if len(d1)==0: return 0
     else :
         a=where(d==amin(d1));return int(a[0])
         
 def isclosed(core,x,y):
-    nx,ny,xv,yv=getXYvects(core)
+    nx,ny,xv,yv=getXYvects(core) #print('x0',x[0],'y0',y[0])
     ix,iy = minDiff(x[0],xv),minDiff(y[0],yv)
     dmin=min(xv[ix+1]-xv[ix],yv[iy+1]-yv[iy]) # modified 22/3/2017 for variable grid
     d0=sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2);
     if d0<dmin: return True
     else : return False
+    
+#def zone2line():
+    
     
 ##########################   GMESH    ########################
 ##########################################################

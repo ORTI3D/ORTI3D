@@ -94,7 +94,7 @@ class modflowWriter:
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
         lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
         lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
-        lexceptions.extend(['sms.1a'])
+        lexceptions.extend(['sms.1a','hfb.3'])
         for grp in self.core.getUsedModulesList('Modflow'):
             if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # WEL is written by transientfile
             ext = grp
@@ -102,6 +102,7 @@ class modflowWriter:
             f1=open(self.fullPath +'.'+ ext.lower(),'w')
             llist=self.Fkey.groups[grp];#print n1,name
             for ll in llist:
+                print('ll',ll)
                 cond=self.Fkey.lines[ll]['cond'];#print 'mfw 96',ll
                 if self.testCondition(cond)==False : continue
                 kwlist=self.Fkey.lines[ll]['kw']
@@ -111,7 +112,7 @@ class modflowWriter:
                     self.writeExceptions(ll,kwlist,ktyp[0],f1)
                     continue
                 for ik in range(len(kwlist)):
-                    value=lval[ik];
+                    value=lval[ik]
                     if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
                         value=self.core.getValueLong('Modflow',ll,ik);#print 'mfw 106',ll,shape(value)
                         self.writeBlockModflow(value,f1,ktyp[ik]) # OA 1/8/17
@@ -181,7 +182,10 @@ class modflowWriter:
                 if self.testCondition(cond) == False : continue
                 v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
                 value.append(v0)
-            lval = self.core.dicval['Modflow']['lpf.2']
+            val = self.core.dicval['Modflow']['lpf.2'] #EV 23/11/18
+            ilay=getNlayersPerMedia(self.core) 
+            lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+            lval= [item for sublist in lval1 for item in sublist]
             for l in range(nlay):
                 for i in range(len(value)):
                     #print 'mfw 183',l,i,shape(value[i][l])
@@ -209,7 +213,10 @@ class modflowWriter:
             self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
             
         if line == 'lpf.2':
-            lval = self.core.dicval['Modflow'][line] #print ('lval',lval)
+            ilay=getNlayersPerMedia(self.core) #EV 23/11/18
+            val = self.core.dicval['Modflow'][line]
+            lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+            lval= [item for sublist in lval1 for item in sublist]
             s=''
             for i in range(len(lval)):
                 s+=' '+str(int(lval[i])).rjust(2) 
@@ -231,9 +238,8 @@ class modflowWriter:
                 for i in range(1,ny):
                     if mod(i,40)==0: s+='\n'
                     s+=' '+str(lval).rjust(2) 
-            f1.write(s+'\n')     
-            
-            
+            f1.write(s+'\n')   
+        
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
         return self.core.testCondition('Modflow',cond)
@@ -425,6 +431,7 @@ class modflowWriter:
                 f1.write('Save Head \n')
         else : f1.write('Period 1 Step 1 \nSave Head\nSave Budget \n')
         f1.close()
+        
     #------------------------- fonction  writevect, writemat -------------------
     def writeVecModflow(self, v, f1,ktyp):
         #print shape(v),amin(v),amax(v)
@@ -484,7 +491,7 @@ class modflowWriter:
                 self.writeVecModflow(m[l],f1,ktyp)
                 if l<nlay-1: f1.write('\n')        
         else : self.writeMatModflow(m,f1,ktyp)
-
+        
 """ --------------------------------------------------------------------
 ------------------------------------------------------------------------
 ---------------                 Reading Modflow data      ----------------

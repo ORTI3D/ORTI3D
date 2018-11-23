@@ -316,7 +316,7 @@ class Core:
                     if float(time_out)==float(time_last):
                         return ('Normal termination of MODFLOW-2000')#self.getTxtFileLastLine(self.fileName+'.lst',3) #+'\nModflow run done'
                     else: return('Model fail to converge')
-                except IndexError:
+                except :# IndexError:
                     return('Model fail to converge')
         if modName == 'Mt3dms':
             mod1,mod2 = 'mt3dms5b','Mt3dms'

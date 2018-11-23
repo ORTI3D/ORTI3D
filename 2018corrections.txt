@@ -197,3 +197,10 @@ this version sent to elicia
 	
 20/11/18  OA
 - qtdialogs zonedialog getvalues l.384 : the coord correction is done for all zones except dis.1
+
+21/11/18 EV
+- core.py l319 removed IndexError to take into account all type of error 
+- geometry.py makeZblock l.164 modified exec function 
+
+23/11/18 EV 
+- modflowWriter.py in writeExceptions l.185-188 and l.216-219 added option to take into account many layer by media in lpf.2
