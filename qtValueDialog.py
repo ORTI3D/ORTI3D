@@ -95,7 +95,7 @@ class qtBoxKeys:
     def getValues(self):
         nb = len(self.values)
         for i in range(nb):
-            but = self.lValBut[i] ; print('but',but, type(but))
+            but = self.lValBut[i]
             val = self.values[i]
             #print but,val,self.labl[i],self.types[i]
             if self.types[i] in ['choice']: #,'layint']: OA 6/11/18 removed layint

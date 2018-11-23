@@ -94,7 +94,7 @@ class modflowWriter:
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
         lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
         lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
-        lexceptions.extend(['sms.1a','hfb.3'])
+        lexceptions.extend(['sms.1a'])
         for grp in self.core.getUsedModulesList('Modflow'):
             if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # WEL is written by transientfile
             ext = grp
@@ -102,7 +102,6 @@ class modflowWriter:
             f1=open(self.fullPath +'.'+ ext.lower(),'w')
             llist=self.Fkey.groups[grp];#print n1,name
             for ll in llist:
-                print('ll',ll)
                 cond=self.Fkey.lines[ll]['cond'];#print 'mfw 96',ll
                 if self.testCondition(cond)==False : continue
                 kwlist=self.Fkey.lines[ll]['kw']

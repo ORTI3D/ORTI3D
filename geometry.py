@@ -546,10 +546,7 @@ def isclosed(core,x,y):
     dmin=min(xv[ix+1]-xv[ix],yv[iy+1]-yv[iy]) # modified 22/3/2017 for variable grid
     d0=sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2);
     if d0<dmin: return True
-    else : return False
-    
-#def zone2line():
-    
+    else : return False     
     
 ##########################   GMESH    ########################
 ##########################################################
