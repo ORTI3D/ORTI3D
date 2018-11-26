@@ -94,13 +94,13 @@ class modflowWriter:
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
         lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
         lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
-        lexceptions.extend(['sms.1a'])
+        lexceptions.extend(['sms.1a','hfb.3'])
         for grp in self.core.getUsedModulesList('Modflow'):
             if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # WEL is written by transientfile
             ext = grp
             if grp=='Solver': ext=self.solv
             f1=open(self.fullPath +'.'+ ext.lower(),'w')
-            llist=self.Fkey.groups[grp];#print n1,name
+            llist=self.Fkey.groups[grp];#print('llist',llist)
             for ll in llist:
                 cond=self.Fkey.lines[ll]['cond'];#print 'mfw 96',ll
                 if self.testCondition(cond)==False : continue
@@ -181,7 +181,7 @@ class modflowWriter:
                 if self.testCondition(cond) == False : continue
                 v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
                 value.append(v0)
-            val = self.core.dicval['Modflow']['lpf.2'] #EV 23/11/18
+            val = self.core.dicval['Modflow']['lpf.2']
             ilay=getNlayersPerMedia(self.core) 
             lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
             lval= [item for sublist in lval1 for item in sublist]
@@ -212,7 +212,7 @@ class modflowWriter:
             self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
             
         if line == 'lpf.2':
-            ilay=getNlayersPerMedia(self.core) #EV 23/11/18
+            ilay=getNlayersPerMedia(self.core) 
             val = self.core.dicval['Modflow'][line]
             lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
             lval= [item for sublist in lval1 for item in sublist]
@@ -239,6 +239,23 @@ class modflowWriter:
                     s+=' '+str(lval).rjust(2) 
             f1.write(s+'\n')   
         
+        if line=='hfb.3':
+            zname = self.core.diczone['Modflow'].dic[line]['name']
+            val = self.core.diczone['Modflow'].dic[line]['value'] 
+            nbz = len(zname)
+            nbHfb=[]; s=''
+            for iz in range(nbz):
+                imed = self.core.diczone['Modflow'].getMediaList(line,iz)
+                ilay = media2layers(self.core,imed)
+                hfb = self.writeHfb(line,iz)
+                nbHfb.append(len(ilay)*len(hfb))
+                for n in range(len(ilay)):
+                    for i in range(len(hfb)):
+                        s+=str(ilay[n]+1)+' '+str(hfb[i][0])+' '+str(hfb[i][1])
+                        s+=' '+str(hfb[i][2])+' '+str(hfb[i][3])+' '+str(val[iz])+'\n' 
+            f1.write(' 0  0  '+str(sum(nbHfb))+'\n')
+            f1.write(s)               
+            
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
         return self.core.testCondition('Modflow',cond)
@@ -490,6 +507,58 @@ class modflowWriter:
                 self.writeVecModflow(m[l],f1,ktyp)
                 if l<nlay-1: f1.write('\n')        
         else : self.writeMatModflow(m,f1,ktyp)
+        
+    #------------------------- fonction  write HBF -------------------
+    def writeHfb(self,line,iz):        
+        ilay,irow,icol = self.xyzone2Mflow(self.core,line,iz)
+        #print('ilay',ilay,'irow',irow,'icol',icol)
+        hbf=[]
+        for i in range(len(irow)):
+            if i==0 :
+                if irow[i]==irow[i+1]-1 and icol[i]==icol[i+1]: # vertical line
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1 ; ic2=ic1+1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                elif irow[i]==irow[i+1] and icol[i]==icol[i+1]-1: #horizontal line
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1+1 ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                else :
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1 ; ic2=ic1+1
+                    hbf.append([ir1,ic1,ir2,ic2])
+            if i!=0 :
+                if irow[i]==irow[i-1]+1 and icol[i]==icol[i-1]: # vertical line
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1 ; ic2=ic1+1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                elif irow[i]==irow[i-1] and icol[i]==icol[i-1]+1: #horizontal line
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1+1 ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                elif irow[i]>irow[i-1] and icol[i]>icol[i-1]:   #decreasing line
+                    ir1=irow[i]-1 ; ic1=icol[i]
+                    ir2=irow[i] ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1 ; ic2=ic1+1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                elif irow[i]>irow[i-1] and icol[i]<icol[i-1]: # growing line
+                    ir1=irow[i]-1 ; ic1=icol[i]+1
+                    ir2=irow[i] ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1 ; ic2=ic1+1
+                    hbf.append([ir1,ic1,ir2,ic2])  
+                elif irow[i]==irow[i-1] and icol[i]<icol[i-1]:  # horizontal line in the middle
+                    ir1=irow[i] ; ic1=icol[i]+1
+                    ir2=ir1+1 ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2])
+                    ir1=irow[i] ; ic1=icol[i]
+                    ir2=ir1+1 ; ic2=ic1
+                    hbf.append([ir1,ic1,ir2,ic2]) 
+        #print(hbf)
+        return hbf     
         
 """ --------------------------------------------------------------------
 ------------------------------------------------------------------------

@@ -346,9 +346,10 @@ class min3pWriter:
         an dsolution number in boundary cond
         """
         if line[:4] == 'inic':
-            nsol,nmin,nexch,nsurf = value/1000,mod(value,1000)/100,mod(value,100)/10,mod(value,10)
+            nsol,nmin = int(value/1000),int(mod(value,1000)/100)   # OA 26/11/18
+            nexch,nsurf = int(mod(value,100)/10),int(mod(value,10))  # OA 26/11/18
         else :
-            nsol = value
+            nsol = int(value)  # OA 26/11/18
         #lgrp = ['comp','mineral','sorption','sorption']
         #lnames = ['concentration input','mineral input','sorption parameter input','sorption parameter input']
         # solutions
@@ -358,6 +359,7 @@ class min3pWriter:
         s = '\'concentration input\' \n'
         for ir,row in enumerate(dChem['rows']):
             if dChem['data'][ir][0]: #the species is ticked
+                print(line,ir,dChem['data'][ir],nsol)
                 s += str(dChem['data'][ir][nsol+2]).replace('e','d')+'  \''+\
                     dChem['data'][ir][-1]+'\'  ;'+row+'\n' # last columns contains 'free', 'ph'...
         if line[:3] == 'bcc': return s

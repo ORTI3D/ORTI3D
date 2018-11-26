@@ -1,7 +1,7 @@
 class Mf:
     def __init__(self):
         self.grpList=['DIS','DISU','BAS6','LPF','WEL','RCH','EVT','DRN','RIV','CHD','GHB','SIP','PCG','SOR','DE4',\
-        'UPW','NWT','UZF','MNWT','SMS','GMG'] # CHD written in auto mode
+        'UPW','NWT','UZF','MNWT','SMS','GMG','HFB6'] # CHD written in auto mode
         self.groups={
         'DIS':['dis.'+str(i) for i in range(1,9)],
         'DISU':['disu.'+str(i) for i in range(1,10)],
@@ -26,6 +26,7 @@ class Mf:
         'UZF':['uzf.'+str(i) for i in range(1,17)],
         'SMS':['sms.1a','sms.1b','sms.2','sms.3'],
         'GMG':['gmg.1','gmg.2','gmg.3'],
+        'HFB6':['hfb.3'], #'hfb.1','hfb.2',
         }
         # types
         # title : adds a # at the beginning
@@ -375,4 +376,12 @@ class Mf:
                  'kw':['NUZF4'],'detail':[],'type':['int'],'default':[-1]},
         'uzf.16':{'comm':'extinction water content','cond':'IETFLG>0 and NUZF4>-1',
                  'kw':['EXTWC(NPER,NCOL,NROW)'],'detail':[],'type':['arrfloat'],'default':[0]},
+                  
+        # HFB for Horizontal-Flow-Barrier package
+        #'hfb.1':{'comm':'Nb of HFB in the model','cond':'','kw':['NHFB'],'detail':[],
+              # 'type':['int'],'default':[0]},
+        #'hfb.2':{'comm':'Nb of HFB in a layer','cond':'','kw':['NBRLAY'],'detail':[],
+               #'type':['int'],'default':[0]},
+        'hfb.3':{'comm':'Hydraulic characteristic Kh/e','cond':'','kw':['HYDCHR(IROW1,ICOL1,IROW2,ICOL2)'],'detail':[],
+               'type':['arrint'],'default':[0]}, #NBRLAY>0
         }
