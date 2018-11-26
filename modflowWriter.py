@@ -181,7 +181,7 @@ class modflowWriter:
                 if self.testCondition(cond) == False : continue
                 v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
                 value.append(v0)
-            val = self.core.dicval['Modflow']['lpf.2']
+            val = self.core.dicval['Modflow']['lpf.2'] # EV 23/11/2018
             ilay=getNlayersPerMedia(self.core) 
             lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
             lval= [item for sublist in lval1 for item in sublist]
@@ -212,7 +212,7 @@ class modflowWriter:
             self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
             
         if line == 'lpf.2':
-            ilay=getNlayersPerMedia(self.core) 
+            ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
             val = self.core.dicval['Modflow'][line]
             lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
             lval= [item for sublist in lval1 for item in sublist]
@@ -239,7 +239,7 @@ class modflowWriter:
                     s+=' '+str(lval).rjust(2) 
             f1.write(s+'\n')   
         
-        if line=='hfb.3':
+        if line=='hfb.3': # EV 26/11/2018
             zname = self.core.diczone['Modflow'].dic[line]['name']
             val = self.core.diczone['Modflow'].dic[line]['value'] 
             nbz = len(zname)
@@ -509,7 +509,7 @@ class modflowWriter:
         else : self.writeMatModflow(m,f1,ktyp)
         
     #------------------------- fonction  write HBF -------------------
-    def writeHfb(self,line,iz):        
+    def writeHfb(self,line,iz):       # EV 26/11/2018  
         ilay,irow,icol = self.xyzone2Mflow(self.core,line,iz)
         #print('ilay',ilay,'irow',irow,'icol',icol)
         hbf=[]

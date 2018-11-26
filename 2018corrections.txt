@@ -205,5 +205,10 @@ this version sent to elicia
 23/11/18 EV 
 - modflowWriter.py in writeExceptions l.185-188 and l.216-219 added option to take into account many layer by media in lpf.2
 
+26/11/18 EV
+- modflowWriter.py in writeExceptions l.242-253 added HBF, l.97 added hbf.3
+- modflowWriter.py l.512-561 added writeHfb function for HFB
+- modflowKeywards.py l.4, l.29, l.385-386 added HBF
+
 26/11/18  OA
 - Min3pwriter/getStringsolution l.350 just added int to get correct list reference
