@@ -209,6 +209,7 @@ this version sent to elicia
 - modflowWriter.py in writeExceptions l.242-253 added HBF, l.97 added hbf.3
 - modflowWriter.py l.512-561 added writeHfb function for HFB
 - modflowKeywards.py l.4, l.29, l.385-386 added HBF
+- menu.py l.207, 216 added option to copy pykrige when download new version 
 
 26/11/18  OA
 - Min3pwriter/getStringsolution l.350 just added int to get correct list reference

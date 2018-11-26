@@ -204,7 +204,7 @@ class Menus:
         if self.cfg.typInstall=='python': #the python version
             znew.extractall(dirutil)
             #os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+os.sep+'ilibq '+dirlib)   
-            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib)
+            os.system('xcopy /Y /E '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib) #EV 26/11/18
             print ('ok')
             for n in os.listdir(dirlib):
                 if ('.chm' in n) or ('.pdf' in n): 
@@ -213,7 +213,7 @@ class Menus:
                     os.system('move '+dirlib+os.sep+n+' '+dirutil)
         else : # the windows version
             znew.extractall(dirutil) # EV 23/10/18 new exe version
-            os.system('xcopy /Y '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib)
+            os.system('xcopy /Y /E '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib) #EV 26/11/18
             #zlib=zp.ZipFile(dirlib,'r'); #print 'menu dwnload 157', dirlib
             #zlib.extractall(maindir+os.sep+'temp')
             #zlib.close()
