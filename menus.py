@@ -70,6 +70,10 @@ class Menus:
         fDir,fName = dlg.getsetFile(self.gui,'Save as','*.iqpht;*.orti')
         if fName == '': return
         self.core.saveModel(str(fDir),str(fName))
+        if self.gtyp =='qt': #EV 27/11/18
+            self.gui.updateTitle()
+        if self.gtyp=='qgis':
+            self.gui.visu.zonesQgs2core()
        
     def OnImportVersion1(self,evt=None):
         dlg = self.dialogs.myFileDialog()
@@ -84,6 +88,8 @@ class Menus:
         importer.readAll()
         
     def askSave(self,evt=None):
+        if self.gtyp=='qgis': #EV 27/11/18
+            if self.core.fileDir==None:return
         message = self.dialogs.onQuestion(self.gui,"Do you want to save the Orti file?") # OA modif 22/10/18
         if message == 'Yes':
             self.OnSave(evt)

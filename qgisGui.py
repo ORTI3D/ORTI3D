@@ -28,7 +28,7 @@ class Ui_Main(object):
         self.gui.setGeometry(QRect(5, 15, 245, 560)) #left,top,w,h
         self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
         self.gui.mainDir = plugin_dir
-        core = Core(self.gui)
+        core = Core(self.gui);self.core = core
         cfg = Config(core)
         self.dialogs = cfg.dialogs
         self.gui.linesDic,self.gui.linesCommDic = {},{}
@@ -67,8 +67,8 @@ class Ui_Main(object):
         QMetaObject.connectSlotsByName(Main)
         # make an event if qgis project is saved
         self.menus = Menus(self.gui,core) # OA added 22/10/18
-        #QgsProject.instance().projectSaved.connect(self.onProjectSaved) # OA added 22/10/18
-        iface.mainWindow().findChild( QAction, 'mActionSaveProject' ).triggered.connect( self.onProjectSaved)
+        iface.mainWindow().findChild( QAction, 'mActionSaveProject' ).triggered.connect( self.onProjectSave) # OA added 01/12/18
+        iface.mainWindow().findChild( QAction, 'mActionOpenProject' ).triggered.connect( self.onProjectOpen) # OA added 01/12/18
             
     def on3D(self,dm): 
         """if true the model is 3D, false : 2D"""
@@ -87,8 +87,21 @@ class Ui_Main(object):
         global curVar
         curVar = {}    
             
-    def onProjectSaved(self): # OA added 22/10/18
-        self.menus.askSave()
+    def onProjectSave(self): # OA modified 01/12/18
+        dr = QgsProject.instance().readPath('./')
+        #self.dialogs.onMessage(self.gui,f)
+        QgsVectorFileWriter.writeAsVectorFormat( layer, 'H:/temp/' + layer.name() + ".shp", "utf-8", layer.crs(), "ESRI Shapefile", 1)
+        self.core.saveModel(dr,self.core.fileName)
+        
+    def onProjectOpen(self): # OA added 01/12/18
+        '''when a project is opened tries to find the folder and if there is an orti file there
+        then opens it'''
+        self.dialogs.onMessage(self.gui,"reading")
+        dr = QgsProject.instance().readPath('./')
+        l0 = os.listdir(dr)
+        for f in l0:
+            l1 = f.split('.')
+            if l1[1] == 'orti': self.core.openModel(dr,l1[0])
     
 class Ui_File(object):
     def setupUi(self,File,gui,core):

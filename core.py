@@ -409,6 +409,7 @@ class Core:
         
     def importZones(self,fileDir,fileName,modName,line):
         importer = impFile(self.gui,self)
+        if fileName=='': return #EV 27/11
         importer.impZones(fileDir,fileName,modName,line)
         
     def importLayerValues(self,fileName,spname):

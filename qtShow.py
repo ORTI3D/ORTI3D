@@ -197,6 +197,7 @@ class Ui_Show(object):
             
         item = self.Show.findChild(QComboBox,'Observation_Zone_L')
         znam = item.currentText()
+        print('plot',typ,tstep,group,znam,lesp,layers)
         dist,val,labl = self.core.onPtObs(typ,tstep,group,znam,lesp,layers);#print 'guishow 263',val
         #plt = plot(self.gui,-1)
         typ1='-'

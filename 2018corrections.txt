@@ -213,3 +213,13 @@ this version sent to elicia
 
 26/11/18  OA
 - Min3pwriter/getStringsolution l.350 just added int to get correct list reference
+
+27/11/18 EV
+- menu.py on askSave l.87,88 added condition to prevent to ask for save the .orti file in qgis when no model is open (QGIS without ORTI)
+- core.py on importZone l.412 added condition to avoid message error when cancel dialog
+- menu.py OnSaveAs l.73-76 added option to update title of the model when save as 
+
+2/12/18  OA
+- in qgisGui l.90-104 modified onProjectSave and added onProjectOpen to open and save orti file
+  when saving a project (to work, need to open extension before project and to have the plugin
+  memoy layer saver)
