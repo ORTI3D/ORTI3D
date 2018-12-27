@@ -180,7 +180,7 @@ class Ui_Show(object):
             d = dlg.getValues() #dialog to choose type of graph
             if d != None:
                 layers=d[0]
-            else :return            
+            else :return
         # dialog for type of graph, for flow this dialog is useless
         if typ != 'X':
             if group in ['Chemistry','Transport']: lst0 = ['Value','Weighted value','Mass Discharge (Md)','Mass Flux (J)']

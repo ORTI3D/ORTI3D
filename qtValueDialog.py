@@ -98,7 +98,7 @@ class qtBoxKeys:
             but = self.lValBut[i]
             val = self.values[i]
             #print but,val,self.labl[i],self.types[i]
-            if self.types[i] in ['choice']: #,'layint']: OA 6/11/18 removed layint
+            if self.types[i] in ['choice','layint']: #,'layint']: OA 6/11/18 removed layint
                 self.values[i] = but.currentIndex()
                 continue
             if but.text() not in ['formula','zone','array']:

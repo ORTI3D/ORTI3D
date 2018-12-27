@@ -61,35 +61,32 @@ class qgisVisu:
         """initalize the grid and all cells in Qgis"""
         for modName in self.core.modelList:
             self.linelist.append(list(self.core.dickword[modName].lines.keys()))
-        allLayers = self.canvas.layers()
-        for layer in allLayers:
-            if layer.name() == 'Grid' :
-                QgsProject.instance().removeMapLayer(layer) # OA 17/10/18 map layer replaced by project
         self.grd = self.core.addin.getFullGrid()
         grp = self.core.addin.getModelGroup()
         self.mesh=None
-        if grp[:2]=='Op' and self.core.dicval[grp+'Flow']['domn.1'][0]>0:
+        if grp[:2]=='Op' and self.core.dicval[grp+'Flow']['domn.1'][0]>0: # opegeo
             self.mesh = self.core.addin.opgeo
-        if grp[:2]=='Mi' and self.core.dicval[grp+'Flow']['spat.4'][0]>0:
+        if grp[:2]=='Mi' and self.core.dicval[grp+'Flow']['spat.4'][0]>0: # min3p
             self.mesh = self.core.addin.min3p
         if self.core.mfUnstruct: 
             self.mesh = self.core.addin.mfU
-        layer = QgsVectorLayer('Polygon', 'Grid', "memory")
-        QgsProject.instance().addMapLayer(layer)
-        layer.startEditing()
-        layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
-        layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
-        layer.commitChanges()
-        layer.startEditing()
         wkt = self.encodeGrid()
-        for i,w in enumerate(wkt.split('\n')[1:-1]):
-            poly = QgsGeometry.fromWkt(w.split(';')[1])
-            feat = QgsFeature()
-            feat.setGeometry(poly)
-            feat.setAttributes([i,0.])
-            layer.addFeature(feat)
-        layer.updateExtents()
-        layer.commitChanges()
+        for n in ['Grid','Parameters']:
+            layer = QgsVectorLayer('Polygon', n, "memory")
+            QgsProject.instance().addMapLayer(layer)
+            layer.startEditing()
+            layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
+            layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
+            layer.commitChanges()
+            layer.startEditing()
+            for i,w in enumerate(wkt.split('\n')[1:-1]):
+                poly = QgsGeometry.fromWkt(w.split(';')[1])
+                feat = QgsFeature()
+                feat.setGeometry(poly)
+                feat.setAttributes([i,0.])
+                layer.addFeature(feat)
+            layer.updateExtents()
+            layer.commitChanges()
         self.iface.digitizeToolBar().actions()[5].disconnect() # OA added 20/10/18
         self.iface.digitizeToolBar().actions()[5].triggered.connect(self.attributeForm) # OA added 20/10/18
         #if self.mesh != None: self.createNodeResultLayer(nodes)
@@ -114,25 +111,20 @@ class qgisVisu:
         called when opening a model through core2qgs
         and called alone when creating a new zone layer
         typList contain types (Linstring, or Points or both)"""
-        allLayers = self.canvas.layers();#print allLayers
         self.linelist.append(line)
         dick = self.core.dickword[modName]
         comm = dick.lines[line]['comm'][:25]
         # create the layer in qgis
-        layerList,nameList = [],[]
-        for layer in allLayers: nameList.append(layer.name())
+        #self.dialogs.onMessage(self.gui,'layer'+line)
+        layerList = []
         for tp in typList:
             layerName = tp[0]+line + '_' + comm
-            # search if the layer already exists, if yes, returns it
-            # if absent, create the layer
-            if layerName in nameList: continue
-            if len(allLayers)>0:
-                crs = allLayers[0].crs()# finds the coordinates system
+            if len(self.canvas.layers())>0:
+                crs = self.canvas.layers()[0].crs()# finds the coordinates system
                 layer = QgsVectorLayer(tp+"?crs=" + crs.authid(), layerName, "memory")#, "delimitedtext")
             else:
                 layer = QgsVectorLayer(tp, layerName, "memory")
-            #QgsMapLayerRegistry.instance().addMapLayer(layer)
-            QgsProject.instance().addMapLayer(layer) # OA added 2/10
+            QgsProject.instance().addMapLayer(layer) # OA modified  2/10
             layer.startEditing()
             layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
             layer.dataProvider().addAttributes( [QgsField("name", QVariant.String) ] )
@@ -286,6 +278,23 @@ class qgisVisu:
                 if type(coords) != type([5]): coords = [coords] # for points
                 dicz.setValue(line,'coords',i,coords)
                 
+    def removeOrtiLayers(self): # OA added 16/12/18 to remove layers when opening
+        for modName in self.core.modelList:
+            dick = self.core.dickword[modName]
+            dicz = self.core.diczone[modName]
+            lines = list(dicz.dic.keys())
+            for line in lines:
+                comm = dick.lines[line]['comm'][:25]
+                nz = dicz.getNbZones(line)
+                # get layer or layers
+                typList = self.findTypList(modName,line)
+                for tp in typList:
+                    layerName = tp[0]+line + '_' + comm
+                    ln0 = QgsProject.instance().mapLayersByName(layerName)
+                    if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
+        ln0 = QgsProject.instance().mapLayersByName('Grid')
+        if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
+        
     def zonesCore2qgs(self):
         """uses zones stored in core to fill the qgis layers with features
         done during model opening, uses createLayer and fill the attributes here"""
@@ -296,7 +305,7 @@ class qgisVisu:
                 nz = dicz.getNbZones(line)
                 # get layer or layers
                 typList = self.findTypList(modName,line)
-                layerList = self.createLayer(modName,line,typList) # typlist is the lis tof type of layer
+                layerList = self.createLayer(modName,line,typList) # typlist is the list of type of layer
                 providerList = [layer.dataProvider() for layer in layerList]
                 # add zones in the layer(s)
                 for i in range(nz):
@@ -332,7 +341,7 @@ class qgisVisu:
             if len(ltyp)==2: break
         return ltyp
             
-    def createContour(self,data,value,color):
+    def createContour(self,data,value,color,layName='Grid'):
         """creates a coutour or image object using the Grid layer 
         of Qgis"""
         allLayers = self.canvas.layers()
@@ -355,7 +364,7 @@ class qgisVisu:
                     d0[i]={0:i,1:float(Z[iy,ix])}
                     i+=1
             for layer in allLayers:
-                if layer.name()=='Grid': break
+                if layer.name()==layName: break
             symbol = QgsFillSymbol()
             mode = QgsGraduatedSymbolRenderer.Jenks
             renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
@@ -400,13 +409,6 @@ class qgisVisu:
                 coo = list(zip(xcoo[ir],ycoo[ir]))
                 strcoo = ','.join([str(a).replace('(','').replace(')','').replace(',','') for a in coo])            
                 s += str(ir+1)+';POLYGON(('+ strcoo+ '))\n'
-                #lcoord =[]
-                #for j in range(len(xcoo[ir])):
-                #    lcoord.append(QgsPoint(xcoo[ir][j],ycoo[ir][j]))
-                #feat = QgsFeature();
-                #feat.setGeometry(QgsGeometry.fromPolygon([lcoord]));
-                #feat.setAttributes([ir,0.])
-                #provider.addFeatures([feat]);
         else :
             count,a = 0,g['x0']
             for i in range(g['nx']):
@@ -417,11 +419,6 @@ class qgisVisu:
                     coo = [(a,b),(a+c,b),(a+c,b+d),(a,b+d),(a,b)]
                     strcoo = ','.join([str(x).replace('(','').replace(')','').replace(',','') for x in coo])            
                     s += str(count+1)+';POLYGON(('+strcoo+'))\n'
-                    #lcoord=[QgsPoint(a,b),QgsPoint(a+c,b),QgsPoint(a+c,b+d),QgsPoint(a,b+d)]
-                    #feat = QgsFeature();
-                    #feat.setGeometry(QgsGeometry.fromPolygon([lcoord]));
-                    #feat.setAttributes([count,0.])
-                    #provider.addFeatures([feat]);
                     b += d
                     count += 1
                 a += c

@@ -33,6 +33,9 @@ class Menus:
         dlg = self.dialogs.myFileDialog('Open')
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.iqpht;*.orti');
         if fName == '': return
+        self.onOpen1(fDir,fName) # OA 16/12/18 to separate if file dir is already known
+        
+    def onOpen1(self,fDir,fName): # OA 16/12/18 to be able to use only that part
         self.core.openModel(fDir,fName)
         a = self.core.makeTtable()
         listSpec = self.core.addin.chem.getListSpecies() # just the names
@@ -46,6 +49,7 @@ class Menus:
             self.gui.visu.setVisu(self.core)
             self.gui.updateTitle()
         if self.gtyp=='qgis':
+            self.gui.visu.removeOrtiLayers()
             self.gui.visu.zonesCore2qgs()
         self.gui.varBox.chooseCategory(mtype)
         self.gui.visu.initDomain()

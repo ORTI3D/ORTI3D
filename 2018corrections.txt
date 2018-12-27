@@ -223,3 +223,15 @@ this version sent to elicia
 - in qgisGui l.90-104 modified onProjectSave and added onProjectOpen to open and save orti file
   when saving a project (to work, need to open extension before project and to have the plugin
   memoy layer saver)
+ 
+16/12/18 OA
+- in QgisGui l.93 commented to NOT save the orti layers
+- in menus split the OnOpen in two parts to call it from qgisGui
+- in qgisGui call the menu.onOpn1 instead
+- in qgisVisu l.280-295 created removeOrtiLayers used when opening a file
+
+18/12/18 OA
+- qgisVisu/initdomain added line 74 a loop to create two layers with cells (grid and parameters)
+- qgisGui UiVar/setupUI added line 324-330 to instert a box for parameters
+- qgisGui l 437-445 added onView to show the parameters
+- qgisVisu l 344 in createContour, added an argument layName

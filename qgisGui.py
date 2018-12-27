@@ -90,18 +90,18 @@ class Ui_Main(object):
     def onProjectSave(self): # OA modified 01/12/18
         dr = QgsProject.instance().readPath('./')
         #self.dialogs.onMessage(self.gui,f)
-        QgsVectorFileWriter.writeAsVectorFormat( layer, 'H:/temp/' + layer.name() + ".shp", "utf-8", layer.crs(), "ESRI Shapefile", 1)
+        #QgsVectorFileWriter.writeAsVectorFormat( layer, 'H:/temp/' + layer.name() + ".shp", "utf-8", layer.crs(), "ESRI Shapefile", 1) # OA 16/12 commented
         self.core.saveModel(dr,self.core.fileName)
         
     def onProjectOpen(self): # OA added 01/12/18
         '''when a project is opened tries to find the folder and if there is an orti file there
         then opens it'''
-        self.dialogs.onMessage(self.gui,"reading")
+        #self.dialogs.onMessage(self.gui,"reading")
         dr = QgsProject.instance().readPath('./')
         l0 = os.listdir(dr)
         for f in l0:
             l1 = f.split('.')
-            if l1[1] == 'orti': self.core.openModel(dr,l1[0])
+            if l1[1] == 'orti': self.menus.onOpen1(dr,l1[0])
     
 class Ui_File(object):
     def setupUi(self,File,gui,core):
@@ -321,6 +321,13 @@ class Ui_Var(object):
         self.choiceT.activated['QString'].connect(self.onChoiceType)
         self.gridLayout.addWidget(self.choiceT, 6, 1, 1, 1)
         
+        label = QLabel(self.gridLayoutWidget)
+        label.setText("view")
+        self.gridLayout.addWidget(label, 7, 0, 1, 1)
+        self.pView = QCheckBox(self.gridLayoutWidget)
+        self.pView.stateChanged.connect(self.onView)
+        self.gridLayout.addWidget(self.pView, 7, 1, 1, 1)
+
         self.retranslateUi(Var)
         QMetaObject.connectSlotsByName(Var)
         
@@ -426,6 +433,14 @@ class Ui_Var(object):
         
     def onEdit(self,evt):
         pass
+        
+    def onView(self,evt):
+        bool = self.pView.isChecked()
+        if bool :
+            mat = self.core.getValueLong(self.gui.currentModel,self.gui.currentLine,0)
+            mat = mat[self.gui.currentMedia]
+            self.gui.visu.createContour([None,None,mat],None,None,'Parameters')
+            
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):

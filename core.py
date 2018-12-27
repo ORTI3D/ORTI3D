@@ -623,13 +623,14 @@ class Core:
         if typ[0]=='B': iper=list(range(len(t2))) # breakthrough
         else : iper = [iper]
         pt=[] # pt will be a list of tables (iper,irows) provided by the reader
-        labels=['']
+        labels=[''] 
         ###### the cocnernend species (that can be head)
         if esp[0] in ['Head','Wcontent']: 
             for il in layers: # we may want data from several different layers
                 if il!= -1: iz2=[il]*len(ix2)
                 pt.append(self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])); # irow,icol,ilay
                 labels.append('lay'+str(il))
+            print('pthead',pt)
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
             elif mtype in ['Sut','Min']: opt = 'Tracer'
