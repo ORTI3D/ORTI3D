@@ -45,7 +45,7 @@ class Menus:
         if self.gtyp =='qt':
             if 'obs.1' in list(self.core.diczone['Observation'].dic.keys()):
                 onames = self.core.diczone['Observation'].dic['obs.1']['name']
-                self.gui.guiShow.setNames('Observation_Zone_L',onames)
+                #self.gui.guiShow.setNames('Observation_Zone_L',onames) #EV 19/12/18
             self.gui.visu.setVisu(self.core)
             self.gui.updateTitle()
         if self.gtyp=='qgis':
@@ -106,8 +106,20 @@ class Menus:
         fDir,fName =dlg.getsetFile(self.gui,'Open data file',"*.txt")
         if fDir == None: return
         else : 
-            self.core.importData(fDir,fName)
+            self.data=self.core.importData(fDir,fName)
             self.dialogs.onMessage(self.gui,'Data imported')
+    
+    def OnImportHead(self,evt=None):
+        m=impObsData(self.gui,self.core,'Head')
+        m.show()
+    
+    def OnImportTracer(self,evt=None):
+        m=impObsData(self.gui,self.core,'Tracer')
+        m.show()
+        
+    def OnImportChemistry(self,evt=None):
+        m=impObsData(self.gui,self.core,'Chemistry')
+        m.show()
         
     def OnImportSolutions(self,evt=None):
         """import a text file to store solutions"""

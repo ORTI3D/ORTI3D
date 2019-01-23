@@ -70,34 +70,45 @@ class qgisVisu:
             self.mesh = self.core.addin.min3p
         if self.core.mfUnstruct: 
             self.mesh = self.core.addin.mfU
-        wkt = self.encodeGrid()
         for n in ['Grid','Parameters']:
-            layer = QgsVectorLayer('Polygon', n, "memory")
-            QgsProject.instance().addMapLayer(layer)
-            layer.startEditing()
-            layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
-            layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
-            layer.commitChanges()
-            layer.startEditing()
-            for i,w in enumerate(wkt.split('\n')[1:-1]):
-                poly = QgsGeometry.fromWkt(w.split(';')[1])
-                feat = QgsFeature()
-                feat.setGeometry(poly)
-                feat.setAttributes([i,0.])
-                layer.addFeature(feat)
-            layer.updateExtents()
-            layer.commitChanges()
+            self.createGridLayer(n)
         self.iface.digitizeToolBar().actions()[5].disconnect() # OA added 20/10/18
         self.iface.digitizeToolBar().actions()[5].triggered.connect(self.attributeForm) # OA added 20/10/18
         #if self.mesh != None: self.createNodeResultLayer(nodes)
+            
+    def createGridLayer(self,lname): #OA moved from initdomain to here 20/1/19 
+        wkt = self.encodeGrid()
+        layer = QgsVectorLayer('Polygon', lname, "memory")
+        QgsProject.instance().addMapLayer(layer)
+        layer.startEditing()
+        layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
+        layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
+        layer.commitChanges()
+        layer.startEditing()
+        for i,w in enumerate(wkt.split('\n')[1:-1]):
+            poly = QgsGeometry.fromWkt(w.split(';')[1])
+            feat = QgsFeature()
+            feat.setGeometry(poly)
+            feat.setAttributes([i,0.])
+            layer.addFeature(feat)
+        layer.updateExtents()
+        layer.commitChanges()
+        symbols = layer.renderer()#EV 15/01/19
+        mySymbol1 = QgsFillSymbol.createSimple({'color':'255,0,0,0','color_border':'#969696'})
+        symbols.setSymbol(mySymbol1)
+        layer.triggerRepaint()
+        self.iface.layerTreeView().refreshLayerSymbology(layer.id())
         
     def createAndShowObject(self,dataM,dataV,opt,value,color):
         """create the object and show it, typObj in Grid,Contour, Vector, Map
         """
+        group,name,value = self.gui.guiShow.getCurrentContour() # OA 21/1/19
+        #if type(value) != type(bool) : name = value # OA 21/1/19 to find the name of the variable
+        #self.dialogs.onMessage(self.gui,'layer name : '+str(name))
         if dataM == None : self.drawContour(False)
         else : 
             if self.gui.guiShow.swiImg == 'Contour':
-                self.createContour(dataM,value,color)
+                self.createContour(dataM,value,color,name) #‼ added name for Qgis layer
             else : 
                 self.createImage(dataM)
         if dataV == None : self.drawVector(False)
@@ -259,7 +270,7 @@ class qgisVisu:
             if layer.name()[:4] == 'Grid' : continue
             line,typP = layer.name().split()[0],'asPolyline()'
             if len(line.split('_'))>1: 
-                line,typ0 = line.split('_')
+                line,typ0 = line.split('_',1) #EV 15/01/19
                 if typ0=='point': typP='asPoint()'
             if line not in self.linelist : continue
             for modName in self.core.modelList:
@@ -292,8 +303,9 @@ class qgisVisu:
                     layerName = tp[0]+line + '_' + comm
                     ln0 = QgsProject.instance().mapLayersByName(layerName)
                     if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
-        ln0 = QgsProject.instance().mapLayersByName('Grid')
-        if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
+        for n in ['Grid','Parameters']: #EV added 15/01/2019
+            ln0 = QgsProject.instance().mapLayersByName(n)
+            if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
         
     def zonesCore2qgs(self):
         """uses zones stored in core to fill the qgis layers with features
@@ -341,37 +353,41 @@ class qgisVisu:
             if len(ltyp)==2: break
         return ltyp
             
-    def createContour(self,data,value,color,layName='Grid'):
+    def createContour(self,data,value,color,layName='Results'):
         """creates a coutour or image object using the Grid layer 
         of Qgis"""
-        allLayers = self.canvas.layers()
+        layers = QgsProject.instance().mapLayers() # OA 22/1/19 start
+        layers1  = [x.split('_')[0] for x in layers]
+        #QgsMessageLog.logMessage(layName+' '+str(layers1), 'MyPlugin')
+        if layName not in layers1: self.createGridLayer(layName) #
+        layers = QgsProject.instance().mapLayers()
+        layers1 = list(layers.keys()) # 
+        layers2  = [x.split('_')[0] for x in layers]
+        layer = layers[layers1[layers2.index(layName)]] # OA 22/1/19 end
+        pr = layer.dataProvider();
+        layer.startEditing()
         colorRamp = QgsGradientColorRamp.create({'color1':'255,0,0,255', 'color2':'0,0,255,255','stops':'0.25;255,255,0,255:0.50;0,255,0,255:0.75;0,255,255,255'})
         X,Y,Z = data
         d0,i = {},1
-        if self.mesh != None:
-            for i in range(len(Z)):
-                    d0[i]={0:i,1:float(Z[i])}                
-            for layer in allLayers:
-                if layer.name()=='NodeResults': break
-            symbol = QgsMarkerSymbol()
-            mode = QgsGraduatedSymbolRenderer.Jenks
-            renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
-            renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
-        else :
-            ny,nx = shape(Z)
-            for ix in range(nx):
-                for iy in range(ny):
-                    d0[i]={0:i,1:float(Z[iy,ix])}
-                    i+=1
-            for layer in allLayers:
-                if layer.name()==layName: break
-            symbol = QgsFillSymbol()
-            mode = QgsGraduatedSymbolRenderer.Jenks
-            renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
-            renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
-        pr = layer.dataProvider();
-        #QgsMessageLog.logMessage('type layer '+str(layer.name())+' '+str(d0), 'MyPlugin')
-        layer.startEditing()
+        # if self.mesh != None: # view results on node
+        #     for i in range(len(Z)):
+        #         d0[i]={0:i,1:float(Z[i])}                
+        #     for layer in allLayers:
+        #         if layer.name()=='NodeResults': break
+        #     symbol = QgsMarkerSymbol()
+        #     mode = QgsGraduatedSymbolRenderer.Jenks
+        #     renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value', 25, mode, symbol, colorRamp )
+        #     renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
+        # else :
+        ny,nx = shape(Z)
+        for ix in range(nx):
+            for iy in range(ny):
+                d0[i]={0:i,1:float(Z[iy,ix])}
+                i+=1
+        symbol = QgsFillSymbol()
+        mode = QgsGraduatedSymbolRenderer.Jenks
+        renderer = QgsGraduatedSymbolRenderer.createRenderer(layer,'value',25,mode,symbol, colorRamp)
+        renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
         pr.changeAttributeValues(d0)
         layer.setRenderer(renderer)        
         layer.commitChanges()

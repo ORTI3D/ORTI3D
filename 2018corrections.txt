@@ -235,3 +235,29 @@ this version sent to elicia
 - qgisGui UiVar/setupUI added line 324-330 to instert a box for parameters
 - qgisGui l 437-445 added onView to show the parameters
 - qgisVisu l 344 in createContour, added an argument layName
+
+19/12/18 EV
+- addin.py initMenus l.156, onMultiplot l.419-421,  remove multiplot from addin menu
+- qtShow.py l.154-162 added fonction onPlot to call multiplot from gui
+- guiShow.py l.20,21 modified entry option for multiplot
+- menu.py l.48 remove the line for multiplot
+
+21/12/18 EV
+- orti3dGui.py makeMenus l.114-122 add import option for observed data head traceur and chemistry
+- menu.py l.108 add import option for observed data head traceur and chemistry
+- addin.py l.60 add import option for observed data head traceur and chemistry
+- importexport l.142 add import option for observed data head traceur and chemistry
+
+15/01/19 EV
+- qgisGui.py onProjectSave removed last modification of OA and added self.menus.askSave() to ask if you want to save the ORTI file when you save project and prevent to save orti file when doesn't exist
+- qgisVisu.py zonesQgs2core l.268 added 1 to split in order to split only on the first occurence of '_' to prevent error when a qgis layer name used more than 1 '_'
+- qgisVisu.py createGridLayer l.96-100 added option to get grid and parameter layer fill transparent and line grey when open model
+- qgisVisu.py removeOrtiLayers l.300-302 added a loop to remove parameter layer
+
+20/1/2019 OA
+- in Qgisvisu/initdomain, the part to generate a grid layer put in a function createGridLayer
+- in qGsiViu createAdshow object, added first lines to find the name of the variable currently drawn
+- in qgisVisu l353-356 in create contour, ability to create new grid layer in Qgis
+- in qgisGui/showBox l 519 statechangeed -> clicked
+- same in qtShow l 247
+- in QgisVisu/createContour l 353-360 added to create a new layer to display results (its wiered but required due to names in Qgis)

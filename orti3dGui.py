@@ -108,16 +108,28 @@ class orti3dGui(QMainWindow):
 
         # import menu
         menuImport = self.menuBar().addMenu("&Import")
-        idataAction = QAction("&Data", self, 
+        #idataAction = QAction("&Data", self, 
+                #statusTip="import data text file",
+                #triggered=self.menus.OnImportData)
+        iobsHAction = QAction("&Head observation data", self, #EV 21/12
                 statusTip="import data text file",
-                triggered=self.menus.OnImportData)
+                triggered=self.menus.OnImportHead)
+        iobsTAction = QAction("&Tracer observation data", self, 
+                statusTip="import data text file",
+                triggered=self.menus.OnImportTracer)
+        iobsCAction = QAction("&Chemistry observation data", self, 
+                statusTip="import data text file",
+                triggered=self.menus.OnImportChemistry)
         isoluAction = QAction("&Solutions", self, 
                 statusTip="import chemical solutions from text file",
                 triggered=self.menus.OnImportSolutions)
         iuspecAction = QAction("&Users Species", self, 
                 statusTip="import user species text file",
                 triggered=self.menus.OnImportUserSpecies)
-        menuImport.addAction(idataAction)
+        #menuImport.addAction(idataAction)
+        menuImport.addAction(iobsHAction)
+        menuImport.addAction(iobsTAction)
+        menuImport.addAction(iobsCAction)
         menuImport.addAction(isoluAction)
         menuImport.addAction(iuspecAction)
         

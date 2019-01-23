@@ -23,8 +23,7 @@ class guiShow:
                 'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,'Veloc-magn':False,'Particles':False},
                 'Transport':{'Tracer':False},
                 'Chemistry':{'Species':False,'Units':'mmol/L','User':False},
-                #'Observation':{'Type':'Profile','Zone':' '}}
-                'Observation':{'Type':'Time-series Graphs','Result':'Head'}}
+                'Observation':{'Type':'Profile','Zone':' '}}
         self.change={'Grid':None,'Veloc-vect':['scale',1.],
             'Particles':['time',10.],
             'Visible':['size',10]} # change that are not contours
@@ -100,7 +99,7 @@ class guiShow:
         listSpecies = self.getNames('Chemistry_Species_L')
         opt,bool = 'contour',False
         # set the first steps GRID, MAP, VARIABLE, PARTICLE
-        m = self.dicVisu['Model'] 
+        m = self.dicVisu['Model']
         plane, layer, tstep = m['Plane'],m['Layer'],m['Tstep'];
         self.Tstep = tstep
         self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
@@ -117,12 +116,11 @@ class guiShow:
         Cgroup,Cname,species = self.getCurrentContour();#print 'guish l 94',group,name,species
         self.curName,self.curSpecies = Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
-            #if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
-            if name=='Result': self.dlgShow.onPlot()
+            if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
             return
         # get the data for contours
         dataM = None
-        #print 'guish 116', name,species,self.userSpecies
+        print('guish 116', name,species,self.userSpecies)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
             if species in list(self.userSpecies.keys()):

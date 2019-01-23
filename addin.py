@@ -9,6 +9,7 @@ from .Pest import *
 from .Opgeo import *
 from .instantFit import *
 from .modflowWriter import *
+from .multiPlot import * # oa 28/11/18
 
 #from matplotlib.tri import CubicTriInterpolator
 from PyQt5.QtGui import *
@@ -57,6 +58,19 @@ class addin:
             self.structure['menu'][mod]={'name':name,'position': 0,
                 'function': 'onUsedModules','short':'M'}
             self.core.dicaddin[name+'_'+mod] = (lmodules,val) # only data are stored in dicaddin  
+        # creating dic for observation data
+        name='obsHead'
+        self.core.dicaddin[name] = {}
+        self.structure['menu'][mod]={'name':name,'position': 0,
+                'function': 'OnImportHead','short':'oH'}
+        name='obsTracer'
+        self.core.dicaddin[name] = {}
+        self.structure['menu'][mod]={'name':name,'position': 0,
+                'function': 'OnImportTracer','short':'oH'}
+        name='obsChemistry'
+        self.core.dicaddin[name] = {}
+        self.structure['menu'][mod]={'name':name,'position': 0,
+                'function': 'OnImportChemistry','short':'oH'}
         # creating the structure for the buttons
         name = 'Model'
         model = {'dimension':'2D','type':'confined','group':'Modflow series'}
@@ -152,6 +166,7 @@ class addin:
         self.gui.addMenu(502,'Modflow_modules',self.onUsedModules)   
         self.gui.addMenu(503,'Mt3dms_modules',self.onUsedModules)   
         #self.gui.addMenu(504,'Interactive fitting',self.onInstantFit)   
+        #self.gui.addMenu(505,'MultiPlot',self.onMultiPlot)   #OA 28/11/18
         self.gui.addMenu(506,'Batch',self.onBatchDialog)   
         self.gui.addMenu(507,'Initial chemistry',self.onInitialChemistryDialog)   
         
@@ -413,6 +428,10 @@ class addin:
         #create the object that observe the cnage in topbar
         self.fit.setObserver(self.gui,self.gui.modifBox.obs)
         self.fit.startDialog()
+        
+    #def onMultiPlot(self,evt): # OA 28/11/18
+        #m = multiPlot(self.gui,self.core)
+        #m.show()
         
     def onBatchDialog(self,evt):
         from matplotlib import rcParams

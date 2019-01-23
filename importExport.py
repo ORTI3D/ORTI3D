@@ -3,6 +3,13 @@ import os
 import xml.dom.minidom as xdom
 from .geometry import *
 #from wxDialogs import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5 import Qt
+from .qtDialogs import *
+from functools import partial
 
 class impFile:
     """a generic class to import and export different types of files
@@ -132,6 +139,107 @@ class impFile:
                     val = z['val']
                     if type(val) in [type([5]),type([5.])]: val = '\n'.join(str(val))
                     diczone.dic[line]['value'][i]=val
+                    
+class impObsData(QDialog) :
+    def __init__(self,gui,core,option):
+        self.gui,self.core= gui,core
+        self.option = option
+        QDialog.__init__(self,gui) 
+        self.setModal(False)
+        self.setWindowTitle(self.option+' observation data')
+        self.screenShape = QDesktopWidget().screenGeometry()
+        self.setGeometry(QRect(40, 60, self.screenShape.width()*.42,self.screenShape.height()*.6))
+    ## main vertical layout
+        self.verticalLayout = QVBoxLayout(self)
+        self.verticalLayout.setContentsMargins(10, 20, 10, 10)
+    ## label for instruction
+        label = str('Set or copy paste here your '+self.option+' observation data')
+        self.label = QtWidgets.QLabel(self)
+        self.label.setMaximumSize(500, 24)
+        self.label.setText(label)
+        self.verticalLayout.addWidget(self.label)#, alignment=Qt.AlignHCenter)
+    ## grid for paste data
+        dicIn=self.getDicObs(self.option)
+        self.nbg = myNBpanelGrid(self.gui,self,dicIn)
+        #dicOut=self.setDicObs(self.option)
+        self.verticalLayout.addWidget(self.nbg)
+    ## button ok and cancel
+        buttonBox = QDialogButtonBox(self)
+        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+        buttonBox.accepted.connect(partial(self.setDicObs,self.option))
+        buttonBox.rejected.connect(self.reject1)
+        self.verticalLayout.addWidget(buttonBox)
+        #QMetaObject.connectSlotsByName(self)
+        
+    def getDicObs(self,option):
+        dicName=str('obs'+option)
+        dic = self.core.dicaddin[dicName]
+        if dic != {}:
+            if option == 'Chemistry':
+                dic=self.updateChem(dicName)
+            return dic
+        else :
+            if option == 'Head':
+                dicIn = {'cols':['\tWell\t','\tLayer\t','\tTime\t','\tHead\t'],'rows':['1','2','3'],'data':{}}
+            if option == 'Tracer':
+                dicIn = {'cols':['\tWell\t','\tLayer\t','\tTime\t','\tTracer\t'],'rows':['1','2','3'],'data':{}}
+            if option == 'Chemistry':
+                lname=self.getChemSol()
+                cols=['\tWell\t','\tLayer\t','\tTime\t']+lname
+                dicIn = {'cols':cols,'rows':['1','2','3'],'data':{}}   
+            self.core.dicaddin[dicName]=dicIn
+            return dicIn
+    
+    def getChemSol(self):
+        lname=[]
+        zchem=self.core.dicaddin['Chemistry']
+        zname=zchem['Chemistry']['Solutions']['rows']
+        for i in range(len(zname)) :
+            if (zchem['Chemistry']['Solutions']['data'][i][0])!=False :
+                lname.append(zname[i])
+        return lname
+    
+    def updateChem(self,dicName):
+        lname=self.getChemSol()
+        lname2=self.core.dicaddin[dicName]['cols'][3:]
+        j=0
+        for i in range(len(lname)):
+            if lname[i]!=lname2[j]:
+                self.core.dicaddin[dicName]['cols'].insert(i+3,lname[i])
+                print('cols',self.core.dicaddin[dicName]['cols'])
+                [self.core.dicaddin[dicName]['data'][x].insert(i+3,'') 
+                for x in range(len(self.core.dicaddin[dicName]['data']))]
+            else:j+=1
+        return self.core.dicaddin[dicName]
+        
+    def setDicObs(self,option):
+        dic2=self.nbg.getValues()
+        dicName=str('obs'+option)
+        nrow = len(dic2['data'])
+        dic2['rows']=[str(x+1) for x in range(nrow)]
+        if dic2 != None:
+                self.core.dicaddin[dicName] = dic2
+        else : return
+        check=self.checkObs(dic2)
+        if check == 'No': self.close()
+
+    def reject1(self): 
+        self.close()
+        
+    def checkObs(self,dic):
+        if any(dic['data']) != False :
+            zname=self.core.diczone['Observation'].dic['obs.1']['name']
+            zobs=[dic['data'][i][0] for i in range(len(dic['data']))]
+            m=''
+            for i in range(len(zobs)):
+                if zobs[i] not in zname: 
+                    m+= str(zobs[i])+' is not a model observation well\n'
+            if m!='' :
+                m2='Warning\n'+m+'\nDo you want modify your data?'
+                resp=onQuestion(self.gui,m2)
+                return resp
+            else : self.close()
+        else : self.close()
 
 class impAsciiModflow:
     """this class imports a whole modflow model, and sets it as an

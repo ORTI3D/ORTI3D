@@ -159,11 +159,11 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
         self.setWindowTitle(title)
         self.gui,self.pages,self.layouts,self.dicIn = gui,{},{},dicIn
         self.dicOut = self.dicIn.copy()
-        layout = QVBoxLayout(self)
-        self.setGeometry(QRect(40, 40, 480,550))
+        self.layout = QVBoxLayout(self)
+        self.setGeometry(QRect(40, 40, 280,530))
         glWidget = QWidget(self)
         nb = QTabWidget(glWidget)
-        nb.setGeometry(QRect(5, 5, 450,520))
+        nb.setGeometry(QRect(5, 5, 250,450))
         self.dwidget = {}
         for n in list(dicIn.keys()):
             if dicIn[n]==None:continue
@@ -183,22 +183,24 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
             scroll = QScrollArea()
             scroll.setWidget(pg)
             scroll.setWidgetResizable(True)
-            scroll.setFixedHeight(400)
+            #scroll.setFixedHeight(400)
             self.pages[n] = pg
             nb.addTab(scroll,n)
             pg.show()
-        layout.addWidget(glWidget)
-        buttonBox = QDialogButtonBox(self)
-        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
-        buttonBox.accepted.connect(self.accept1)
-        buttonBox.rejected.connect(self.reject1)
-        layout.addWidget(buttonBox)
+        self.layout.addWidget(glWidget)
+        self.buttonBox = QDialogButtonBox(self)
+        self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.accept1)
+        self.buttonBox.rejected.connect(self.reject1)
+        self.layout.addWidget(self.buttonBox)
         QMetaObject.connectSlotsByName(self)
         
     def accept1(self): 
         self.close(); self.state = 'accept'
     def reject1(self): 
         self.close(); self.state = 'reject'
+    def apply(self): #EV 10/12/18
+        self.state = 'accept'
         
     def showDialogAndDisconnect(self):
         self.show()
@@ -296,7 +298,8 @@ class myNBpanelGrid(QTableWidget):
             for ic in range(self.columnCount()):
                 #print ('qtdl 269',il,ic,self.item(il,ic),self.type[ic])
                 if self.type[ic]=='Text':
-                    l0.append(str(self.item(il,ic).text()))
+                    if self.item(il,ic) != None :
+                        l0.append(str(self.item(il,ic).text()))
                 else :
                     cell = self.cellWidget(il,ic)
                     l0.append(cell.checkState()!=0)

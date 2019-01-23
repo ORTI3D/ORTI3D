@@ -8,7 +8,7 @@ from .sutraWriter import *
 from .ogWriter import *
 import xml.dom.minidom as xdom
 from .geometry import *
-from .importExport import *
+#from .importExport import *
 from .addin import *
 from .timeperiod import *
 from pylab import loadtxt,size
@@ -630,7 +630,7 @@ class Core:
                 if il!= -1: iz2=[il]*len(ix2)
                 pt.append(self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])); # irow,icol,ilay
                 labels.append('lay'+str(il))
-            print('pthead',pt)
+            #print('pthead',pt)
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
             elif mtype in ['Sut','Min']: opt = 'Tracer'

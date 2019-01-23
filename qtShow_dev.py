@@ -95,7 +95,7 @@ class Ui_Show(object):
         """action when a box is clicked, tag L : list """
         item = self.Show.sender()
         n = str(item.objectName()); 
-        [group,name,tag]=n.split('_');#print('guish onclick',group,name,tag)
+        [group,name,tag]=n.split('_');#print 'guish onclick',group,name,tag
         if tag=='L': 
             if name in ['Layer','Tstep']: 
                 retour = item.currentIndex()
@@ -149,7 +149,7 @@ class Ui_Show(object):
         self.guiShow.setGlistParm(group,name,'color',color)
         #self.onTickBox(group,name,tag,True)
         self.gui.visu.changeObject(group,name,value,color)
-
+        
     def onPlot(self): #EV 19/12/18 
         item = self.Show.findChild(QComboBox,'Observation_Type_L')
         typ = item.currentText()[0]
@@ -190,7 +190,7 @@ class Ui_Show(object):
             d = dlg.getValues() #dialog to choose type of graph
             if d != None:
                 layers=d[0]
-            else :return
+            else :return            
         # dialog for type of graph, for flow this dialog is useless
         if typ != 'X':
             if group in ['Chemistry','Transport']: lst0 = ['Value','Weighted value','Mass Discharge (Md)','Mass Flux (J)']
@@ -207,7 +207,7 @@ class Ui_Show(object):
             
         item = self.Show.findChild(QComboBox,'Observation_Zone_L')
         znam = item.currentText()
-        #print('plot',typ,tstep,group,znam,lesp,layers)
+        print('plot',typ,tstep,group,znam,lesp,layers)
         dist,val,labl = self.core.onPtObs(typ,tstep,group,znam,lesp,layers);#print 'guishow 263',val
         #plt = plot(self.gui,-1)
         typ1='-'
@@ -254,7 +254,7 @@ class showBox:
                 self.buts[i] = QCheckBox(self.hlWidget)
                 self.buts[i].setObjectName(gr+'_'+n+'_B')
                 boxGrid.addWidget(self.buts[i],i,1,1,1)
-                self.buts[i].clicked.connect(parent.onClick)
+                self.buts[i].stateChanged.connect(parent.onClick)
             self.buts[i].setSizePolicy(policy)
             self.buts[i].setMaximumHeight(18)
             if gr not in ['Model','Observation']:

@@ -88,10 +88,11 @@ class Ui_Main(object):
         curVar = {}    
             
     def onProjectSave(self): # OA modified 01/12/18
-        dr = QgsProject.instance().readPath('./')
+        self.menus.askSave() # EV added 15/01/19
+        #dr = QgsProject.instance().readPath('./') #EV commented 15/01/19
         #self.dialogs.onMessage(self.gui,f)
         #QgsVectorFileWriter.writeAsVectorFormat( layer, 'H:/temp/' + layer.name() + ".shp", "utf-8", layer.crs(), "ESRI Shapefile", 1) # OA 16/12 commented
-        self.core.saveModel(dr,self.core.fileName)
+        #self.core.saveModel(dr,self.core.fileName) #EV commented 15/01/19
         
     def onProjectOpen(self): # OA added 01/12/18
         '''when a project is opened tries to find the folder and if there is an orti file there
@@ -516,7 +517,7 @@ class showBox:
                 self.buts[i] = QCheckBox(self.hlWidget)
                 self.buts[i].setObjectName(g+'_'+n+'_B')
                 boxGrid.addWidget(self.buts[i],i,1,1,1)
-                self.buts[i].stateChanged.connect(self.onClick)
+                self.buts[i].clicked.connect(self.onClick) # OA 22/1/19
                 #chk.clicked.connect(self.onClick)
 
     def onClick(self,value):
