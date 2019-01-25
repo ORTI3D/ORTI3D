@@ -262,7 +262,6 @@ class qgisVisu:
             provider.addFeatures([feat]);
         layer.commitChanges()
         
-        
     def zonesQgs2core(self):
         '''creates zones from existing polys in Qgis layers (done when saving qgis)'''
         allLayers = self.canvas.layers()
@@ -303,7 +302,7 @@ class qgisVisu:
                     layerName = tp[0]+line + '_' + comm
                     ln0 = QgsProject.instance().mapLayersByName(layerName)
                     if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
-        for n in ['Grid','Parameters']: #EV added 15/01/2019
+        for n in ['Grid','Parameters','Head','Tracer','Chemistry']: #EV added 15/01/2019 + 24/01/19 added result layers
             ln0 = QgsProject.instance().mapLayersByName(n)
             if len(ln0)>0: QgsProject.instance().removeMapLayer(ln0[0]) 
         
@@ -364,8 +363,8 @@ class qgisVisu:
         layers1 = list(layers.keys()) # 
         layers2  = [x.split('_')[0] for x in layers]
         layer = layers[layers1[layers2.index(layName)]] # OA 22/1/19 end
-        pr = layer.dataProvider();
-        layer.startEditing()
+        #pr = layer.dataProvider();
+        #layer.startEditing()
         colorRamp = QgsGradientColorRamp.create({'color1':'255,0,0,255', 'color2':'0,0,255,255','stops':'0.25;255,255,0,255:0.50;0,255,0,255:0.75;0,255,255,255'})
         X,Y,Z = data
         d0,i = {},1
@@ -384,13 +383,13 @@ class qgisVisu:
             for iy in range(ny):
                 d0[i]={0:i,1:float(Z[iy,ix])}
                 i+=1
+        pr = layer.dataProvider();
+        pr.changeAttributeValues(d0) #EV 24/01/2019
         symbol = QgsFillSymbol()
         mode = QgsGraduatedSymbolRenderer.Jenks
-        renderer = QgsGraduatedSymbolRenderer.createRenderer(layer,'value',25,mode,symbol, colorRamp)
+        renderer = QgsGraduatedSymbolRenderer.createRenderer( layer,'value',10,mode,symbol, colorRamp )
         renderer.setMode( QgsGraduatedSymbolRenderer.Custom )
-        pr.changeAttributeValues(d0)
-        layer.setRenderer(renderer)        
-        layer.commitChanges()
+        layer.setRenderer(renderer)  
         layer.triggerRepaint()
         self.iface.mapCanvas().refresh() 
         

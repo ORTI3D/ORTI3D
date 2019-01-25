@@ -169,8 +169,7 @@ class multiPlot(QDialog):
                 if plotOrder==0 : dicIn['plotOrder']='Zones'
                 if plotOrder==1 : dicIn['plotOrder']='Species'
             dicIn['splist']=[dic['Species'][i][0] for i in range(len(dic['Species'])) if dic['Species'][i][1]==2]
-        else :dicIn['plotOrder']='Zones'
-        #if plotOrder==2 : dicIn['plotOrder']='layers'        
+        else :dicIn['plotOrder']='Zones'       
         return dicIn
     
     def buildPlot(self):
@@ -238,16 +237,13 @@ class multiPlot(QDialog):
                                 self.yobsarray.append(self.yobs)
                                 x,self.yy,label =  self.core.onPtObs(ptypXY,self.iper,group,self.zolist[j],[self.splist[i]],lobs)
                                 self.yyarray.append(self.yy)
-                                #self.yobs_all.append(self.yobs)
                         self.yy_all.append(self.yyarray)
                         self.yobs_all.append(self.yobsarray)
                         myplot=self._ax.scatter(self.yobsarray,self.yyarray)
                         self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs)) 
-                #self.yobs_all=np.squeeze(np.array(self.yobs_all))
                 time='All'
-            yobs_arr=np.array(self.yobs_all).flatten()
+            yobs_arr=np.concatenate(self.yobs_all).ravel().tolist() 
             myplot2=self._ax.plot([min(yobs_arr),max(yobs_arr)],[min(yobs_arr),max(yobs_arr)],'k')
-            #myplot2=self._ax.plot([min(self.yobs_all),max(self.yobs_all)],[min(self.yobs_all),max(self.yobs_all)],'k')
             self._ax.set_title('Simulated vs Observed Data: Time = '+str(time)+' [T]',fontweight="bold", size=9)
             self._ax.legend(self.llabel,fontsize = 8,loc='upper center', bbox_to_anchor=(0.5, -0.1),ncol=4)
             self._ax.set_ylabel('Simulated '+aylabel, fontsize = 8) 

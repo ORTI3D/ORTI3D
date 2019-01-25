@@ -261,3 +261,7 @@ this version sent to elicia
 - in qgisGui/showBox l 519 statechangeed -> clicked
 - same in qtShow l 247
 - in QgisVisu/createContour l 353-360 added to create a new layer to display results (its wiered but required due to names in Qgis)
+
+24/01/2019 EV
+- qgisVisu.py removeOrtiLayers l.305 added a loop to remove result layer
+- in QgisVisu/createContour l.387 changed the position of the "pr.changeAttributeValues(d0)" to get the good scale of color ramp
