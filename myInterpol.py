@@ -88,7 +88,7 @@ def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     
 def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     vparms = [0.5*variance(zpt),rg,0] # sill, range, nugget
-    print('vparms',vparms,vtype)
+    #print('vparms',vparms,vtype)
     OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model=vtype,
         variogram_parameters=vparms, verbose=False, enable_plotting= False)#'spherical'
     zvalues, sigmasq = OK.execute('points', x, y)

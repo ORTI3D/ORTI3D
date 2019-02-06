@@ -325,8 +325,6 @@ class mtphtWriter:
                         for l in range(ny): 
                             m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
                 listC.append(m0)
-        print('names2',names)
-        print('list2',shape(listC),listC)
         return listC,names
         
     def getConcRch(self,typ,line,iper=0):

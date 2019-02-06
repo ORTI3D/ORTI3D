@@ -268,12 +268,15 @@ this version sent to elicia
 
 01/02/2019 EV
 geometry.py zone2interp l.864-865 add option to choose range and type of variogramm 
+guishow.py getArray3D l.174-175 modified to get veloc-magn in 3D model
 
 3/2/2019 OA
 - modflowriter/writeTransientZones line 307 modified because the condition None was not working for Xsection
 - modflowriter/getpermscaled l384 added because it wa slost in teh last modif
 
 5/2/2019 EV
+core.py l.432-437 create function importAscii to import array from .asc file
+importExport.py l.143-156 added impAsciiGrid function to import array from .asc file
 addin.py onInitialChemistryDialog l.468-471 modified the way to read txt to take into account formula
 addin.py onInitialChemistryDialog l.460-463 added "formula:" to be able to read "value=" for name and formula and commented exemple which are not anymore implemented
 addin.py initAddin l.123 removed "value=" by default in formula 
