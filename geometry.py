@@ -443,7 +443,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
             m0[iy,ix] = zv0
             
         else: # other shapes
-            ndim=len(xy[0])
+            ndim=len(xy[0]);
             if ndim==3: x,y,z = list(zip(*xy)) # there are z values (variable polygon)
             else :
                 x,y = list(zip(*xy))
@@ -453,7 +453,6 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
             if ndim==3: continue # a zone with z value is not filled!!
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m0, ind==1, [zv0])
-    #print 'zonemat',line,m0 
     return array(m0)
 
 def fillZone(nx,ny,nxp,nyp,nzp):
@@ -857,10 +856,13 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
     #print 'interp 512', line,media, option
     # find the interpolation options
     vrange,vtype,variable = None,None,None
+    #print ('op',option)
     if ';' in option: 
         op = option.split(';')
         option  = op[0]
         for i in range(1,len(op)): exec(op[i].replace('@','\''))
+        vrange=float(op[1].split('=')[1]) #EV 01/02/19
+        vtype=op[2].split('@')[1] #EV 01/02/19
     vbase=float(core.dicval[modName][line][media])
     # create the vector of points on which interpolation will be done
     if modName[:5] == 'Opgeo':

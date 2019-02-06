@@ -171,7 +171,8 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                if vz !=None:
+                print('guish',vx,vy,vz)
+                if vz.size !=0:
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
                 else :
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)

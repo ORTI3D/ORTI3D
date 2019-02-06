@@ -8,7 +8,7 @@ from .sutraWriter import *
 from .ogWriter import *
 import xml.dom.minidom as xdom
 from .geometry import *
-#from .importExport import *
+from .importExport import *
 from .addin import *
 from .timeperiod import *
 from pylab import loadtxt,size
@@ -429,6 +429,12 @@ class Core:
             for l in range(nlay): 
                 m1[l] = m1[l]*(cumsum(dx)-dx/2.)*6.28;
         return m1
+    
+    def importAscii(self,fileDir,fileName): #EV 04/02/19
+        importer = impFile(self.gui,self)
+        if fileName=='': return 
+        m0=importer.impAsciiGrid(fileDir,fileName)
+        return m0      
             
 #********************* working with keywords and values***************            
     def createKwList(self):

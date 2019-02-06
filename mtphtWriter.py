@@ -276,6 +276,17 @@ class mtphtWriter:
                         listC.append(value[:,-1::-1,:])
                         ie += 1
                 return listC,names
+        # for RESTART from acsii file ############# TEMPORARY DEVELOPMENT ##############
+        if initChem['name']!='': #EV 05/02/19
+            ntxt=initChem['name']
+            ntxt=ntxt.replace('core','self.core')
+            value=self.core.formExec(ntxt)
+            names=value
+            vtxt= initChem['formula']
+            vtxt=vtxt.replace('core','self.core')
+            value=self.core.formExec(vtxt)
+            listC=value
+            return listC,names
         # classical case
         for i,kw in enumerate(shortn):
             m1=dInd[longn[i]].astype('int');#print 'mtph l 238',i,kw,longn[i],m1
@@ -285,13 +296,14 @@ class mtphtWriter:
                 ncol=len(data[0])
                 names.append(e)
                 inde=rows.index(e) # finds the index of the species e
-                #if inital chemistry is specified
-                if str(e) == str(initChem['name']):
-                    txt= initChem['formula']
-                    txt1=txt.replace('core','self.core')
-                    exec(txt1)
-                    listC.append(value)
-                    continue
+                #if inital chemistry is specified 
+                #if str(e) == str(initChem['name']): # EV 05/02/19
+                    #txt= initChem['formula']
+                    #txt1=txt.replace('core','self.core')
+                    #value=core.formExec(txt1)
+                    #exec(txt1)
+                    #listC.append(value)
+                    #continue
                 # set background value
                 rcol=list(range(2,ncol)) # the range of columns to be read
                 if longn[i] in ['Phases','Gases']: 
@@ -313,6 +325,8 @@ class mtphtWriter:
                         for l in range(ny): 
                             m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
                 listC.append(m0)
+        print('names2',names)
+        print('list2',shape(listC),listC)
         return listC,names
         
     def getConcRch(self,typ,line,iper=0):

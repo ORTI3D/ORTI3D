@@ -139,6 +139,21 @@ class impFile:
                     val = z['val']
                     if type(val) in [type([5]),type([5.])]: val = '\n'.join(str(val))
                     diczone.dic[line]['value'][i]=val
+    
+    def impAsciiGrid(self,fileDir,fileName): #EV 04/02/19
+        f1 = open(fileDir+os.sep+fileName,'r')
+        s = f1.read();f1.close()
+        s1 = s.split('\n')
+        # first lines
+        i,dct=0,{}
+        while len(s1[i].split())==2:
+            a1,a2 = s1[i].split()
+            dct[a1.strip().lower()] = a2.strip()
+            i+=1
+        l0=[]
+        for j in range(int(dct['nrows'])): 
+            l0.append(s1[i+j].split())
+        return array(l0)
                     
 class impObsData(QDialog) :
     def __init__(self,gui,core,option):

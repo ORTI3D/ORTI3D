@@ -120,7 +120,7 @@ class addin:
         self.structure['button']['5.Pest'].append({'name':name,'pos':0,'short':'Pz'})
 
         name = 'InitialChemistry' # to set specific initial chemistry
-        self.core.dicaddin[name] = {'name':'','formula':'value =','tstep':''}
+        self.core.dicaddin[name] = {'name':'','formula':'','tstep':''} #ev05/02/19 removed value =
         self.grd = makeGrid(self.core,self.core.dicaddin['Grid'])
         self.mesh = None  # OA added 25.9.18
         self.setChemType()
@@ -457,21 +457,19 @@ class addin:
     def onInitialChemistryDialog(self,evt):
         self.head='calculate initial chemistry'
         inC = self.core.dicaddin['InitialChemistry']
-        self.txt = 'name = '+inC['name'] +'\n'+inC['formula'] +'\n'+'tstep = '+inC['tstep']
-        self.txt+= '\n#name=Ca, value=ones((25,30))*5e-4'
-        self.txt+= '\n#name=All, value=importUCN, tstep=0'
-        self.txt+= '\n#name=Hfo_w, value=core.importLayerValues(\'Hfo_layers.txt\',\'Hfo_w\')'
+        self.txt = 'name: '+inC['name'] +'\n'+'formula: '+inC['formula'] +'\n'+'tstep: '+inC['tstep'] # EV 05/02/19
+        #self.txt+= '\n#name:Ca, formula: value=ones((25,30))*5e-4' # EV 05/02/19
+        self.txt+= '\n#name:All, formula: value=importUCN, tstep:0'
+        #self.txt+= '\n#name:Hfo_w, formula: value=core.importLayerValues(\'Hfo_layers.txt\',\'Hfo_w\')'
         #print(self.txt)
         dialg = self.dialogs.textDialog(self.gui,'Initial chemistry',(500,300),self.txt)
-        retour = dialg.getText();#print retour text() or currentText()
+        retour = dialg.getText()#;print ('ok',retour)
         if retour != None:
-            #print('ok')
-            #txt = dialg.getText()
-            name = self.txt.split('\n')[0].split('=')[1].strip()
-            f0 = self.txt.split('#')[0]
-            formula = f0.split('\n')[1]
-            tstep = f0.split('\n')[2].split('=')[1].strip()
-            #print(name, formula, tstep)
+            f0 = retour.split('#')[0] # EV 05/02/19
+            name=f0.split('formula: ')[0].split('=',1)[1].strip()
+            formula=f0.split('formula: ')[1].split('tstep')[0].strip()
+            tstep=f0.split('formula: ')[1].split('tstep:')[1].strip()
+            #print('NN',name, 'FF',formula, 'TT', tstep)
             self.core.dicaddin['InitialChemistry']={'name':name,'formula':formula,'tstep':tstep}
         else : return
         #dialg.Destroy()

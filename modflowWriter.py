@@ -304,11 +304,11 @@ class modflowWriter:
             if ilay == None: break
             npts += len(irow)
             for i in range(len(irow)):
-                if icol==None : #unstruct grid irow is the node number
-                    lpts[iz].append(str(irow[i]+1).rjust(9))
-                else : # struct grid
+                if core.addin.mesh == None: # regular grid # OA modif 4/2/19
                     lpts[iz].append(str(ilay[i]+1).rjust(9)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
+                else : #unstruct grid irow is the node number
+                    lpts[iz].append(str(irow[i]+1).rjust(9))
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': k.append(self.getPermScaled(ilay,irow,icol))
             
@@ -381,6 +381,7 @@ class modflowWriter:
         for i in range(len(ilay)):
             if self.core.addin.getDim() in ['Xsection','Radial']: 
                 vol=dx[icol[i]]*dy[ny-ilay[i]-1]
+                ka[i]=K[ilay[i],irow[i],icol[i]]*vol
             else : 
                 if mh == None: # struct grid
                     vol=dx[icol[i]]*dy[irow[i]]*thick[ilay[i],irow[i],icol[i]]
