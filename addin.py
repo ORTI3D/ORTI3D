@@ -466,7 +466,7 @@ class addin:
         retour = dialg.getText()#;print ('ok',retour)
         if retour != None:
             f0 = retour.split('#')[0] # EV 05/02/19
-            name=f0.split('formula: ')[0].split('=',1)[1].strip()
+            name=f0.split('formula: ')[0].split(':',1)[1].strip()
             formula=f0.split('formula: ')[1].split('tstep')[0].strip()
             tstep=f0.split('formula: ')[1].split('tstep:')[1].strip()
             #print('NN',name, 'FF',formula, 'TT', tstep)
