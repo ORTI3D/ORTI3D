@@ -282,3 +282,6 @@ addin.py onInitialChemistryDialog l.460-463 added "formula:" to be able to read 
 addin.py initAddin l.123 removed "value=" by default in formula 
 mtphtwriter.py getConcInit l.280-289 temporary development for import initital chamistry from ACSII file
 mtphtwriter.py getConcInit l.300-306 commented because not anymore available with the new temporary development 
+
+7/2/2019 EV
+mtphtKeywords.py adv changed condition (added 1 for MIXELM indice) for adv.2, adv.3, adv.4 and adv.5
