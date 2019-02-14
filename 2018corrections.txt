@@ -283,5 +283,12 @@ addin.py initAddin l.123 removed "value=" by default in formula
 mtphtwriter.py getConcInit l.280-289 temporary development for import initital chamistry from ACSII file
 mtphtwriter.py getConcInit l.300-306 commented because not anymore available with the new temporary development 
 
-7/2/2019 EV
-mtphtKeywords.py adv changed condition (added 1 for MIXELM indice) for adv.2, adv.3, adv.4 and adv.5
+14/2 OA
+myinterpol linIntpFromGrid modif line 37, added 38 : python3 requires index as integers
+modflowwriter l199 modified to consider that if recharge does not change -1 is written
+- in qtVisualisation mouse-clic removed [:6] at end of l787 788 (was done to shorter coodinates)
+- in qtVisualisation/l649 replaced len(coords) by len(a) because pb opening file some lines are mixed with polyv
+- core line 359 just out of opgeo file keep only the last 3 and not 5 lines (to see the normal termination)
+
+14/02/2019 EV
+multiplot.py onExport replaced ny by 2 in transpose

@@ -769,7 +769,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         if evt.inaxes is None:
             return      
         if self.curZone == None:  # au depart
-            self.x1 = [float(evt.xdata)] # pour aovir chiffre pas trop long
+            self.x1 = [float(evt.xdata)] 
             self.y1 = [float(evt.ydata)]
             self.setcurZone(Line2D(self.x1,self.y1))
             self.cnv.add_line(self.curZone)
@@ -784,8 +784,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             if self.typeZone=="POLYV": # and evt.button ==1:
                 rep = self.polyVdialog()  # dialog for the current value of z
                 if rep==False : return
-            self.x1.append(float(str(evt.xdata)[:6]))
-            self.y1.append(float(str(evt.ydata)[:6]))
+            self.x1.append(float(str(evt.xdata)))# OA 14/2 removed [:6] for long coordinates
+            self.y1.append(float(str(evt.ydata)))
             if self.typeZone=="LINE" or self.typeZone=="RECT" :
                 self.deconnecte()  #fin des le 2eme point
                 self.setZoneEnd(evt)

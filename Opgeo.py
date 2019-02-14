@@ -11,6 +11,7 @@ class Opgeo:
     
     def __init__(self, core):
         self.core = core
+        self.nlay = 1
         
     def buildMesh(self,nlay=1):
         self.core.addin.mesh = self

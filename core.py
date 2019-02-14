@@ -356,7 +356,7 @@ class Core:
             os.chdir(self.fileDir)
             os.system(s)
             if info !=False :
-                return self.getTxtFileLastLine('logfile.txt',5)
+                return self.getTxtFileLastLine('logfile.txt',3) # OA 14/2/19
         if modName[:5] =='Min3p':
             if self.getValueFromName('Min3pFlow','P_Uns')==0:
                 s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s

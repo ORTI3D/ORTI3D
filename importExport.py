@@ -221,7 +221,7 @@ class impObsData(QDialog) :
         for i in range(len(lname)):
             if lname[i]!=lname2[j]:
                 self.core.dicaddin[dicName]['cols'].insert(i+3,lname[i])
-                print('cols',self.core.dicaddin[dicName]['cols'])
+                #print('cols',self.core.dicaddin[dicName]['cols'])
                 [self.core.dicaddin[dicName]['data'][x].insert(i+3,'') 
                 for x in range(len(self.core.dicaddin[dicName]['data']))]
             else:j+=1

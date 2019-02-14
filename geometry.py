@@ -367,8 +367,6 @@ def zmesh(core,dicz,media,i):
         idx = cellsUnderPoly(xarray,yarray,poly,llcoefs)>0
     return idx
     
-    
-    
 def blockRegular(core,modName,line,intp,opt,iper):
     """creates a block for one variable which has a size given by the x,y,z 
     given by addin

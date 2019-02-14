@@ -195,10 +195,15 @@ class modflowWriter:
             if line=='uzf.9': line2='uzf.10'
             elif line == 'rch.2': line2=line*1
             #print 'mfw rch',self.core.ttable[line2]
-            for iper in range(nper):
-                f1.write('    0\n') # meaning that all data are written not reused from previous
-                m = block(self.core,'Modflow',line2,False,None,iper);#print iper,shape(m),amax(m),where(m==1)
-                self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
+            m0=0
+            for iper in range(nper): # OA 14/2/2019 modif below if rech remain similar
+                if iper>0: m0 = block(self.core,'Modflow',line2,False,None,iper);
+                m = block(self.core,'Modflow',line2,False,None,iper);
+                if sum(m0-m)==0:
+                    f1.write('    -1\n')
+                else :
+                    f1.write('    0\n') # 0: data are written not reused from previous
+                    self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
 
         if line == 'evt.2': # writes an array for each period with zero before
             for iper in range(nper):
@@ -322,15 +327,15 @@ class modflowWriter:
                 npz = len(lpts[iz])
                 for pt in range(npz): # for each zone the list of points
                     if ext=='wel': 
-                        buff+= lpts[iz][pt]+' %+9.2e'%(float(val)*k[iz][pt])+'\n'
+                        buff+= lpts[iz][pt]+' %+9.6g'%(float(val)*k[iz][pt])+'\n'
                     elif ext=='chd': 
-                        buff+=lpts[iz][pt]+' %+9.2e %+9.2e  \n'%(float(val),float(vnext))
+                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g  \n'%(float(val),float(vnext))
                     elif ext in ['drn','ghb']:
                         v1,v2 = val.split()
-                        buff+=lpts[iz][pt]+' %+9.2e %+9.2e  \n'%(float(v1),float(v2))
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(float(v1),float(v2))
                     elif ext=='riv':
                         v1,v2,v3 = val.split()
-                        buff+=lpts[iz][pt]+' %+9.2e %+9.2e %+9.2e  \n'%(float(v1),float(v2),float(v3))
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g  \n'%(float(v1),float(v2),float(v3))
         f1.write(buff)
         f1.close()
         
