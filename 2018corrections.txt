@@ -292,3 +292,4 @@ modflowwriter l199 modified to consider that if recharge does not change -1 is w
 
 14/02/2019 EV
 multiplot.py onExport replaced ny by 2 in transpose
+mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial chemistry arrays and define other initial chemistry from the interface
