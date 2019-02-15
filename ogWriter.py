@@ -23,18 +23,24 @@ class ogWriter:
         self.threeD = self.opgeo.threeD
         self.nbCurves = 1
         self.curvefile = open(self.fullPath+'.rfd','w')
+        self.grd = self.core.addin.getFullGrid()
+        self.eps = min(float(self.grd['dx'][0]),float(self.grd['dy'][0]))/2
+        self.ttable = core.makeTtable()
         #0 rectangular, 1 triangular
         lsuff=['gli','bc','ic','mfp','msh','mmp','msp','st','num','out','pcs','tim']
         if self.opt == 'flow':
-            self.pcs = ['GROUNDWATER_FLOW']
-            self.var = ['HEAD']
+            self.sat_type = core.getValueFromName('OpgeoFlow','O_UNSAT')
+            if self.sat_type == 1:
+                self.ftype,self.pcs,self.var = 'flow',['GROUNDWATER_FLOW'],['HEAD']
+            else:
+                self.ftype,self.pcs,self.var = 'unsat',['RICHARDS_FLOW'],['PRESSURE1']
         elif self.opt == 'trans':
-            self.pcs = ['GROUNDWATER_FLOW','MASS_TRANSPORT']
-            self.var = ['HEAD','ConsTracer']
+            self.pcs.append('MASS_TRANSPORT')
+            self.var.append('ConsTracer')
             lsuff.append('mcp')
         for suff in lsuff:
             fname = self.fullPath+'.'+suff
-            exec('s = self.write'+suff.title()+'()')
+            s = eval('self.write'+suff.title()+'()')
             if s!='': 
                 f1 = open(fname,'w')
                 f1.write(s)
@@ -46,12 +52,12 @@ class ogWriter:
         ''' presently not able to deal with variable layer tops in 3D'''
         #p_list = []
         i,s1,s2,nlay = 0,'#POINTS \n','',getNlayers(self.core)
-        llist = ['flow.'+str(a) for a in range(1,11)]
+        llist = [self.ftype+'.'+str(a) for a in range(1,11)] # search all zones there as Gli
         if self.opt == 'trans': 
             llist.extend(['trans.1','trans.2'])
         ptnames = []
         for line in llist:
-            if line[:4]=='flow': mod = 'OpgeoFlow'
+            if line.split('.')[0] == self.ftype: mod = 'OpgeoFlow'
             elif line[:5]=='trans' : mod = 'OpgeoTrans'
             nbz = 0
             if line in self.core.diczone[mod].dic:
@@ -59,9 +65,13 @@ class ogWriter:
                 nbz = len(dicz['name'])
             for iz in range(nbz):
                 name,lcoo,a = dicz['name'][iz],dicz['coords'][iz],''
-                if (len(lcoo)==1) and not self.threeD: # 2D case
+                lcoo = self.clipCoo2sides(lcoo)
+                lx,ly = list(zip(*lcoo));lz=[0]*len(lx)
+                if self.core.addin.getDim() in ['Xsection','Radial']: 
+                    lz = ly; ly = [0]*len(lx)
+                if (len(lcoo)==1) and not self.threeD: # point in 2D case
                     if name in ptnames: continue
-                    s1 += str(i)+' '+str(lcoo[0][0])[:7]+'  '+str(lcoo[0][1])[:7]+' 0.  0. 0. 0. 0. '
+                    s1 += str(i)+' %5.2g %5.2g %5.2g   0. 0. 0. 0. ' %(lx[0],ly[0],lz[0])
                     s1 +='$NAME '+name+'\n' # points are named
                     i += 1
                     ptnames.append(name)
@@ -69,38 +79,53 @@ class ogWriter:
                     zcoo = self.core.Zblock[:,0]
                     for z in zcoo:
                         sz = ' '+str(z)[:6]
-                        s1 += str(i)+' '+str(lcoo[0][0])[:7]+'  '+str(lcoo[0][1])[:7]+ sz + ' 0. 0. 0. 0. \n'
+                        s1 += str(i)+' %5.2g %5.2g %5.2g   0. 0. 0. 0.\n' %(lcoo[0][0],lcoo[0][1],sz)
                         a += ' '+str(i) # makes the list of points for the polyline
                         i += 1
                     s2 += '#POLYLINE \n $NAME \n   '+ name +' \n $TYPE \n -1 \n'
-                    s2 += ' $EPSILON \n 0.5 \n $POINTS \n'
+                    s2 += ' $EPSILON \n '+str(self.eps)+'\n $POINTS \n'
                     s2 += a + '\n'
                 else :
-                    for coo in lcoo:
-                        s1 += str(i)+' '+str(coo[0])[:7]+'  '+str(coo[1])[:7]+' 0.  0. 0. 0. 0. \n'
+                    for k in range(len(lx)):
+                        s1 += str(i)+' %5.2g %5.2g %5.2g   0. 0. 0. 0.\n' %(lx[k],ly[k],lz[k])
                         a += ' '+str(i) # makes the list of points for the polyline
                         i += 1
                     s2 += '#POLYLINE \n $NAME \n   '+ name +' \n $TYPE \n -1 \n'
-                    s2 += ' $EPSILON \n 0.5 \n $POINTS \n'
+                    s2 += ' $EPSILON \n '+str(self.eps)+'\n $POINTS \n'
                     s2 += a + '\n'
         return s1 + s2 + '#STOP \n'
-      
+        
+    def clipCoo2sides(self,lcoo):
+        '''clips the coordinates ot the sides for a regular grid'''
+        x0,x1,y0,y1 = self.grd['x0'],self.grd['x1'],self.grd['y0'],self.grd['y1']
+        dx,dy,lout = self.grd['dx'][0],self.grd['dy'][0],[]
+        for i in range(len(lcoo)):
+            x,y = lcoo[i];
+            if x<(x0+dx/2): x = x0
+            if x>(x1-dx/2): x = x1
+            if y<y0+dy/2: y = y0
+            if y>y1-dy/2: y = y1
+            lout.append((x,y))
+        return lout
+        
     def writeBc(self):
         '''write the bc values'''
         s = ''
-        for nb in ['flow.2']: #,'flow.3','flow.4'
-            if nb not in list(self.core.diczone['OpgeoFlow'].dic.keys()): continue
-            dicz = self.core.diczone['OpgeoFlow'].dic[nb]
-            nbz,s = len(dicz['name']),''
+        l0 = [self.ftype+'.2',self.ftype+'.4']
+        for line in l0: #flow or unsat
+            if line not in list(self.core.diczone['OpgeoFlow'].dic.keys()): 
+                continue  # no zones
+            dicz = self.core.diczone['OpgeoFlow'].dic[line]
+            nbz = len(dicz['name'])
             for iz in range(nbz):
-                s += '#BOUNDARY_CONDITION \n $PCS_TYPE \n   GROUNDWATER_FLOW \n'
-                s += ' $PRIMARY_VARIABLE \n   HEAD \n $GEO_TYPE \n '
+                s += '#BOUNDARY_CONDITION \n $PCS_TYPE \n '+self.pcs[0]+'\n'
+                s += ' $PRIMARY_VARIABLE \n '+self.var[0]+'\n $GEO_TYPE \n '
                 if len(dicz['coords'][iz])==1 and not self.threeD: ptyp = 'POINT '
                 else : ptyp = 'POLYLINE '
                 s += ptyp + dicz['name'][iz]+'\n'
                 s += ' $DIS_TYPE \n'
                 val = dicz['value'][iz]
-                s += self.transient(val)
+                s += self.transient(line,iz,val)
             if self.opt == 'trans':    
                 dicz = self.core.diczone['OpgeoTrans'].dic['trans.2']
                 nbz = len(dicz['name'])
@@ -112,30 +137,83 @@ class ogWriter:
                     s += ptyp + dicz['name'][iz] +'\n'
                     s += ' $DIS_TYPE \n'
                     val = dicz['value'][iz]
-                    s += self.transient(val)
+                    s += self.transient(line,iz,val)
         return s+'#STOP \n'
+        
+    def writeSt(self):
+        """write the source term, up to now only flow wells"""
+        s = ''
+        dct = self.core.diczone['OpgeoFlow'].dic
+        if 'flow.7' in dct or 'unsat.7' in dct: # wells
+            line = self.ftype+'.7'
+            dicz = self.core.diczone['OpgeoFlow'].dic[line]
+            nbwells = len(dicz['value'])
+            if nbwells>0:
+                for iw in range(nbwells):
+                    s += '#SOURCE_TERM\n $PCS_TYPE\n  '+self.pcs[0]+'\n'
+                    s += '$PRIMARY_VARIABLE\n'+self.var[0]+'\n $GEO_TYPE\n '
+                    if self.threeD : s += 'POLYLINE '
+                    else : s += 'POINT '
+                    s += dicz['name'][iw] +'\n'
+                    s += ' $DIS_TYPE\n   '
+                    val = dicz['value'][iw]
+                    s += self.transient(line,iz,val)
+                s +='#STOP'
+        if 'flow.3' in dct or 'unsat.3' in dct: # water flux entering or leaving the domain
+            line = self.ftype+'.3'
+            dicz = self.core.diczone['OpgeoFlow'].dic[line]
+            nzones = len(dicz['value'])
+            if nzones>0:
+                for iz in range(nzones):
+                    s += '#SOURCE_TERM\n $PCS_TYPE\n  '+self.pcs[0]+'\n'
+                    s += '$PRIMARY_VARIABLE\n'+self.var[0]+'\n $GEO_TYPE\n '
+                    if len(dicz['coords'][iz])==1 and not self.threeD: ptyp = 'POINT '
+                    else : ptyp = 'POLYLINE '
+                    s += ptyp + dicz['name'][iz] +'\n'
+                    s += ' $DIS_TYPE\n   '
+                    val = dicz['value'][iz]
+                    s += self.transient(line,iz,val,'_NEUMANN')
+                s +='#STOP'
+#                
+#        if self.opt == 'trans' and self.core.diczone['OpgeoTrans'].dic.has_key('trans.2'):    
+#            dicz = self.core.diczone['OpgeoTrans'].dic['trans.2']
+#            nbwells = len(dicz['value'])
+#            for iw in range(nbwells):
+#                s += '#SOURCE_TERM\n $PCS_TYPE\n  MASS_TRANSPORT\n'
+#                s += '$PRIMARY_VARIABLE\n  ConsTracer\n $GEO_TYPE\n  '
+#                if len(dicz['coords'][iw])==1: ptyp = 'POINT '
+#                else : ptyp = 'POLYLINE '
+#                s += ptyp+dicz['name'][iw] +'\n'
+#                s += ' $DIS_TYPE\n  CONSTANT  '
+#                s += str(dicz['value'][iw])+'\n'            
+        return s
 
-    def transient(self,val):
-        s=''        
-        if len(val.split())==1: 
-            s += 'CONSTANT '+str(val)+'\n'
+    def transient(self,line,iz,val0,opt=''):
+        s='';#print('ogw 191',val0,len(val0))
+        itunit = self.core.dicval['OpgeoFlow']['domn.7'][0]
+        lmult = [0,86400*365.25,86400,3600,1]
+        if '\n' not in val0: 
+            s += 'CONSTANT'+opt+' '+str(val0)+'\n'
         else :
-            s += 'CONSTANT 1\n'
+            s += 'CONSTANT'+opt+' 1\n'
             s += ' $TIM_TYPE\n  CURVE  '+str(self.nbCurves)+'\n'
-            self.curvefile.write('#CURVES \n '+val+' \n')
+            tl = self.ttable['tlist'] 
+            val = self.ttable[line] 
+            vlist = [str(float(tl[i])*lmult[itunit])+' '+str(val[i][0]) for i in range(len(tl))]
+            self.curvefile.write('#CURVES \n '+'\n'.join(vlist)+' \n')
             self.nbCurves += 1
         return s
         
     def writeIc(self):
         '''write the initial conditions'''
         s = ''
-        kwl = [('GROUNDWATER_FLOW','HEAD',self.core.dicval['OpgeoFlow']['flow.1'])]
+        kwl = [(self.pcs[0],self.var[0],self.core.dicval['OpgeoFlow'][self.ftype+'.1'])]
         if self.opt == 'trans':    
             kwl.append(('MASS_TRANSPORT','ConsTracer',self.core.dicval['OpgeoTrans']['trans.1']))
         for k in kwl:
-            s += '#INITIAL_CONDITION \n $PCS_TYPE \n '+ k[0] +'\n'
+            s += '#INITIAL_CONDITION \n$PCS_TYPE \n '+ k[0] +'\n'
             s += '$PRIMARY_VARIABLE \n '+k[1] + '\n'
-            s += '$GEO_TYPE \n  DOMAIN \n $DIS_TYPE \n '
+            s += '$GEO_TYPE \n  DOMAIN \n$DIS_TYPE \n '
             s += 'CONSTANT '+str(k[2][0])+' \n'
         return s+'#STOP \n'
         
@@ -150,42 +228,50 @@ class ogWriter:
         s = '#FLUID_PROPERTIES \n $FLUID_TYPE \n  LIQUID \n'
         s += ' $PCS_TYPE \n  HEAD \n'
         if self.opt=='trans': s += 'consTracer \n'
-        s += ' $DENSITY \n  1 1.000000e+003 \n'
-        s += ' $VISCOSITY \n  1 1.000000e-003 \n#STOP'
+        s += ' $DENSITY \n  1 1.0e+03 \n'
+        s += ' $VISCOSITY \n  1 1.0e-03 \n#STOP'
         return s
         
     def writeMmp(self):
         """medium properties, include porosity, perm, storage
         write ext file only works for permeability up to now"""
-        self.dicM = self.core.diczone['OpgeoFlow'].dic['flow.5']
-        s = ''
+        self.dicM = self.core.diczone['OpgeoFlow'].dic[self.ftype+'.5']
+        s,sto = '','1e-6'
         nz = len(self.dicM['name'])
         if self.core.dictype['OpgeoFlow']['flow.5'][0]=='formula':
-            a = self.dicM['value'][0].split('$')[1];#print a
+            a = self.dicM['value'][0].split('$')[1];#values are separated by $
             k,sto,poro = a.split('\n')[:3]
             s += '#MEDIUM_PROPERTIES  \n $GEOMETRY_DIMENSION \n'
             if self.threeD : s += ' 3 \n'
             else : s += ' 2 \n'
-            s += ' $GEOMETRY_AREA \n  1.000000e+000 \n $GEO_TYPE \n  DOMAIN \n'
+            s += ' $GEOMETRY_AREA \n  1.0 \n $GEO_TYPE \n  DOMAIN \n'
             s += ' $POROSITY \n  1 '+ poro +'\n'
-            s += ' $TORTUOSITY \n  1   1.000000e+000 \n'
+            s += ' $TORTUOSITY \n  1   1.0 \n'
             s += ' $STORAGE  \n  1 '+ sto +'\n'
             s += ' $PERMEABILITY_DISTRIBUTION \n     permeabilities.txt \n'  
             self.writeExtFile('OpgeoFlow','flow.5','permeabilities.txt')
-        else :
+        else : # by zones
             for iz in range(nz):
-                a = self.dicM['value'][iz].split('$')[1];#print a
-                k,sto,poro = a.split('\n')[:3]
+                a = self.dicM['value'][iz].split('$')[1];#lsit of values for each zone
+                if self.ftype == 'flow':
+                    k,sto,poro = a.split('\n')[:3]
+                elif self.ftype == 'unsat':
+                    k,poro,Smin,Smax,alpha,m,k_exp = a.split('\n')[:7]
                 s += '#MEDIUM_PROPERTIES  \n $GEOMETRY_DIMENSION \n'
                 if self.threeD : s += ' 3 \n'
                 else : s += ' 2 \n'
                 s += ' $NAME \n '+ self.dicM['name'][iz] +'_'+str(iz)+'\n'
-                s += ' $GEOMETRY_AREA \n  1.000000e+000 \n $GEO_TYPE \n  DOMAIN \n'
+                s += ' $GEOMETRY_AREA \n  1.0 \n $GEO_TYPE \n  DOMAIN \n'
                 s += ' $POROSITY \n  1 '+ poro +'\n'
-                s += ' $TORTUOSITY \n  1   1.000000e+000 \n'
+                s += ' $TORTUOSITY \n  1   1.0 \n'
                 s += ' $STORAGE  \n  1 '+ sto +'\n'
                 s += ' $PERMEABILITY_TENSOR \n'
                 s += '  ISOTROPIC '+ k +'\n'
+                if self.ftype=='unsat':
+                    s += ' $CAPILLARY_PRESSURE\n '
+                    s += ' 4 '+alpha+' '+Smin+' '+Smax+' '+m+' 1.0e16 1\n'
+                    s += ' $PERMEABILITY_SATURATION\n '
+                    s += ' 4 '+Smin+' '+Smax+' '+k_exp+' 1.e-10\n'
             s += ' $MASS_DISPERSION \n  1 '
             s += str(self.core.dicval['OpgeoTrans']['trans.5'][0])+' '
             s += str(self.core.dicval['OpgeoTrans']['trans.6'][0])+' \n'
@@ -193,7 +279,7 @@ class ogWriter:
         
     def writeExtFile(self,modName,line, fname):
         """writes an external file for the given variable"""
-        s = '#MEDIUM_PROPERTIES_DISTRIBUTED\n $MSH_TYPE\n  GROUNDWATER_FLOW \n'
+        s = '#MEDIUM_PROPERTIES_DISTRIBUTED\n $MSH_TYPE\n '+self.pcs[0]+'\n'
         s += '$MMP_TYPE \n  PERMEABILITY \n'
         s += '$DIS_TYPE\n  NEAREST_VALUE ; or GEOMETRIC_MEAN\n'
         s += '$CONVERSION_FACTOR \n  1.0 \n $DATA \n'   
@@ -201,7 +287,7 @@ class ogWriter:
         V = self.core.getValueLong(modName,line,0);print('ogwrite 178',amax(V))
         b = zeros((self.opgeo.nel,4))
         xc, yc = self.opgeo.elcenters[:,0],self.opgeo.elcenters[:,1]
-        b[:,0],b[:,1],b[:,3] = xc,yc,V;print('opw 189',shape(b))
+        b[:,0],b[:,1],b[:,3] = xc,yc,V; #print('opw 189',shape(b))
         s += self.opgeo.arr2string1(b)+'\n#STOP\n'
         f1 = open(self.fDir+os.sep+fname,'w');f1.write(s);f1.close()
         
@@ -214,38 +300,6 @@ class ogWriter:
             s += '  CAPACITY \n  1 6000.\n  CONDUCTIVITY\n   1 5 \n'
         return s+'#STOP \n'
         
-    def writeSt(self):
-        """write the source term, up to now only flow wells"""
-        s = ''
-        dct = self.core.diczone['OpgeoFlow'].dic
-        if 'flow.7' in dct:
-            dicz = self.core.diczone['OpgeoFlow'].dic['flow.7']
-            nbwells = len(dicz['value'])
-            if nbwells>0:
-                for iw in range(nbwells):
-                    s += '#SOURCE_TERM\n $PCS_TYPE\n  GROUNDWATER_FLOW\n'
-                    s += '$PRIMARY_VARIABLE\n  HEAD\n $GEO_TYPE\n '
-                    if self.threeD : s += 'POLYLINE '
-                    else : s += 'POINT '
-                    s += dicz['name'][iw] +'\n'
-                    s += ' $DIS_TYPE\n   '
-                    val = dicz['value'][iw]
-                    s += self.transient(val)
-                s +='#STOP'
-#                
-#        if self.opt == 'trans' and self.core.diczone['OpgeoTrans'].dic.has_key('trans.2'):    
-#            dicz = self.core.diczone['OpgeoTrans'].dic['trans.2']
-#            nbwells = len(dicz['value'])
-#            for iw in range(nbwells):
-#                s += '#SOURCE_TERM\n $PCS_TYPE\n  MASS_TRANSPORT\n'
-#                s += '$PRIMARY_VARIABLE\n  ConsTracer\n $GEO_TYPE\n  '
-#                if len(dicz['coords'][iw])==1: ptyp = 'POINT '
-#                else : ptyp = 'POLYLINE '
-#                s += ptyp+dicz['name'][iw] +'\n'
-#                s += ' $DIS_TYPE\n  CONSTANT  '
-#                s += str(dicz['value'][iw])+'\n'            
-            
-        return s
         
     def writeMsh(self):
         coords = self.core.addin.getFullGrid()
@@ -269,7 +323,7 @@ class ogWriter:
             s += '; method error_tolerance max_iterations theta precond storage \n'
             s += '2      1 1.e-10       5000           1.0   100     4 \n'
             s += '$ELE_GAUSS_POINTS \n   2 \n'
-            if self.opt=='trans':
+            if self.opt=='trans' or self.ftype=='unsat':
                 s += ' $NON_LINEAR_SOLVER \n'
                 s += '; method error_tolerance max_iterations relaxation \n'
                 s += 'PICARD 1e-3            25             0.0 \n'
@@ -280,6 +334,7 @@ class ogWriter:
         s += '#OUTPUT \n $NOD_VALUES \n'
         for v in self.var: s+= v+'\n'
         s += '  VELOCITY_X1 \n  VELOCITY_Y1 \n  VELOCITY_Z1 \n'
+        if 'RICHARDS_FLOW' in self.pcs : s += 'SATURATION1 \n'
         s += ' $GEO_TYPE\n  DOMAIN \n $DAT_TYPE \n  TECPLOT \n $TIM_TYPE \n'
         tlist = self.core.getTlist2();#print t
         itunit = self.core.dicval['OpgeoFlow']['domn.7'][0]
@@ -325,12 +380,14 @@ class ogWriter:
         else : yvect = concatenate(([y0],y0+cumsum(dy)))
         if len(dz)==1: zvect = [z0]
         else : zvect = concatenate(([z0],z0+cumsum(dz)))
+        if self.core.addin.getDim() in ['Xsection','Radial']: 
+            zvect = yvect; yvect = [z0]
         i = 0
         s += str(len(xvect)*len(yvect)*len(zvect))+'\n'
         for z in zvect:
             for y in yvect:
                 for x in xvect:
-                    s += str(i)+' '+str(x)+' '+str(y)+' '+str(z)+'\n'
+                    s += str(i)+' %5g %5g %5g \n'%(x,y,z)
                     i += 1
         return s
     
@@ -339,13 +396,13 @@ class ogWriter:
         nx, nz, nl = len(gcoords['dx']),len(gcoords['dy']),1
         nel = nx*nz
         iel,s = 0,str(nel)+'\n'
-        media = zone2mesh(self.core,'OpgeoFlow','flow.5') # only uses permeability zones
+        #media = zone2mesh(self.core,'OpgeoFlow',self.ftype+'.5') # only uses permeability zones
         #print 'ogw l220',shape(media),nz,nx
         for iz in range(nz):
             for ix in range(nx):
                 n0 = iz*(nx+1)+ix
                 nn = [n0,n0+1,n0+nx+2,n0+nx+1]
-                s += str(iel)+' '+str(media[iel])+' quad '
+                s += str(iel)+' 0 -1 quad ' #' '+str(media[iel])+' quad '
                 s += ' '.join([str(x) for x in nn])
                 s+= '\n'
                 iel += 1
@@ -365,16 +422,17 @@ class ogReader:
         self.read = False
         self.option = option # option is flow, heat or trans
         
-    def readNodeFile(self,core,ivar,istep):
+    def readNodeFile(self,core,varname,istep):
         """reads a file with several variable (+ velocities) with size of grid known"""
-        meshtype = core.getValueFromName('OpgeoFlow','O_GRID')
+        meshtype = core.getValueFromName('OpgeoFlow','O_GRID');#print(meshtype)
         dim = core.addin.getDim()
+        grd = core.addin.getFullGrid()
         opg = core.addin.opgeo
-        nlay,nnod2D,nnod3D = opg.nlay, opg.nnod/opg.nlay, opg.nnod
-        if self.option in ['flow','heat']: nvar = 1 + 3 # 3 more for velocities
-        elif self.option =='trans': nvar = 2 + 3 # 2 more for velocities
-        if meshtype == 0 and dim == '2D' : mtype='quad' #rect
-        if meshtype == 1 and dim == '2D' : mtype='tri' #triangle
+        nlay,nnod2D,nnod3D = opg.nlay, int(opg.nnod/opg.nlay), opg.nnod
+        #if self.option in ['flow','heat']: nvar = 1 + 3 # 3 more for velocities
+        #elif self.option =='trans': nvar = 2 + 3 # 2 more for velocities
+        if meshtype == 0 and dim in ['2D','Xsection','Radial'] : mtype='quad' #rect
+        if meshtype == 1 and dim in ['2D','Xsection','Radial'] : mtype='tri' #triangle
         if meshtype == 0 and dim == '3D' : mtype='hex' #hexahedarl
         if meshtype == 1 and dim == '3D' : mtype='pris' #prismatic
         if self.read == False:
@@ -382,6 +440,9 @@ class ogReader:
             a=f.read()
             f.close()
             b=a.split('VARIABLE')[1:] #separates each time step
+            lvar0 = b[0].split('\n')[0].split('=')[1];lvar0=lvar0.replace('\"','');lvar0=lvar0.replace(' ','')
+            self.lvar = lvar0.split(',')[3:] # list of variables
+            nvar = len(self.lvar);#print(nvar,self.lvar)
             ldata,self.ltime = [],[]
             for s in b:
                 s1 = s.split('\n1  ')[0] #removes the cell indices
@@ -400,9 +461,20 @@ class ogReader:
             self.read = True
         itunit = core.dicval['OpgeoFlow']['domn.7'][0]
         lmult = [0,86400*365.25,86400.,3600.,1.]
-        tstep =core.getTlist2()[istep]*lmult[itunit] # this is the required time in sec
+        tstep =core.getTlist2()[istep]*lmult[itunit];print(tstep,self.ltime) # this is the required time in sec
         inew = self.findTimeIndex(tstep)
-        return self.data[ivar,inew]
+        if type(varname)==type([5,6]):
+            for n in varname:
+                try: ivar = self.lvar.index(n)
+                except ValueError : a=1
+        else : ivar = self.lvar.index(varname)
+        data = self.data[ivar,inew]
+        if meshtype == 0: # regular grid
+            getval = core.getValueFromName
+            nx,ny,nz=getval('OpgeoFlow','NCOL'),getval('OpgeoFlow','NROW'),getval('OpgeoFlow','NLAY')
+            data = reshape(data,(nz+(nz>1)*1,ny+(ny>1)*1,nx+(nx>1)*1)) # if 1 don't add 1
+        #print('ogw 436',shape(data)) ok
+        return data
         
     def findTimeIndex(self,tstep):
         '''needed because of rounding pbs'''
@@ -411,15 +483,18 @@ class ogReader:
         return 1
         
     def readHeadFile(self,core,tstep):
-        hd = self.readNodeFile(core,0,tstep)
-        #hd = (hd[:,:,1:]+hd[:,:,:-1])/2
-        #hd = (hd[:,1:,:]+hd[:,:-1,:])/2
+        hd = self.readNodeFile(core,['HEAD','PRESSURE1'],tstep)
+        print(shape(hd))
         return hd
         
+    def readWcontent(self,core,tstep):
+        sat = self.readNodeFile(core,['HEAD','SATURATION1'],tstep)
+        return sat
+        
     def readFloFile(self,core,tstep):
-        u = self.readNodeFile(core,1,tstep)
-        v = self.readNodeFile(core,2,tstep)
-        w = self.readNodeFile(core,3,tstep)
+        u = self.readNodeFile(core,'VELOCITY_X1',tstep)
+        v = self.readNodeFile(core,'VELOCITY_Y1',tstep)
+        w = self.readNodeFile(core,'VELOCITY_Z1',tstep)
         return u,v,w
         
     def readUCN(self,core,opt,tstep,nb,name):

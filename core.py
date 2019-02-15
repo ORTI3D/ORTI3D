@@ -1,6 +1,7 @@
 #
 import os,subprocess,time,base64,types # OA 25/10/18 add types
 from numpy import frombuffer,float64
+from scipy.interpolate import griddata
 from .modflowWriter import *
 from .mtphtWriter import *
 from .min3pWriter import *

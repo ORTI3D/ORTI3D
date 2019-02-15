@@ -16,6 +16,7 @@ from .config import *
 from .pykrige.ok import OrdinaryKriging
 #import pykrige.kriging_tools as kt
 
+
 def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
     '''linear interpolation from a regular grid
     that has exactly the same size as the current domain
@@ -33,7 +34,7 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
     vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
     dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
     # OA 14/2/19 line below changed, 2nd below added
-    vi,vj,vi1,vj1 = array(vj),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
+    vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
     vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')
     dzx = z_grid[vi,vj1]-z_grid[vi,vj]
     dzy = z_grid[vi1,vj]-z_grid[vi,vj]
