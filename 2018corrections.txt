@@ -301,5 +301,6 @@ mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial
 - mtphwriter.py modif for min3p and opengeosys l.766-767
 
 18/02/19 EV
-timeperiod.py l.31,36-41 removed reference to tmode log
-addin.py initAddin l.88 / doaction l.263-264,l.268 removed reference for mode in Time (log or linear)
+- timeperiod.py l.31,36-41 removed reference to tmode log
+- addin.py initAddin l.88 / doaction l.263-264,l.268 removed reference for mode in Time (log or linear)
+- min3pWriter.py l.716, 718 added normpath to fix slash problem in path

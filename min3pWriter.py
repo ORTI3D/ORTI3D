@@ -713,9 +713,14 @@ class min3pWriter:
         """writes the databases locally using only species used"""
         for name in ['comp','gases','complex','sorption','redox','mineral']:
             fil1 = self.core.gui.mainDir+os.sep+'utils'+os.sep+name+'.dbs'
+            fil1=os.path.normpath(fil1)
+            print('fil1',fil1)
             fil2 = self.fDir+os.sep+name+'.dbs'
+            fil2=os.path.normpath(fil2)
+            print('2f',fil2)
             if name+'.dbs' not in os.listdir(self.fDir): # OA added 23/5/17
                 os.system('copy '+fil1+' '+fil2)
+                print('ok')
 #        for name in ['redox','mineral']: # 23/5 OA removed ,not usefull and print bad data
 #            if len(self.chem.Base['MChemistry'][name]['rows'])>0:
 #                f1 = open(self.fDir+os.sep+name+'.dbs','w')
