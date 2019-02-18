@@ -295,10 +295,10 @@ multiplot.py onExport replaced ny by 2 in transpose
 mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial chemistry arrays and define other initial chemistry from the interface
 
 18/02/19 OA 
-- guishow.py modif for min3p and opengeosys
-- geometry.py modif for min3p and opengeosys
+- guishow.py modif for min3p and opengeosys l.53-55 / l.175 / l.203 / l.215 
+- geometry.py modif for min3p and opengeosys l.158-161 / l.226-229
 - myInterpol.py modif for min3p and opengeosys
-- mtphwriter.py modif for min3p and opengeosys
+- mtphwriter.py modif for min3p and opengeosys l.766-767
 
 18/02/19 EV
 timeperiod.py l.31,36-41 removed reference to tmode log

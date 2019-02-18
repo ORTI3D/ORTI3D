@@ -278,53 +278,60 @@ class mtphtWriter:
                 return listC,names
         # for RESTART from acsii file ############# TEMPORARY DEVELOPMENT ##############
         if initChem['name']!='': #EV 05/02/19
+            names_imp=[];listC_imp=[] #EV 14/02/19
             ntxt=initChem['name']
             ntxt=ntxt.replace('core','self.core')
             value=self.core.formExec(ntxt)
-            names=value
+            names_imp=value #EV 14/02/19
             vtxt= initChem['formula']
             vtxt=vtxt.replace('core','self.core')
             value=self.core.formExec(vtxt)
-            listC=value
-            return listC,names
+            listC_imp=value #EV 14/02/19
+            #return listC,names
         # classical case
+        listC=[];names=[]
         for i,kw in enumerate(shortn):
             m1=dInd[longn[i]].astype('int');#print 'mtph l 238',i,kw,longn[i],m1
             chm=Chem[longn[i]]
             data,rows = chm['data'],chm['rows']
             for ie,e in enumerate(dictE[kw]):
-                ncol=len(data[0])
-                names.append(e)
-                inde=rows.index(e) # finds the index of the species e
-                #if inital chemistry is specified 
-                #if str(e) == str(initChem['name']): # EV 05/02/19
-                    #txt= initChem['formula']
-                    #txt1=txt.replace('core','self.core')
-                    #value=core.formExec(txt1)
-                    #exec(txt1)
-                    #listC.append(value)
-                    #continue
-                # set background value
-                rcol=list(range(2,ncol)) # the range of columns to be read
-                if longn[i] in ['Phases','Gases']: 
-                    m0=pht*0.+float(data[inde][2])
-                    rcol=list(range(4,ncol,2))
-                else : m0=pht*0.+float(data[inde][1])
-                if longn[i]=='Surface': rcol=list(range(2,ncol-3))
-                for c in rcol:
+                if e in names_imp: #EV 14/02/19
+                    ind=names_imp.index(e)
+                    names.append(e)
+                    listC.append(listC_imp[ind])
+                else:
+                    ncol=len(data[0])
+                    names.append(e)
+                    inde=rows.index(e) # finds the index of the species e
+                    #if inital chemistry is specified 
+                    #if str(e) == str(initChem['name']): # EV 05/02/19
+                        #txt= initChem['formula']
+                        #txt1=txt.replace('core','self.core')
+                        #value=core.formExec(txt1)
+                        #exec(txt1)
+                        #listC.append(value)
+                        #continue
+                    # set background value
+                    rcol=list(range(2,ncol)) # the range of columns to be read
                     if longn[i] in ['Phases','Gases']: 
-                        m0[m1==(c/2-1)]=float(data[inde][c])
-                    else : 
-                        m0[m1==(c-1)]=float(data[inde][c])
-                if dim =='Radial' and longn[i] in ['Phases','Gases','Exchange']:
-                    for l in range(ny): 
-                        m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
-                if dim =='Radial' and longn[i]=='Surface':
-                    scol=chm['cols'].index('Specif_area')
-                    if data[inde][scol+2]=='':
+                        m0=pht*0.+float(data[inde][2])
+                        rcol=list(range(4,ncol,2))
+                    else : m0=pht*0.+float(data[inde][1])
+                    if longn[i]=='Surface': rcol=list(range(2,ncol-3))
+                    for c in rcol:
+                        if longn[i] in ['Phases','Gases']: 
+                            m0[m1==(c/2-1)]=float(data[inde][c])
+                        else : 
+                            m0[m1==(c-1)]=float(data[inde][c])
+                    if dim =='Radial' and longn[i] in ['Phases','Gases','Exchange']:
                         for l in range(ny): 
                             m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
-                listC.append(m0)
+                    if dim =='Radial' and longn[i]=='Surface':
+                        scol=chm['cols'].index('Specif_area')
+                        if data[inde][scol+2]=='':
+                            for l in range(ny): 
+                                m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
+                    listC.append(m0)
         return listC,names
         
     def getConcRch(self,typ,line,iper=0):

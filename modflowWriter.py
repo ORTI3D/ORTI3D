@@ -132,7 +132,6 @@ class modflowWriter:
         if dim in ['2D','3D']: nlay = getNlayers(self.core)
         else : nlay = ny
         tlist = array(self.ttable['tlist'])
-        print('tlist',tlist)
         nper = len(tlist)-1
         
         if line == 'dis.4': # pb for radial and xsection with layers
