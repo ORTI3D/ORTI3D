@@ -26,26 +26,26 @@ def makeTransientTable(core):
                 if type(slist)==type([5,6]): 
                     if len(slist)>1:
                         for s in slist: tlist.append(float(s[0]))
-                
     # makes the list for the times in addin time
     tf,step = core.dicaddin['Time']['final'],core.dicaddin['Time']['steps']
-    tmode = core.dicaddin['Time']['mode']
+    #tmode = core.dicaddin['Time']['mode'] # EV 18/02/19
     if type(tf) != type([4,5]): tf,step = [tf],[step]
     t0,tflow = 0.,[]
     for i in range(len(tf)):
         t1,st = float(tf[i]),float(step[i])
-        if tmode == 'linear': tflow.extend(list(arange(t0,t1,st)))
-        elif tmode == 'log':
-            t0 = float(st) # OA 9/6/17
-            a = logspace(log10(t0),log10(t1),100)[:-1] # OA 9/6/17
-            tflow.extend(list(a))
+        tflow.extend(list(arange(t0,t1,st))) # EV 18/02/19
+        #if tmode == 'linear': tflow.extend(list(arange(t0,t1,st))) 
+        #elif tmode == 'log':
+            #t0 = float(st) # OA 9/6/17
+            #a = logspace(log10(t0),log10(t1),100)[:-1] # OA 9/6/17
+            #tflow.extend(list(a))
         t0 = float(tf[i])
     tflow.append(float(tf[-1]))
     # combines both lists
     tflow.extend(tlist)
     tflow.sort();tlist = unique(tflow);#print 'timeper',len(tflow),tflow,tlist
     tlist = tlist[tlist<=float(tf[-1])] # to shorten if final time is smaller than times in zones
-    #╔print tflow,tlist 
+    #print ('tflow',tflow,'tlist',tlist) 
     dZone['tlist']=tlist
     core.nper = len(tlist)
     #create the list of transient zones and their values along time
@@ -81,7 +81,7 @@ def makeTransientTable(core):
                             v=vl2[tl2.index(t)];tbl[it,iz]=str(v);vprec=v
                         else : tbl[it,iz]=str(vprec)
             dZone[line]=tbl
-    #print dZone
+    #print('dzonz',dZone)
     return dZone;#print 'Aq ztrans',dZone
 
 def text2list(txt):

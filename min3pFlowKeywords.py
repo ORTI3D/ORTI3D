@@ -9,7 +9,7 @@ class m3F:
         self.grpList=['glo','spat','time','out','poro','flow','inif','bcf','conf']
         self.groups={
         'glo':['glo.1'],
-        'spat':['spat.'+str(x) for x in range(1,7)],
+        'spat':['spat.'+str(x) for x in range(1,9)],
         'time':['time.1'],
         'out':['out.1'], #,'out.2','out.3'],
         'poro':['poro.1'],
@@ -60,6 +60,10 @@ class m3F:
                     'type':['choice','choice','choice','choice'],'default':[3,0,0,1]},
         'spat.6': {'comm':'mesh','cond':'P_Uns!=0','kw':['P_MESH'],'detail':[''],
                    'type':['arrfloat']},
+        'spat.7': {'comm':'top','cond':'','kw':['P_TOP'],'detail':[''],
+                   'type':['arrfloat']},
+        'spat.8': {'comm':'bottom','cond':'','kw':['P_BOTM'],'detail':[''],
+                   'type':['arrfloat']},
         #'time step control' 
         'time.1':{'comm':'time control','cond':'','kw':['Tunit','Tstart','Tfinal','Tmaxstep','Tminstep'],
                   'detail':[['time unit','years','days','hours','minutes'],
@@ -92,7 +96,7 @@ class m3F:
         #'boundary condition – variably saturated flow' 
         'bcf.1':{'comm':'first(BC head)','cond':'','kw':['BChead'],
                   'detail':[],'type':['arrfloat'],'default':[10.]},
-        'bcf.2':{'comm':'second(BC flux)','cond':'','kw':['BCflux'],
+        'bcf.2':{'comm':'second(BC flux) (m/s)','cond':'','kw':['BCflux'],
                   'detail':[],'type':['arrfloat'],'default':[0.]},
         'bcf.3':{'comm':'third(seepage)','cond':'','kw':['BCseep'],
                   'detail':[],'type':['arrfloat'],'default':[0.]},

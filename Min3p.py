@@ -29,7 +29,10 @@ class Min3p:
         '''the objective is to build the mesh and to store most of tis components
         here. With the options read, the mesh is not rebuilt from gmsh, but read from vtk
         reading can seem a little weird, but this is the fastest'''
+        self.meshtype = 'grid'
         if self.core.getValueFromName('Min3pFlow','P_Uns')==0: return
+        self.core.addin.mesh = self
+        self.meshtype='mesh'
         if opt=='build':
             #print 'opt build'
             dct = self.core.diczone['Min3pFlow'].dic
@@ -37,7 +40,7 @@ class Min3p:
             lname,lcoords,lvalue =[],[],[]
             dicM = {'name':[],'coords':[],'value':[]}
             self.polynames = lname
-            s = gmeshString(dicD,dicM)
+            s = gmeshString(self.core,dicD,dicM)
             os.chdir(self.core.fileDir)
             f1 = open('gm_in.txt','w');f1.write(s);f1.close()
             bindir = self.core.baseDir+os.sep+'bin'+os.sep
@@ -47,7 +50,8 @@ class Min3p:
             self.nodes,self.elements,self.nnod,self.nel = nodes,elements,len(nodes),len(elements)
             s= '# vtk DataFile Version 3.0 \n2D scalar \nASCII \n'
             s += 'DATASET UNSTRUCTURED_GRID \nPOINTS '+str(self.nnod)+' float \n'
-            if self.core.addin.getDim() in ['Radial','Xsection']: nd = around(nodes[:,[1,3,2]],3)
+            if self.core.addin.getDim() in ['Radial','Xsection']: 
+                nd = around(nodes[:,[1,3,2]],3)
             else : nd = around(nodes[:,1:],3)
             s += arr2string1(nd)
             s += '\n\nCELLS '+str(self.nel)+' '+str(self.nel*4)+'\n'
@@ -84,7 +88,7 @@ class Min3p:
         else :
             return self.nodes[:,1],self.nodes[:,2]
             
-    def getNumber(self):
+    def getNumber(self,typ):
         return self.nnod
         
     def arr2string2(self,arr):

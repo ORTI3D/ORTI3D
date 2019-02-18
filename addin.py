@@ -86,7 +86,7 @@ class addin:
         self.core.dicaddin[name] = dim
         self.structure['button']['1.Model'].append({'name':name,'pos':0,'short':'3D'})
         name = 'Time' # select times for the model
-        self.core.dicaddin[name] = {'final':'10.','steps':'1.','mode':'linear'} # default time
+        self.core.dicaddin[name] = {'final':'10.','steps':'1.'} # EV 18/02/19 remove 'mode':'linear'} # default time
         self.structure['button']['1.Model'].append({'name':name,'pos':0,'short':'T'})
 
         name = 'Particle' # create particles
@@ -260,12 +260,12 @@ class addin:
         if actionName == 'Ad_Time':
             t = self.core.dicaddin['Time']
             data = [('Total simulation time','Textlong',t['final']),
-                    ('Step size','Textlong',t['steps']),
-                    ('Step mode','Choice',(t['mode'],['linear','log']))]
+                    ('Step size','Textlong',t['steps'])] # EV 18/02/19 remove 'mode'
+                    #('Step mode','Choice',(t['mode'],['linear','log']))]
             dialg = self.dialogs.genericDialog(self.gui,'Time',data)
             retour = dialg.getValues()
             if retour != None:
-                t['final'],t['steps'],t['mode'] = retour
+                t['final'],t['steps']= retour # EV 18/02/19 removed t['mode'] 
                 self.setTime()
                 
         if actionName == 'Ad_Particle':

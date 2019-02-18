@@ -283,7 +283,7 @@ addin.py initAddin l.123 removed "value=" by default in formula
 mtphtwriter.py getConcInit l.280-289 temporary development for import initital chamistry from ACSII file
 mtphtwriter.py getConcInit l.300-306 commented because not anymore available with the new temporary development 
 
-14/2 OA
+14/2/19 OA
 myinterpol linIntpFromGrid modif line 37, added 38 : python3 requires index as integers
 modflowwriter l199 modified to consider that if recharge does not change -1 is written
 - in qtVisualisation mouse-clic removed [:6] at end of l787 788 (was done to shorter coodinates)
@@ -293,3 +293,13 @@ modflowwriter l199 modified to consider that if recharge does not change -1 is w
 14/02/2019 EV
 multiplot.py onExport replaced ny by 2 in transpose
 mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial chemistry arrays and define other initial chemistry from the interface
+
+18/02/19 OA 
+- guishow.py modif for min3p and opengeosys
+- geometry.py modif for min3p and opengeosys
+- myInterpol.py modif for min3p and opengeosys
+- mtphwriter.py modif for min3p and opengeosys
+
+18/02/19 EV
+timeperiod.py l.31,36-41 removed reference to tmode log
+addin.py initAddin l.88 / doaction l.263-264,l.268 removed reference for mode in Time (log or linear)

@@ -155,8 +155,10 @@ def makeZblock(core):
         if mgroup == 'Modflow series': 
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
-            if mgroup[0]=='M': Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
-            elif mgroup[0]=='O': Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys
+            if mgroup[0]=='M': #Min3p
+                Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
+            elif mgroup[0]=='O': # opengeosys
+                Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys
         intFlagT,intFlagB,option = False,False,''
         if core.dictype['Modflow']['dis.6'][0] =='formula': 
             formula = core.dicformula['Modflow']['dis.6'][0]
@@ -221,6 +223,10 @@ def getTopBotm(core,intFlagT,im,optionT,refer,mat):
     elif mgroup == 'Modflow UNS':
         if mat=='top': line='disu.7'
         elif mat=='botm' : line='disu.8'
+    elif mgroup == 'Min3p':
+        modName = 'Min3pFlow'
+        if mat=='top': line='spat.7'
+        elif mat=='botm' : line='spat.8'
     elif mgroup == 'Opgeo':
         if mat=='top': line='domn.5'
         elif mat=='botm' : line='domn.6'
@@ -366,6 +372,8 @@ def zmesh(core,dicz,media,i):
     else : # a line
         idx = cellsUnderPoly(xarray,yarray,poly,llcoefs)>0
     return idx
+    
+    
     
 def blockRegular(core,modName,line,intp,opt,iper):
     """creates a block for one variable which has a size given by the x,y,z 
@@ -714,7 +722,7 @@ def createTriangul(obj):
 #############################################################################    
 
 def planeFromPoints(poly):
-    '''coordonnees d'un plan a partir de n points sur poly
+    '''coordinates of  aplane from n points in a poly
     sur http://www.les-mathematiques.net/phorum/read.php?13,728203,728210
     renvoie les fact a,b,c,d tels que ax+by+cz+d = 0 (ou z=-(d+ax+by)/c) eq plan'''
     x,y,z = list(zip(*poly))

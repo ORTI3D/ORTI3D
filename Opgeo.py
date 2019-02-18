@@ -33,10 +33,12 @@ class Opgeo:
         os.system(bindir+'gmsh gm_in.txt -2 -o gm_out.msh')
         #os.chdir(self.core.fileDir)
         f1 = open('gm_out.msh','r');s = f1.read();f1.close()
-        nodes,elements = readGmshOut(s)
+        nodes,elements = readGmshOut(s);nod1=nodes*1
+        if self.core.addin.getDim() in ['Radial','Xsection']: 
+            nod1 = nodes[:,[0,1,3,2]]
         self.nodes,nnod0 = nodes,len(nodes)
         self.nnod = nnod0*1
-        s = self.arr2string(nodes); self.nodestring = s.replace('.  ','  ')
+        s = self.arr2string(nod1); self.nodestring = s.replace('.  ','  ')
         nel,nc = shape(elements)
         elements[:,0]=arange(nel)
         elements[:,1]=elements[:,2] # this is the material number, which starts from 1 in gmsh and 0 in opgeo

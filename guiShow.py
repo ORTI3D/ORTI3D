@@ -50,8 +50,9 @@ class guiShow:
         self.curVar, self.curVarView = {},None
         modgroup = self.core.addin.getModelGroup()
         self.mesh = False
-        if (modgroup=='Opgeo') or (modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0) or self.core.mfUnstruct:
-            self.mesh=True
+        if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
+        if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
+        if self.core.mfUnstruct: self.mesh=True
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)
@@ -129,7 +130,7 @@ class guiShow:
                 dataM = self.getUserSpecies(species,plane,layer)
             else :
                 dataM = self.getArray2D(Cgroup,self.arr3,plane,layer)
-        self.data = dataM; #print 'guish 123',shape(dataM)
+        self.data = dataM; #♠print('guish 133',shape(dataM))
         # get VECTORS
         dataV = None
         if self.dicVisu['Flow']['Veloc-vect']: 
@@ -171,8 +172,7 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                #if vz != None: EV 01/02/19
-                if vz.size !=0:
+                if vz !=None:
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
                 else :
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
@@ -186,7 +186,7 @@ class guiShow:
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
                 arr = self.core.transReader.readUCN(self.core,'Pht3d',tstep,iesp,spec) #iesp=0
             elif name=='User':
-                print(self.userSpecies)
+                #print(self.userSpecies)
                 arr = self.userSpecies[spec][tstep]
         return arr
         
@@ -200,28 +200,27 @@ class guiShow:
                 elif units == 'umol/L': self.Umult = 1e6
                 elif units == 'nmol/L': self.Umult = 1e9 
         modgroup = self.core.addin.getModelGroup()
-        if self.swiImg =='Contour': 
+        if self.swiImg =='Contour' and modgroup[:4] != 'Opge': # opgeo value at nodes
             X=(X[:,:-1]+X[:,1:])/2;X=X[1:,:]
             Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
         #print 'guish 196',shape(arr3)
         if self.mesh:
-            #print 'guis203',shape(arr3)
+            print('guis207 mesh',shape(arr3))
             return None,None,arr3[section,:]
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:
                 if modgroup[:4]=='Modf': 
                     if self.core.addin.getModelType()=='free' and self.curName=='Head':
                         Y = self.getXyHeadFree(arr3,Y)
-                    return X,Y,arr3[::-1,0,:]*self.Umult
-#                elif modgroup[:4]=='Min3' : # OA 26/5 min3p sahpe is different
-#                    return X,Y,arr3[0]*self.Umult
+                    data = (X,Y,arr3[::-1,0,:]*self.Umult)
                 else : 
-                    return X,Y,arr3[:,0,:]*self.Umult
+                    data = (X,Y,arr3[:,0,:]*self.Umult)
             else : # 2 or 3D
                 if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult) #-1 for different orientation in modflow and real world
                 elif plane=='Y': data = (X,Y,arr3[:,section,:]*self.Umult)
                 elif plane=='X': data = (X,Y,arr3[:,:,section]*self.Umult)
-                return data
+            #☻print('getA2',shape(X),shape(Y),shape(data[2]))
+            return data
                 
     def getPointValue(self,x,y):
         """using a coordinate get the value of the current variable at
