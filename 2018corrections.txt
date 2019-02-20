@@ -304,3 +304,7 @@ mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial
 - timeperiod.py l.31,36-41 removed reference to tmode log
 - addin.py initAddin l.88 / doaction l.263-264,l.268 removed reference for mode in Time (log or linear)
 - min3pWriter.py l.716, 718 added normpath to fix slash problem in path
+
+20/02/19 EV
+- core.py added a condition of presence of selected.out file to avoid an error of read it when open the model with a postfix but without run with it
+- modflowWriter.py modified format of number from 9.5g to 9.2e

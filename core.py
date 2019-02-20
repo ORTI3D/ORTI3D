@@ -205,10 +205,12 @@ class Core:
         
     def usePostfix(self):
         if 'postfix.phrq' in os.listdir(self.fileDir):
-            d = self.addin.pht3d.readSelectOut(self.fileDir)
-            if self.gui != None:
-                self.gui.guiShow.setUserSpecies(d);#print 'core203',d
-                self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
+            #print('ok')
+            if 'selected.out' in os.listdir(self.fileDir): #EV 20/02/19
+                d = self.addin.pht3d.readSelectOut(self.fileDir)
+                if self.gui != None:
+                    self.gui.guiShow.setUserSpecies(d);#print 'core203',d
+                    self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
                 
     def saveModel(self,fDir = None,fName = None):
         """save the model"""
@@ -359,6 +361,7 @@ class Core:
             if info !=False :
                 return self.getTxtFileLastLine('logfile.txt',3) # OA 14/2/19
         if modName[:5] =='Min3p':
+            print('name',self.fileName)
             if self.getValueFromName('Min3pFlow','P_Uns')==0:
                 s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s
             else :
