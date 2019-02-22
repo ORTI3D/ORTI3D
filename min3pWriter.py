@@ -786,7 +786,7 @@ class min3pReader:
             
     def readHeadFile(self,core,iper):
         self.core = core
-        hd = self.readOutput('gsp',iper,'h_w') # first variable is head
+        hd = self.readOutput('gsp',iper,'h_w');print('in head',shape(hd)) # first variable is head
         return hd
 
     def readWcontent(self,core,iper):
@@ -834,14 +834,17 @@ class min3pReader:
         """get an observation point or a list of obs points for one period
         up to now, no different periods"""
         #print irow,icol,ilay,iper
+        if len(iper)==1: iper=iper[0]
         if core.addin.getDim() in ['Xsection','Radial']:
             ilay=irow*1;irow=[0]*len(ilay)
+        #print('mpwrite 339',ilay,icol,irow)
         specname = specname.lower()
         if option in ['Tracer','Chemistry']: # transport or chemistry
             a = self.readUCN(core,option,iper,ispec,specname);#print shape(a)
             obs = a[:,ilay,irow,icol]
-        elif option == 'head':
-            obs = self.readHeadFile(core,iper)[ilay,irow,icol]
+        elif option == 'Head':
+            data = self.readHeadFile(core,iper);#print(iper,shape(data))
+            obs = data[ilay,irow,icol]
         elif option == 'Wcontent':
             obs = self.readWcontent(core,iper)[ilay,irow,icol]
         elif option == 'flux': 

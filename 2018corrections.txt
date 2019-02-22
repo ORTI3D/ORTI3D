@@ -267,32 +267,32 @@ this version sent to elicia
 - in QgisVisu/createContour l.387 changed the position of the "pr.changeAttributeValues(d0)" to get the good scale of color ramp
 
 01/02/2019 EV
-geometry.py zone2interp l.864-865 add option to choose range and type of variogramm 
-guishow.py getArray3D l.174-175 modified to get veloc-magn in 3D model
+- geometry.py zone2interp l.864-865 add option to choose range and type of variogramm 
+- guishow.py getArray3D l.174-175 modified to get veloc-magn in 3D model
 
 3/2/2019 OA
 - modflowriter/writeTransientZones line 307 modified because the condition None was not working for Xsection
 - modflowriter/getpermscaled l384 added because it wa slost in teh last modif
 
 5/2/2019 EV
-core.py l.432-437 create function importAscii to import array from .asc file
-importExport.py l.143-156 added impAsciiGrid function to import array from .asc file
-addin.py onInitialChemistryDialog l.468-471 modified the way to read txt to take into account formula
-addin.py onInitialChemistryDialog l.460-463 added "formula:" to be able to read "value=" for name and formula and commented exemple which are not anymore implemented
-addin.py initAddin l.123 removed "value=" by default in formula 
-mtphtwriter.py getConcInit l.280-289 temporary development for import initital chamistry from ACSII file
-mtphtwriter.py getConcInit l.300-306 commented because not anymore available with the new temporary development 
+- core.py l.432-437 create function importAscii to import array from .asc file
+- importExport.py l.143-156 added impAsciiGrid function to import array from .asc file
+- addin.py onInitialChemistryDialog l.468-471 modified the way to read txt to take into account formula
+- addin.py onInitialChemistryDialog l.460-463 added "formula:" to be able to read "value=" for name and formula and commented exemple which are not anymore implemented
+- addin.py initAddin l.123 removed "value=" by default in formula 
+- mtphtwriter.py getConcInit l.280-289 temporary development for import initital chamistry from ACSII file
+- mtphtwriter.py getConcInit l.300-306 commented because not anymore available with the new temporary development 
 
 14/2/19 OA
-myinterpol linIntpFromGrid modif line 37, added 38 : python3 requires index as integers
-modflowwriter l199 modified to consider that if recharge does not change -1 is written
+- myinterpol linIntpFromGrid modif line 37, added 38 : python3 requires index as integers
+- modflowwriter l199 modified to consider that if recharge does not change -1 is written
 - in qtVisualisation mouse-clic removed [:6] at end of l787 788 (was done to shorter coodinates)
 - in qtVisualisation/l649 replaced len(coords) by len(a) because pb opening file some lines are mixed with polyv
 - core line 359 just out of opgeo file keep only the last 3 and not 5 lines (to see the normal termination)
 
 14/02/2019 EV
-multiplot.py onExport replaced ny by 2 in transpose
-mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial chemistry arrays and define other initial chemistry from the interface
+- multiplot.py onExport replaced ny by 2 in transpose
+- mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial chemistry arrays and define other initial chemistry from the interface
 
 18/02/19 OA 
 - guishow.py modif for min3p and opengeosys l.53-55 / l.175 / l.203 / l.215 
@@ -308,3 +308,11 @@ mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial
 20/02/19 EV
 - core.py added a condition of presence of selected.out file to avoid an error of read it when open the model with a postfix but without run with it
 - modflowWriter.py modified format of number from 9.5g to 9.2e
+- qtshow.py l.257 replaced connect by stateChanged
+
+21/2/19 OA
+- min3pWriter added line 842 in getPtObs
+- some modifications of princintg by GC
+- ogWriter l 485 added def getPtObs (simple now, needs to be detailed)
+- in guiShow l21 added Wcontent
+- multiplot/buildplot l. 208 added conditons for Wcontent

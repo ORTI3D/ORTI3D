@@ -482,9 +482,17 @@ class ogReader:
             if abs(tstep-t)<tstep/1000: return i
         return 1
         
+    def getPtObs(self,core,irow,icol,ilay,iper,typ):
+        if len(iper)==1: iper=iper[0]
+        if core.addin.getDim() in ['Xsection','Radial']:
+            ilay=irow*1;irow=[0]*len(ilay)
+        if typ=='Head': data = self.readHeadFile(core,iper)
+        elif typ=='Wcontent' : data = self.readWcontent(core,iper)
+        return data[ilay,irow,icol]
+        
     def readHeadFile(self,core,tstep):
         hd = self.readNodeFile(core,['HEAD','PRESSURE1'],tstep)
-        print(shape(hd))
+        #print(shape(hd))
         return hd
         
     def readWcontent(self,core,tstep):

@@ -19,16 +19,17 @@ class m3T:
         'cone':['cone.'+str(x) for x in range(1,10)],
         'conv':['conv.'+str(x) for x in range(14)],
         }
-        self.longNames={'trans':'physical parameters - reactive transport',
-                   'trac':'geochemical system',
-                   'init':'initial condition - reactive transport',
-                   'bct':'boundary conditions - reactive transport', 
-                   'cont':'control parameters - reactive transport',
-                   'engp':'physical parameters - energy balance',
-                   'inie':'initial condition - energy balance',
-                   'bce':'boundary conditions - energy balance', 
-                   'cone':'control parameters - energy balance',
-                   'conv':'control parameters - evaporation',
+        s='--------------------------------------------------------------\n'
+        self.longNames={'trans':'!-'+s+'!Data Block 11: Physical Parameters - Reactive Transport '+s+s+'physical parameters - reactive transport', #GC 21/02/2019
+            'trac' :'!-'+s+'!Data Block 2: Geochemical System '+s+s+'geochemical system', #GC 21/02/2019
+            'init' :'!-'+s+'!Data Block 16: Initial Condition - Reactive Transport '+s+s+'initial condition - reactive transport', #GC 21/02/2019
+            'bct'  :'!-'+s+'!Data Block 15: Boundary Condition - Reactive Transport '+s+s+'boundary conditions - reactive transport', #GC 21/02/2019 
+            'cont' :'!-'+s+'!Data Block 7: Control Parameters - Reactive Transport '+s+s+' control parameters - reactive transport', #GC 21/02/2019
+            'engp' :'!-'+s+'!Data Block 10B: Physical Parameters - Energy Balance '+s+s+' physical parameters - energy balance', #GC 21/02/2019
+            'inie' :'!-'+s+'!Data Block 12B: Initial Condition - Energy Balance '+s+s+' initial condition - energy balance', #GC 21/02/2019
+            'bce'  :'!-'+s+'!Data Block 13B: Boundary Condition - Energy Balance '+s+s+' boundary conditions - energy balance', #GC 21/02/2019
+            'cone' :'!-'+s+'!Data Block 6B: Control Parameters - Energy Balance '+s+s+' control parameters - energy balance', #GC 21/02/2019
+            'conv' :'!-'+s+'!Data Block 6B?: Control Parameters - Evaporation '+s+s+'control parameters - evaporation', #GC 21/02/2019
         }
         self.lines={
         #'physical parameters – reactive transport'  

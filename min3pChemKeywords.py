@@ -13,11 +13,12 @@ class m3C:
         'bcc':['bcc.1','bcc.2','bcc.3','bcc.4'],
         'conc':['conc.1','conc.2','conc.3','conc.4']
         }
-        self.longNames={'geoch':'geochemical system',
-                   'inic':'initial condition - reactive transport',
-                   'bcc':'boundary conditions - reactive transport', 
-                   'conc':'control parameters - local geochemistry',
-        }
+        s='--------------------------------------------------------------\n'
+        self.longNames={'geoch': '!-'+s+'!Data Block 2: Geochemical System '+s+s+'geochemical system', #GC 21/02/2019 (+OA)
+            'inic' : '!-'+s+'!Data Block 16: Initial Condition - Reactive Transport '+s+s+' initial condition - reactive transport', #GC 21/02/2019
+            'bcc'  : '!-'+s+'!Data Block 15: Boundary Condition - Reactive Transport '+s+s+' boundary conditions - reactive transport', #GC 21/02/2019 
+            'conc' : '!-'+s+'!Data Block 5: Control Parameters - Local Geochemistry '+s+s+' control parameters - local geochemistry', #GC 21/02/2019
+                        }
         self.lines={
         #geochemistry # components are obtained from chem database
         'geoch.1':{'comm':'use new database format','cond':'','kw':['Geoch1'],

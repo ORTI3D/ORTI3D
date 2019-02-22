@@ -254,7 +254,8 @@ class showBox:
                 self.buts[i] = QCheckBox(self.hlWidget)
                 self.buts[i].setObjectName(gr+'_'+n+'_B')
                 boxGrid.addWidget(self.buts[i],i,1,1,1)
-                self.buts[i].clicked.connect(parent.onClick)
+                #self.buts[i].clicked.connect(parent.onClick)
+                self.buts[i].stateChanged.connect(parent.onClick)
             self.buts[i].setSizePolicy(policy)
             self.buts[i].setMaximumHeight(18)
             if gr not in ['Model','Observation']:

@@ -334,9 +334,10 @@ class PHT3D:
         # get the values
         fname = fDir+os.sep+'selected.out'
         f1=open(fname,'r');a=f1.readline();f1.close()
-        lnames = a.split()[2:]
+        lnames = a.split()[2:] ; print(lnames)
         mat = loadtxt(fname,skiprows=1)
         nr,nc = shape(mat)
+        #print('mat',shape(mat))
         grd = self.core.addin.getFullGrid()
         nx,ny = grd['nx'],grd['ny'];#print nx,ny
         nlay = getNlayers(self.core)
@@ -351,6 +352,8 @@ class PHT3D:
                 indx = mat[mat[:,0]==t,1].astype('int')
                 a[indx-1]=mat[mat[:,0]==t,i+2]  ### EV indx start to 1 
                 b = reshape(a,(nlay,ny,nx))
+                #print('n',b[:,-1::-1,:])
                 values[n][it]= b[:,-1::-1,:] #always this inversion...
+                #print('val',values)
         return values
     

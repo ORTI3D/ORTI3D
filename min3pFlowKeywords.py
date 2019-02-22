@@ -18,15 +18,16 @@ class m3F:
         'bcf':['bcf.1','bcf.2','bcf.3','bcf.4','bcf.5'],
         'conf':['conf.1','conf.2','conf.2a','conf.3','conf.4','conf.5','conf.6','conf.7','conf.8']
         }
-        self.longNames={'glo':'global control parameters',
-                   'spat':'spatial discretization',
-                   'time':'time step control - global system',
-                   'out': 'output control',
-                   'poro':'physical parameters - porous medium',
-                   'flow':'physical parameters - variably saturated flow',
-                   'inif':'initial condition - variably saturated flow',
-                   'bcf':'boundary conditions - variably saturated flow', 
-                   'conf':'control parameters - variably saturated flow',
+        s='--------------------------------------------------------------\n'
+        self.longNames={'glo' :'!-'+s+'!Data Block 1: Global Control Parameters '+s+s+' global control parameters', #GC 21/02/2019 + OA
+            'spat':'!-'+s+'!Data Block 3: Spatial Discretization '+s+s+ 'spatial discretization', #GC 21/02/2019
+            'time':'!-'+s+'!Data Block 4: Time Step Control - Global System '+s+s+'time step control - global system', #GC 21/02/2019
+            'out' :'!-'+s+'!Data Block 8: Output Control '+s+s+' output control', #GC 21/02/2019
+            'poro':'!-'+s+'!Data Block 9: Physical Parameters - Porous Medium '+s+s+'physical parameters - porous medium', #GC 21/02/2019
+            'flow':'!-'+s+'!Data Block 10: Physical Parameters - Variably Saturated Flow '+s+s+'physical parameters - variably saturated flow', #GC 21/02/2019
+            'inif':'!-'+s+'!Data Block 12: Initial Condition - Variably Saturated Flow '+s+s+'initial condition - variably saturated flow', #GC 21/02/2019
+            'bcf' :'!-'+s+'!Data Block 13: Boundary Condition - Variably Saturated Flow '+s+s+'boundary conditions - variably saturated flow', #GC 21/02/2019 
+            'conf':'!-'+s+'!Data Block 6: Control Parameters - Variably Saturated Flow -'+s+s+' control parameters - variably saturated flow', #GC 21/02/2019
         }
         self.lines={
         #'global control parameters' 

@@ -327,7 +327,7 @@ class modflowWriter:
                 npz = len(lpts[iz])
                 for pt in range(npz): # for each zone the list of points
                     if ext=='wel': 
-                        buff+= lpts[iz][pt]+' %+9.2e'%(float(val)*k[iz][pt])+'\n'
+                        buff+= lpts[iz][pt]+' %+9.2e'%(float(val)*k[iz][pt])+'\n' #EV 20/02/19
                     elif ext=='chd': 
                         buff+=lpts[iz][pt]+' %+9.5g%+9.5g  \n'%(float(val),float(vnext))
                     elif ext in ['drn','ghb']:

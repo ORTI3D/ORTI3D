@@ -205,6 +205,7 @@ class multiPlot(QDialog):
             else : curTime = int(self.Tstep.currentIndex()-1)
             self.ptyp,self.iper = 'XY',curTime # modify core.py to use 'X0' ? 
         if 'Head' in self.splist : group = 'Flow' ; aylabel = 'Head [L]'
+        if 'Wcontent' in self.splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
         elif 'Tracer' in self.splist : group = 'Transport' ; aylabel = 'Concentration [NL$^{-3}$]'
         else : group = 'Chemistry' ; aylabel = 'Concentration [NL$^{-3}$]'
         # build the plots

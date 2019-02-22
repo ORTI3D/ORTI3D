@@ -146,6 +146,7 @@ class Min3p:
         for k in keyw: dicDB[k]=[]
         localDir = self.core.fileDir
         utilDir = self.core.gui.mainDir+os.sep+'utils'
+        print('2',utilDir)
         # read comp file
         f1=open(self.getCorrectFile(localDir,utilDir,'comp.dbs'))
         for l in f1: 

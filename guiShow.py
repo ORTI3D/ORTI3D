@@ -18,7 +18,7 @@ class guiShow:
             #'Observation':[4,['Type',['Profile','Breakthrough','XYplot']],
                         #   ['Zone',['_______']]]}
             'Observation':[4,['Type',['Time-series Graphs','Profile Graphs','Calibration Graphs']],
-                           ['Result',['Head','Tracer','Chemistry']]]}
+                           ['Result',['Head','Wcontent','Tracer','Chemistry']]]} # OA 21/2/2019
         self.dicVisu = {'Model':{'Plane':'Z','Layer':0,'Tstep':0,'Grid':False,'Map':False,'Variable':False},
                 'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,'Veloc-magn':False,'Particles':False},
                 'Transport':{'Tracer':False},
@@ -172,7 +172,8 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                if vz !=None:
+                #if vz != None: EV 01/02/19
+                if vz.size !=0:
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
                 else :
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
