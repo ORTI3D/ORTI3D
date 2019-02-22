@@ -334,7 +334,7 @@ class PHT3D:
         # get the values
         fname = fDir+os.sep+'selected.out'
         f1=open(fname,'r');a=f1.readline();f1.close()
-        lnames = a.split()[2:] ; print(lnames)
+        lnames = a.split()[2:] #; print(lnames)
         mat = loadtxt(fname,skiprows=1)
         nr,nc = shape(mat)
         #print('mat',shape(mat))
