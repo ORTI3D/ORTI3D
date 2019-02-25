@@ -48,13 +48,14 @@ class Ui_Show(object):
         self.swiCont.setFlat(True)   
         topHBox.addWidget(self.swiCont)
         self.dictBox={}
+        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
         pos=40
         for ig in range(len(self.groups)): 
             for g0 in self.groups: #pour ordonner
                 if self.groups[g0][0]==ig: g=g0
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
-            pos += len(names)*20+45
+            pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
         topHBox.addStretch(0)
         QMetaObject.connectSlotsByName(Show)
         
@@ -224,10 +225,10 @@ class showBox:
         self.group = QGroupBox(Show)
         self.group.setTitle(str(ig+1)+'.'+gr)
         ln = len(names)
-        self.screenShape = QDesktopWidget().screenGeometry()
-        self.group.setGeometry(QRect(10, pos, self.screenShape.width()*0.105, 30+ln*22))
+        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
+        self.group.setGeometry(QRect(10, pos, wd0*10.5, wd0*2.4+ln*wd0*1.3)) # OA 23/2/19 to see it on laptop
         self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(3,15 ,self.screenShape.width()*0.1, 20+ln*22))
+        self.hlWidget.setGeometry(QRect(3,15 ,wd0*10, wd0*1.4+ln*wd0*1.3)) # OA 23/2/19 to see it on laptop
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.alignment()
         boxGrid.setContentsMargins(0,0,0,0)
@@ -254,8 +255,7 @@ class showBox:
                 self.buts[i] = QCheckBox(self.hlWidget)
                 self.buts[i].setObjectName(gr+'_'+n+'_B')
                 boxGrid.addWidget(self.buts[i],i,1,1,1)
-                #self.buts[i].clicked.connect(parent.onClick)
-                self.buts[i].stateChanged.connect(parent.onClick)
+                self.buts[i].clicked.connect(parent.onClick)
             self.buts[i].setSizePolicy(policy)
             self.buts[i].setMaximumHeight(18)
             if gr not in ['Model','Observation']:

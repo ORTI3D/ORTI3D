@@ -146,7 +146,6 @@ class Min3p:
         for k in keyw: dicDB[k]=[]
         localDir = self.core.fileDir
         utilDir = self.core.gui.mainDir+os.sep+'utils'
-        print('2',utilDir)
         # read comp file
         f1=open(self.getCorrectFile(localDir,utilDir,'comp.dbs'))
         for l in f1: 
@@ -163,7 +162,7 @@ class Min3p:
                 if l == None or l[:3]=='end' or l in ['','\n']: break
                 a = l.split();
                 k = a[0].replace('\'','')
-                l = f1.readline()  # OA all folloiwng ofr g and compl largely modified
+                l = f1.readline()  # OA all folloiwng for g and compl largely modified
                 if n=='complex':
                     dicDB[n].append([k,l.split()[1::2]])
                 else :
@@ -221,7 +220,7 @@ class Min3p:
                 'exchange':[True,2.0,0.,0.,0.,0.],
                 'sorption':[True,1.,1.,1.,10.,6],
                 'linear sorption':[False,0,0,0,0],
-                'gases':[True,0.,1e-7,2e-5,4.5,300,1.],
+                'gases':[True,0.],
                 'complex':[True],
                 'redox':[True,1e-9],
         }
@@ -231,7 +230,7 @@ class Min3p:
                 'exchange':['C','rhob','cecBack','cec1','cec2','cec3'], # OA 24/5 modif to have several exchangers
                 'sorption':['C','massBack','mass1','mass2','area','density'],
                 'linear sorption':['C','Kd_bak','Kd1','Kd2','Kd3'],
-                'gases':['C','1stO dec. rate','Diff_coeff','WKvisco','LJ_sigma','LJ_eK','mass'],
+                'gases':['C','1stO dec.rate'],
                 'complex':['C'],
                 'redox':['C','scaling']
         }
@@ -272,9 +271,6 @@ class Min3p:
                     val = lival[n]*1
                     if name in base['text']: val[0]=False
                     base['data'].append(val)
-                if n=='gases' and name in['o2(g)','n2(g)','co2(g)','ch4(g)']:
-                   base['data'][-1][1] = 'LJ'
-                   base['data'][-1][2:] = self.getLJparms(name)
             baseOut[n] = base.copy()
         #print baseOut['complex']
         self.Base['MChemistry'] = deepcopy(baseOut)
@@ -282,11 +278,6 @@ class Min3p:
     def getBase(self): 
         #print 'min3p 250',self.core.getValueFromName('Min3pTrans','Diff_choice')
         b1 = self.Base['MChemistry'].copy()
-        if self.core.getValueFromName('Min3pTrans','Diff_choice')==0:
-            #used to modify the view according to the diffusion type
-            b1['gases']['cols']=['C','1stO dec. rate']
-            data = b1['gases']['data']
-            b1['gases']['data'] = [d[:2] for d in data]
         # remove secondary species for exchange and sorption
         b1['exchange']['rows'] = ['-x']
         lst0 = b1['sorption']['rows']*1

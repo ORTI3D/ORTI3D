@@ -54,21 +54,22 @@ class min3pWriter:
         elif option == 'Heat': lgrp.extend(['cont','cone','trans','trac','init','bct','engp','inie','bce'])
         elif option == 'Chem': lgrp.extend(['cont','conc','trans','inic','bcc'])
         Fkey,Tkey,Ckey = core.dickword['Min3pFlow'],core.dickword['Min3pTrans'],core.dickword['Min3pChem']
+        s0 = ' !-----------------------------------------------------------------\n'
         for grp in lgrp:
             #print 'group',grp
             if grp in Fkey.grpList:
                 if grp not in self.core.addin.getUsedModulesList('Min3pFlow'):
                     continue
                 self.dicval = core.dicval['Min3pFlow']
-                s+='!-------------------------\n\''+Fkey.longNames[grp]+'\'\n'
-                s+=self.writeBlock('Min3pFlow',Fkey,grp,Fkey.groups[grp])
+                s+= s0 +Fkey.longNames[grp]+'\'\n' #GC 21/02/2019
+                s+= self.writeBlock('Min3pFlow',Fkey,grp,Fkey.groups[grp])
             elif grp in Tkey.grpList:
                 self.dicval = core.dicval['Min3pTrans']
-                s+='!-------------------------\n\''+Tkey.longNames[grp]+'\'\n'
+                s+= s0 +Tkey.longNames[grp]+'\'\n' #GC 21/02/2019
                 s+=self.writeBlock('Min3pTrans',Tkey,grp,Tkey.groups[grp])
             elif grp in Ckey.grpList:
                 self.dicval = core.dicval['Min3pChem']
-                s+='!-------------------------\n\''+Ckey.longNames[grp]+'\'\n'
+                s+= s0 +Ckey.longNames[grp]+'\'\n' #GC 21/02/2019
                 s+=self.writeBlock('Min3pChem',Ckey,grp,Ckey.groups[grp])
         if option == 'Chem': 
             s+= self.writeGeochem()
@@ -116,7 +117,7 @@ class min3pWriter:
             for ik in range(len(kwlist)):
                 #print line,lval
                 value=lval[ik];#
-                if ktyp[ik]=='choice': # where there is a choice print the nb of he choice not value
+                if ktyp[ik]=='choice': # where there is a choice print the nb of the choice not the value
                     detail = Dict.lines[line]['detail'][ik]
                     choi = detail[value+1]# +1 because the first line is the title
                     if choi in ['true','false']: sep='.' # for the global keywords at the start
@@ -196,7 +197,7 @@ class min3pWriter:
                     s +=  lzcoords[-1]+'\n'
                     s += '\'end of zone\'\n\n'
         self.lznames,self.lzcoords = lznames,lzcoords # OA 25/5 remember the list of zones
-        return s+'\'done\'\n'
+        return s+'\n\'done\'\n\n'
         
     def writeIni(self,mod,Dict,llist):
         nbztot = self.getNbZonesMedia(mod,llist) # nb of zones for this ini
@@ -208,7 +209,7 @@ class min3pWriter:
         s += '\'extent of zone\'\n'
         s += self.getDomainCoords()
         s += '\n\'end of zone\'\n\n'
-        if nbztot ==0: return s+'\'done\'\n'
+        if nbztot ==0: return s+'\n\'done\'\n\n'
         dicz = self.core.diczone[mod].dic[line]
         nbzline = len(dicz['value']);#print line, nbzline,self.allRectZones(dicz)# nb of zones for this line
         if self.allRectZones(dicz) or self.meshtype=='mesh': # write only for rect zone or unstructured
@@ -220,7 +221,7 @@ class min3pWriter:
                 s += '\'extent of zone'
                 s += self.getCoords(dicz['coords'][iz],line)+'\n'
                 s += '\'end of zone\'\n\n'
-        return s+'\'done\'\n'
+        return s+'\n\'done\'\n\n'
                
     def writeByZones(self,mod,Dict,llist):
         '''writes spatial data several situations appear :
@@ -298,7 +299,7 @@ class min3pWriter:
                 # for this zone write type of information and value
                 info = Dict.lines[line]['comm'].split('(')[0]
                 s += '\'boundary type\'\n'
-                s += '\''+info+'\''  + '\n'
+                s += '\''+info+'\'\n'     #GC modified 21/02/19 remodi OA 23/2
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 # for this zone write extent
                 s += '\'extent of zone'
@@ -352,25 +353,21 @@ class min3pWriter:
     def getStringFromSolution(self,line,value):
         """provide the string for the solution (or mineral) composition
         given by value as 1000 (like for pht3d) or 1210 for initial conditions
-        an dsolution number in boundary cond
+        and solution number in boundary cond
         """
         if line[:4] == 'inic':
-            nsol,nmin = int(value/1000),int(mod(value,1000)/100)   # OA 26/11/18
+            nsol,nmin = int(value/1000),int(mod(value,1000)/100)   
             nexch,nsurf = int(mod(value,100)/10),int(mod(value,10))  # OA 26/11/18
         else :
-            nsol = int(value)  # OA 26/11/18
-        #lgrp = ['comp','mineral','sorption','sorption']
-        #lnames = ['concentration input','mineral input','sorption parameter input','sorption parameter input']
+            nsol = int(value/10)
+        s = '\'concentration input\' \n'
         # solutions
         dChem = self.core.addin.chem.Base['MChemistry']['comp']
-        s = ''
-        #if line[:3] == 'bcc': #OA removed 23/5 needed ofr inic too
-        s = '\'concentration input\' \n'
         for ir,row in enumerate(dChem['rows']):
             if dChem['data'][ir][0]: #the species is ticked
-                print(line,ir,dChem['data'][ir],nsol)
+                #print(line,ir,dChem['data'][ir],nsol)
                 s += str(dChem['data'][ir][nsol+2]).replace('e','d')+'  \''+\
-                    dChem['data'][ir][-1]+'\'  ;'+row+'\n' # last columns contains 'free', 'ph'...
+                    dChem['data'][ir][-1]+'\'  ;'+row+'\n' # last columns 'free', 'ph'...
         if line[:3] == 'bcc': return s
         # linear sorption
         dChem = self.core.addin.chem.Base['MChemistry']['linear sorption']
@@ -596,7 +593,11 @@ class min3pWriter:
         lgrp = ['complex','redox','gases','sorption','mineral']
         lnames = ['secondary aqueous species','intra-aqueous kinetic reactions','gases',
                   'sorbed species','minerals']
-        s = '!-----------------------------\n\'geochemical system\'\n'
+        s  = ' !-----------------------------------------------------------------\n' #GC add 21/02/19
+        s += ' !-----------------------------------------------------------------\n' #GC add 21/02/19
+        s += ' !Data Block 2: geochemical system  -------------------------------\n' #GC add 21/02/19
+        s += ' !-----------------------------------------------------------------\n' #GC add 21/02/19
+        s += '\'geochemical system\'\n\n' #GC add 21/02/19
         s += '\'use new database format\'\n\n\'database directory\'\n'
         s += '\''+self.fDir+'\'\n\n'
         # add components (modified for immobile compounds)
@@ -658,8 +659,8 @@ class min3pWriter:
             dChem = self.chem.Base['MChemistry']['gases']
             for n in l:
                 indx = dChem['rows'].index(n)
-                s += dChem['data'][indx][1] +'\n'
-        return s+'\n\'done\'\n'
+                s += dChem['data'][indx][1] +'\n' # OA 25/2/19
+        return s+'\n\'done\'\n\n'
         
     def getDiffusion(self):
         diffChoice = self.core.getValueFromName('Min3pTrans','Diff_choice')
@@ -786,7 +787,7 @@ class min3pReader:
             
     def readHeadFile(self,core,iper):
         self.core = core
-        hd = self.readOutput('gsp',iper,'h_w');print('in head',shape(hd)) # first variable is head
+        hd = self.readOutput('gsp',iper,'h_w') # first variable is head
         return hd
 
     def readWcontent(self,core,iper):
@@ -822,8 +823,8 @@ class min3pReader:
         if specname =='tracer':
             trc = self.readOutput('gsc',iper,'tracer'); #print shape(trc)
             return trc
-        lgrp = ['comp','gases','mineral']
-        suff = ['t','g','v'] # totals, gases, mineral vol fraction
+        lgrp = ['comp','gases','mineral','complex'] # OA 25/2/19
+        suff = ['t','g','v','c'] # totals, gases, mineral vol fraction
         for i,grp in enumerate(lgrp): 
             slist = self.core.addin.chem.getListSpecies(grp)
             if specname in slist:
@@ -834,14 +835,14 @@ class min3pReader:
         """get an observation point or a list of obs points for one period
         up to now, no different periods"""
         #print irow,icol,ilay,iper
-        if len(iper)==1: iper=iper[0]
+        if len(iper)==1: iper=iper[0] # OA 21/2/2019 needs to be changes later for breakthrouhg
         if core.addin.getDim() in ['Xsection','Radial']:
             ilay=irow*1;irow=[0]*len(ilay)
         #print('mpwrite 339',ilay,icol,irow)
         specname = specname.lower()
         if option in ['Tracer','Chemistry']: # transport or chemistry
             a = self.readUCN(core,option,iper,ispec,specname);#print shape(a)
-            obs = a[:,ilay,irow,icol]
+            obs = a[ilay,irow,icol] # OA 25/2/19
         elif option == 'Head':
             data = self.readHeadFile(core,iper);#print(iper,shape(data))
             obs = data[ilay,irow,icol]

@@ -124,12 +124,13 @@ class multiPlot(QDialog):
         return dic
         
     def getSpecies(self):
-        dic={'Species':{}} ; species=[]
-        zchem=self.core.dicaddin['Chemistry']
-        zname=zchem['Chemistry']['Solutions']['rows']
-        for i in range(len(zname)) :
-            if (zchem['Chemistry']['Solutions']['data'][i][0])!=False :
-                species.append(zname[i])
+        dic={'Species':{}} # ; species=[]
+        species = self.core.addin.chem.getListSpecies() # OA 25/2/19 comment lines below
+        # zchem=self.core.dicaddin['Chemistry']
+        # zname=zchem['Chemistry']['Solutions']['rows']
+        # for i in range(len(zname)) :
+        #     if (zchem['Chemistry']['Solutions']['data'][i][0])!=False :
+        #         species.append(zname[i])
         dic['Species']=list(zip(species,[False]*len(species)))
         return dic
     
