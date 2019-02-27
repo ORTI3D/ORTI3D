@@ -355,7 +355,6 @@ class multiPlot(QDialog):
                 for n in self.llabel: 
                     if n.split('(')[1]!='obs)':f1.write(' '+i+'_'+n)
             f1.write('\n')
-            print('1',self.arryy)
             nt,ny,nz = np.shape(self.arryy)
             if nt!=1 : 
                 self.arryy=array(self.arryy).transpose(1,0,2).reshape(ny,-1) #EV 14/02/19
