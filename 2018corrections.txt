@@ -327,3 +327,6 @@ mtphtwriter.py getConcInit l.281,289,298-301 added option to import some initial
 - min3pwriter/getptobs l845 pb of dims of the array
 - multiplot l.129-133 removed replace by l.128 to get the list of species for all model types
 - Min3p at different places removed ref to LJ and diffusion coeff (not used)
+
+27/02/19 EV
+- multiplot.py l.363 removed transpose to export correctly the data
