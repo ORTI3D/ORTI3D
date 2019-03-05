@@ -131,8 +131,9 @@ class Min3p:
         if group==None:
             for k in list(Bchem.keys()):
                 for i,r in enumerate(Bchem[k]['rows']):
-                    #print 'min3p l 145',k,i,r
                     if Bchem[k]['data'][i][0]: l.append(r)
+        elif group == 'exchange':
+            l = Bchem[group]['text']
         else :
             for i,r in enumerate(Bchem[group]['rows']):
                 if Bchem[group]['data'][i][0]: l.append(r)
@@ -278,6 +279,7 @@ class Min3p:
     def getBase(self): 
         #print 'min3p 250',self.core.getValueFromName('Min3pTrans','Diff_choice')
         b1 = self.Base['MChemistry'].copy()
+        print('min3p 281',b1)
         # remove secondary species for exchange and sorption
         b1['exchange']['rows'] = ['-x']
         lst0 = b1['sorption']['rows']*1

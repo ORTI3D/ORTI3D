@@ -318,14 +318,16 @@ class multiPlot(QDialog):
         for i in range(len(dic)):
             if dic[i][0]==zname:
                 if self.ptyp=='B0':
-                    xobs.append(float(dic[i][2]))     
-                    yobs.append(float(dic[i][ispe]))
-                    lobs=int(dic[i][1])
-                else :
-                    if float(dic[i][2])==float(iper):
+                    if dic[i][ispe]!='': # EV 05/03/19
                         xobs.append(float(dic[i][2]))     
                         yobs.append(float(dic[i][ispe]))
-                        lobs=int(dic[i][1])                       
+                        lobs=int(dic[i][1])
+                else :
+                    if float(dic[i][2])==float(iper):
+                        if dic[i][ispe]!='': # EV 05/03/19
+                            xobs.append(float(dic[i][2]))     
+                            yobs.append(float(dic[i][ispe]))
+                            lobs=int(dic[i][1])                       
         return xobs,yobs,lobs
     
     def onExport(self):

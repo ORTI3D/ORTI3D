@@ -359,7 +359,7 @@ class min3pWriter:
             nsol,nmin = int(value/1000),int(mod(value,1000)/100)   
             nexch,nsurf = int(mod(value,100)/10),int(mod(value,10))  # OA 26/11/18
         else :
-            nsol = int(value/10)
+            nsol = int(value)
         s = '\'concentration input\' \n'
         # solutions
         dChem = self.core.addin.chem.Base['MChemistry']['comp']
@@ -381,7 +381,7 @@ class min3pWriter:
         dChem = self.core.addin.chem.Base['MChemistry']['exchange']
         se = '';#print 'nexch',nexch
         if dChem['data'][0][0]:
-            se += str(dChem['data'][0][nexch+1])+' \n' # cec of the right exchanger
+            se += str(dChem['data'][0][nexch+2])+' \n' # cec of the exchanger, modif OA 1/3/19
             se += str(dChem['data'][0][1])+' \n' # rho
         if se != '': 
             s += '\n\'sorption parameter input\' \n' + se +'\n'      
@@ -628,9 +628,8 @@ class min3pWriter:
         # add ion exchange
         l,s1 = self.chem.getListSpecies('exchange'),''
         if len(l)>0:
-            for n in l: 
-                if n != '-x': s += '\''+n+'\' \n'
-            s += '\'sorbed species\'\n' +str(len(l)-1)+'\n' +s1 +'\n'
+            for n in l: s1 += '\''+n+'\' \n' # OA 1/3/19
+            s += '\'sorbed species\'\n' +str(len(l))+'\n' +s1 +'\n'  # OA 1/3/19
         # add non aqueous conc for surface (it's name)
         l = self.chem.getListSpecies('sorption')
         s1,nb = '',0
@@ -812,7 +811,7 @@ class min3pReader:
 
     def readUCN(self,core,option,iper,ispec,specname):
         self.core = core
-        specname = specname.lower();#print option,iper,specname
+        specname = specname.lower().replace('_tot','');#print option,iper,specname
         eng=core.getValueFromName('Min3pFlow','energy_balance');
         if eng==1:
             return self.readOutput('gsp',iper,'temp_n') 

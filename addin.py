@@ -335,6 +335,8 @@ class addin:
             #print ('dic2 chem',dic2)
             if dic2 != None:
                 for k in list(dic2.keys()): self.chem.Base[nameB][k] = dic2[k]
+                if nameB == 'MChemistry': # OA 1/3/19 for exchange species
+                    self.chem.Base[nameB]['exchange']['text'] = dic['exchange']['text'] 
             self.core.dicaddin[nameB] = self.chem.Base
         
         if actionName == 'Ad_Pback':
@@ -463,15 +465,17 @@ class addin:
         #self.txt+= '\n#name:Hfo_w, formula: value=core.importLayerValues(\'Hfo_layers.txt\',\'Hfo_w\')'
         #print(self.txt)
         dialg = self.dialogs.textDialog(self.gui,'Initial chemistry',(500,300),self.txt)
-        retour = dialg.getText()#;print ('ok',retour)
-        if retour != None:
+        retour = dialg.getText();print ('ok',retour)
+        if retour != '':
             f0 = retour.split('#')[0] # EV 05/02/19
             name=f0.split('formula: ')[0].split(':',1)[1].strip()
             formula=f0.split('formula: ')[1].split('tstep')[0].strip()
             tstep=f0.split('formula: ')[1].split('tstep:')[1].strip()
             #print('NN',name, 'FF',formula, 'TT', tstep)
             self.core.dicaddin['InitialChemistry']={'name':name,'formula':formula,'tstep':tstep}
-        else : return
+        else : 
+            self.core.dicaddin['InitialChemistry']={'name':'','formula':'','tstep':''}
+            return
         #dialg.Destroy()
         
     def setGrd(self,grd): self.grd = grd

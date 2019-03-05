@@ -277,6 +277,7 @@ class mtphtWriter:
                         ie += 1
                 return listC,names
         # for RESTART from acsii file ############# TEMPORARY DEVELOPMENT ##############
+        names_imp=[];listC_imp=[] #EV 14/02/19
         if initChem['name']!='': #EV 05/02/19
             names_imp=[];listC_imp=[] #EV 14/02/19
             ntxt=initChem['name']
