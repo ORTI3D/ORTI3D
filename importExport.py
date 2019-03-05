@@ -215,16 +215,20 @@ class impObsData(QDialog) :
         return lname
     
     def updateChem(self,dicName):
-        lname=self.getChemSol()
-        lname2=self.core.dicaddin[dicName]['cols'][3:]
-        j=0
-        for i in range(len(lname)):
-            if lname[i]!=lname2[j]:
-                self.core.dicaddin[dicName]['cols'].insert(i+3,lname[i])
-                #print('cols',self.core.dicaddin[dicName]['cols'])
-                [self.core.dicaddin[dicName]['data'][x].insert(i+3,'') 
-                for x in range(len(self.core.dicaddin[dicName]['data']))]
-            else:j+=1
+        lname=self.getChemSol() 
+        lname2=self.core.dicaddin[dicName]['cols'][3:] 
+        if len(lname)>len(lname2):
+            for i in range(len(lname)):
+                if lname[i] not in lname2:
+                    self.core.dicaddin[dicName]['cols'].insert(i+3,lname[i])
+                    [self.core.dicaddin[dicName]['data'][x].insert(i+3,'') 
+                    for x in range(len(self.core.dicaddin[dicName]['data']))]
+        else :
+            for i in range(len(lname2)): #EV 05/03/2019
+                if lname2[i] not in lname:
+                    self.core.dicaddin[dicName]['cols'].pop(i+3)
+                    [self.core.dicaddin[dicName]['data'][x].pop(i+3) 
+                    for x in range(len(self.core.dicaddin[dicName]['data']))]  
         return self.core.dicaddin[dicName]
         
     def setDicObs(self,option):

@@ -339,3 +339,4 @@ this version sent to elicia
 
 05/03/19 EV
 - multiplot.py l.321 add condition to not plot empty observed data
+- importExport.py in updateChem l.227 added option to remove a column
