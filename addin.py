@@ -51,10 +51,11 @@ class addin:
             if mod[:4] in ['Min3','Opge','Sutr','Pest']: val = [True]*len(lmodules) #,'Fipy'
             else : val = [False]*len(lmodules)
             for i in range(len(lmodules)):
-                if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL','PCG']): val[i]=True
+                if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL']): val[i]=True # OA 10/3/19 removed pcg
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
+            if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19
             self.structure['menu'][mod]={'name':name,'position': 0,
                 'function': 'onUsedModules','short':'M'}
             self.core.dicaddin[name+'_'+mod] = (lmodules,val) # only data are stored in dicaddin  
@@ -128,6 +129,13 @@ class addin:
         self.fit = instant(self.gui,self.core)
         self.particle = {}
         
+    def addSolver(self,lmodules,val): # OA adde 10/3/19 to select one solver, at least pcg
+        a = False
+        for i in range(len(val)): 
+            if (lmodules[i] in ['PCG','NWT','SIP','SOR','DE4']) and (val[i]) : a=True
+        if a==False : val[lmodules.index('PCG')] = True
+        return val
+        
     def setMfUnstruct(self): #OA added 17/9/17 for modflow UNS
         lmodules,val = self.core.dicaddin['usedM_Modflow']
         bool = self.core.mfUnstruct
@@ -150,13 +158,13 @@ class addin:
             if type(dict1[k])==type({'d':1}):
                 for k1 in list(dict1[k].keys()):
                     cdict[k][k1] = dict1[k][k1]
-            elif k[:5]=='usedM': # some moduls can have been added in new version
-                lmod,val = cdict[k]
-                lmod1,val1 = dict1[k]
-                for i,md in enumerate(lmod): 
-                    if md in lmod1: 
-                        if val1[lmod1.index(md)]: val[i]=True
-                cdict[k] = (lmod,val)
+            # elif k[:5]=='usedM': # some moduls can have been added in new version # OA removed 10/3/19
+            #     lmod,val = cdict[k]
+            #     lmod1,val1 = dict1[k]
+            #     for i,md in enumerate(lmod): 
+            #         if md in lmod1: 
+            #             if val1[lmod1.index(md)]: val[i]=True
+            #     cdict[k] = (lmod,val)
             else :
                 cdict[k] = dict1[k]
         self.core.dicaddin = cdict.copy()

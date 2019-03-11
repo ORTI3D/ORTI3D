@@ -214,7 +214,7 @@ class modflowWriter:
                 
         if line in ['uzf.2','uzf.3','uzf.4','uzf.5','uzf.6','uzf.7']: # in uzf put only one value of these parameters
             m = self.core.getValueLong('Modflow',line,0)
-            self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
+            self.writeMatModflow(m[0],f1,ktyp);f1.write('\n')  # OA 7/3/19
             
         if line == 'lpf.2':
             ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
@@ -582,7 +582,7 @@ class modflowReader:
         in free flow Thksat from flo file must be added (not done)"""    
         if core.mfUnstruct:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
-            hd=zeros((nlay,ncell));print('mfw 491', shape(hd))
+            hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
             nlay,ncol,nrow = self.getGeom(core)
             ncell = ncol*nrow
@@ -740,22 +740,26 @@ class modflowReader:
         try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
         except IOError : return None
         # this is a file produced by uzf
-        ncol,nrow,nlay,part = self.getPart2(f1)
-        pos = 11+26*4+iper*part+5*4+16       
-        f1.seek(pos);data = arr2('f');data.fromfile(f1,nlay*ncol*nrow)        
-        sat = reshape(data,(nlay,nrow,ncol))
-        return sat[-1::-1]
+        ncol,nrow,nlay,blok,part = self.getPart2(f1)
+        title = 11+21*4
+        pos = title+iper*part+5*4+16     # OA 9/3/19
+        f1.seek(pos);data = arr2('f');data.fromfile(f1,nlay*ncol*nrow)   
+        uzsat = reshape(data,(nlay,nrow,ncol))
+        #pos += blok*4*4 # Thksat is 4 bloc further
+        #f1.seek(pos);data = arr2('f');data.fromfile(f1,nlay*ncol*nrow)   
+        #thks = reshape(data,(nlay,nrow,ncol))
+        return uzsat # OA 9/3/19 removed ::-1
         
     def getPart2(self,f1):
-        # variables Wcontent, UzFlux, UzSto, GwOut,ThKsat, Qxx, Qzz, Sto, Cnh
-        nvar = 8 # CNH not included
+        # for UZF variables Wcontent, UzFlux, UzSto, GwOut,ThKsat, Qxx, Qzz, Sto, Cnh
+        nvar = 8 # CNH not included, it has different shape
         # simplified version : no wells, no rech... should be included into getpart
         f1.seek(11);data = arr2('i');data.fromfile(f1,26);
         ncol,nrow,nlay = data[-3:]
-        ncnh = data[6];l2=5*4+16+4
-        blok=5*4+16+ncol*nrow*nlay*4;
-        part = nvar*blok+l2+ncnh*16
-        return ncol,nrow,nlay,part
+        ncnh = data[6];l2=5*4+16 # OA 9/3/19 5 values iper isubper..+title
+        blok=l2+ncol*nrow*nlay*4;
+        part = nvar*blok+l2+4+ncnh*4*4
+        return ncol,nrow,nlay,blok,part
         
     def getPtObs(self,core,irow,icol,ilay,iper,typ):
         """for typ=flux return fluxes for a series of obs cell

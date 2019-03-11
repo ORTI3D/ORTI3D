@@ -23,7 +23,7 @@ class mtphtWriter:
         self.writeNamFile(opt)
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
-        self.nper = len(self.per)
+        self.nper = len(self.per);print('writempht l.26',self.nper)
         mcomp,ncomp,gcomp = listEsp['mcomp'],listEsp['ncomp'],listEsp['gcomp']
         self.nesp = ncomp
         nkim = len(listEsp['kim'])
@@ -214,10 +214,11 @@ class mtphtWriter:
             arr = self.core.getValueLong('Modflow','bas.5',0);
             f1.write(self.formatBlockMt3d(arr,line))
         if line in ['uzt.6','uzt.8','uzt.10']:
-            arr = self.core.getValueLong('Mt3dms',line,0)
-            if arr == None : return #happens when the given line must not be used
+            #arr = self.core.getValueLong('Mt3dms',line,0)
+            val = self.core.dicval['Mt3dms'][line][0] # OA 3/10/19
             if opt == 'Mt3dms':
-                s0 = self.formatBlockMt3d(arr,line)
+                #print('writempht l.220',self.nper)
+                s0 = '1 \n         0 '+str(val)+'\n'+'\n'.join(['-1']*self.nper)+'\n' # OA 3/10/19
             else : # pht3d get concentrations
                 phline={'uzt.6':'ph.5','uzt.8':'ph.7','uzt.10':'ph.8'} # correspondance btw pt et pht
                 s0 = ''
@@ -751,8 +752,8 @@ class mtphtReader:
         dim = core.addin.getDim()
         if dim in ['Xsection','Radial']:
             nlay=nrow*1;nrow=1
-        suff1 = opt*1
-        if opt=='Mt3dms': suff1 = 'MT3D'
+        suff1 = 'PHT3D'
+        if opt=='Mt3dms' and 'UZT' not in  self.core.getUsedModulesList('Mt3dms'): suff1 = 'MT3D'
         if iesp<9: suff2='00'
         else : suff2='0'
         tlist = core.ttable['tlist']
@@ -771,7 +772,7 @@ class mtphtReader:
             data = arr2('f');data.fromfile(f1, ncol*nrow)
             m0[l]=reshape(data,(nrow,ncol))
         f1.close()
-        if dim in ['Xsection','Radial']: return m0[::-1,:,:]
+        if dim in ['Xsection','Radial']: return m0 # [::-1,:,:] #OA 11/3/19 renversement, je sais pas bien
         else : return m0[:,::-1,:]
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname=''):

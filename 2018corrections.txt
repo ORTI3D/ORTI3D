@@ -324,7 +324,7 @@ this version sent to elicia
 
 25/2/19 OA
 - min3pwriter/readUCN l.826 added complex to get the complexes
-- min3pwriter/getptobs l845 pb of dims of the array
+- min3pwriter/getptobs l.845 pb of dims of the array
 - multiplot l.129-133 removed replace by l.128 to get the list of species for all model types
 - Min3p at different places removed ref to LJ and diffusion coeff (not used)
 
@@ -340,3 +340,22 @@ this version sent to elicia
 05/03/19 EV
 - multiplot.py l.321 add condition to not plot empty observed data
 - importExport.py in updateChem l.227 added option to remove a column
+
+07/03/19 OA
+- in modflow keywords modif condition in uzf.4
+- modflowWriter/writeexceptions l.217 arrfloat -> ktyp
+
+9/3/19
+** there can be a problem on reading flo file when nwt is used (time steps within period is stored). not solved up to now. just use one sub perdio with nwt
+** pb of Xsection col width not written correctly in.dis (no effec tin uzf infiltration)
+** in uzf if print with nb of unit, shall create file in .nam
+- modflowKeywords some modfis in uzf
+- modflowwriter/reader/readWcontetn l.744 modif 16->12 there was a decalage, l.747 inversed
+- in addin l.54 removed setting always pcg, l.57 added a new funct to have at least one solver
+- in core/runModel l.314-5 changes last line for reading the end of nwt simulation (lst file) (2000 was removed because nwt is 2005)
+- in addin/update1 removed line 161-167 when open keep the modules that were defined in the model that is opeend (and not add modules to the back)
+- mtphtwriter/wrtieExceptions (uzt) l.217 modif condition (arr==Noe doest not work)
+- mtphtKeywords, uzt change type of 6,8,10 (arrfloat to float)
+- mtphtwriter l.220 for uzt write correctly the uzt.6 (n periods)
+- mtphtwriter/readUCN l.756 if uzt pht3d is used so we read pht3d.ucn
+- mtphtwriter/readUCN l.760 layer reversed for Xsection
