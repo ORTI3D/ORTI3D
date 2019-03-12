@@ -753,7 +753,7 @@ class mtphtReader:
         if dim in ['Xsection','Radial']:
             nlay=nrow*1;nrow=1
         suff1 = 'PHT3D'
-        if opt=='Mt3dms' and 'UZT' not in  self.core.getUsedModulesList('Mt3dms'): suff1 = 'MT3D'
+        if opt=='Mt3dms' and 'UZT' not in  core.getUsedModulesList('Mt3dms'): suff1 = 'MT3D'
         if iesp<9: suff2='00'
         else : suff2='0'
         tlist = core.ttable['tlist']
