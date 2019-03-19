@@ -361,11 +361,12 @@ class Core:
             if info !=False :
                 return self.getTxtFileLastLine('logfile.txt',3) # OA 14/2/19
         if modName[:5] =='Min3p':
-            print('name',self.fileName)
-            if self.getValueFromName('Min3pFlow','P_Uns')==0:
-                s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s
-            else :
-                s=self.baseDir+sep+'bin'+sep+'min3p_uns.exe '+self.fileName ;#print s                
+            #print('name',self.fileName)
+            s=self.baseDir+sep+'bin'+sep+'min3p.exe '+self.fileName ; # OA 19/3/19
+            # if self.getValueFromName('Min3pFlow','P_Uns')==0:
+            #     s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s
+            # else :
+            #     s=self.baseDir+sep+'bin'+sep+'min3p_uns.exe '+self.fileName ;#print s                
             os.chdir(self.fileDir)
             #pop = subprocess.Popen(s,stdin = subprocess.PIPE,stdout = subprocess.PIPE)
             #time.sleep(0.1)

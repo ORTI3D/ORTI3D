@@ -371,3 +371,7 @@ this version sent to elicia
 - ogWriter writeGli 57 added trans3
 - core/onPtObs l.646 added Opg in options
 - ogWriter getObs l493 added to retrieve tracer
+
+19/3/19 OA Min3p
+- core/runModel l.365 changed to one version min3p which is today MIN3P-HPC-X64-V1.0.690 and may be changed later
+- min3pwriter/getStringFromSolution l.350 added \n for conc input

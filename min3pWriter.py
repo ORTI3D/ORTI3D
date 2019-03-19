@@ -299,7 +299,7 @@ class min3pWriter:
                 # for this zone write type of information and value
                 info = Dict.lines[line]['comm'].split('(')[0]
                 s += '\'boundary type\'\n'
-                s += '\''+info+'\'\n'     #GC modified 21/02/19 remodi OA 23/2
+                s += '\''+info+'\' '     #GC modified 21/02/19 remodi OA 23/2
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 # for this zone write extent
                 s += '\'extent of zone'
@@ -360,7 +360,7 @@ class min3pWriter:
             nexch,nsurf = int(mod(value,100)/10),int(mod(value,10))  # OA 26/11/18
         else :
             nsol = int(value)
-        s = '\'concentration input\' \n'
+        s = '\n\'concentration input\' \n' # OA 19/3/19
         # solutions
         dChem = self.core.addin.chem.Base['MChemistry']['comp']
         for ir,row in enumerate(dChem['rows']):
