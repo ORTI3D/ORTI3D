@@ -643,7 +643,7 @@ class Core:
             #print('pthead',pt)
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
-            elif mtype in ['Sut','Min']: opt = 'Tracer'
+            elif mtype in ['Sut','Min','Opg']: opt = 'Tracer' # OA 19/3/19
             for il in layers:
                 if il!= -1: iz2=[il]*len(ix2)
                 pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt)); # irow,icol,ilay

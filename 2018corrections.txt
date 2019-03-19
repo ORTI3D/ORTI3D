@@ -359,3 +359,15 @@ this version sent to elicia
 - mtphtwriter l.220 for uzt write correctly the uzt.6 (n periods)
 - mtphtwriter/readUCN l.756 if uzt pht3d is used so we read pht3d.ucn
 - mtphtwriter/readUCN l.760 layer reversed for Xsection
+
+17/3/19 OA
+- in geometry/zone2interp, thiesse poly interpolation, added int(vrange) (python 3 requirement)
+- in qtVisualisation/updateParticle l.511 changed T!=None
+
+19/3/19
+- ogWriter l31 37 to allow writing of transport with unsat
+- ogWriter uncommented line 178-188 to allow printing source term in transport
+- ogWriter/readUcn l512 modif name of consTracer
+- ogWriter writeGli 57 added trans3
+- core/onPtObs l.646 added Opg in options
+- ogWriter getObs l493 added to retrieve tracer

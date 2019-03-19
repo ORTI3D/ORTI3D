@@ -937,7 +937,7 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
         if ityp==2 : m2 = 10**m2
         
     elif option=='interp. Th': # Thissen polygons
-        print('thiessen')
+        #print('thiessen')
         listP = list(zip(xpt,ypt))
         xb,yb = [min(xc),max(xc)],[min(yc),max(yc)]
         polylist = getPolyList(listP,xb,yb);#print 'geom 830 thiess',polylist
@@ -952,8 +952,8 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
         #m2 = refer - m2#
     if modName[:5] != 'Opgeo':
         m2 = reshape(m2,(ny,nx))
-        if option=='interp. Th':   #smoothing of thiessen polys     
-            for n in range(vrange): m2 = smoo2d(m2)
+        if option=='interp. Th':   #smoothing of thiessen polys  # OA 17/3/19 added int()   
+            for n in range(int(vrange)): m2 = smoo2d(m2)
 
     if ityp!=2: m2 = clip(m2,amin(zpt)*0.9,amax(zpt)*1.1);#print amin(amin(m2))
 

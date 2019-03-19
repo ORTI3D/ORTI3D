@@ -28,13 +28,13 @@ class ogWriter:
         self.ttable = core.makeTtable()
         #0 rectangular, 1 triangular
         lsuff=['gli','bc','ic','mfp','msh','mmp','msp','st','num','out','pcs','tim']
-        if self.opt == 'flow':
+        if self.opt in ['flow','trans']: # OA 19/3/19
             self.sat_type = core.getValueFromName('OpgeoFlow','O_UNSAT')
             if self.sat_type == 1:
                 self.ftype,self.pcs,self.var = 'flow',['GROUNDWATER_FLOW'],['HEAD']
             else:
                 self.ftype,self.pcs,self.var = 'unsat',['RICHARDS_FLOW'],['PRESSURE1']
-        elif self.opt == 'trans':
+        if self.opt == 'trans': # OA 19/3/19
             self.pcs.append('MASS_TRANSPORT')
             self.var.append('ConsTracer')
             lsuff.append('mcp')
@@ -54,7 +54,7 @@ class ogWriter:
         i,s1,s2,nlay = 0,'#POINTS \n','',getNlayers(self.core)
         llist = [self.ftype+'.'+str(a) for a in range(1,11)] # search all zones there as Gli
         if self.opt == 'trans': 
-            llist.extend(['trans.1','trans.2'])
+            llist.extend(['trans.1','trans.2','trans.3']) # OA 19/3/19  added trans3
         ptnames = []
         for line in llist:
             if line.split('.')[0] == self.ftype: mod = 'OpgeoFlow'
@@ -111,7 +111,7 @@ class ogWriter:
     def writeBc(self):
         '''write the bc values'''
         s = ''
-        l0 = [self.ftype+'.2',self.ftype+'.4']
+        l0 = [self.ftype+'.2',self.ftype+'.4'];
         for line in l0: #flow or unsat
             if line not in list(self.core.diczone['OpgeoFlow'].dic.keys()): 
                 continue  # no zones
@@ -126,7 +126,8 @@ class ogWriter:
                 s += ' $DIS_TYPE \n'
                 val = dicz['value'][iz]
                 s += self.transient(line,iz,val)
-            if self.opt == 'trans':    
+        if self.opt == 'trans':    
+            if 'trans.2' in list(self.core.diczone['OpgeoFlow'].dic.keys()): # OA 19/3/19
                 dicz = self.core.diczone['OpgeoTrans'].dic['trans.2']
                 nbz = len(dicz['name'])
                 for iz in range(nbz):
@@ -173,19 +174,20 @@ class ogWriter:
                     s += ' $DIS_TYPE\n   '
                     val = dicz['value'][iz]
                     s += self.transient(line,iz,val,'_NEUMANN')
-                s +='#STOP'
-#                
-#        if self.opt == 'trans' and self.core.diczone['OpgeoTrans'].dic.has_key('trans.2'):    
-#            dicz = self.core.diczone['OpgeoTrans'].dic['trans.2']
-#            nbwells = len(dicz['value'])
-#            for iw in range(nbwells):
-#                s += '#SOURCE_TERM\n $PCS_TYPE\n  MASS_TRANSPORT\n'
-#                s += '$PRIMARY_VARIABLE\n  ConsTracer\n $GEO_TYPE\n  '
-#                if len(dicz['coords'][iw])==1: ptyp = 'POINT '
-#                else : ptyp = 'POLYLINE '
-#                s += ptyp+dicz['name'][iw] +'\n'
-#                s += ' $DIS_TYPE\n  CONSTANT  '
-#                s += str(dicz['value'][iw])+'\n'            
+        # OA 19/3/19 this part below uncommented       
+        if self.opt == 'trans' and 'trans.3' in list(self.core.diczone['OpgeoTrans'].dic.keys()):    
+            dicz = self.core.diczone['OpgeoTrans'].dic['trans.3']
+            nbwells = len(dicz['value'])
+            for iw in range(nbwells):
+                s += '#SOURCE_TERM\n $PCS_TYPE\n  MASS_TRANSPORT\n'
+                s += '$PRIMARY_VARIABLE\n  ConsTracer\n $GEO_TYPE\n  '
+                if len(dicz['coords'][iw])==1: ptyp = 'POINT '
+                else : ptyp = 'POLYLINE '
+                s += ptyp+dicz['name'][iw] +'\n'
+                s += ' $DIS_TYPE\n' # OA 19/3/19
+                val = dicz['value'][iz]
+                s += self.transient(line,iz,val,'_NEUMANN')
+        s +='#STOP' # OA 19/3/19 moved
         return s
 
     def transient(self,line,iz,val0,opt=''):
@@ -488,6 +490,7 @@ class ogReader:
             ilay=irow*1;irow=[0]*len(ilay)
         if typ=='Head': data = self.readHeadFile(core,iper)
         elif typ=='Wcontent' : data = self.readWcontent(core,iper)
+        elif typ=='Tracer' : data = self.readUCN(core,None,iper,None,None) # OA added 19/3/19
         return data[ilay,irow,icol]
         
     def readHeadFile(self,core,tstep):
@@ -507,7 +510,7 @@ class ogReader:
         
     def readUCN(self,core,opt,tstep,nb,name):
         #print 'ogreader',tstep
-        cnc = self.readNodeFile(core,1,tstep) # cnc or temp is the 1st var
+        cnc = self.readNodeFile(core,'ConsTracer',tstep) # OA 19/3/19
         #cnc = (cnc[:,:,1:]+cnc[:,:,:-1])/2
         #cnc = (cnc[:,1:,:]+cnc[:,:-1,:])/2
         return cnc

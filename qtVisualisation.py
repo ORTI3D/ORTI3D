@@ -508,7 +508,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def updateParticles(self,X,Y,T,freq=10):
         """ adds a line in the gropu of particles"""
         ligne, = pl.plot(pl.array(X),pl.array(Y),'r');
-        if freq>0 and T != None:
+        if freq>0 and type(T) == type(ones(5)): # OA 18/3/19
             tx,ty,tt = X[0::freq],Y[0::freq],T[0::freq]
             txt = []
             for i in range(len(tx)):
