@@ -197,13 +197,13 @@ class modflowWriter:
             #print 'mfw rch',self.core.ttable[line2]
             m0=0
             for iper in range(nper): # OA 14/2/2019 modif below if rech remain similar
-                if iper>0: m0 = block(self.core,'Modflow',line2,False,None,iper);
+                #if iper>0: m0 = block(self.core,'Modflow',line2,False,None,iper); #EV 21/03/2019 remove OA modif 
                 m = block(self.core,'Modflow',line2,False,None,iper);
-                if sum(m0-m)==0:
-                    f1.write('    -1\n')
-                else :
-                    f1.write('    0\n') # 0: data are written not reused from previous
-                    self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
+                #if sum(m0-m)==0:
+                    #f1.write('    -1\n')
+               # else :
+                f1.write('    0\n') # 0: data are written not reused from previous
+                self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
 
         if line == 'evt.2': # writes an array for each period with zero before
             for iper in range(nper):

@@ -364,7 +364,7 @@ this version sent to elicia
 - in geometry/zone2interp, thiesse poly interpolation, added int(vrange) (python 3 requirement)
 - in qtVisualisation/updateParticle l.511 changed T!=None
 
-19/3/19
+19/3/19 OA
 - ogWriter l31 37 to allow writing of transport with unsat
 - ogWriter uncommented line 178-188 to allow printing source term in transport
 - ogWriter/readUcn l512 modif name of consTracer
@@ -375,3 +375,6 @@ this version sent to elicia
 19/3/19 OA Min3p
 - core/runModel l.365 changed to one version min3p which is today MIN3P-HPC-X64-V1.0.690 and may be changed later
 - min3pwriter/getStringFromSolution l.350 added \n for conc input
+
+21/3/19 EV
+- modflowwriter.py l.200 removed OA modif "to consider that if recharge does not change -1 is written" (14/2/19)
