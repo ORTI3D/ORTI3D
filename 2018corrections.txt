@@ -387,3 +387,6 @@ this version sent to elicia
 
 02/04/2019 EV
 - multiplot.py l.247-248 modified to flat the list of tuple with different dimension  
+
+02/04/19 OA
+- in qtDialogs/myNoteBookCheck l.10 added (import from scipy) l.178 modified,182,184 added to sort the list of checks

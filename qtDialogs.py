@@ -7,6 +7,7 @@ from PyQt5.Qt import QFrame
 from .config import *
 from .geometry import *
 from PyQt5.QtWidgets import *
+from scipy import * #OA 2/4/19
 
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 def onQuestion(gui,text):  
@@ -174,11 +175,13 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
             self.layouts[n]= lay
             lay.setContentsMargins(0,0,0,0);lay.setSpacing(0)
             self.dwidget[n] = [0]*nbChk
+            dic1 = self.sortList1(dicIn[n]) # OA modif 2/4
             for i in range(nbChk):
                 ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
-                ch.setText(dicIn[n][i][0])
-                ch.setCheckState(dicIn[n][i][1])
+                ch.setText(str(dic1[i][0])) # OA modif 2/4
+                s =(dic1[i][1] == "True")
+                ch.setCheckState(s) # OA modif 2/4
                 lay.addWidget(ch,il,ic)
             scroll = QScrollArea()
             scroll.setWidget(pg)
@@ -194,6 +197,14 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
         self.buttonBox.rejected.connect(self.reject1)
         self.layout.addWidget(self.buttonBox)
         QMetaObject.connectSlotsByName(self)
+        
+    def sortList1(self,lst0): # OA added 2/4/19
+        '''sort a list by the 1st item of each sublist'''
+        l1 = [k[0] for k in lst0]
+        indx = argsort(l1)
+        indx = indx.astype('int')
+        lst0b = array(lst0)
+        return lst0b[indx]
         
     def accept1(self): 
         self.close(); self.state = 'accept'
