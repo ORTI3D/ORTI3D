@@ -244,7 +244,9 @@ class multiPlot(QDialog):
                         myplot=self._ax.scatter(self.yobsarray,self.yyarray)
                         self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs)) 
                 time='All'
-            yobs_arr=np.concatenate(self.yobs_all).ravel().tolist() 
+            yobs_arr=[item for sublist in self.yobs_all for item in sublist] #EV 02/04/19
+            yobs_arr=np.array(yobs_arr).flatten().tolist()
+            #yobs_arr=np.concatenate(self.yobs_all).ravel().tolist() 
             myplot2=self._ax.plot([min(yobs_arr),max(yobs_arr)],[min(yobs_arr),max(yobs_arr)],'k')
             self._ax.set_title('Simulated vs Observed Data: Time = '+str(time)+' [T]',fontweight="bold", size=9)
             self._ax.legend(self.llabel,fontsize = 8,loc='upper center', bbox_to_anchor=(0.5, -0.1),ncol=4)

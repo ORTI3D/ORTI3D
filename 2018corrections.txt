@@ -378,3 +378,12 @@ this version sent to elicia
 
 21/3/19 EV
 - modflowwriter.py l.200 removed OA modif "to consider that if recharge does not change -1 is written" (14/2/19)
+
+23/3/19 OA
+- geometry/zone2index, added line 444 to consider the option of a value= nb of zone
+
+26/3/19 OA
+- addin added 5 lines in setGridInModel opgeo l.528 to get the ncol,nrow
+
+02/04/2019 EV
+- multiplot.py l.247-248 modified to flat the list of tuple with different dimension  

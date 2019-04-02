@@ -525,7 +525,12 @@ class addin:
             nno,nel = (nx+1)*(ny+1)*nbL1, nx*ny*nbL
             self.core.dicval['Sutra']['glob.2b'][2:] =[nx+1,ny+1,nbL1] 
             self.core.dicval['Sutra']['glob.3'][:2] = [nno,nel]
-        elif mgroup =='Opgeo' :
+        elif mgroup =='Opgeo' : # OA 26/3/19 Added 5 next lines
+            nz = getNlayers(self.core)
+            nx,ny = int(g['nx']),int(g['ny'])
+            if self.xsect : 
+                nz = ny*1; ny = 1
+            self.core.dicval['OpgeoFlow']['domn.1'][1:4] = [nz,nx,ny]
             self.core.dicval['OpgeoFlow']['domn.2']=list(g['dx']) 
             self.core.dicval['OpgeoFlow']['domn.3']=list(g['dy'])   
             self.opgeo.buildMesh()
