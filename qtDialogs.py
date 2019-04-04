@@ -155,7 +155,7 @@ class myFileDialog: # Dialog to open or save a file
         return str(fDir),str(fName)
 
 class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
-    def __init__(self, gui,title, dicIn):
+    def __init__(self, gui,title, dicIn,opt=None):
         QDialog.__init__(self)
         self.setWindowTitle(title)
         self.gui,self.pages,self.layouts,self.dicIn = gui,{},{},dicIn
@@ -175,12 +175,12 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
             self.layouts[n]= lay
             lay.setContentsMargins(0,0,0,0);lay.setSpacing(0)
             self.dwidget[n] = [0]*nbChk
-            dic1 = self.sortList1(dicIn[n]) # OA modif 2/4
+            if opt=='sort': dicIn[n] = self.sortList1(dicIn[n]) # OA modif 3/4
             for i in range(nbChk):
                 ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
-                ch.setText(str(dic1[i][0])) # OA modif 2/4
-                s =(dic1[i][1] == "True")
+                ch.setText(str(dicIn[n][i][0])) # OA modif 2/4
+                s =(dicIn[n][i][1] == "True")
                 ch.setCheckState(s) # OA modif 2/4
                 lay.addWidget(ch,il,ic)
             scroll = QScrollArea()

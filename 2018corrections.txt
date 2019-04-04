@@ -390,3 +390,7 @@ this version sent to elicia
 
 02/04/19 OA
 - in qtDialogs/myNoteBookCheck l.10 added (import from scipy) l.178 modified,182,184 added to sort the list of checks
+0.3/04/19 OA
+- qtDialogs/myNoteBookCheck ow sort is optional, use donly for databases
+- addin/callCheckDialog l.429 modified to sort min3p database
+- qtDialogs l.178 182 182 remmmodified so that dicIn remebers the new order after a sort

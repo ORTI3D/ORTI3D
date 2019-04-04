@@ -426,7 +426,7 @@ class addin:
         cpl = self.chem.temp['Dbase']['complex']*1
         dicIn.pop('complex')
         #print 'incallcheck',dicIn
-        dialg = self.dialogs.myNoteBookCheck(self.core.gui,'Choose species',dicIn)
+        dialg = self.dialogs.myNoteBookCheck(self.core.gui,'Choose species',dicIn,'sort') # OA 3/4
         retour = dialg.getValues()
         if retour!= None:
             self.chem.temp['Dbase'] = retour
