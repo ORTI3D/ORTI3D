@@ -246,19 +246,20 @@ class impObsData(QDialog) :
         self.close()
         
     def checkObs(self,dic):
-        if any(dic['data']) != False :
-            zname=self.core.diczone['Observation'].dic['obs.1']['name']
-            zobs=[dic['data'][i][0] for i in range(len(dic['data']))]
-            m=''
-            for i in range(len(zobs)):
-                if zobs[i] not in zname: 
-                    m+= str(zobs[i])+' is not a model observation well\n'
-            if m!='' :
-                m2='Warning\n'+m+'\nDo you want modify your data?'
-                resp=onQuestion(self.gui,m2)
-                return resp
-            else : self.close()
+        print('test',dic['data'])
+        #if any(dic['data']) != False : #11/04/19
+        zname=self.core.diczone['Observation'].dic['obs.1']['name']
+        zobs=[dic['data'][i][0] for i in range(len(dic['data']))]
+        m=''
+        for i in range(len(zobs)):
+            if zobs[i] not in zname: 
+                m+= str(zobs[i])+' is not a model observation well\n'
+        if m!='' :
+            m2='Warning\n'+m+'\nDo you want modify your data?'
+            resp=onQuestion(self.gui,m2)
+            return resp
         else : self.close()
+        #else : self.close()
 
 class impAsciiModflow:
     """this class imports a whole modflow model, and sets it as an
