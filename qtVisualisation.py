@@ -807,7 +807,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.draw()
 
     def polyVdialog(self):
-        lst0=[('Value','Text',0)]
+        lst0=[('Elevation','Text',0)] # OA 25/4/19 changed value to elevation
         dialg = genericDialog(self.gui,'value',lst0)
         values = dialg.getValues()
         if values != None:

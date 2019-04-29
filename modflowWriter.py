@@ -302,10 +302,11 @@ class modflowWriter:
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
           
-        lpts, k, npts = [],[],0 # lists of points for each zone
+        lpts, k, npts,zvar = [],[],0,[] # OA 25/4/19 added zlist
         for iz in range(nzones): #creates a list of points for each zone
             lpts.append([])
-            ilay,irow,icol = self.xyzone2Mflow(core,line,iz)
+            ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
+            zvar.append(zvect)
             if ilay == None: break
             npts += len(irow)
             for i in range(len(irow)):
@@ -317,25 +318,40 @@ class modflowWriter:
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': k.append(self.getPermScaled(ilay,irow,icol))
             
-        buff = ' %9i   \n' %npts
+        buff = ' %9i   \n' %npts;print(line,zlist)
         #print 'mfw transient',nper
-        for ip in range(nper): # gets each period
+        for ip in range(nper): # get each period
             buff += ' %9i   \n' %npts
+            flgTr = False
+            if len(unique(zlist[:,iz]))>1 : flagTr = True
             for iz in range(nzones): # and each zones
-                val = zlist[ip,iz] # the value of the curent variable for the period
+                val = zlist[ip,iz] # the value of the variable for the period
+                a = core.diczone['Modflow'].getValue(line,'value',iz); #print('dicz',a) # OA 25/4/19
+                if '$' in a: vparms = a.split('$')[1]
                 vnext = zlist[min(ip+1,nper-1),iz] #OA 7/8/17 pb of Chd
                 npz = len(lpts[iz])
                 for pt in range(npz): # for each zone the list of points
+                    if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
+                        zbase = float(zvar[iz][pt])
+                    else : 
+                        zbase = 0 # OA 25/4/19
                     if ext=='wel': 
                         buff+= lpts[iz][pt]+' %+9.2e'%(float(val)*k[iz][pt])+'\n' #EV 20/02/19
                     elif ext=='chd': 
-                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g  \n'%(float(val),float(vnext))
-                    elif ext in ['drn','ghb']:
-                        v1,v2 = val.split()
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(float(v1),float(v2))
+                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g  \n'%(float(val)+zbase,float(vnext)+zbase)
+                    elif ext=='drn': # writes the elevation addiing zbase (polyV), then cond.
+                        v1,v2 = val.split();#print(iz,pt,zbase,v1,v2)
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(float(v1)+zbase,float(v2))
+                    elif ext=='ghb':
+                        a,cond = vparms.split(); #conductance is steady (in time and space)
+                        if flgTr: hd = float(val)
+                        else : hd = float(val.split()[0])
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(hd+zbase,float(cond))
                     elif ext=='riv':
-                        v1,v2,v3 = val.split()
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g  \n'%(float(v1),float(v2),float(v3))
+                        a,cond,botm = vparms.split()
+                        if flgTr: stage = float(val)
+                        else : stage = float(val.split()[0])
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g  \n'%(stage,float(cond),float(botm)+zbase)
         f1.write(buff)
         f1.close()
         
@@ -346,19 +362,19 @@ class modflowWriter:
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
         if xy == '': return None,None,None
-        x,y = list(zip(*xy))
-        z=x*1
+        if len(xy[0])==2: x,y = list(zip(*xy));z=x*1 # OA 25/4/19 for 3 coords
+        else : x,y,z = list(zip(*xy))
         imed = core.diczone['Modflow'].getMediaList(line,iz)
         ilay = media2layers(core,imed)
         dm = core.addin.getDim()
         if core.addin.mesh == None: # regular grid
-            icol,irow,a = zone2index(core,x,y,z)
+            icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
             if isclosed(core,x,y) : 
-                irow,icol = where(fillZone(nx,ny,icol,irow,a)); # 22/3/17
+                irow,icol = where(fillZone(nx,ny,icol,irow,zmat)); # OA 27/4/19 a replaced by zmat
             n0 = len(icol)
             if dm in ['3D','2D']:
-                icol, irow = list(icol)*len(ilay),list(irow)*len(ilay)
+                icol, irow, zmat = list(icol)*len(ilay),list(irow)*len(ilay),list(zmat)*len(ilay) # OA 27/4/19 added zmat
                 ilay = list(ilay)*n0;ilay.sort()
             if dm in ['Xsection','Radial']:
                 irow1=[0]*len(irow);ilay=[ny-x-1 for x in irow]
@@ -370,7 +386,8 @@ class modflowWriter:
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
             ilay,icol = list(ilay)*n0,None
-        return ilay,irow1,icol
+        if len(xy[0]) ==2: zmat = 0 # OA 25/4/19 return 0 if not polyV
+        return ilay,irow1,icol,zmat
 
     def getPermScaled(self,ilay,irow,icol):
         """return the permeability for a list of layer, col rows scaled by the

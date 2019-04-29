@@ -65,7 +65,7 @@ def makeTransientTable(core):
             for iz in range(nbzones):
                 # get the list, 
                 slist = text2list(lZ['value'][iz]);#print 'tper',line,iz,slist
-                if slist[0] =='': continue # void zone
+                if slist[0] in ['',' ']: continue # void zone
                 elif type(slist)==type('str'): tbl[:,iz]=slist # a string for two or more values
                 elif len(slist) == 1: 
                     tbl[:,iz]=slist[0] # put only the first value
@@ -85,10 +85,14 @@ def makeTransientTable(core):
     return dZone;#print 'Aq ztrans',dZone
 
 def text2list(txt):
-    #print txt
+    '''from the text of a zone returns a list of transient vlaues'''
     if type(txt) in [type(1),type(1.)]: return[txt]
     if len(txt)==0: return [txt]
-    if txt[0]=='$': return txt.split('$')[1].replace('\n','') # only the 3rd part contains the value
+    if txt[0]=='$': # OA 25/4/19 all the lines in if loop modif(several parameters case)
+        a,b,c = txt.split('$')
+        parms = b.replace('\n','') # only the 3rd part contains the value
+        txt = c
+        if len(txt.split('\n'))<2 : return parms # no transient information
     a = txt.split('\n');#print'timp', a
     if len(a)==1: return [a[0]] # one value
     if len(a[1].replace(' ',''))==0: return [a[0]] # blanks in 2nd line : one value

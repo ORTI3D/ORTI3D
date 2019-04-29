@@ -398,3 +398,18 @@ this version sent to elicia
 
 11/04/19 EV
 - importExport.py checkObs l.250 removed any condition 
+
+25/04/19 OA
+- modflowKeywords in river changed the variables, added names to be consistent with drn, same for ghb (l.280 à 282)
+- qtVisualisation/polyVdialog l.810 changed Value to Elevation for the dialog
+- modflowWriter/xyzone2Mflow l.355 change name to recover zmat if variable poly and this zmat is returned (l.373)
+- modflowWriter/xyzone2Mflow  l.352-353 take under consideration zone with three coordinates
+- modflowWriter/writeTransientZones l.305 and 308 added zvar to remenber the potential values of variable polygon
+- modflowWriter/writeTransientZones added l.335-336 in order to consider variable polygon values
+- modflowWriter/writeTransientZones added l.327-328 to get both transient and steady values
+- modflowWriter/writeTransientZones l.340-354 all modified
+- timeperiod/txt2list lines added to allow transient even with several parameters (just one is transient)
+
+27/04/19  OA
+- modflowWriter/xyzone2Mflow l.374 a was remaining, replaced by zmat
+- modflowWriter/xyzone2Mflow l.377 zmat added in that line because zone with several media wa not working

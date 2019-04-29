@@ -277,14 +277,16 @@ class Mf:
                 'names':['Elevation','Conductance'],
                 'type':['arrfloat','arrfloat'],'default':[0,0]},
         #River package
-        'riv.1':{'comm':'River: stage, conduct., Rbot','cond':'','kw':['RIVER(NLAY,NROW,NCOL)'],'detail':[],
-               'type':['arrfloat'],'default':[0]},
-        #Variable heas package
+        'riv.1':{'comm':'River: stage, conduct., Rbot','cond':'','kw':['RIV_Stage(NLAY,NROW,NCOL)','RIV_Cond(NLAY,NROW,NCOL)','RIV_Botm(NLAY,NROW,NCOL)'],'detail':[],
+                 'names':['Stage','Conductance','Elevation'], # added OA 25/4/19
+               'type':['arrfloat','arrfloat','arrfloat'],'default':[0,0,0]}, # modif OA 25/4/19
+        #Variable head package
         'chd.1':{'comm':'Heads: first, last','cond':'','kw':['CHD(NLAY,NROW,NCOL)'],'detail':[],
                'type':['arrfloat'],'default':[0]},
         #Ghb package
         'ghb.1':{'comm':'General Head: head, conductance','cond':'',
                 'kw':['GHB_HD(NLAY,NROW,NCOL)','GHB_COND(NLAY,NROW,NCOL)'],'detail':[],
+                'names':['Elevation','Conductance'],
                'type':['arrfloat','arrfloat'],'default':[0,0]},
         #UPW (close to Lpf for modflow nwt
         'upw.1':{'comm':'General flags','cond':'','kw':['IUPWCB','HDRY','NPUPW','IPHDRY'],
