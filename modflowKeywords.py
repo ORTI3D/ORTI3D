@@ -124,7 +124,7 @@ class Mf:
                 'detail':[],'type':['arrfloat'],'units':['L/T'],'default':[1]},
         'lpf.10':{'comm':'First storage coeff','cond':'NPER>1','kw':['Sf1(NLAY,NROW,NCOL)'],
                     'detail':[],'type':['arrfloat'],'default':[1e-6]},
-        'lpf.11':{'comm':'2nd storage coeff','cond':'','kw':['Sf2(NLAY,NROW,NCOL)'], # EV 25/10/18 removed cond NPER>1 and LAYTYP>0
+        'lpf.11':{'comm':'2nd storage coeff','cond':'NPER>1','kw':['Sf2(NLAY,NROW,NCOL)'], # EV 25/10/18 removed cond NPER>1 and LAYTYP>0 EV 03/05/19 added cond NPER>1 
                     'detail':[],'type':['arrfloat'],'default':[.25]},
         'lpf.12':{'comm':'Vertical cond confined bed','cond':'LAYCBD>0','kw':['VKCB(NLAY,NROW,NCOL)'],
                     'detail':[],'type':['arrfloat']},

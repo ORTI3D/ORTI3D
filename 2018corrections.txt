@@ -413,3 +413,6 @@ this version sent to elicia
 27/04/19  OA
 - modflowWriter/xyzone2Mflow l.374 a was remaining, replaced by zmat
 - modflowWriter/xyzone2Mflow l.377 zmat added in that line because zone with several media wa not working
+
+03/05/19 EV
+- modflowKeywards l.127 added cond NPER > 1 for lpf.11 to remove this variable for steady state model 
