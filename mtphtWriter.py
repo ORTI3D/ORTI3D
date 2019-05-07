@@ -25,7 +25,7 @@ class mtphtWriter:
         self.writeNamFile(opt)
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
-        self.nper = len(self.per);print('writempht l.26',self.nper)
+        self.nper = len(self.per)#;print('writempht l.26',self.nper)
         mcomp,ncomp,gcomp = listEsp['mcomp'],listEsp['ncomp'],listEsp['gcomp']
         self.nesp = ncomp
         nkim = len(listEsp['kim'])
@@ -490,7 +490,7 @@ class mtphtWriter:
                     if wells[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 2
                     if DRN[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 3 #added OA 6/5/19
                     if RIV[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 4 #added OA 6/5/19
-                    if GHB[ilay[i],irow[i],icol[i]]!=0 : print('yo'); typ[iz] = 5 #added OA 6/5/19
+                    if GHB[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 5 #added OA 6/5/19
                 #print iz,i,typ,ilay[i],irow[i],icol[i],BC[ilay[i],irow[i],icol[i]],wells[ilay[i],irow[i],icol[i]]
                 if opt=='Pht3d' and typ[iz]==-1: continue
                 if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]!=-1: continue
