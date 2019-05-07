@@ -416,3 +416,11 @@ this version sent to elicia
 
 03/05/19 EV
 - modflowKeywards l.127 added cond NPER > 1 for lpf.11 to remove this variable for steady state model 
+
+06/05/19 OA
+- mtphtWriter l.7 and l.16 added to retrieve the function xy2mflow from mflowWiter to use it mphtWriter
+- mtphtWriter/writeSsmFile for ghb,riv and drn l.423 to 436 added to get the position of these conditions
+- mtphtWriter/writeSsmFile  l.488-490 to set value to 3,4,5 for drn, riv, ghb
+
+07/05/19 EV
+- mtphtWriter/writeSsmFile l.429-434-439 added to reverse modflow array

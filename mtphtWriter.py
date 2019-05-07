@@ -4,6 +4,7 @@ import os,time
 #from phtDbase import *
 from .mtPhtKeywords import Mt
 from .geometry import *
+from .modflowWriter import * # OA 6/5/19
 
 class mtphtWriter:
 
@@ -12,6 +13,7 @@ class mtphtWriter:
         self.fDir,self.fName,self.Mkey = fDir,fName,Mt()
         self.fullPath = fDir+os.sep+fName;#print self.fullPath
         self.link = {'uzt.3':('Modflow','uzf.7'),'uzt.4':('Modflow','uzf.7')}
+        self.mfloW = modflowWriter(core,fDir,fName) # OA 6/5/19
 
     def writeMtphtFiles(self,listEsp,opt,parmk=None):
         self.ttable = self.core.makeTtable();#print 'mtpht ttable',self.ttable
@@ -413,11 +415,28 @@ class mtphtWriter:
     def writeSsmFile(self,core,opt):
         f1=open(self.fDir+os.sep+opt+'.ssm','w')
         nx,ny,xvect,yvect = getXYvects(core)
-        BC = core.getValueLong('Modflow','bas.3',0);#print shape(BC),BC
+        BC = core.getValueLong('Modflow','bas.3',0);
         BCmt = core.getValueLong('Mt3dms','btn.12',0)
-        wells = sign(abs(core.getValueLong('Modflow','wel.1',0)));#print 'ltw 390',shape(wells),where(wells>0)
+        wells = sign(abs(core.getValueLong('Modflow','wel.1',0)));
         SSMspec = core.getValueLong('Mt3dms','ssms.1',0) # specific conditions given in ssm
-        #mass = core.getValueLong('Mt3dms','btn.24',0)
+        # for ghb,riv and drn l 423 to 436 added OA 6/5/19
+        GHB, DRN, RIV = BC*0,BC*0,BC*0
+        dicz = self.core.diczone['Modflow']
+        if 'drn.1' in list(dicz.dic.keys()): 
+            for iz in range(dicz.getNbZones('drn.1')): 
+                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'drn.1',iz)
+                DRN[ilay,irow,icol] = 1
+                DRN=DRN[:,::-1,:] # EV 07/05/19
+        if 'riv.1' in list(dicz.dic.keys()): 
+            for iz in range(dicz.getNbZones('riv.1')): 
+                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'riv.1',iz)
+                RIV[ilay,irow,icol] = 1
+                RIV=RIV[:,::-1,:] # EV 07/05/19
+        if 'ghb.1' in list(dicz.dic.keys()): 
+            for iz in range(dicz.getNbZones('ghb.1')): 
+                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'ghb.1',iz)
+                GHB[ilay,irow,icol] = 1
+                GHB=GHB[:,::-1,:] # EV 07/05/19
         nwells,nBC = sum(ravel(wells)),sum(ravel(BC)==-1)
         mxpts = (nBC+nwells)*self.nper;#print type(BC),nBC,mxpts,self.nper
         if opt=='Pht3d' : self.createConcStrings()
@@ -469,6 +488,9 @@ class mtphtWriter:
                 if typ[iz]==-1: # nothing was specified in ssm, then search for other sources
                     if BC[ilay[i],irow[i],icol[i]]==-1: typ[iz] = 1
                     if wells[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 2
+                    if DRN[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 3 #added OA 6/5/19
+                    if RIV[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 4 #added OA 6/5/19
+                    if GHB[ilay[i],irow[i],icol[i]]!=0 : print('yo'); typ[iz] = 5 #added OA 6/5/19
                 #print iz,i,typ,ilay[i],irow[i],icol[i],BC[ilay[i],irow[i],icol[i]],wells[ilay[i],irow[i],icol[i]]
                 if opt=='Pht3d' and typ[iz]==-1: continue
                 if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]!=-1: continue
