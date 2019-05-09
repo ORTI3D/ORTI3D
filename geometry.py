@@ -441,6 +441,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         zmedia = [int(a) for a in zmedia]
         if int(media) not in zmedia: continue # the zone is not in the correct media
         if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
+        if opt=='zon': zv0=i+1 # OA added 8/5/19
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
         if len(xy)==1:  # case point

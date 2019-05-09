@@ -424,3 +424,6 @@ this version sent to elicia
 
 07/05/19 EV
 - mtphtWriter/writeSsmFile l.429-434-439 added to reverse modflow array
+
+08/05/19  OA
+- geometry/zone2grid l.444 added to have the option of getting the nb of zone isntead of value when opt='zon' is activated
