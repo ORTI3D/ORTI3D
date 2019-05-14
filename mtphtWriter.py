@@ -276,9 +276,7 @@ class mtphtWriter:
                     for e in dictE[kw]:
                         names.append(e)
                         value = self.core.transReader.readUCN(self.core,'PHT3D',tstep,ie)
-                        if ie==0 : 
                         listC.append(value)#[:,::-1,:]) EV 14/05/19
-                        if ie==0 : 
                         ie += 1
                 return listC,names
         # for RESTART from acsii file ############# TEMPORARY DEVELOPMENT ##############
