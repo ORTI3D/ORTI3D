@@ -427,3 +427,14 @@ this version sent to elicia
 
 08/05/19  OA
 - geometry/zone2grid l.444 added to have the option of getting the nb of zone isntead of value when opt='zon' is activated
+
+12/05/19  OA
+- qgisVisu l.81, 136,250 modified the way to get the crs
+- qgisVisu l.156 was missing (getting allLayers)
+- qgisVisu  l.80-82 adde , when changing the grid, needs to remove the current grid and parameters layers
+- qgisVisu l.176 et 187-190 added an editing stopped function to retrieve movements in qgis
+- qgisVisu l.285 modif to consider new names of layers
+- config added function nice to format coordinantes 
+
+14/05/19 EV
+- mtphtWriter/getConcInit l.280 removed to reverse modflow array

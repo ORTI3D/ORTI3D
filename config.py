@@ -15,6 +15,13 @@ from numpy.linalg import solve
 import warnings,os
 warnings.filterwarnings("ignore")
 
+def nice(x):
+    """makes a flot in anice format"""
+    om=int(round(log10(abs(x))))
+    dec = max(5-om,0)
+    c = ' %+10.'+str(dec)+'f'
+    return (c%x).strip()
+
 class Config():
     def __init__(self,core):
         if core.gui != None :

@@ -270,13 +270,15 @@ class mtphtWriter:
         if 'importUCN' in initChem['formula']:
             if 'All' in initChem['name']:
                 a = initChem['tstep']
-                tstep = int(a)
+                tstep = int(a) 
                 ie = 0; #print tstep,ie
                 for kw in shortn:
                     for e in dictE[kw]:
                         names.append(e)
                         value = self.core.transReader.readUCN(self.core,'PHT3D',tstep,ie)
-                        listC.append(value[:,-1::-1,:])
+                        if ie==0 : 
+                        listC.append(value)#[:,::-1,:]) EV 14/05/19
+                        if ie==0 : 
                         ie += 1
                 return listC,names
         # for RESTART from acsii file ############# TEMPORARY DEVELOPMENT ##############

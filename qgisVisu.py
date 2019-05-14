@@ -77,8 +77,12 @@ class qgisVisu:
         #if self.mesh != None: self.createNodeResultLayer(nodes)
             
     def createGridLayer(self,lname): #OA moved from initdomain to here 20/1/19 
+        allLayers = self.canvas.layers()
+        for layer in allLayers:
+            if layer.name() == lname : QgsProject.instance().removeMapLayer(layer) # OA 12/5/19
         wkt = self.encodeGrid()
-        layer = QgsVectorLayer('Polygon', lname, "memory")
+        wcrs=self.iface.activeLayer().crs().toWkt()#crs = allLayers[0].crs()# finds the coordinates system
+        layer = QgsVectorLayer('Polygon'+"?crs=" + wcrs, lname, "memory")
         QgsProject.instance().addMapLayer(layer)
         layer.startEditing()
         layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
@@ -130,9 +134,10 @@ class qgisVisu:
         layerList = []
         for tp in typList:
             layerName = tp[0]+line + '_' + comm
+            #actual_crs = QgsMapCanvas().destinationCrs()
             if len(self.canvas.layers())>0:
-                crs = self.canvas.layers()[0].crs()# finds the coordinates system
-                layer = QgsVectorLayer(tp+"?crs=" + crs.authid(), layerName, "memory")#, "delimitedtext")
+                wcrs=self.iface.activeLayer().crs().toWkt()#crs = allLayers[0].crs()# finds the coordinates system
+                layer = QgsVectorLayer(tp+"?crs=" + wcrs, layerName, "memory")#, "delimitedtext")
             else:
                 layer = QgsVectorLayer(tp, layerName, "memory")
             QgsProject.instance().addMapLayer(layer) # OA modified  2/10
@@ -151,6 +156,7 @@ class qgisVisu:
         return layerList
         
     def getLayer(self,modName,line):
+        allLayers = self.canvas.layers() # OA 12/5/19
         dick = self.core.dickword[modName]
         comm = dick.lines[line]['comm'][:25]
         layerList = []
@@ -166,17 +172,21 @@ class qgisVisu:
                 '/qgis/digitizing/disable_enter_attribute_values_dialog', True)
         layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
         layer.featureAdded.connect(self.feature_added)
-        layer.beforeCommitChanges.connect(self.editing_stopped)
+        layer.beforeCommitChanges.connect(self.editing_commit)
+        layer.editingStopped.connect(self.editing_stopped)
         #self.showzdlg = 1
         
-    def editing_stopped(self):
+    def editing_commit(self):
         #self.dialogs.onMessage(self.gui,'before com change')
         layer = QgsProject.instance().sender() # OA 17/10/18 map layer replaced by project
         QSettings().setValue(
                 '/qgis/digitizing/disable_enter_attribute_values_dialog', False)
         try : layer.featureAdded.disconnect()
         except TypeError: a=0
-        #self.showzdlg = 0
+        
+    def editing_stopped(self):
+        #self.dialogs.onMessage(self.gui,'stopped')
+        self.zonesQgs2core()  # OA 11/5/19
 
     def feature_added(self): # OA completely modified 20/10/18
         """action when the feature editing is finished in Qgis, show the zone dialog
@@ -245,8 +255,8 @@ class qgisVisu:
             if layer.name() == layerName : return [layer]
         # creating the layer
         if len(allLayers)>0:
-            crs = allLayers[0].crs()# finds the coordinates system
-            layer = QgsVectorLayer("Point?crs=" + crs.authid(), layerName, "memory") # "delimitedtext")
+            wcrs=self.iface.activeLayer().crs().toWkt()#crs = allLayers[0].crs()# finds the coordinates system
+            layer = QgsVectorLayer("Point?crs=" + wcrs.authid(), layerName, "memory") # "delimitedtext")
         else:
             layer = QgsVectorLayer("Point", layerName, "memory") # "delimitedtext")
         QgsProject.instance().addMapLayer(layer) # OA 17/10/18 map layer replaced by project
@@ -265,9 +275,10 @@ class qgisVisu:
     def zonesQgs2core(self):
         '''creates zones from existing polys in Qgis layers (done when saving qgis)'''
         allLayers = self.canvas.layers()
+        #QgsMessageLog.logMessage('start zonesQgs', 'MyPlugin')
         for layer in allLayers:
-            if layer.name()[:4] == 'Grid' : continue
-            line,typP = layer.name().split()[0],'asPolyline()'
+            if layer.name()[:4] in ['Grid','Para']: continue
+            line,typP = layer.name()[1:].split('_')[0],'asPolyline()' #OA modif 12/5/11
             if len(line.split('_'))>1: 
                 line,typ0 = line.split('_',1) #EV 15/01/19
                 if typ0=='point': typP='asPoint()'
@@ -278,14 +289,14 @@ class qgisVisu:
                     break
             feats = layer.getFeatures()
             dicz.dic[line]={'number':[],'name':[],'coords':[],'media':[],'value':[],'type':[]}                
-            #QgsMessageLog.logMessage('linee '+str(line), 'MyPlugin')
             for i,f in enumerate(feats):
                 dicz.addZone(line)
                 dicz.setValue(line,'value',i,f['value'])
                 dicz.setValue(line,'name',i,f['name'])
                 dicz.setValue(line,'media',i,f['media'])
                 coords = eval('f.geometry().'+typP) # OA 6/11/18
-                if type(coords) != type([5]): coords = [coords] # for points
+                if type(coords) != type([5]): coords = [coords.x(),coords.y()] # for points
+                else : coords = [(nice(c.x()),nice(c.y())) for c in coords]
                 dicz.setValue(line,'coords',i,coords)
                 
     def removeOrtiLayers(self): # OA added 16/12/18 to remove layers when opening
