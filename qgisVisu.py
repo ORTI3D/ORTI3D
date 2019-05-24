@@ -146,7 +146,8 @@ class qgisVisu:
             layer.dataProvider().addAttributes( [QgsField("name", QVariant.String) ] )
             layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
             layer.dataProvider().addAttributes( [QgsField("media", QVariant.String) ] )
-            layer.dataProvider().addAttributes( [QgsField("type", QVariant.Map) ] )
+            layer.dataProvider().addAttributes( [QgsField("type", QVariant.String) ] ) # OA 24/5/19 changed Map to string
+            layer.updateFields()
             layer.commitChanges()
             layerList.append(layer)
             self.layer = layer
@@ -214,7 +215,7 @@ class qgisVisu:
         line = layer.name()[1:].split('_')[0]
         dicz = self.prepare(line)
         feat = layer.selectedFeatures()[0]
-        fname = feat.attributes()[0] # this is the name
+        fname = feat.attributes()[1] # this is the name (mofi OA 24/5/19)
         zlist = dicz.dic[line]
         nf = zlist['name'].index(fname)
         # make the dialog
@@ -238,7 +239,7 @@ class qgisVisu:
         except ValueError: value=0
         media = dicz.getValue(line,'media',nf)
         layer.beginEditCommand("modify")
-        feat.setAttributes([name,value,media,0]) # OA 2/10 nf removed
+        feat.setAttributes([nf,name,value,media,0]) # OA 24/5/19 nf added
         coords = dicz.getValue(line,'coords',nf)
         lcoord = [QgsPoint(float(c[0]),float(c[1])) for c in coords]
         feat.setGeometry(QgsGeometry.fromPolyline(lcoord));
@@ -296,7 +297,7 @@ class qgisVisu:
                 dicz.setValue(line,'media',i,f['media'])
                 coords = eval('f.geometry().'+typP) # OA 6/11/18
                 if type(coords) != type([5]): coords = [coords.x(),coords.y()] # for points
-                else : coords = [(nice(c.x()),nice(c.y())) for c in coords]
+                else : coords = [(float(nice(c.x())),float(nice(c.y()))) for c in coords]
                 dicz.setValue(line,'coords',i,coords)
                 
     def removeOrtiLayers(self): # OA added 16/12/18 to remove layers when opening
@@ -347,7 +348,7 @@ class qgisVisu:
                             lcoords.append(QgsPoint(float(pt[0]),float(pt[1])))
                         feat.setGeometry(QgsGeometry.fromPolyline(lcoords));
                         provider = providerList[typList.index('LineString')]
-                    feat.setAttributes([name,value,media,0])
+                    feat.setAttributes([i,name,value,media,0]) # OA 24/5/19 added id
                     provider.addFeatures([feat])
                     
     def findTypList(self,modName,line):

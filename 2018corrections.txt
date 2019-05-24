@@ -438,3 +438,10 @@ this version sent to elicia
 
 14/05/19 EV
 - mtphtWriter/getConcInit l.280 removed to reverse modflow array
+
+24/5/19 OA
+- qgisVisu zoneCore2Qgs l.351 added missing index
+- qgisVisu l.149 createLayer changed map to string for type 
+- qgisVisu l.242  in setAttributesInQgis added the index (nf here)
+- qgisVisu in attributeForm l.218 name is index 1
+- in valueDialog, l.26 removed Al, tprpt.. from blind list
