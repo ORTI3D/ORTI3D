@@ -3,7 +3,7 @@ from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 from .qtDialogs import *
-from .qtShow import *
+#from .qtShow import * # OA 1/6/19
 import numpy as np
 import matplotlib.ticker as ticker
 
@@ -109,6 +109,7 @@ class multiPlot(QDialog):
         self.pushButton2.clicked.connect(self.onExport)
     ## add vertical layout 2
         self.horizontalLayout.addLayout(self.verticalLayout2)
+        QMetaObject.connectSlotsByName(self)  #OA 1/6/19
   
     def getObsZone(self):
         dic={'Zones':{}}

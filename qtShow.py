@@ -17,16 +17,32 @@ from .guiShow import guiShow
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
+        from .multiPlot import multiPlot
         self.Show = Show
         self.gui,self.core = gui,core
         self.guiShow = guiShow(gui,core)
         self.groups = self.guiShow.groups
         Show.setObjectName("Show")
-        tWidget = QWidget(Show)
+        self.tWidget = QWidget(Show)
         self.screenShape = QDesktopWidget().screenGeometry()
-        tWidget.setGeometry(QRect(0, 0, self.screenShape.width()*0.105, 45)) 
-        topHBox = QHBoxLayout(tWidget)
-        title = QLabel(Show) # this and 5 lines below added OA 6/11
+        self.tWidget.setGeometry(QRect(0, 0, self.screenShape.width()*0.105, 45)) 
+        self.dictBox={}
+        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
+        if gui.gtyp =='qgis': pos=0  # ifelse added 1/6/19 to use this in qgis too
+        else : 
+            self.makeTop(self,gui)
+            pos=40
+        for ig in range(len(self.groups)): 
+            for g0 in self.groups: #pour ordonner
+                if self.groups[g0][0]==ig: g=g0
+            names = self.groups[g][1:]  
+            self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
+            pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
+        QMetaObject.connectSlotsByName(Show)
+        
+    def makeTop(self,parent,gui):  # OA 1/6/19 separated form above  
+        topHBox = QHBoxLayout(parent.tWidget)
+        title = QLabel(parent.Show) # this and 5 lines below added OA 6/11
         title.setText("Results")
         font = QFont();font.setPointSize(10);font.setBold(True)
         title.setFont(font)
@@ -42,22 +58,13 @@ class Ui_Show(object):
         self.icImg = QIcon(gui.u_dir+os.sep+'Vis_SwiImg.png')
         self.swiCont = QPushButton()
         self.swiCont.setIcon(self.icCont)#;but1.setIconSize(QSize(50, 50))
-        self.swiCont.clicked.connect(self.switchImg) 
+        self.swiCont.clicked.connect(parent.switchImg) 
         self.swiCont.setIconSize(QSize(25, 25))
         self.swiCont.setMaximumWidth(25)
         self.swiCont.setFlat(True)   
         topHBox.addWidget(self.swiCont)
-        self.dictBox={}
-        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
-        pos=40
-        for ig in range(len(self.groups)): 
-            for g0 in self.groups: #pour ordonner
-                if self.groups[g0][0]==ig: g=g0
-            names = self.groups[g][1:]  
-            self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
-            pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
         topHBox.addStretch(0)
-        QMetaObject.connectSlotsByName(Show)
+        return topHBox
         
     def switchImg(self,evt):
         if self.guiShow.swiImg=='Contour':
@@ -96,7 +103,7 @@ class Ui_Show(object):
         """action when a box is clicked, tag L : list """
         item = self.Show.sender()
         n = str(item.objectName()); 
-        [group,name,tag]=n.split('_');#print('guish onclick',group,name,tag)
+        [group,name,tag]=n.split('_');#QgsMessageLog.logMessage('guish onclick'+str(group)+str(name)+str(tag))
         if tag=='L': 
             if name in ['Layer','Tstep']: 
                 retour = item.currentIndex()
@@ -161,63 +168,63 @@ class Ui_Show(object):
         m = multiPlot(self.gui,self.core,typ,res)
         m.show()
         
-    def onObservation(self,group,tstep):
-        if group not in ['Flow','Transport','Chemistry']: 
-            onMessage(self.gui,'choose one variable')
-            return
-        item = self.Show.findChild(QComboBox,'Observation_Type_L')
-        typ = item.currentText()[0]  # B P or X
-        if group=='Chemistry': 
-            lesp=self.getNames('Chemistry_Species_L')
-            lesp.extend(self.getNames('Chemistry_User_L'))
-        elif group=='Flow': lesp=['Head','Flux','Wcontent']
-        else : lesp=['Transport']
-        data = list(zip(lesp,['Check']*len(lesp),[False]*len(lesp)))
-        #dialog to choose species to plot
-        if len(lesp)>1: 
-            dlg = genericDialog(self.gui,'species',data)
-            lst1=dlg.getValues();#onMessage(self.gui,str(lst1))
-            if lst1 != None:
-                lst2=[]
-                for i in range(len(lst1)): 
-                    if lst1[i] : lst2.append(str(lesp[i]))
-                lesp = lst2
-            else :return
-        #dialog to choose layers if in 3D
-        layers = 0
-        if self.core.addin.getDim()=='3D':
-            data = [('Layers (1, 3-6)','Text','')]
-            dlg = genericDialog(self.gui,'Select',data)
-            d = dlg.getValues() #dialog to choose type of graph
-            if d != None:
-                layers=d[0]
-            else :return
-        # dialog for type of graph, for flow this dialog is useless
-        if typ != 'X':
-            if group in ['Chemistry','Transport']: lst0 = ['Value','Weighted value','Mass Discharge (Md)','Mass Flux (J)']
-            else : lst0 = ['Value','Weighted value','Flow (Q)','Darcy Flux (q)']
-            data=[('Type','Choice',('Value',lst0))]
-            dlg = genericDialog(self.gui,'Select',data)
-            d = dlg.getValues() #dialog to choose details
-            if d != None:
-                val=d[0]
-                typ+=str(lst0.index(val));
-            else : return
-        else :
-            typ+='0' # for Xy graphs it is always the value
-            
-        item = self.Show.findChild(QComboBox,'Observation_Zone_L')
-        znam = item.currentText()
-        #print('plot',typ,tstep,group,znam,lesp,layers)
-        dist,val,labl = self.core.onPtObs(typ,tstep,group,znam,lesp,layers);#print 'guishow 263',val
-        #plt = plot(self.gui,-1)
-        typ1='-'
-        if typ[0]=='X': typ1 = '+';
-        plt = plotxy(self.gui,dist,val,labl[1:],znam,labl[0],"val",typ1);
-        plt.getValues()
-        if typ[0]=='X' and lesp[0]=='Head': self.dicplots['X_head']= plt# to be able to recall the dialog
-        if typ[0]=='X' and lesp[0]=='Transport': self.dicplots['X_tracer']= plt
-        #plt.Raise()
+    # def onObservation(self,group,tstep):
+    #     if group not in ['Flow','Transport','Chemistry']: 
+    #         onMessage(self.gui,'choose one variable')
+    #         return
+    #     item = self.Show.findChild(QComboBox,'Observation_Type_L')
+    #     typ = item.currentText()[0]  # B P or X
+    #     if group=='Chemistry': 
+    #         lesp=self.getNames('Chemistry_Species_L')
+    #         lesp.extend(self.getNames('Chemistry_User_L'))
+    #     elif group=='Flow': lesp=['Head','Flux','Wcontent']
+    #     else : lesp=['Transport']
+    #     data = list(zip(lesp,['Check']*len(lesp),[False]*len(lesp)))
+    #     #dialog to choose species to plot
+    #     if len(lesp)>1: 
+    #         dlg = genericDialog(self.gui,'species',data)
+    #         lst1=dlg.getValues();#onMessage(self.gui,str(lst1))
+    #         if lst1 != None:
+    #             lst2=[]
+    #             for i in range(len(lst1)): 
+    #                 if lst1[i] : lst2.append(str(lesp[i]))
+    #             lesp = lst2
+    #         else :return
+    #     #dialog to choose layers if in 3D
+    #     layers = 0
+    #     if self.core.addin.getDim()=='3D':
+    #         data = [('Layers (1, 3-6)','Text','')]
+    #         dlg = genericDialog(self.gui,'Select',data)
+    #         d = dlg.getValues() #dialog to choose type of graph
+    #         if d != None:
+    #             layers=d[0]
+    #         else :return
+    #     # dialog for type of graph, for flow this dialog is useless
+    #     if typ != 'X':
+    #         if group in ['Chemistry','Transport']: lst0 = ['Value','Weighted value','Mass Discharge (Md)','Mass Flux (J)']
+    #         else : lst0 = ['Value','Weighted value','Flow (Q)','Darcy Flux (q)']
+    #         data=[('Type','Choice',('Value',lst0))]
+    #         dlg = genericDialog(self.gui,'Select',data)
+    #         d = dlg.getValues() #dialog to choose details
+    #         if d != None:
+    #             val=d[0]
+    #             typ+=str(lst0.index(val));
+    #         else : return
+    #     else :
+    #         typ+='0' # for Xy graphs it is always the value
+    #         
+    #     item = self.Show.findChild(QComboBox,'Observation_Zone_L')
+    #     znam = item.currentText()
+    #     #print('plot',typ,tstep,group,znam,lesp,layers)
+    #     dist,val,labl = self.core.onPtObs(typ,tstep,group,znam,lesp,layers);#print 'guishow 263',val
+    #     #plt = plot(self.gui,-1)
+    #     typ1='-'
+    #     if typ[0]=='X': typ1 = '+';
+    #     plt = plotxy(self.gui,dist,val,labl[1:],znam,labl[0],"val",typ1);
+    #     plt.getValues()
+    #     if typ[0]=='X' and lesp[0]=='Head': self.dicplots['X_head']= plt# to be able to recall the dialog
+    #     if typ[0]=='X' and lesp[0]=='Transport': self.dicplots['X_tracer']= plt
+    #     #plt.Raise()
 
 class showBox:
     def __init__(self,Show,parent,names,gr,pos,ig):
@@ -258,7 +265,7 @@ class showBox:
                 self.buts[i].clicked.connect(parent.onClick)
             self.buts[i].setSizePolicy(policy)
             self.buts[i].setMaximumHeight(18)
-            if gr not in ['Model','Observation']:
+            if gr not in ['Model','Observation'] and parent.gui.gtyp != 'qgis': # OA 1/6/19 no C for qgis
                 but = QPushButton('C',self.hlWidget)
                 but.setObjectName(name[:-2]+'_C')
                 but.setSizePolicy(policy)

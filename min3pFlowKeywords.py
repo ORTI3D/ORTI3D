@@ -107,7 +107,7 @@ class m3F:
                   'detail':[],'type':['arrfloat'],'default':[0.]},
         #'control parameters – variably saturated flow'
         'conf.1':{'comm':'mass balance','cond':'','kw':['conf1'],
-                  'detail':[['use','no','yes']],'type':['choice'],'default':[0]},
+                  'detail':[['use','no','yes']],'type':['choice'],'default':[1]}, # OA 5/6/19
         'conf.2':{'comm':'input units for boundary and initial conditions','cond':'',
                   'kw':['conf2'],'detail':[['type','hydraulic head','pressure head']],
                 'type':['choice'],'default':[0]},

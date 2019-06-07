@@ -138,7 +138,7 @@ class min3pWriter:
                         value = '\''+self.core.gui.mainDir+os.sep+'utils\''
                     if line == 'out.1':
                         value = self.getTimeList()
-                    s += str(value)+'\n'
+                    s += str(value)+';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
         if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
         return s+'\n\'done\'\n\n'

@@ -445,3 +445,26 @@ this version sent to elicia
 - qgisVisu l.242  in setAttributesInQgis added the index (nf here)
 - qgisVisu in attributeForm l.218 name is index 1
 - in valueDialog, l.26 removed Al, tprpt.. from blind list
+
+31/5/19 OA
+- qgisVisu, added deleteAllOrtiZones to qgisVisu at line 303-309, used at line 279 in zonesQgs2core
+- qgidVisu l.147 in=createLayer changed vlaue to a string to manage mutli attributes of a zone
+- qgisVisu l.238-239 commented (for string value) changed to simple getValue
+- qgisGui change icSize in two places to stretch the results combos
+
+1/6/19  OA
+- qtShow modified to be used by both qgis and qt, makeTop function cretaed (just splitted from previous)
+- qtShow added line 30-33 to use the makeTop for qt and not for qgis
+- qtShow l.267 in showBox condition to remove 'C' button in qgis (useless)
+- qgisGui l.67 added ref to guiShow
+- topbar l.131 133 removed because the list of observaiton is not anymore in the results
+- multiPlot, removed line 6 : useless and creating pb in Qgis
+- qgisGui l.323 adde _pt and _line to differentiate type of layers
+- qgisGui onChoiceType l 430 changed to consider two zone type
+- qgisVisu setAttributesInQgis l245-249 adde to consider points
+- qgisVisu zoneQgs2core l.302 chaged format for poits (added ())
+- qgisVisu zonesQgs2core l.298 save str(value)
+
+5/6/19 OA
+- min3pwritr/writeGeneral l.141 added comments for Greg
+- min3pflowkeyw l.110 default 0 to 1

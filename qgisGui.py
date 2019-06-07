@@ -17,6 +17,8 @@ from .core import *
 from .config import *
 from .guiShow import *
 from .topBar import *
+from .qtShow import *
+from .multiPlot import *
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
@@ -63,6 +65,7 @@ class Ui_Main(object):
         self.gui.dlgShow = Ui_Show()
         self.gui.dlgShow.setupUi(self.page3,self.gui,core)
         self.toolBox.addItem(self.page3,"Results")
+        self.gui.guiShow = self.gui.dlgShow.guiShow # OA 1/6/19
         
         QMetaObject.connectSlotsByName(Main)
         # make an event if qgis project is saved
@@ -317,7 +320,7 @@ class Ui_Var(object):
         label.setText("Type")
         self.gridLayout.addWidget(label, 6, 0, 1, 1)
         self.choiceT = QComboBox(self.gridLayoutWidget)
-        typeList = ['one_value','formula','zone','edit','interpolate','import']
+        typeList = ['one_value','formula','zone_point','zone_line','interpolate','import'] # OA 1/6/19
         self.choiceT.addItems(typeList)
         self.choiceT.activated['QString'].connect(self.onChoiceType)
         self.gridLayout.addWidget(self.choiceT, 6, 1, 1, 1)
@@ -424,7 +427,10 @@ class Ui_Var(object):
         choice = str(self.choiceT.currentText()); #print choice
         self.core.dictype[modName][line] = [choice]
         typList = self.gui.visu.findTypList(modName,line)
-        if choice =='zone': self.gui.visu.createLayer(modName,line,typList)
+        if choice[:4] =='zone': 
+            if choice.split('_')[1]=='point': typList=['Point']
+            else : typList=['LineString']
+            self.gui.visu.createLayer(modName,line,typList)
         elif choice == 'interpolate': self.base.onInterpolate()
         elif choice == 'edit': self.onEdit(evt)
         elif choice == 'formula': self.base.onFormula(evt)
@@ -443,106 +449,106 @@ class Ui_Var(object):
             self.gui.visu.createContour([None,None,mat],None,None,'Parameters')
             
 
-class Ui_Show(object):
-    def setupUi(self,Show,gui,core):
-        icSize = 25
-        self.Show = Show
-        self.gui,self.core = gui,core
-        self.gui.guiShow = guiShow(gui,core)
-        self.groups = self.gui.guiShow.groups
-        Show.setObjectName("Show")
-        self.dictBox={}
-        pos=0
-        for ig in range(len(self.groups)): 
-            for g0 in self.groups: #pour ordonner
-                if self.groups[g0][0]==ig: g=g0
-            names = self.groups[g][1:]  
-            self.dictBox[g] = showBox(Show,self.gui.guiShow,names,g,pos)
-            pos += len(names)*icSize+icSize
-        #Show.resize(200,560)
-        QMetaObject.connectSlotsByName(Show)
-        
-    def getCurrentTime(self):
-        combo = self.findChild(QComboBox,'Aquifer_Tstep_L')
-        return combo.getText()
-        
-    def getNames(self,nameBox):
-        combo = self.Show.findChild(QComboBox,nameBox) 
-        names = [combo.itemText(i) for i in range(combo.count())]
-        return names
-    def setNames(self,nameBox,names,opt='strings'):
-        combo = self.Show.findChild(QComboBox,nameBox) 
-        combo.clear() # danger if set it is not possible to add items
-        combo.addItems([str(n) for n in names])
-
-    def uncheckContours(self):
-        """used to uncheck the other contours when group is changed"""
-        dic = self.gui.guiShow.dicVisu
-        for n,m in [('Flow','Head'),('Flow','Wcontent'),('Transport','Tracer')]:
-            self.onTickBox(n,m,'B',dic[n][m])
-
-    def onTickBox(self,group,name,tag,bool):
-        """ to change the state of a button whithout doing any action"""
-        item = self.Show.findChild(QCheckBox,group+'_'+name+'_'+tag);
-        if tag=='B': item.setCheckState(bool)
-
-class showBox:
-    def __init__(self,Show,guiShow,names,g,pos):
-        icSize = 22
-        self.Show,self.guiShow = Show,guiShow
-        self.group = QGroupBox(Show)
-        self.group.setTitle(g)
-        ln = len(names)
-        self.group.setGeometry(QRect(0, pos, 245,icSize+ln*(icSize+2)))# pos+ln*24))
-        self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(5,5 ,240,icSize-1+ln*icSize))# ln*24))
-        boxGrid = QGridLayout(self.hlWidget)
-        boxGrid.setMargin(1)
-        self.buts = list(range(len(names)))
-        for i,n in enumerate(names):
-            if type(n)==type([1,2]): #cas liste -> choix
-                text = QLabel(self.hlWidget)
-                text.setText(n[0])
-                boxGrid.addWidget(text,i,0,1,1)
-                liste = n[1]
-                self.buts[i] = QComboBox(self.hlWidget)
-                self.buts[i].setObjectName(g+'_'+n[0]+'_L')
-                self.buts[i].addItems(liste)
-                boxGrid.addWidget(self.buts[i],i,1,1,1)
-                self.buts[i].activated['QString'].connect(self.onClick)        
-            else : # cas simple : checkbox
-                text = QLabel(self.hlWidget)
-                text.setText(n)
-                boxGrid.addWidget(text,i,0,1,1)
-                self.buts[i] = QCheckBox(self.hlWidget)
-                self.buts[i].setObjectName(g+'_'+n+'_B')
-                boxGrid.addWidget(self.buts[i],i,1,1,1)
-                self.buts[i].clicked.connect(self.onClick) # OA 22/1/19
-                #chk.clicked.connect(self.onClick)
-
-    def onClick(self,value):
-        """action when a box is clicked, tag L : list """
-        item = self.Show.sender()
-        n = item.objectName(); 
-        [group,name,tag]=n.split('_');#print 'guish onclick',group,name,tag
-        if tag == 'L': 
-            if name in ['Layer','Tstep']: 
-                retour = item.currentIndex()
-            else :
-                retour = item.currentText() # case of list, retour is the name
-        else: 
-            retour = item.isChecked() # a check box retour is True or False 
-        if name in self.guiShow.Vtypes['Array']: self.guiShow.resetDicContour()
-        self.guiShow.dicVisu[group][name]=retour
-        nz,ny,nx = shape(self.guiShow.core.Zblock)
-        if name == 'Plane': 
-            exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
-            #self.changeIcOri(retour)
-            if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
-            if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
-            if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
-            self.guiShow.dicVisu['Model']['Layer']=0
-        self.guiShow.onClick2(group,name,retour)
-
-    def setNames(self,nameBox,names,opt='strings'):
-        self.guiShow.setNames(nameBox,names)
+# class Ui_Show(object):
+#     def setupUi(self,Show,gui,core):
+#         icSize = 21
+#         self.Show = Show
+#         self.gui,self.core = gui,core
+#         self.gui.guiShow = guiShow(gui,core)
+#         self.groups = self.gui.guiShow.groups
+#         Show.setObjectName("Show")
+#         self.dictBox={}
+#         pos=0
+#         for ig in range(len(self.groups)): 
+#             for g0 in self.groups: #pour ordonner
+#                 if self.groups[g0][0]==ig: g=g0
+#             names = self.groups[g][1:]  
+#             self.dictBox[g] = showBox(Show,self.gui.guiShow,names,g,pos,ig)
+#             pos += len(names)*icSize+15
+#         #Show.resize(200,560)
+#         QMetaObject.connectSlotsByName(Show)
+#         
+#     def getCurrentTime(self):
+#         combo = self.findChild(QComboBox,'Aquifer_Tstep_L')
+#         return combo.getText()
+#         
+#     def getNames(self,nameBox):
+#         combo = self.Show.findChild(QComboBox,nameBox) 
+#         names = [combo.itemText(i) for i in range(combo.count())]
+#         return names
+#     def setNames(self,nameBox,names,opt='strings'):
+#         combo = self.Show.findChild(QComboBox,nameBox) 
+#         combo.clear() # danger if set it is not possible to add items
+#         combo.addItems([str(n) for n in names])
+# 
+#     def uncheckContours(self):
+#         """used to uncheck the other contours when group is changed"""
+#         dic = self.gui.guiShow.dicVisu
+#         for n,m in [('Flow','Head'),('Flow','Wcontent'),('Transport','Tracer')]:
+#             self.onTickBox(n,m,'B',dic[n][m])
+# 
+#     def onTickBox(self,group,name,tag,bool):
+#         """ to change the state of a button whithout doing any action"""
+#         item = self.Show.findChild(QCheckBox,group+'_'+name+'_'+tag);
+#         if tag=='B': item.setCheckState(bool)
+# 
+# class showBox:
+#     def __init__(self,Show,guiShow,names,g,pos,ig):
+#         icSize = 16
+#         self.Show,self.guiShow = Show,guiShow
+#         self.group = QGroupBox(Show)
+#         self.group.setTitle(g)
+#         ln = len(names)
+#         self.group.setGeometry(QRect(0, pos, 245,icSize+ln*(icSize+2)))# pos+ln*24))
+#         self.hlWidget = QWidget(self.group)
+#         self.hlWidget.setGeometry(QRect(5,5 ,240,icSize-1+ln*icSize))# ln*24))
+#         boxGrid = QGridLayout(self.hlWidget)
+#         boxGrid.setMargin(1)
+#         self.buts = list(range(len(names)))
+#         for i,n in enumerate(names):
+#             if type(n)==type([1,2]): #cas liste -> choix
+#                 text = QLabel(self.hlWidget)
+#                 text.setText(n[0])
+#                 boxGrid.addWidget(text,i,0,1,1)
+#                 liste = n[1]
+#                 self.buts[i] = QComboBox(self.hlWidget)
+#                 self.buts[i].setObjectName(g+'_'+n[0]+'_L')
+#                 self.buts[i].addItems(liste)
+#                 boxGrid.addWidget(self.buts[i],i,1,1,1)
+#                 self.buts[i].activated['QString'].connect(self.onClick)        
+#             else : # cas simple : checkbox
+#                 text = QLabel(self.hlWidget)
+#                 text.setText(n)
+#                 boxGrid.addWidget(text,i,0,1,1)
+#                 self.buts[i] = QCheckBox(self.hlWidget)
+#                 self.buts[i].setObjectName(g+'_'+n+'_B')
+#                 boxGrid.addWidget(self.buts[i],i,1,1,1)
+#                 self.buts[i].clicked.connect(self.onClick) # OA 22/1/19
+#                 #chk.clicked.connect(self.onClick)
+# 
+#     def onClick(self,value):
+#         """action when a box is clicked, tag L : list """
+#         item = self.Show.sender()
+#         n = item.objectName(); 
+#         [group,name,tag]=n.split('_');#print 'guish onclick',group,name,tag
+#         if tag == 'L': 
+#             if name in ['Layer','Tstep']: 
+#                 retour = item.currentIndex()
+#             else :
+#                 retour = item.currentText() # case of list, retour is the name
+#         else: 
+#             retour = item.isChecked() # a check box retour is True or False 
+#         if name in self.guiShow.Vtypes['Array']: self.guiShow.resetDicContour()
+#         self.guiShow.dicVisu[group][name]=retour
+#         nz,ny,nx = shape(self.guiShow.core.Zblock)
+#         if name == 'Plane': 
+#             exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
+#             #self.changeIcOri(retour)
+#             if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
+#             if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
+#             if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
+#             self.guiShow.dicVisu['Model']['Layer']=0
+#         self.guiShow.onClick2(group,name,retour)
+# 
+#     def setNames(self,nameBox,names,opt='strings'):
+#         self.guiShow.setNames(nameBox,names)
