@@ -144,7 +144,7 @@ class qgisVisu:
             layer.startEditing()
             layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )
             layer.dataProvider().addAttributes( [QgsField("name", QVariant.String) ] )
-            layer.dataProvider().addAttributes( [QgsField("value", QVariant.Double) ] )
+            layer.dataProvider().addAttributes( [QgsField("value", QVariant.String) ] ) #OA 31/5/19 to str
             layer.dataProvider().addAttributes( [QgsField("media", QVariant.String) ] )
             layer.dataProvider().addAttributes( [QgsField("type", QVariant.String) ] ) # OA 24/5/19 changed Map to string
             layer.updateFields()
@@ -235,14 +235,19 @@ class qgisVisu:
         #set attributes in QGis, nf is the feature/zone number
         line = layer.name()[1:].split('_')[0]
         name = str(dicz.getValue(line,'name',nf)) # has been added in diczone in the last position
-        try: value = float(dicz.getValue(line,'value',nf))
-        except ValueError: value=0
+        value = dicz.getValue(line,'value',nf) # OA added to replace below
+        #try: value = float(dicz.getValue(line,'value',nf)) # OA 31/5/19 commented
+        #except ValueError: value=0 # OA 31/5/19 commented
         media = dicz.getValue(line,'media',nf)
         layer.beginEditCommand("modify")
         feat.setAttributes([nf,name,value,media,0]) # OA 24/5/19 nf added
         coords = dicz.getValue(line,'coords',nf)
-        lcoord = [QgsPoint(float(c[0]),float(c[1])) for c in coords]
-        feat.setGeometry(QgsGeometry.fromPolyline(lcoord));
+        if layer.name()[0]=='L': 
+            lcoord = [QgsPoint(float(c[0]),float(c[1])) for c in coords]
+            feat.setGeometry(QgsGeometry.fromPolyline(lcoord)) # added if OA 1/6/19
+        else : 
+            c=coords[0]
+            feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(float(c[0]),float(c[1])))) #point
         layer.updateFeature(feat)
         layer.commitChanges()   
         layer.endEditCommand()
@@ -276,13 +281,11 @@ class qgisVisu:
     def zonesQgs2core(self):
         '''creates zones from existing polys in Qgis layers (done when saving qgis)'''
         allLayers = self.canvas.layers()
-        #QgsMessageLog.logMessage('start zonesQgs', 'MyPlugin')
+        self.deleteAllOrtiZones() # OA 31/5/19
         for layer in allLayers:
             if layer.name()[:4] in ['Grid','Para']: continue
             line,typP = layer.name()[1:].split('_')[0],'asPolyline()' #OA modif 12/5/11
-            if len(line.split('_'))>1: 
-                line,typ0 = line.split('_',1) #EV 15/01/19
-                if typ0=='point': typP='asPoint()'
+            if layer.name()[0]=='P': typP='asPoint()' # OA modif 1/6/19
             if line not in self.linelist : continue
             for modName in self.core.modelList:
                 if line in list(self.core.dickword[modName].lines.keys()):
@@ -292,13 +295,19 @@ class qgisVisu:
             dicz.dic[line]={'number':[],'name':[],'coords':[],'media':[],'value':[],'type':[]}                
             for i,f in enumerate(feats):
                 dicz.addZone(line)
-                dicz.setValue(line,'value',i,f['value'])
+                dicz.setValue(line,'value',i,str(f['value'])) # OA 1*6/19
                 dicz.setValue(line,'name',i,f['name'])
                 dicz.setValue(line,'media',i,f['media'])
                 coords = eval('f.geometry().'+typP) # OA 6/11/18
-                if type(coords) != type([5]): coords = [coords.x(),coords.y()] # for points
+                if type(coords) != type([5]): coords = [(coords.x(),coords.y())] # OA 1/6/19
                 else : coords = [(float(nice(c.x())),float(nice(c.y()))) for c in coords]
                 dicz.setValue(line,'coords',i,coords)
+                
+    def deleteAllOrtiZones(self): # OA added 31/5/19
+        '''used ot delete all zones before rewriting them from qgis info'''
+        for modName in self.core.modelList:
+            #for line in list(self.core.dickword[modName].lines.keys()):
+            self.core.diczone[modName].dic = {}
                 
     def removeOrtiLayers(self): # OA added 16/12/18 to remove layers when opening
         for modName in self.core.modelList:
