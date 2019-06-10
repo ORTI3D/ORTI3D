@@ -466,5 +466,15 @@ this version sent to elicia
 - qgisVisu zonesQgs2core l.298 save str(value)
 
 5/6/19 OA
-- min3pwritr/writeGeneral l.141 added comments for Greg
+- min3pwriter/writeGeneral l.141 added comments for Greg
 - min3pflowkeyw l.110 default 0 to 1
+
+8/6/19  OA
+- core begining import from subprocess
+- core/runModel replaced all time os.system() by Popen to open the process in a new window (to be able to kill it correclty)
+- qtDialogs removed from scipy import * (pb with block function)
+
+9/6/19  OA
+- qtShow/uncheckContour modified, added l.96 to allow for removing all contours
+- qtShow/onTickBox l.100 added
+- Pht3d/importDB l.321 added alkalinity and H to species to be removed

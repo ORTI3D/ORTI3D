@@ -1,5 +1,6 @@
 #
 import os,subprocess,time,base64,types # OA 25/10/18 add types
+from subprocess import Popen, CREATE_NEW_CONSOLE # OA 8/6/19
 from numpy import frombuffer,float64
 from scipy.interpolate import griddata
 from .modflowWriter import *
@@ -309,7 +310,7 @@ class Core:
                 exec_name = self.baseDir+sep+'mf2k '
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();#os.system(s) OA 8/6/19
             if info !=False :
                 try :  # EV 13/11 "show model fail to converge"
                     time_model=self.dicval['Modflow']['dis.2'][4]
@@ -327,7 +328,7 @@ class Core:
                 mod1,mod2 ='swt_v4','Mt3dms'
             s=self.baseDir+sep+'bin'+sep+mod1+'.exe '+mod2+'.nam'
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 try : # EV 13/11 "show model fail to converge"
                     line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
@@ -339,7 +340,7 @@ class Core:
         if modName == 'Pht3d':
             s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 try : # EV 13/11 "show model fail to converge"
                     line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
@@ -351,13 +352,13 @@ class Core:
         if modName == 'Sutra':
             s=self.baseDir+sep+'bin'+sep+'sutra_2_2.exe'
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 return self.getTxtFileLastLine(self.fileName+'.lst',5)
         if modName[:5] == 'Opgeo':
             s=self.baseDir+sep+'bin'+sep+'ogs.exe '+self.fileName+' >logfile.txt'
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 return self.getTxtFileLastLine('logfile.txt',3) # OA 14/2/19
         if modName[:5] =='Min3p':
@@ -371,7 +372,7 @@ class Core:
             #pop = subprocess.Popen(s,stdin = subprocess.PIPE,stdout = subprocess.PIPE)
             #time.sleep(0.1)
             #outp = pop.communicate(self.fileName+'\n')[0]
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 return self.getTxtFileLastLine(self.fileName+'.log',5)
         if modName[:5] == 'Pest': #EV 07/11
@@ -379,7 +380,7 @@ class Core:
                 s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName ; print(s)
             else : s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' ; print(s)
             os.chdir(self.fileDir)
-            os.system(s)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
             if info !=False :
                 if self.dicval['Pest']['ctd.1'][1]==0:

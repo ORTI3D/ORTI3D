@@ -7,7 +7,7 @@ from PyQt5.Qt import QFrame
 from .config import *
 from .geometry import *
 from PyQt5.QtWidgets import *
-from scipy import * #OA 2/4/19
+#from scipy import * #OA 2/4/19
 
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 def onQuestion(gui,text):  

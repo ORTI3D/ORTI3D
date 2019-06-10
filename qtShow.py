@@ -88,16 +88,18 @@ class Ui_Show(object):
         combo.clear() # danger if set it is not possible to add items
         combo.addItems([str(n) for n in names])
 
-    def uncheckContours(self):
+    def uncheckContours(self,group,name,bool):
         """used to uncheck the other contours when group is changed"""
         dic = self.guiShow.dicVisu
         for n,m in [('Flow','Head'),('Flow','Wcontent'),('Transport','Tracer')]:
-            self.onTickBox(n,m,'B',dic[n][m])
+            self.onTickBox(n,m,'B',False) #modif OA 9/6/19
+        if group in ['Flow','Transport']:self.onTickBox(group,name,'B',bool) #added OA 9/6/19
 
     def onTickBox(self,group,name,tag,bool):
         """ to change the state of a button whithout doing any action"""
+        if name == None: return  # added OA 9/6/19
         item = self.Show.findChild(QCheckBox,group+'_'+name+'_'+tag);
-        if tag=='B': item.setCheckState(bool)
+        if tag=='B': item.setChecked(bool)
             
     def onClick(self,value):
         """action when a box is clicked, tag L : list """
@@ -111,6 +113,7 @@ class Ui_Show(object):
                 retour = str(item.currentText()) # case of list, retour is the name
         else: retour = item.isChecked() # a check box retour is True or False 
         if name in self.guiShow.Vtypes['Array']: self.guiShow.resetDicContour()
+        #print(retour,self.guiShow.dicVisu)
         self.guiShow.dicVisu[group][name] = retour
         if name == 'Plane': 
             a = shape(self.core.Zblock)

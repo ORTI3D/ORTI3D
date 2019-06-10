@@ -318,7 +318,7 @@ class PHT3D:
                 debut=esp.split('(')[0];
                 if debut in master:
                     master.pop(debut);
-        for n in ['E','O(-2)']:
+        for n in ['E','O(-2)','Alkalinity','H(0)','H(1)']:#OA 9/6/19  alk and h in list
             if n in master: master.pop(n)
         master['pH']='';master['pe']='';
         dicDB[keyw[0]]=master;
