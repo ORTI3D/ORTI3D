@@ -114,8 +114,8 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        self.dlgShow.uncheckContours()
-        Cgroup,Cname,species = self.getCurrentContour();#print 'guish l 94',group,name,species
+        Cgroup,Cname,species = self.getCurrentContour();print('quishow',Cname,species)
+        self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
         self.curName,self.curSpecies = Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
             #if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
@@ -146,7 +146,7 @@ class guiShow:
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)
 
     def resetDicContour(self):
-        # put all cntour values to non
+        # put all cntour values to none
         for k in list(self.dicVisu.keys()):
             for k1 in list(self.dicVisu[k].keys()):
                 if k1 in self.Vtypes['Array']:
