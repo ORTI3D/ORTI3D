@@ -478,3 +478,6 @@ this version sent to elicia
 - qtShow/uncheckContour modified, added l.96 to allow for removing all contours
 - qtShow/onTickBox l.100 added
 - Pht3d/importDB l.321 added alkalinity and H to species to be removed
+
+11/6/19
+- geometry/zone2index l.536 added to correct bug for one observation line fully in one cell

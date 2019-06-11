@@ -530,10 +530,10 @@ def zone2index(core,x,y,z,opt=None):
         sn0,cs0 = dy/sqrt(dx**2+dy**2),dx/sqrt(dx**2+dy**2)
         sn,cs = ones((ll+1))*sn0,ones((ll+1))*cs0
         nsn,ncs = concatenate([nsn,sn],axis=0),concatenate([ncs,cs],axis=0)                   
-    #nyp=ny-nyp-1
+    mix=nxp*1000+nyp;a,ind=unique(mix,return_index=True);ind=sort(ind)
     if len(nxp)<1:
         nxp,nyp,nzp=array([minDiff(x[0],xvect)]),array([minDiff(y[0],yvect)]),array(z)
-    mix=nxp*1000+nyp;a,ind=unique(mix,return_index=True);ind=sort(ind)
+        ind,nsn,ncs = 0,[0],[0] # OA added 11/6/19
     #print 'geom zoneind',nxp,nyp,nzp
     if opt==None:
         return nxp[ind].astype(int),nyp[ind].astype(int),nzp[ind]
