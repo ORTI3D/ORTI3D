@@ -149,6 +149,16 @@ class Menus:
             nameBox = 'Chemistry_User_L'
             self.gui.guiShow.setNames(nameBox,list(dicSp.keys()))
         self.dialogs.onMessage(self.gui,'User Species imported')
+        
+    def OnImportPostfixSpecies(self,evt=None): # oa added 30/6/19 (some modifs, added core.)
+        if 'postfix.phrq' in os.listdir(self.core.fileDir):
+            #print('ok')
+            if 'selected.out' in os.listdir(self.core.fileDir):
+                d = self.core.addin.pht3d.readSelectOut(self.core.fileDir)
+                if self.gui != None:
+                    self.gui.guiShow.setUserSpecies(d);#print 'core203',d
+                    self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
+                self.dialogs.onMessage(self.gui,'Postfix Species imported')
             
     def OnExportParm(self,evt=None): # added 28/3/17 oa
         model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia

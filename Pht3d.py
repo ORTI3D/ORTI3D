@@ -339,13 +339,16 @@ class PHT3D:
         nr,nc = shape(mat)
         #print('mat',shape(mat))
         grd = self.core.addin.getFullGrid()
-        nx,ny = grd['nx'],grd['ny'];#print nx,ny
+        nx,ny = grd['nx'],grd['ny'];
+        if self.core.addin.getDim() in ['Radial','Xsection']: ny=1 # OA 30/6/19
         nlay = getNlayers(self.core)
         ncell = nx*ny*nlay
         times = unique(mat[:,0])
-        nt = len(times)
+        nt = len(times);print(nt,nlay,nx,ny)
         values = {}
-        for n in lnames : values[n] = zeros((nt,nlay,ny,nx))
+        for n in lnames : 
+            print(n)
+            values[n] = zeros((nt,nlay,ny,nx))
         for it,t in enumerate(times):
             for i,n in enumerate(lnames):
                 a = zeros(ncell)

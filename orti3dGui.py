@@ -126,13 +126,16 @@ class orti3dGui(QMainWindow):
         iuspecAction = QAction("&Users Species", self, 
                 statusTip="import user species text file",
                 triggered=self.menus.OnImportUserSpecies)
+        ipostfAction = QAction("&Postfix species", self, # OA 30/6/19
+                statusTip="import user species from postfix",
+                triggered=self.menus.OnImportPostfixSpecies)
         #menuImport.addAction(idataAction)
         menuImport.addAction(iobsHAction)
         menuImport.addAction(iobsTAction)
         menuImport.addAction(iobsCAction)
         menuImport.addAction(isoluAction)
         menuImport.addAction(iuspecAction)
-        
+        menuImport.addAction(ipostfAction)        # OA 30/6/19
         # export menu
         menuExport = self.menuBar().addMenu("&Export")
         eparmAction = QAction("&Current Parameter", self, 

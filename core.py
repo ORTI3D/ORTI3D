@@ -202,17 +202,8 @@ class Core:
             self.transReader = sutraReader(fDir,fName)
         if self.Zblock==None: self.Zblock = makeZblock(self)
         self.addin.setChemType()
-        self.usePostfix()
-        
-    def usePostfix(self):
-        if 'postfix.phrq' in os.listdir(self.fileDir):
-            #print('ok')
-            if 'selected.out' in os.listdir(self.fileDir): #EV 20/02/19
-                d = self.addin.pht3d.readSelectOut(self.fileDir)
-                if self.gui != None:
-                    self.gui.guiShow.setUserSpecies(d);#print 'core203',d
-                    self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
-                
+        #self.usePostfix()
+                        
     def saveModel(self,fDir = None,fName = None):
         """save the model"""
         if fDir!= None:

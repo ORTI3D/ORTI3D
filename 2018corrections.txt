@@ -481,3 +481,8 @@ this version sent to elicia
 
 11/6/19
 - geometry/zone2index l.536 added to correct bug for one observation line fully in one cell
+
+30/6/19 OA for postfix import, added as a menu now
+- orti3gui, added l.129-131 and 138
+- core/openModel commented l.205, function usePostFix l.207-214 removed, transfered to menus (l.153-160)
+- in Pht3d/readselectout, adde line 343 for xsection/radial models
