@@ -73,7 +73,7 @@ class m3F:
                   'default':[1,0.,10.,.1,1e-7]},
         #'output control
         'out.1':{'comm':'output of spatial data','cond':'','kw':['Outs'],
-                  'detail':[''],'type':['string'],'default':['']},
+                  'detail':[''],'type':['arrfloat'],'default':['']},
         #'physical parameters – porous medium'  
         'poro.1':{'comm':'porosity','cond':'','kw':['Poro'],'detail':[],'type':['arrfloat'],'default':[0.25]},
         #'physical parameters – variably saturated flow'  

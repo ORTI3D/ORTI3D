@@ -79,12 +79,14 @@ class min3pWriter:
     def writeBlock(self,mod,Dict,grp,llist):
         if grp == 'spat':
             s = self.writeSpat()
-        elif grp in ['glo','time','out','trac','conf','cont','cone','conc','conv']: 
+        elif grp in ['glo','time','trac','conf','cont','cone','conc','conv']: 
             s = self.writeGeneral(mod,Dict,grp,llist)
         elif grp[:4] == 'poro':
             s = self.writeMedia(mod,Dict,llist)
         elif grp[:3] == 'ini':
             s = self.writeIni(mod,Dict,llist)
+        elif grp[:3] == 'out':
+            s = self.writeOut(mod,Dict,llist)
         elif grp[:2] == 'bc':
             s = self.writeBcs(mod,Dict,llist)
         else: # concerns only flow1..4 and engp3
@@ -130,15 +132,15 @@ class min3pWriter:
                         choi,sep = '\''+detail[0]+'\'\n\''+detail[value+1]+'\'\n',''
                     else :
                         sep =  '\''
-                    if choi+sep != '': s += sep+choi+sep+'         ;'+detail[0]+'\n' # oa 26/5
+                    if choi+sep != '': s += sep+choi+sep+'    \n'#     ;'+detail[0]+'\n' # oa 26/5
                 elif ktyp[ik]=='title': # case of a title line
                     s += '#'+str(value)+'\n'
                 else : # values with strings
                     if line in ['trac.2']: 
                         value = '\''+self.core.gui.mainDir+os.sep+'utils\''
-                    if line == 'out.1':
-                        value = self.getTimeList()
-                    s += str(value)+';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
+#                    if line == 'out.1':
+#                        value = self.getTimeList()
+                    s += str(value) +'\n' #';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
         if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
         return s+'\n\'done\'\n\n'
@@ -285,7 +287,7 @@ class min3pWriter:
         return s+'\'done\'\n\n'
         
     def writeBcs(self,mod,Dict,llist):
-        nbz,nbztot = 0,self.getNbZonesBCs(mod,llist)   #normally BC zones are "rect" (in fact line)
+        nbz,nbztot = 0,self.getNbZones(mod,llist)   #normally BC zones are "rect" (in fact line)
         self.endkey = ''
         s = str(nbztot)+'\n'
         for line in llist: 
@@ -301,6 +303,30 @@ class min3pWriter:
                 s += '\'boundary type\'\n'
                 s += '\''+info+'\' '     #GC modified 21/02/19 remodi OA 23/2
                 s += self.getValue(mod,line,dicz,iz,'zone')
+                # for this zone write extent
+                s += '\'extent of zone'
+                s += self.getCoords(dicz['coords'][iz],line,'boundary') +'\n'
+                s += '\'end of zone\'\n'
+        s += self.endkey+'\n'+'\'done\'\n\n'
+        return s
+        
+    def writeOut(self,mod,Dict,llist):
+        nbz,nbztot = 0,self.getNbZones(mod,llist)   #normally BC zones are "rect" (in fact line)
+        self.endkey = ''
+        s = self.getTimeList() +'\n'
+
+        s += '\'output of mass through specified boundary\'\n'
+        s += str(nbztot)+'\n\n'
+        for line in llist: 
+            if line not in list(self.core.diczone[mod].dic.keys()): continue # no zones
+            dicz = self.core.diczone[mod].dic[line]
+            nbzline = len(dicz['value'])# nb of zones for this line
+            for iz in range(nbzline):
+                nbz += 1
+                s += '\'number and name of zone\'\n'+ str(nbz) +'\n'
+                s += '\''+dicz['name'][iz]+'\''  + '\n'
+                # for this zone write type of information and value
+                info = Dict.lines[line]['comm'].split('(')[0]
                 # for this zone write extent
                 s += '\'extent of zone'
                 s += self.getCoords(dicz['coords'][iz],line,'boundary') +'\n'
@@ -432,7 +458,7 @@ class min3pWriter:
                         names.append(n) # OA 24/5
         return nbz
         
-    def getNbZonesBCs(self,mod,llist):
+    def getNbZones(self,mod,llist):
         '''returns the total number of zones for a list of lines, only counting
         the zones that are not rectangles and that are different from the domain'''
         nbz=0

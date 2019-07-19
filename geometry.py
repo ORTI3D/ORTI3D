@@ -152,7 +152,7 @@ def makeZblock(core):
     nx,ny,xvect,yvect = getXYvects(core); #print 'geom 118',nx,ny,xvect,yvect
     mgroup = core.dicaddin['Model']['group']
     if core.addin.getDim() not in ['Radial','Xsection']: # 2 or 3D case
-        if mgroup == 'Modflow series': 
+        if core.addin.mesh==None: #mgroup == 'Modflow series': # OA 18/7/19 pb for min3p
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
             if mgroup[0]=='M': #Min3p
@@ -233,7 +233,7 @@ def getTopBotm(core,intFlagT,im,optionT,refer,mat):
     if intFlagT:
         z = zone2interp(core,modName,line,im,optionT,refer)
     else : 
-        if mgroup == 'Modflow series' : z = zone2grid(core,modName,line,im)
+        if  core.addin.mesh==None: z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
             if mgroup == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes')
             else : z = zone2mesh(core,modName,line,im,loc='elements')
@@ -297,10 +297,11 @@ def getMesh3Dcenters(core):
     return x2,y2,z2
     
 def block(core,modName,line,intp=False,opt=None,iper=0):
-    if core.mfUnstruct or modName[:5]=='Opgeo':
-        return blockUnstruct(core,modName,line,intp,opt,iper)
-    else :
+    print("block",core.addin.mesh)
+    if core.addin.mesh == None : # OA 18/7/19 reversed to get all 3D correct (exchanged options below)
         return blockRegular(core,modName,line,intp,opt,iper)
+    else : #mfUnstruct or modName[:5]=='Opgeo':
+        return blockUnstruct(core,modName,line,intp,opt,iper)
         
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''

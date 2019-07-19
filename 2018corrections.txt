@@ -486,3 +486,11 @@ this version sent to elicia
 - orti3gui, added l.129-131 and 138
 - core/openModel commented l.205, function usePostFix l.207-214 removed, transfered to menus (l.153-160)
 - in Pht3d/readselectout, adde line 343 for xsection/radial models
+
+16/7/19  OA
+- mtphtwriter l.572 in writepHfile added a blank if no surface is chosen
+
+18/7/19
+- geometry/makeZblock l.155, modif condition for structured grid to adapt min3p to 3d
+- geometry/block l.300, change the unstruct option to have min3p corect
+- geometry same modif l.236

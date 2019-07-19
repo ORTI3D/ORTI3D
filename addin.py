@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import *
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 
 class addin:
-    """the addin class is used to add buttons or menus in the interface to
+    """the addin class is used to add buttons or menus inmesh the interface to
         manage things that are around the model disctionnaries
         the structure dict stores the name and location of addins
         the data are stored in dicaddin (a copy of core.dicaddin)"""
