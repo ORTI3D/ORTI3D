@@ -318,7 +318,7 @@ class modflowWriter:
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': k.append(self.getPermScaled(ilay,irow,icol))
             
-        buff = ' %9i   \n' %npts;print(line,zlist)
+        buff = ' %9i   \n' %npts;#print(line,zlist)
         #print 'mfw transient',nper
         for ip in range(nper): # get each period
             buff += ' %9i   \n' %npts
@@ -439,7 +439,7 @@ class modflowWriter:
             #coo = zones['coords'][iz]
             #x,y = zip(*coo); z=x*1
             #icol,irow,a = zone2index(core,x,y,z)
-            ilay,irow,icol = self.xyzone2Mflow(core,'mnwt.2a',iz)
+            ilay,irow,icol,zvect = self.xyzone2Mflow(core,'mnwt.2a',iz) # EV 22/07/2019
             ir,ic = irow[0],icol[0]
             s += str(icol[0]+1)+' '+str(irow[0]+1)+'\n' # add icol and irow : they are lists
         for ip in range(nper):
@@ -533,7 +533,7 @@ class modflowWriter:
         
     #------------------------- fonction  write HBF -------------------
     def writeHfb(self,line,iz):       # EV 26/11/2018  
-        ilay,irow,icol = self.xyzone2Mflow(self.core,line,iz)
+        ilay,irow,icol,zvect = self.xyzone2Mflow(self.core,line,iz) # EV 22/07/2019
         #print('ilay',ilay,'irow',irow,'icol',icol)
         hbf=[]
         for i in range(len(irow)):

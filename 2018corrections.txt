@@ -345,7 +345,7 @@ this version sent to elicia
 - in modflow keywords modif condition in uzf.4
 - modflowWriter/writeexceptions l.217 arrfloat -> ktyp
 
-9/3/19
+9/3/19 OA
 ** there can be a problem on reading flo file when nwt is used (time steps within period is stored). not solved up to now. just use one sub perdio with nwt
 ** pb of Xsection col width not written correctly in.dis (no effec tin uzf infiltration)
 ** in uzf if print with nb of unit, shall create file in .nam
@@ -490,7 +490,15 @@ this version sent to elicia
 16/7/19  OA
 - mtphtwriter l.572 in writepHfile added a blank if no surface is chosen
 
-18/7/19
+18/7/19 OA
 - geometry/makeZblock l.155, modif condition for structured grid to adapt min3p to 3d
 - geometry/block l.300, change the unstruct option to have min3p corect
 - geometry same modif l.236
+
+22/07/19 EV
+- modflowWriter l.442, l.536 add zvect at the function xyzone2Mflow
+- guiShow/getArray3D l.175 modified to display velocity vectors and magnitude in 2D & 3D
+- guiShow/get3Dvectors l.175 modified to display velocity vectors in 3D
+- qtDialogs/saveCurrent l.385 removed try/except option for media number type
+- qtDialogs/accept1 l.413-414 added checkEntry function
+- qtDialogs/checkEntry added this function for checked if there is a name for zone and an integer for media

@@ -116,7 +116,8 @@ class BaseTop:
         #onMessage(self.gui,'topbar \n'+str(curzones.dic[line]))
         # create dialog
         dialg = zoneDialog(self, self.core,self.gui.currentModel,line, curzones.dic[line], iz)
-        retour = dialg.saveCurrent()#;print retour
+        retour = dialg.saveCurrent()
+        print('ret',retour)
         #self.gui.actions('zoneEnd')
         if retour != 'None':
             lz = curzones.dic[line]

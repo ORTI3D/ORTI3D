@@ -114,7 +114,7 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour();print('quishow',Cname,species)
+        Cgroup,Cname,species = self.getCurrentContour()#;print('quishow',Cname,species)
         self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
         self.curName,self.curSpecies = Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
@@ -172,11 +172,10 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                #if vz != None: EV 01/02/19
-                if vz.size !=0:
-                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
-                else :
+                if vz is None: #EV 01/02/19 & 19/07/19
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
+                else :
+                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
                 #arr = arr[:,-1::-1,:] already done in flofile
         if group=='Transport':
             if name=='Tracer':
@@ -276,7 +275,8 @@ class guiShow:
         if mod=="Modflow":
             qx = qx[:,:,1:]/2+qx[:,:,:-1]/2
             qy = qy[:,1:,:]/2+qy[:,:-1,:]/2
-            if qz !=None: qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
+            if qz is None: pass # EV 19/07/19
+            else : qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
         return qx,qy,qz
         
     def getVectors(self,plane,layer,tstep):

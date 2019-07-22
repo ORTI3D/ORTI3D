@@ -7,7 +7,6 @@ from PyQt5.Qt import QFrame
 from .config import *
 from .geometry import *
 from PyQt5.QtWidgets import *
-from functools import partial
 #from scipy import * #OA 2/4/19
 
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
@@ -371,75 +370,60 @@ class zoneDialog(QDialog): # Dialog for zone
     def showDialogAndDisconnect(self):
         self.show()
         self.gui.actionToggleEditing().triggered.disconnect(self.showDialogAndDisconnect)
-               
+        
     def saveCurrent(self):
         # saving the entered zone
         self.exec_()
-        if self.state == 'accept': #EV 22/07/2019
-            zp = self.zpanel;
-            curdic = self.core.diczone[self.model]
-            #curdic.addZone(self.line)
-            curzones = curdic.dic[self.line]
-            #onMessage(self.gui,'in save current \n'+str(curzones))
-            curzones['name'][self.nb] = str(zp.name.text())
-            media = zp.media.text()
-            if '-' in media : #EV 24/10/18 & 22/07/19
-                m1 = media.split('-')
-                m2 = list(range(int(m1[0]),int(m1[1])+1))
-            else :m2 = int(media)
-            curzones['media'][self.nb] = m2;#onMessage(self.gui,str(zp.coords.getValues()['data']))
-            if self.line != 'dis.1': # OA 20/11/18 this is to create modflow domain
-                curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
-            else : # OA 20/11/18
-                curzones['coords'][self.nb]= zp.coords.getValues()['data']
-            val0 = ''
-            if self.typO: val0 = self.getOpt()
-            #print 'qtdlg 366',self.typS
-            if self.typS==1: # for transient values
-                v0 = zp.valBox.getValues()['data']
-                val = ''
-                for b in v0 : val+=str(b[0])+' '+str(b[1])+'\n'
-            else :
-                val = str(zp.valBox.document().toPlainText())            
-            first = val.split('\n')[0]
-            if first.count('.')>2:   #for pht3d zones 1.0.0.0
-                val = val.replace('.','')
-                val = val.replace(' ','')
-                val = val.replace('\n','')
-            curzones['value'][self.nb]= val0+val
-            return 'OK'
-        else : return 'None'
-        
-    def accept1(self): 
-        check=self.checkEntry() #EV 22/07/2019
-        if check=='ok': #EV 22/07/2019
-            self.close()
-            self.state = 'accept'        
-
-    def reject1(self): 
-        self.close()
-        self.state = 'reject'
-    
-    def checkEntry(self): #EV 22/07/2019
         zp = self.zpanel;
+        curdic = self.core.diczone[self.model]
+        #curdic.addZone(self.line)
+        curzones = curdic.dic[self.line]
+        #onMessage(self.gui,'in save current \n'+str(curzones))
+        curzones['name'][self.nb] = str(zp.name.text())
         media = zp.media.text()
         if '-' in media :
             m1 = media.split('-')
             try :
                 m2 = list(range(int(m1[0]),int(m1[1])+1))
             except ValueError: 
-                m2 = 'None'
+                onMessage(self,"Enter an integer number for media")
+                return None
         else :
             try :
                 m2 = int(media)
             except ValueError: 
-                m2 = 'None'
-        if not zp.name.text():
-            onMessage(self,"Enter a name for the current zone")
-        elif m2=='None':
-            onMessage(self,"Enter an integer number for media")
-        else : return 'ok'
+                onMessage(self,"Enter an integer number for media")
+                return None
+        curzones['media'][self.nb] = m2;#onMessage(self.gui,str(zp.coords.getValues()['data']))
+        if self.line != 'dis.1': # OA 20/11/18 this is to create modflow domain
+            curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
+        else : # OA 20/11/18
+            curzones['coords'][self.nb]= zp.coords.getValues()['data']
+        val0 = ''
+        if self.typO: val0 = self.getOpt()
+        #print 'qtdlg 366',self.typS
+        if self.typS==1: # for transient values
+            v0 = zp.valBox.getValues()['data']
+            val = ''
+            for b in v0 : val+=str(b[0])+' '+str(b[1])+'\n'
+        else :
+            val = str(zp.valBox.document().toPlainText())            
+        first = val.split('\n')[0]
+        if first.count('.')>2:   #for pht3d zones 1.0.0.0
+            val = val.replace('.','')
+            val = val.replace(' ','')
+            val = val.replace('\n','')
+        curzones['value'][self.nb]= val0+val
+        if self.state == 'accept': return 'OK'
+        else : return 'None'
         
+    def accept1(self): 
+        self.state = 'accept'
+        self.close()
+    def reject1(self): 
+        self.close()
+        self.state = 'reject'
+           
     def corrCoords(self,lcooI):
         '''change coordinates if they are out of the domain'''
         g = self.core.dicaddin['Grid']

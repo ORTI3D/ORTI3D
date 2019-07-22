@@ -246,7 +246,7 @@ class impObsData(QDialog) :
         self.close()
         
     def checkObs(self,dic):
-        print('test',dic['data'])
+        #print('test',dic['data'])
         #if any(dic['data']) != False : #11/04/19
         zname=self.core.diczone['Observation'].dic['obs.1']['name']
         zobs=[dic['data'][i][0] for i in range(len(dic['data']))]

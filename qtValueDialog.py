@@ -18,7 +18,8 @@ class qtValueDialog(QDialog):
         layoutWidget.setGeometry(QRect(5, 5, screenShape.width()*.2,400))
         self.vbox = QVBoxLayout(layoutWidget)
         self.vbox.setGeometry(QRect(0, 0, 80,60))
-        #self.vbox.setMinimumHeight(60)
+
+        
         grpList = core.getUsedModulesList(modName)
         self.chgroups = QComboBox(layoutWidget)
         for i,n in enumerate(grpList):
@@ -26,9 +27,11 @@ class qtValueDialog(QDialog):
             self.chgroups.setItemText(i, n)
         self.chgroups.activated['QString'].connect(self.onChoiceGroup)
         self.vbox.addWidget(self.chgroups)
+        
         self.chlines = QComboBox(layoutWidget)
         self.chlines.activated['QString'].connect(self.onChoiceLine)
         self.vbox.addWidget(self.chlines)
+        
         self.boxkeys = qtBoxKeys(self,parent)
         self.vbox.addWidget(self.boxkeys.layoutWidget)
         self.vbox.addStretch(1)
@@ -36,14 +39,14 @@ class qtValueDialog(QDialog):
         #bBox.setOrientation(Qt.Horizontal)
         #bBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
         #QObject.connect(bBox, SIGNAL("accepted()"), parent.OnSetNewVal)
-        bBox = QHBoxLayout(layoutWidget)
+        self.bBox = QHBoxLayout()
         butApply = QPushButton('Apply')
         butApply.clicked.connect(parent.OnSetNewVal)
-        bBox.addWidget(butApply)
+        self.bBox.addWidget(butApply)
         butClose = QPushButton('Close')
         butClose.clicked.connect(self.close)
-        bBox.addWidget(butClose)
-        self.vbox.addLayout(bBox)
+        self.bBox.addWidget(butClose)
+        self.vbox.addLayout(self.bBox)
         
         QMetaObject.connectSlotsByName(self)
         
@@ -55,10 +58,6 @@ class qtBoxKeys:
         self.Main,self.parent = Main,parent
         self.layoutWidget = QWidget(Main)
         self.gridLayout = QGridLayout(self.layoutWidget)
-        gl0 = QGridLayout(self.layoutWidget)
-        #gl0.setGeometry(QRect(0,60,180,40))
-        #gl0.addWidget(bBox)
-        #self.gridLayout.setGeometry(QRect(0,100,180,300))
         self.labl,self.lValBut,self.values=[],[],[]
         
     def setVisible(self,bool):self.layoutWidget.setVisible(bool)
