@@ -19,7 +19,6 @@ class qtValueDialog(QDialog):
         self.vbox = QVBoxLayout(layoutWidget)
         self.vbox.setGeometry(QRect(0, 0, 80,60))
 
-        
         grpList = core.getUsedModulesList(modName)
         self.chgroups = QComboBox(layoutWidget)
         for i,n in enumerate(grpList):
@@ -39,7 +38,7 @@ class qtValueDialog(QDialog):
         #bBox.setOrientation(Qt.Horizontal)
         #bBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
         #QObject.connect(bBox, SIGNAL("accepted()"), parent.OnSetNewVal)
-        self.bBox = QHBoxLayout()
+        self.bBox = QHBoxLayout() #EV 22/07/2019
         butApply = QPushButton('Apply')
         butApply.clicked.connect(parent.OnSetNewVal)
         self.bBox.addWidget(butApply)
@@ -57,7 +56,7 @@ class qtBoxKeys:
     def __init__(self,Main,parent):
         self.Main,self.parent = Main,parent
         self.layoutWidget = QWidget(Main)
-        self.gridLayout = QGridLayout(self.layoutWidget)
+        self.gridLayout = QGridLayout(self.layoutWidget) #EV 22/07/2019
         self.labl,self.lValBut,self.values=[],[],[]
         
     def setVisible(self,bool):self.layoutWidget.setVisible(bool)

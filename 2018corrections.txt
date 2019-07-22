@@ -499,6 +499,8 @@ this version sent to elicia
 - modflowWriter l.442, l.536 add zvect at the function xyzone2Mflow
 - guiShow/getArray3D l.175 modified to display velocity vectors and magnitude in 2D & 3D
 - guiShow/get3Dvectors l.175 modified to display velocity vectors in 3D
+- qtDialogs/saveCurrent l.378 added condition to prevent saving modification when cancel
 - qtDialogs/saveCurrent l.385 removed try/except option for media number type
 - qtDialogs/accept1 l.413-414 added checkEntry function
 - qtDialogs/checkEntry added this function for checked if there is a name for zone and an integer for media
+- qtValueDialog l.41 & l.59 removed things ti avoid warning message "add QLayout to QWidget, which already has a layout" when open parameters dialogs
