@@ -140,7 +140,7 @@ class Mf:
         #RECH
         'rch.1':{'comm':'Flags for recharge','cond':'','kw':['NRCHOP','IRCHCB'],
                  'detail':[['position of recharge','-','top cell','not implemented','highest active'],'save to budget'],
-                'type':['',''],'default':[3,0]},
+                'type':['choice','int'],'default':[3,0]}, #EV 22/07/2019
         'rch.2':{'comm':'Recharge value','cond':'','kw':['RECH(NPER,NROW,NCOL)'],'detail':[],
                     'type':['arrfloat'],'units':['L/T']},
         #EVT

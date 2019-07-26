@@ -70,7 +70,7 @@ class Pest:
 
     def getDicBack2(self):
         dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
-        cols = ['Use','media','value','min','max','Group']
+        cols = ['Use','media','value','min','max','Transf','Group'] #EV 25/07/19
         nbMed = len(self.core.dicaddin['3D']['topMedia']) #EV 06/11
         if self.core.dicaddin['Pback2'] != {}:
             dic_old = self.core.dicaddin['Pback2']
@@ -82,7 +82,7 @@ class Pest:
                     if line not in dic_old[md]['rows']:
                         for m in range(nbMed): #EV 06/11
                             val = float(self.core.dicval[md][line][m])
-                            data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'G1']) #EV 06/11
+                            data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'log','G1']) #EV 06/11 & 25/07/19
                             linesm.append(line)
                     else :
                         for m in range(nbMed): #EV 06/11
@@ -100,7 +100,7 @@ class Pest:
                 for i,line in enumerate(lines): #EV 06/11
                     for m in range(nbMed):
                         val = float(self.core.dicval[md][line][m])
-                        data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'G1']) #EV 06/11
+                        data.append([False,m,("{:.5}".format(val)),("{:.5}".format(val/2)),("{:.5}".format(val*2)),'log','G1']) #EV 06/11 & 25/07/19
                         linesm.append(line)
                 dic[md] = {'cols':cols,'rows':linesm,'data':data}
             return dic
@@ -143,7 +143,7 @@ class Pest:
                     val = float(dicz['value'][i])#;print(line,n)
                     if n not in dicPzones[line]['rows']: # a zone has been added
                         vmin,vmax= str("{:.5}".format(val/5)),str("{:.5}".format(val*5)) #EV 06/11
-                        lst = [False,dicz['media'][i],str("{:.5}".format(val)),vmin,vmax,'none','G2'] #EV 06/11
+                        lst = [False,dicz['media'][i],str("{:.5}".format(val)),vmin,vmax,'log','G2'] #EV 06/11 & 25/07/19
                     else : # get the corresponding limits from dicin
                         i_old = dicPzones[line]['rows'].index(n)
                         lst = dicPzones[line]['data'][i_old]
@@ -232,8 +232,8 @@ class Pest:
                     keyN=self.dicCatg[line] #EV 06/11 keywords for lines
                     self.pnames.append(keyN+'_b'+str(dp[1])) #EV 06/11 keywords for lines
                     self.pvalbnd.append(dp[2:5])
-                    self.ptrans.append('none')
-                    self.pgrp.append(dp[5])
+                    self.ptrans.append(dp[5]) #EV 25/07/19
+                    self.pgrp.append(dp[6])
         for line in list(dicPzones.keys()): # here the keys are the lines
             cols = dicPzones[line]['cols']
             #i1,ix,iy = cols.index('Use'),cols.index('UseX'),cols.index('UseY')

@@ -74,7 +74,7 @@ class addin:
                 'function': 'OnImportChemistry','short':'oH'}
         # creating the structure for the buttons
         name = 'Model'
-        model = {'dimension':'2D','type':'confined','group':'Modflow series'}
+        model = {'dimension':'2D horizontal','type':'Confined','group':'Modflow series'} #EV 22/07/2018 2D -> 2D horizontal
         self.core.dicaddin[name] = model
         self.structure['button']['1.Model'] = [{'name':name,'pos':0,'short':'M'}]
         name = 'Grid'
@@ -196,8 +196,14 @@ class addin:
         """the action to be done when an addin button is clicked"""
         if actionName == 'Ad_Model':
             m = self.core.dicaddin['Model']
-            data = [('dimension','Choice',(m['dimension'],['2D','3D','Radial','Xsection'])),
-                    ('type','Choice',(m['type'],['confined','free'])),  
+            if m['dimension']=='2D': # EV 22/07/2019 to transform 2D in 2D horizontal & free in Unconfined & confined in Confined in the existing model
+                m['dimension']='2D horizontal'
+            if m['type']=='free':
+                m['type']='Unconfined' 
+            if m['type']=='confined':
+                m['type']='Confined'
+            data = [('dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
+                    ('type','Choice',(m['type'],['Confined','Unconfined'])),  #EV 22/07/2018 free -> Unconfined
                     ('group','Choice',(m['group'],['Modflow series','Modflow UNS','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
@@ -208,8 +214,8 @@ class addin:
                     self.core.mfUnstruct = True
                     self.setMfUnstruct()
                 self.gui.varBox.chooseCategory(m['group'])
-                if m['type']=='free':
-                    self.core.setValueFromName('Modflow','LAYTYP',1) # 0 for confined, 1 for Free
+                if m['type']=='Unconfined': #EV 22/07/2018 free -> Unconfined
+                    self.core.setValueFromName('Modflow','LAYTYP',1) # 0 for confined, 1 for unconfined
                     self.core.setValueFromName('Mt3dms','TLAYCON',1)
                 if m['dimension'] in ['Xsection','Radial']:
                     self.core.setValueFromName('Modflow','TOP',1.)
@@ -540,6 +546,7 @@ class addin:
         
     def getDim(self): 
         dm = self.core.dicaddin['Model']['dimension']
+        if dm == '2D horizontal' : dm = '2D' #EV 22/07/2018 2D -> 2D horizontal
         #if dm=='Cross_Section': dm= 'Xsection' # OA 9/6
         return dm
         
@@ -629,7 +636,7 @@ class addin:
         for md in list(self.dicPback.keys()):
             for i,line in enumerate(self.dicPback[md]['rows']):
                 dp = self.dicPback[md]['data'][i]
-                if dp[0]:self.pgrp.append(dp[5])
+                if dp[0]:self.pgrp.append(dp[6]) #EV 25/07/19
         for line in list(self.dicPzones.keys()):
             cols = self.dicPzones[line]['cols']
             i1 = cols.index('Use')

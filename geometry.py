@@ -297,7 +297,7 @@ def getMesh3Dcenters(core):
     return x2,y2,z2
     
 def block(core,modName,line,intp=False,opt=None,iper=0):
-    print("block",core.addin.mesh)
+    #print("block",core.addin.mesh)
     if core.addin.mesh == None : # OA 18/7/19 reversed to get all 3D correct (exchanged options below)
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
