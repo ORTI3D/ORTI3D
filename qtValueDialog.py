@@ -95,13 +95,10 @@ class qtBoxKeys:
         for i in range(nb):
             but = self.lValBut[i]
             val = self.values[i]
-            print ('1',val,self.types[i])
             if self.types[i] in ['choice','layint']: #,'layint']: OA 6/11/18 removed layint
-                print ('2',val,self.types[i])
                 self.values[i] = but.currentIndex()
                 continue
             if but.text() not in ['formula','zone','array']:
-                print ('3',val,self.types[i])
                 if self.types[i] in ['int','vecint','arrint']:
                     val=int(but.text())
                 elif self.types[i] in ['float','vecfloat','arrfloat']:
