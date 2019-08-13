@@ -23,11 +23,11 @@ from .multiPlot import *
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):
         Main.setObjectName("Main")
-        Main.resize(255,590)
+        Main.resize(255,620) #EV 13/08/19
         Main.setWindowTitle("qORTi3d")
         self.gui = QWidget(Main)
         self.gui.iface = iface
-        self.gui.setGeometry(QRect(5, 15, 245, 560)) #left,top,w,h
+        self.gui.setGeometry(QRect(5, 15, 245, 600)) #left,top,w,h #EV 13/08/19
         self.gui.gtyp,self.gui.plugin_dir = 'qgis',plugin_dir
         self.gui.mainDir = plugin_dir
         core = Core(self.gui);self.core = core
@@ -43,7 +43,7 @@ class Ui_Main(object):
         self.gui.visu = qgisVisu(iface,self.gui,core)
         
         self.toolBox = QToolBox(self.gui)
-        self.toolBox.setGeometry(QRect(0, 0, 245, 560))
+        self.toolBox.setGeometry(QRect(0, 0, 245, 600)) #EV 13/08/19
 
         self.page0 = QWidget()        
         self.gui.file = Ui_File()

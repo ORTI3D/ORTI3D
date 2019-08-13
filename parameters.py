@@ -44,15 +44,18 @@ class BaseParms:
     def action(self,name):
         action=self.dicaction[str(name)]
         #print self.core.dicaddin['Model']['group'],action
-        if self.core.dicaddin['Model']['group']=='Min3p':
+        mgroup = self.core.dicaddin['Model']['group']
+        if 'USG' in mgroup: # only the transport is different in USG
+            action=action.replace('Mt3dms','MfUsgTrans')            
+        if mgroup =='Min3p':
             action=action.replace('Modflow','Min3pFlow')
             action=action.replace('Mt3dms','Min3pTrans')
             action=action.replace('Pht3d','Min3pChem')
-        if self.core.dicaddin['Model']['group']=='Opgeo':
+        if mgroup =='Opgeo':
             action=action.replace('Modflow','OpgeoFlow')
             action=action.replace('Mt3dms','OpgeoTrans')
             action=action.replace('Pht3d','OpgeoChem')
-        if self.core.dicaddin['Model']['group']=='Sutra':
+        if mgroup =='Sutra':
             action=action.replace('Modflow','Sutra')
             action=action.replace('Mt3dms','Sutra')
         exec(action)

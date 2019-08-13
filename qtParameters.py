@@ -30,6 +30,11 @@ class Ui_Parameters(object):
         self.mainbx.addStretch(0) # OA 6/11
         QMetaObject.connectSlotsByName(Parameters)
         
+def boutonVisible(self,nomBut,bool): #EV 05/08/19
+    it=self.findChild(QPushButton,nomBut)
+    if it :
+        it.setEnabled(bool)
+        
 class Box(): #QGroupBox):
     def __init__(self,Parameters,parent,gr,nb):
         '''parent is the Ui_parameters class above'''
@@ -108,9 +113,8 @@ class Box(): #QGroupBox):
                 self.hl.addWidget(buta)
                 buta.clicked.connect(self.onButton)
                 parent.base.dicaction[name] = 'self.addin.doaction(\''+name+'\')'
-            
+        
     def onButton(self):
         s = self.Parameters.sender()
         name = s.objectName()
         self.parent.base.action(name)
-

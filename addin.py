@@ -2,7 +2,7 @@ import os, sys, inspect,types
 from .config import *
 from .Pht3d import *
 from .Min3p import *
-from .modflowUNS import *
+from .modflowUsg import *
 from .geometry import *
 from matplotlib import pylab # for having grafs in batch
 from .Pest import *
@@ -39,7 +39,7 @@ class addin:
         self.structure={'button':{},'menu':{}}
         self.pht3d = PHT3D(self.core)
         self.min3p = Min3p(self.core)
-        self.mfU = modflowUNS(self.core)
+        self.mfU = modflowUsg(self.core)
         self.opgeo = Opgeo(self.core)
         self.pest = Pest(self.core)
         # creating usedModules addin
@@ -47,12 +47,13 @@ class addin:
         name='usedM'
         self.core.dicaddin[name] = {}
         for mod in self.core.modelList:
-            lmodules = self.dickword[mod].grpList
+            lmodules = self.dickword[mod].grpList;#print(lmodules)
             if mod[:4] in ['Min3','Opge','Sutr','Pest']: val = [True]*len(lmodules) #,'Fipy'
             else : val = [False]*len(lmodules)
             for i in range(len(lmodules)):
                 if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL']): val[i]=True # OA 10/3/19 removed pcg
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
+                if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT']): val[i]=True # OA 27/719
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19
@@ -204,13 +205,13 @@ class addin:
                 m['type']='Confined'
             data = [('dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
                     ('type','Choice',(m['type'],['Confined','Unconfined'])),  #EV 22/07/2018 free -> Unconfined
-                    ('group','Choice',(m['group'],['Modflow series','Modflow UNS','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
+                    ('group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
             if retour != None:
                 m['dimension'],m['type'],m['group'] = retour
-                if 'UNS' in m['group']:
+                if 'USG' in m['group']:
                     self.core.mfUnstruct = True
                     self.setMfUnstruct()
                 self.gui.varBox.chooseCategory(m['group'])
@@ -509,7 +510,7 @@ class addin:
             self.core.dicval['Modflow']['dis.5']=list(g['dy'])
             self.core.setValueFromName('Modflow','NCOL',g['nx'])
             self.core.setValueFromName('Modflow','NROW',g['ny'])
-        elif mgroup =='Modflow UNS':
+        elif mgroup =='Modflow USG':
             self.mfU.buildMesh(opt)
             ncell = self.mfU.ncell
             self.core.setValueFromName('Modflow','NCELL',int(ncell)) # this is 2D
@@ -563,7 +564,7 @@ class addin:
         if self.getModelGroup()=='Modflow series': 
             self.core.dicval['Modflow']['dis.6'] = med['topMedia']
             self.core.dicval['Modflow']['dis.7'] = botM
-        if self.getModelGroup()=='Modflow UNS': 
+        if self.getModelGroup()=='Modflow USG': 
             self.core.dicval['Modflow']['disu.7'] = med['topMedia']
             self.core.dicval['Modflow']['disu.8'] = botM
         if self.getModelGroup()=='Opgeo': 
@@ -597,7 +598,7 @@ class addin:
         mgroup = self.getModelGroup()
         if mgroup =='Modlow series':
             self.core.setValueFromName('Modflow','NPER',nper)
-        elif mgroup =='Modflow UNS':
+        elif mgroup =='Modflow USG':
             self.core.setValueFromName('Modflow','UNPER',nper)
         elif mgroup [:3]=='Min':
             self.core.setValueFromName('Min3pFlow','Tfinal',tlist[-1])

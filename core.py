@@ -5,6 +5,7 @@ from numpy import frombuffer,float64
 from scipy.interpolate import griddata
 from .modflowWriter import *
 from .mtphtWriter import *
+from .mtUsgWriter import *
 from .min3pWriter import *
 from .sutraWriter import *
 from .ogWriter import *
@@ -19,6 +20,7 @@ from numpy import load as npload
 from .config import *
 from .modflowKeywords import Mf
 from .mtPhtKeywords import Mt
+from .mtUsgKeywords import Mtu  # OA 27/7/19
 from .pht3dKeywords import Ph
 from .min3pFlowKeywords import m3F
 from .min3pTransKeywords import m3T
@@ -34,12 +36,11 @@ class Core:
     it can be used on graphic mode or batche mode
     """
     def __init__(self,gui=None):
-        self.modelList = ['Modflow','Mt3dms','Pht3d','Min3pFlow','Min3pTrans',
-                'Min3pChem', #'FipyFlow','FipyTrans','FipyChem',
-                'OpgeoFlow','OpgeoTrans','Sutra','Observation','Pest']
+        self.modelList = ['Modflow','Mt3dms','MfUsgTrans','Pht3d','Min3pFlow', # OA 27/7/19 added MfUsgTrans
+            'Min3pTrans','Min3pChem', #'FipyFlow','FipyTrans','FipyChem',
+            'OpgeoFlow','OpgeoTrans','Sutra','Observation','Pest']
         self.gui = gui
         self.baseDir = os.getcwd(); # OA 11/9/18 2 lines below modfiied
-        #gui.iface.messageBar().pushMessage('core l40 gtyp',gui.gtyp)
         if gui!=None:
             if gui.gtyp=='qgis': self.baseDir= self.gui.plugin_dir
         self.dicval = {}
@@ -56,6 +57,7 @@ class Core:
         # OA 30/07 Mf... are now defined as classes : more correct and usefull for python3
         self.dickword['Modflow'] = Mf()
         self.dickword['Mt3dms'] = Mt()
+        self.dickword['MfUsgTrans'] = Mtu()
         self.dickword['Pht3d'] = Ph()
         self.dickword['Min3pFlow'] = m3F()
         self.dickword['Min3pTrans'] = m3T()
@@ -181,14 +183,15 @@ class Core:
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         mtype = self.dicaddin['Model']['group']
-        if 'UNS' in mtype: 
+        if 'USG' in mtype: 
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
         mtype = mtype[:5]
         if mtype == 'Modfl':
             self.flowReader = modflowReader(fDir,fName)
-            self.transReader = mtphtReader(fDir,fName)
+            if 'USG' in mtype: self.transReader = mtUsgReader(fDir,fName)
+            else : self.transReader = mtphtReader(fDir,fName)
         elif mtype == 'Min3p' :
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
@@ -250,8 +253,11 @@ class Core:
             self.mfWriter = modflowWriter(self,self.fileDir,self.fileName)
             self.mfWriter.writeModflowFiles(self)
             self.flowReader = modflowReader(self.fileDir,self.fileName)
-        if modName in ['Mt3dms','Pht3d']:
-            self.mtWriter = mtphtWriter(self,self.fileDir,self.fileName)
+        if modName in ['Mt3dms','MfUsgTrans','Pht3d']: # OA 28/7/19
+            if 'USG' in self.dicaddin['Model']['group']: #28/7/19 this and 2 below
+                self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
+            else : 
+                self.mtWriter = mtphtWriter(self,self.fileDir,self.fileName)
             parmk = None
             if modName =='Pht3d':
                 dicSpec = self.addin.pht3d.getDictSpecies()

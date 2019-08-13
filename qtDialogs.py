@@ -88,7 +88,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             elif typ=='Textlong':
                 scrollArea = QScrollArea(self.glWidget)
                 #scrollArea.setGeometry(QRect(50, y0, 100, 50))
-                scrollArea.setMaximumWidth(self.screenShape.width()*.05)
+                scrollArea.setMaximumWidth(self.screenShape.width()*.08) #EV 05/08/19 0.05 -> 0.08
                 scrollArea.setFixedHeight(160)
                 self.item[i] = QTextEdit(scrollArea)
                 #y0 += 30

@@ -4,7 +4,7 @@ import os
 from .modflowKeywords import Mf
 from .geometry import *
 from .timeperiod import *
-from .modflowUNS import *
+from .modflowUsg import *
 
 class modflowWriter:
     

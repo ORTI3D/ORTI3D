@@ -68,9 +68,8 @@ class orti3dGui(QMainWindow):
         onMessage(self,'\n'.join(f[-5:])+'\n'+str(value))
         
     def on3D(self,bool):
-        pass
-        #self.qtParameters.boutonVisible('Ad_3D',bool)
-        #self.varBox.choice3D.Enable(bool)
+        boutonVisible(self,'Ad_3D',bool) #EV 05/08/19
+        self.varBox.choice3D.setEnabled(bool) #EV 05/08/19
         
     def onSetMediaNb(self,nbM,nbL):
         self.varBox.choice3D.clear()
@@ -78,9 +77,8 @@ class orti3dGui(QMainWindow):
         self.guiShow.setNames('Model_Layer_L',list(range(nbL)))
         
     def onRCT(self,bool):
-        pass
-        #self.qtParameters.boutonVisible('Ad_MtSpecies',bool)
-        #self.qtParameters.boutonVisible('Ad_MtReact',bool)
+        boutonVisible(self,'Ad_MtSpecies',bool) #EV 05/08/19
+        boutonVisible(self,'Ad_MtReact',bool) #EV 05/08/19
 
     ####################################################
     #                   make menus
@@ -255,7 +253,13 @@ class orti3dGui(QMainWindow):
         self.dlgParameters = Ui_Parameters()
         self.dlgParameters.setupUi(qwp,self,self.core,self.mainDir)
         self.paramSizer.addWidget(qwp)
-        self.onRCT(False)
+        it1=qwp.findChild(QPushButton,'Ad_MtSpecies') #EV 05/08/19
+        it2=qwp.findChild(QPushButton,'Ad_MtReact')
+        it3=qwp.findChild(QPushButton,'Ad_3D')
+        it1.setEnabled(False) #EV 05/08/19
+        it2.setEnabled(False)
+        it3.setEnabled(False)
+        #self.onRCT(False)
         
     #####################################################
     #                   Panel Vue

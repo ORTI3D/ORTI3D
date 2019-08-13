@@ -335,7 +335,8 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     for i in range(len(dicz['name'])):
         if (dicz['name'][i]=='domain'): continue
         idx = zmesh(core,dicz,media,i)
-        if idx == None: continue # the zone media is not the right one
+        try : len(idx) 
+        except TypeError : continue # the zone media is not the right one
         pindx[idx] = i+1
     if val == 'nb': return pindx
     zval,onev = [],False # zvla contians all the values in the zone list
@@ -349,7 +350,7 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
             zval.append(float(v))
     if onev: zval.insert(0,vbase) # not for multiple value where the domain is a zone
     zval = array(zval)
-    value = zval[list(pindx)] # value sets the value of each zone to the points
+    value = zval[list(pindx.astype('int'))] # value sets the value of each zone to the points
     return value
     
 def zmesh(core,dicz,media,i):

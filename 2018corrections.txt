@@ -512,9 +512,32 @@ this version sent to elicia
 - addin/getDim l.549 addin condition to call variable 2D horizontal by 2D
 
 25/07/19 EV
-pestKeywords/PGR write 'choice' correctly
-pest/getDicBack2 l.73 added 'Transf' keyword to choose parm transformation
-pest/getDicBack2 l.85,103 added 'log' for transformation by default
-pest/getDicZone2 l.146 changed parm tranformation by default from none to log
-pest/dic2parms l.235 modified index for dp
-addin/setPestParm l.639 modified index for dp
+- pestKeywords/PGR write 'choice' correctly
+- pest/getDicBack2 l.73 added 'Transf' keyword to choose parm transformation
+- pest/getDicBack2 l.85,103 added 'log' for transformation by default
+- pest/getDicZone2 l.146 changed parm tranformation by default from none to log
+- pest/dic2parms l.235 modified index for dp
+- addin/setPestParm l.639 modified index for dp
+
+27/7/19 OA for usg Transport
+- core line 22 added MtUsgKeywords
+- core/openModel l.188 and 190 added to consider Usg transp
+- topbar/modlistFromGroup l.23-26 modfi to introduce Usg transp
+- core line 37 added MfUsgTrans as a new model (transport for ModflowUsg, Pht3d will remain the same)
+
+28/7/19  OA
+- qtTopBar/onChoiceModel l. 129 removed 4 lines for upper and lower case not usefull anymore
+- in addin modflow UNS replaced by modlfow USG
+- modflowWriter also same replacement
+- in parameters/action l.48-49 added for mt3dms -> usg transport if needed
+- core/writeModel l. 256 added mfUsgTrans + l.257 and 258
+
+05/08/19 EV
+orti3dGui/on3D l.71-72 modified to grey 3D button when not 3D model
+orti3dGui/onRCT l.80-81 modified to grey RCT button when RCT plugin is not used 
+orti3dGui/makePanelParameters l.256-261 added to grey 3D and RCT buttons when start ORTI3D_v3_start
+qtParameters/boutonVisible l.33-36 function modified and get out from UI-Parameters class to set enable parameters buttons
+qtDialog/genericDialog l.91 increased the width of the Long Text dialog box
+
+13/08/19 EV
+qgisGui/SetupUI change size of the plugin

@@ -8,7 +8,6 @@ class BaseTop:
         self.blind,self.gui,self.visu,self.core = {},gui,gui.visu,core
         for k in self.core.modelList: self.blind[k] = []
         self.blind['Mt3dms']=['btn.9','btn.10','uzt.3','uzt.4'],
-        #self.chooseCategory('Mod series')
         self.cfg = Config(core)
         self.gtyp = self.cfg.gtyp
         self.curVar = {}
@@ -20,7 +19,10 @@ class BaseTop:
         if categ in lshort:
             lmodels = [x for x in self.core.modelList if x[:4]==categ[:4]]
         else :
-            lmodels = [x for x in self.core.modelList if x[:4] not in lshort2]
+            if 'series' in categ: # 27/7/19 this line and 3 more changed forUsg transp
+                lmodels = ['Modflow','Mt3dms','Pht3d']
+            elif 'USG' in categ:
+                lmodels = ['Modflow','MfUsgTrans','Pht3d']
         if 'Observation' not in lmodels: 
             lmodels.append('Observation')
         return lmodels
