@@ -18,11 +18,15 @@ class mtUsgWriter:
         self.ttable = self.core.makeTtable();#print 'mtpht ttable',self.ttable
         self.dim = self.core.addin.getDim()
         self.core.updateDicts()
-        usgTrans['nam'] = self.writeNamFile(opt)
-        self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)#;print('writempht l.26',self.nper)
+        usgTrans['nam'] = self.writeNamString(opt)
+        if amax(self.core.getValueLong('MfUsgTrans','crch.1',0))>0: 
+            usgTrans['rch'] = self.writeRchString()
+        if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
+            usgTrans['wel'] = self.writeWelValues()            
+        self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         mcomp,ncomp,gcomp = listEsp['mcomp'],listEsp['ncomp'],listEsp['gcomp']
         self.nesp = ncomp
         nkim = len(listEsp['kim'])
@@ -34,7 +38,7 @@ class mtUsgWriter:
             self.writePcbFile(self.core)
         return 
         
-    def writeNamFile(self,opt):
+    def writeNamString(self,opt):
         s='BCT  41 '+self.fName+'.bct\n'
         if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()):
             s += 'PCB  42 '+self.fName+'.pcb\n'
@@ -42,7 +46,20 @@ class mtUsgWriter:
             s += ' PHC  64    Pht3d_ph.dat\n'
         s += 'DATA(BINARY) 101  '+self.fName+'.conc\n'
         return s
-
+        
+    def writeWelValues(self,opt=None):
+        '''a table of value that will be used in modflow'''
+        return self.core.ttable['cwell.1']
+        
+    def writeRchString(self,opt=None):
+        '''this list of strings will be used by modflow, one string for each
+        stress period'''
+        ls = []
+        for iper in range(self.nper): 
+            m = block(self.core,'MfUsgTrans','crch.1',False,None,iper);
+            ls.append(self.writeVecModflow(m[0],'arrfloat'))
+        return ls
+        
     #*********************** generic file writer ****************
     def writeFiles(self,opt):
         """to write all modflow usg transport files.

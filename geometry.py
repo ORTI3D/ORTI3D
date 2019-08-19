@@ -1,5 +1,5 @@
 from .config import *
-from matplotlib import pylab as pl
+#from matplotlib import pylab as pl
 from .myInterpol import *
 import matplotlib.tri as mptri
 
@@ -152,10 +152,10 @@ def makeZblock(core):
     nx,ny,xvect,yvect = getXYvects(core); #print 'geom 118',nx,ny,xvect,yvect
     mgroup = core.dicaddin['Model']['group']
     if core.addin.getDim() not in ['Radial','Xsection']: # 2 or 3D case
-        if core.addin.mesh==None: #mgroup == 'Modflow series': # OA 18/7/19 pb for min3p
+        if core.addin.mesh==None: # OA 18/7/19 pb for min3p
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
-            if mgroup[0]=='M': #Min3p
+            if mgroup[0]=='M': #Min3p amd Modfow USG
                 Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
             elif mgroup[0]=='O': # opengeosys
                 Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys
@@ -220,7 +220,7 @@ def getTopBotm(core,intFlagT,im,optionT,refer,mat):
     if mgroup == 'Modflow series':
         if mat=='top': line='dis.6'
         elif mat=='botm' : line='dis.7'
-    elif mgroup == 'Modflow UNS':
+    elif mgroup == 'Modflow USG': # OA 1/8/19 changed UNS to USG
         if mat=='top': line='disu.7'
         elif mat=='botm' : line='disu.8'
     elif mgroup == 'Min3p':
@@ -330,6 +330,8 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     dicz = core.diczone[modName].dic#;print 'geom 292 shapval',shape(value),dicz
     if line not in list(dicz.keys()):
         return value
+    else: # OA 4/8/19
+        if len(dicz[line]['name'])==0: return value
     dicz = dicz[line]
     pindx = zeros(nbc) # this will be the index, 0 for the background, then poly number
     for i in range(len(dicz['name'])):
@@ -357,7 +359,6 @@ def zmesh(core,dicz,media,i):
     '''returns the index of the cells that are under (line) or in (poly) a zone'''
     mesh = core.addin.mesh
     xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
-    xarray, yarray = mesh.elx,mesh.ely
     poly = dicz['coords'][i];#print poly
     x,y = list(zip(*poly))
     if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
@@ -372,11 +373,9 @@ def zmesh(core,dicz,media,i):
     elif (abs(x[0]-x[-1])<d/20) & (abs(y[0]-y[-1])<d/20): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs))
     else : # a line
-        idx = cellsUnderPoly(xarray,yarray,poly,llcoefs)>0
+        idx = cellsUnderPoly(mesh,poly,llcoefs)>0
     return idx
-    
-    
-    
+        
 def blockRegular(core,modName,line,intp,opt,iper):
     """creates a block for one variable which has a size given by the x,y,z 
     given by addin
@@ -567,7 +566,7 @@ def gmeshString(core,dicD,dicM):
     i_domn = dicD['name'].index('domain') # search for the line called domain
     dcoords = dicD['coords'][i_domn]
     ddens = dicD['value'][i_domn]
-    if isPolyClockw : dcoords = dcoords[-1::-1]
+    if isPolyTrigo(dcoords) : dcoords = dcoords[-1::-1] # poly mus tbe clockwise
     mgroup = core.addin.getModelGroup()
     if mgroup=='Opgeo': dens =  str(core.dicval[mgroup+'Flow']['domn.4'][0])
     ldom=len(dcoords)
@@ -687,7 +686,7 @@ def ptreplace(pold,pnew,i,j):
     if j in pnew: b = pold[pnew.index(j)]+1
     return a,b
     
-def readGmshOut(s):
+def readGmshOut(s,outline=False):
     '''reads the inside of a gmesh mesh file from the string s
     and returns nnod : nb of nodes, nodes : nodes coordinates, 
     nel : nb of elements, el
@@ -706,7 +705,12 @@ def readGmshOut(s):
     elements = array(c2,dtype='int');#print 'ogModel 48',arr
     elements = elements-1
     elements = elements[:,[0,3,4,5,6,7]] # 2nd column is useless
-    return nodes,elements
+    if outline: 
+        c3 = [x.split() for x in c1[2:] if len(x.split())==7]
+        line = array(c3,dtype='int')[:,-1]-1 # pt nb in python = gmsh-1
+        #line = r_[line,line[0]]
+        return nodes,elements,line
+    else : return nodes,elements
 
 def createTriangul(obj):
     '''get the triangulation for matplotlib representation'''
@@ -745,13 +749,14 @@ def planesFromPointMat(xmat,ymat,zmat):
     d=0 # not required
     return a,b,c,d
 
-def isPolyClockw(lpoints): 
-    '''verifies if a poly is clockwise or not, lpoints is a list of pts
-    does NOT work for complex polygons, but here it is only for the domain'''
+def isPolyTrigo(lpoints): 
+    '''verifies if a poly is trigono direction or not, lpoints is a list of pts
+    does NOT work for complex polygons, but here it is only for the domain
+    poly must be closed'''
     x,y = list(zip(*lpoints))
-    x,y = array(x.append(x[0])),array(y.append(y[0]))
-    clock = sum(x[1:]-x[:-1])*(y[1:]+y[:-1]) # if that sum is >0 it is clockw
-    return clock>0
+    x,y = array(x),array(y)
+    trigo = sum((x[1:]-x[:-1])*(y[1:]+y[:-1])) # if that sum is >0 it is clockw
+    return trigo<0
     
 def lcoefsFromPoly(poly):
     '''finds the list of coefficients for the equation of each line 
@@ -760,6 +765,7 @@ def lcoefsFromPoly(poly):
     n = len(x)
     lcoefs,a=zeros((2,n-1)),zeros((2,2))
     for i in range(n-1): # lcoefs are the coefficient of the lines ax+by=1
+        if x[i+1]==x[i]  and y[i+1]==y[i]: continue
         a[:,0]=x[i:i+2];a[:,1]=y[i:i+2];#print i,a
         lcoefs[:,i] = solve(a,ones((2,1))[:,0])
     return lcoefs
@@ -779,19 +785,17 @@ def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
         count += (pty>=ymin)*(pty<=ymax)*( sign(pos)==sign(lcoefs[0,i]))
     return list(mod(count,2)==1)# an odd number gives point in the poly
 
-def dstPointPoly(lpts,pol):
-    '''finds the shortest distance from each point in a list (lpts) to a polygon (pol)'''   
-    xpo,ypo = list(zip(*pol));
+def dstPointPoly(lpts,poly):
+    '''finds the shortest distance from each point in a list (lpts) to a polygon (poly)'''   
+    xpo,ypo = list(zip(*poly));
     dst,i = [],0
     for x,y in lpts[1:]:
-    #if 3>2:
         dpoly = sqrt((x-array(xpo))**2+(y-array(ypo))**2);#print i
         idx = where(dpoly==amin(dpoly))[0][0]
         xym = array([[xpo[idx-1],ypo[idx-1]],[xpo[idx],ypo[idx]]])
         if sum(abs(xym[:,0]))<1e-9: a,b,c = 1,0,0
         elif sum(abs(xym[:,1]))<1e-9: a,b,c = 0,1,0
         else : a,b = solve(xym,ones((2,1))[:,0])
-        #b1,a1=-a,b; c1=-(a1*x+b1*y)=-bx+ay; ax1+by1-1=0 & bx1-ay1+c1=0 => b^2y1-b+a^2y1-ac1=0
         yp = (b+a*(-b*x+a*y))/(a**2+b**2);xp=(1-b*yp)/a
         if ((xp>min(xym[:,0]))&(xp<max(xym[:,0]))&(yp>min(xym[:,1]))&(yp<max(xym[:,1])))|(idx==len(xpo)-1):
             dst.append(abs(a*x+b*y-1)/sqrt(a**2+b**2))
@@ -800,25 +804,25 @@ def dstPointPoly(lpts,pol):
             a,b = solve(xym,ones((2,1))[:,0])
             dst.append(abs(a*x+b*y-1)/sqrt(a**2+b**2))
         i += 1
-    #print dst
     return dst
         
-def cellsUnderPoly(xarray,yarray,poly,lcoefs):
-    '''finds the cells that are under each line of a poly. It uses an array of coordinates
-    of the cell vertices. Then calculates the position of the cell points
+def cellsUnderPoly(mesh,poly,lcoefs):
+    '''finds the cells that are under each line of a poly. 
+    It uses an array of coordinates of the cell vertices
+    Then calculates the position of the cell points
     relative to a line (can be one line of a  poly) and if there are both
     positive and negative values, the cell is under the line
     the input is two arrays for x and y vertices positions and the line pos'''
-    xmn,xmx, ymn,ymx = amin(xarray,axis=1),amax(xarray,axis=1),amin(yarray,axis=1),amax(yarray,axis=1)
-    #print 'geom 718',poly,shape(xc),len(poly),len(indx),lcoefs
-    indx = xarray[:,0]*0
+    xc,yc,idcell = mesh.elcenters[:,0],mesh.elcenters[:,1],mesh.idc
+    elxa, elya = array(mesh.elxa),array(mesh.elya)
+    indx = zeros(len(idcell))
     for i in range(len(poly)-1):
         x,y = list(zip(*poly[i:i+2]))
-        pos = sign(lcoefs[0,i]*xarray+lcoefs[1,i]*yarray-1)
-        dpos = abs(amax(pos,axis=1)-amin(pos,axis=1))
-        indx += (dpos>0)*(xmn<max(x))*(xmx>min(x))*(ymn<max(y))*(ymx>min(y))*1
+        pos = sign(lcoefs[0,i]*elxa+lcoefs[1,i]*elya-1) # posit. vs the line
+        dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
+        dpos = array(dpos)
+        indx += (dpos>0)*(xc<max(x))*(xc>min(x))*(yc<max(y))*(yc>min(y))*1
     return indx
-    
     
 def findSideNodes(core,nodes):
     '''retunrs index of nodes that are on the sides of the domain

@@ -1,17 +1,22 @@
 class  Mtu:
     def __init__(self):
-        self.grpList=['BCT','PCB','DPT','DDF']
+        self.grpList=['BCT','PCB','CRCH','CWELL','CGHB','DPT','DDF']
         bclist=['1a','1b'];
         bclist.extend([str(a) for a in range(2,8)])
         bclist.extend([str(a) for a in range(14,21)])
         self.groups={
         'BCT':['bct.'+a for a in bclist],
         'PCB':['pcb.1','pcb.2'], # conc at Boundaries
+        'CRCH':['crch.1'], # conc at recharge zones
+        'CWELL':['cwell.1'], # conc at wells
+        'CGHB':['cghb.1'], # conc at g hed boundaries
         'DPT':['dpt.1'], # dual porosity
         'DDF':['ddf.1'], # variable density
         }
         self.longNames={'BCT':'major transport parameters',
-        'PCB': 'prescribed concentraiotns at boundaries'}
+        'PCB': 'prescribed concentrations at boundaries',
+        'CRCH':' Conc. in recharge',
+        'CWELL': 'Conc at inj. wells'}
         
         self.lines={
             #BCT
@@ -107,6 +112,19 @@ class  Mtu:
         'type':['int'],'default':[0]},
         'pcb.2': {'comm':'conc. at boundaries', 'cond':'',
         'kw': ['CONC_BC'],'detail': ['conc.'],
+        'type':['arrfloat'],'default':[0.]},
+
+        ## CRCH
+        'crch.1': {'comm':'Recharge concentrations', 'cond':'',
+        'kw': ['RCHCONC'],'detail': [''],
+        'type':['arrfloat'],'default':[0.]},
+        ## CWELL
+        'cwell.1': {'comm':'Well concentrations', 'cond':'',
+        'kw': ['RCHCONC'],'detail': [''],
+        'type':['arrfloat'],'default':[0.]},
+        ## CGHB
+        'cghb.1': {'comm':'GHB concentrations', 'cond':'',
+        'kw': ['RCHCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
 
         ## DPT

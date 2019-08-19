@@ -534,6 +534,12 @@ this version sent to elicia
 
 1/8/19  OA
 - qtDialogs KeyPressevent : correction of copy paste pb in chemistry, added l.330 and modif 345
+- modflowWriter/getPermScaled l.419 an error on usg grid
+- geometry getTopBtotom l. 223 changed UNS to USG
+
+4/8/19  OA
+- geometry/zone2mesh l.333,334 added if no zones in this diczone
+- pb of starting with the Qgis python (to have shapely for polygons) required changes in ortiGui
 
 05/08/19 EV
 - orti3dGui/on3D l.71-72 modified to grey 3D button when not 3D model
@@ -541,6 +547,14 @@ this version sent to elicia
 - orti3dGui/makePanelParameters l.256-261 added to grey 3D and RCT buttons when start ORTI3D_v3_start
 - qtParameters/boutonVisible l.33-36 function modified and get out from UI-Parameters class to set enable parameters buttons
 - qtDialog/genericDialog l.91 increased the width of the Long Text dialog box
+
+7/8/19 OA
+- lots of change in modflowUsg
+- change in geometry readGmshOut
+- qtVisualisation in utton_release_callback l.960 added(int)
+
+10/8/19  OA
+- min3pWriter/getValue l. 365 changed to get all values instead of first one
 
 13/08/19 EV
 - qgisGui/SetupUI change size of the plugin
@@ -553,3 +567,6 @@ this version sent to elicia
 - qtTopBar/UpdatechoiceZone l.336-337 added to update zone value when chossing a line without zone
 - qtTopBar/onChoice l.348 added condition to avoid message error when click on zone box when chossing a line without zone
 - qtTopBar/onValueZ l.354 and setupUI l.283 added condition to avoid message error when click on zone box value when chossing a line without zone
+
+19/08/19 EV
+- modflowWriter/writeRCH l.186 for trch variable 'rch.2' changed by 'tlist' 

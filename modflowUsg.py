@@ -4,7 +4,8 @@ Created on Sun Sep 17 07:08:20 2017
 
 @author: oatteia
 """
-#from scipy.spatial import Voronoi
+from scipy.spatial import Voronoi
+#from shapely.geometry import Polygon
 from scipy import pi
 from operator import itemgetter
 from .config import *
@@ -20,29 +21,30 @@ class modflowUsg:
         '''opt=old the .msh file is used if it is found, new : it is rewritten'''
         self.core.addin.mesh = self
         dct = self.core.diczone['Modflow'].dic
-        fmsh = self.core.fileDir+os.sep+self.core.fileName+'_out.msh'
+        fmsh = self.core.fileName+'_out.msh'
         os.chdir(self.core.fileDir)
         if fmsh not in os.listdir(os.getcwd()): opt = 'new'
-        dicD = dct['disu.3'] # where the domain boundaries are + line .. + points (only pts and line will be used)
+        dicD = dct['disu.3'] # where the domain boundaries are 
         idom = dicD['name'].index('domain')
         dcoo = dicD['coords'][idom]
-        if dcoo[-1]==dcoo[0]: dcoo=dcoo[:-1]
-        dicD['coords'][idom] = dcoo
-        if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
-        else : dicK = {'name':[]}
+        dcoo = self.verifyDomain(dcoo)
+        # if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
+        # else : 
+        dicK = {'name':[]}
         if opt=='new':
             s = gmeshString(self.core,dicD,dicK)
             f1 = open('gm_in.txt','w');f1.write(s);f1.close()
             bindir = self.core.baseDir+os.sep+'bin'+os.sep
-            clmax = self.core.dicval['Modflow']['disu.3'][0]
-            os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -clmax '+str(clmax)+' -o '+fmsh)
-        f1 = open(fmsh,'r');s = f1.read();f1.close()
-        nodes,elements = readGmshOut(s);#print 'mfu 32',shape(nodes),shape(elements)
-        points = nodes[:,1:3]
-        npts0 = len(points)
+            clmax = self.core.dicval['Modflow']['disu.3'][0];print('start gmesh')
+            #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -clmax '+str(clmax)+' -o '+fmsh)
+            os.system(bindir+'gmsh gm_in.txt -2 -o '+fmsh)
+        f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
+        nodes,elements,line_dom = readGmshOut(s,outline=True);
+        points,elts = nodes[:,1:3],elements[:,-3:]
+        npts = len(points)
         bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
         dns = float(dicD['value'][dicD['name'].index('domain')])
-        points = self.addSidesPts(points,bbox,dns);
+        #points = self.addSidesPts(points,bbox,dns);
         mshType = self.core.getValueFromName('Modflow','MshType')
         if mshType == 0: # triangle
             msh = myTrg(self,nodes,elements)
@@ -50,11 +52,11 @@ class modflowUsg:
             xe,ye = self.elcenters[:,0],self.elcenters[:,1]
             self.trg = mptri.Triangulation(xe,ye) #
         if mshType == 1: # voronoi
-            vor = Voronoi(points)
-            msh = myVor(self,vor)
-            msh.transformVor(bbox,npts0)
+            msh = myVor(self)
+            msh.transformVor(points,elts,dcoo,line_dom)
             xn,yn = self.nodes[:,0],self.nodes[:,1]
-            self.trg = mptri.Triangulation(xn,yn,triangles=elements[:,-3:]) 
+            self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
+        self.addMeshVecs()
         if self.core.addin.getDim()=='3D': 
             med = self.core.dicaddin['3D']
             top = [float(x) for x in med['topMedia']]
@@ -69,6 +71,21 @@ class modflowUsg:
         if typ == 'elements': return self.ncell_lay
         if typ == 'tot_elements': return self.ncell
         
+    def verifyDomain(self,dcoo):
+        dcout = [dcoo[0]]
+        for i in range(1,len(dcoo)):
+            if dcoo[i]!=dcoo[i-1]: dcout.append(dcoo[i])
+        return dcout
+        
+    def addMeshVecs(self):
+        self.ncell,self.ncell_lay = len(self.elx),len(self.elx)
+        ic,self.idc=0,[]
+        for a in self.elx: self.idc.append([ic,ic+len(a)]);ic+=len(a)
+        self.elxa,self.elya=[],[]
+        for a in self.elx: self.elxa.extend(a)
+        for a in self.ely: self.elya.extend(a)
+        self.elcenters = array(self.elcenters,ndmin=2)
+                
     def addSidesPts(self,pts,bbox,dens):
         #left
         iside = where(pts[:,0]==bbox[0])[0]
@@ -219,10 +236,10 @@ class myTrg:
         p.elcenters = c_[xc,yc]
                         
 class myVor:
-    def __init__(self,parent,vor):
-        self.parent,self.nodes,self.xyverts,self.vor = parent,vor.points,vor.vertices,vor
+    def __init__(self,parent):
+        self.parent = parent
         
-    def transformVor(self,bbox,npts):
+    def transformVor(self,points,elts,dcoo,line_dom):
         '''reads the voronoi to create several objects:
         cells ordered as the initial points, removing the ones that contain -1
         - nodes : the inital points
@@ -234,72 +251,101 @@ class myVor:
         - fahl : for each cell a list of ridges length
         - cneighb: for each cell a list of n-1 connecting other cell
         - cdist: for each cell a list of n-1 distances from node to face
-        not : cdist, cneighb, fahl only include the links to cells that are inside 
-        the domain an thus contain les elements
+        note : cdist, cneighb, fahl only include the links to cells that are inside 
+        the domain an thus contain elements
+        dcoo: coordinates of the domain
         '''
         p = self.parent
-        p.cverts,p.carea,p.fahl,p.cneighb,p.cdist=[],[],[],[],[]
-        p.ncell,p.ncell_lay,p.xyverts = npts,npts,self.xyverts;#print npts
-        p.nodes = self.nodes[:npts,:];#print shape(self.nodes)
-        lnp = [len(x) for x in self.vor.regions]
-        mx_lnp = max(lnp)
-        p.rarray = zeros((npts,mx_lnp)).astype('int')
-        riverts = array(self.vor.ridge_vertices,ndmin=2)
-        p.nconnect = 0
-        for ip in range(npts):
-            ir = self.vor.point_region[ip]
-            xp,yp = p.nodes[ip]
-            iverts = self.vor.regions[ir]
+        npts,a = shape(points)
+        l0 = []
+        p.carea,p.fahl,p.cneighb,p.cdist,p.elx,p.ely=l0*1,l0*1,l0*1,l0*1,l0*1,l0*1
+        p.nconnect,p.nodes = 0,[]
+        line_dom = list(line_dom);nd=len(line_dom)
+        lcoo = array([tuple(x) for x in points[line_dom]])
+        xk,yk = zip(*lcoo);xg,yg = mean(xk),mean(yk)
+        pdom = Polygon(lcoo).buffer(0) # why some polyogns are not clean?
+        dmax = sqrt(pdom.area)/20
+        lcoefs = lcoefsFromPoly(lcoo)
+        # nvelle strategie : agrnadir domaine avant de faire voronoi
+        # add symetric points
+        point_add = []
+        for i in range(len(line_dom)-1):
+            il0,il1 = line_dom[i],line_dom[i+1]
+            id0 = where(elts==il0)[0]
+            id1 = where(elts[id0]==il1)[0]
+            if len(id1)==0:continue
+            eli = list(elts[id0[id1]][0]);eli.remove(il0);eli.remove(il1)
+            x,y = points[eli[0],0],points[eli[0],1]
+            point_add.append(self.symetricPts(x,y,lcoefs[:,i]))
+        #make voronoi 
+        points2 = r_[points,array(point_add,ndmin=2)]
+        vor = Voronoi(points2)
+        rverts = array(vor.ridge_vertices,ndmin=2)
+        #make all calc
+        newpts =  list(set(unique(vor.ridge_points))&set(range(npts)))
+        npts = len(newpts)
+        for ip in newpts:
+            xp,yp = points[ip]
+            ir = vor.point_region[ip] # point in the centre of the voronoi
+            iverts = vor.regions[ir] # index of vertices around the voronoi
+            xv,yv = vor.vertices[iverts,0],vor.vertices[iverts,1]
             nv = len(iverts)
-            #print ip,xp,yp,iverts,nv
-            p.rarray[ip,:nv] = iverts;
-            p.rarray[ip,nv:] = iverts[-1]
-            if iverts[0]!=iverts[-1]:iverts.append(iverts[0])
-            nverts=len(iverts)
-            p.cverts.append(iverts)
-            # calculates area
-            x,y = p.xyverts[iverts,0],p.xyverts[iverts,1]
-            area = abs(sum(x[:-1]*y[1:]-x[1:]*y[:-1]))/2
-            p.carea.append(area)
-            # find the points connected to ip
-            idx = list(where(self.vor.ridge_points==ip)[0])
-            riv1, rip1 = riverts[idx,:],self.vor.ridge_points[idx,:]
-            #print riv1,rip1
-            plist, p_in = [],[] # p_in is a list of points that are inside the domain
-            for i in range(nverts-1):
-                v1,v2 = iverts[i:i+2];#print v1,v2
-                r1,r2 = list(where(riv1==v1)[0]), list(where(riv1==v2)[0]);#print r1,r2
-                ind =list(set(r1)&set(r2))[0]
-                pt = list(rip1[ind]);pt.remove(ip)
-                if pt[0]<npts:
-                    p_in.append(i)
-                    plist.append(pt[0])
-            # length of ridge
-            ln0 = sqrt((x[1:]-x[:-1])**2+(y[1:]-y[:-1])**2) # length of face
-            ln0 = ln0[p_in]
-            # finds the distance from pt to face
-            dlist = []
-            for i in range(nverts-1):
-                if i not in p_in: continue
-                c = 1
-                xym = array([[x[i],y[i]],[x[i+1],y[i+1]]])
-                if sum(abs(xym[:,0]))==0: 
-                    lcoef =array([1,0]);c=0
-                elif sum(abs(xym[:,1]))==0: 
-                    lcoef =array([0,1]);c=0
-                else : 
-                    lcoef = solve(xym,ones((2,1))[:,0])
-                dst = abs(dot(array([xp,yp]),lcoef)-c)/sqrt(sum(lcoef**2))
-                dlist.append(dst)
-            p.cneighb.append(plist)    
-            p.fahl.append(ln0)
-            p.cdist.append(dlist)
-            p.nconnect += len(dlist)
-        p.xyverts[:,0] = clip(p.xyverts[:,0],bbox[0],bbox[1])
-        p.xyverts[:,1] = clip(p.xyverts[:,1],bbox[2],bbox[3])
-        p.elx = [p.xyverts[vts,0] for vts in p.cverts]
-        p.ely = [p.xyverts[vts,1] for vts in p.cverts]
-        p.carea1 = p.carea*1
-        p.elcenters = array(p.nodes)
-
-        #print 'len cv',len(self.cverts);#'nconnect',self.nconnect
+            idr1,idr2 = where(vor.ridge_points==ip) # ridges
+            # need to sort the points in same order as iverts
+            rv1,indp = [list(rverts[i]) for i in idr1],[]
+            #if len(rv1)==0: p.exclude.append(ip);continue
+            for i in range(nv-1):
+                l0=iverts[i:i+2];l0.sort();indp.append(rv1.index(l0))
+            l0=[iverts[0],iverts[-1]];l0.sort();indp.append(rv1.index(l0))
+            # find the connecting points symetric to ridges
+            plist = vor.ridge_points[idr1,1-idr2]
+            plist = plist[indp]
+            indpi = where(plist<npts)[0] # indx of the internal pts
+            if -1 in iverts:
+                indx = iverts.index(-1)
+                xv[indx],yv[indx] = xp*2.01-xg*1.01,yp*2.01-yg*1.01
+            xp1,yp1 = points2[plist,0],points2[plist,1]
+            dlist = sqrt((xp-xp1)**2+(yp-yp1)**2)/2
+            # modify x,y if external
+            pv= Polygon(zip(xv,yv))
+            p1 = pv.intersection(pdom)
+            xv,yv = zip(*(p1.exterior.coords))
+            xv,yv = array(xv),array(yv)
+            indpi = indpi[indpi<len(xv)-1]
+            # calculates area and length
+            area = abs(sum(xv[:-1]*yv[1:]-xv[1:]*yv[:-1]))/2
+            long = sqrt((xv[1:]-xv[:-1])**2+(yv[1:]-yv[:-1])**2) # length of face
+            p.carea.append(area);p.cneighb.append(plist[indpi]);
+            p.fahl.append(long[indpi]);p.cdist.append(dlist[indpi])
+            p.elx.append(xv);p.ely.append(yv)
+            p.nconnect += len(indpi)
+            p.nodes.append(points[ip])
+        p.nodes = array(p.nodes,ndmin=2)
+        p.elcenters = p.nodes
+            
+    def symetricPts(self,x,y,coefs): 
+        a,b=coefs;c=-1 # ax+by=1
+        if a==0 and b==0 : x1=x;y1=y
+        elif a==0:  x1=x;y1=y+(1/b-y)*2# horizontal line
+        elif b==0: y1=x;x1=x+(1/a-x)*2# vertical line
+        else :
+            y1=(-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
+            x1=-a/b*(y-y1)+x
+        return (x1,y1)
+        
+    def verifyDomain(self,line_dom,points):
+        lout=[line_dom[0]]
+        for i in range(1,len(line_dom)):
+            if sum(abs(points[line_dom[i]]-points[line_dom[i-1]]))!=0:
+                lout.append(line_dom[i])
+        return lout
+        
+    def listPtInBox(self,dcoo,lcoefs,iverts,xyverts):
+        '''some poins on the side have worng pts wihtout -1 in iverts'''
+        ivout = []
+        for iv in iverts:
+            x,y = xyverts[iv];ax,ay=array([x]),array([y])
+            if pointsInPoly(ax,ay,dcoo,lcoefs)[0]: ivout.append(0)
+            elif iv==-1: ivout.append(0)
+            else : ivout.append(1)
+        return ivout

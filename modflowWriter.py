@@ -13,23 +13,43 @@ class modflowWriter:
         self.fDir,self.fName,self.Fkey = fDir,fName,Mf()
         self.fullPath = fDir+os.sep+fName;#print self.fullPath
 
-    def writeModflowFiles(self, core):
+    def writeModflowFiles(self, core,usgTrans={}):
         nbfor,recharge = 0,0
-        self.ttable = core.makeTtable();#print 'mfw',self.ttable
+        self.ttable,self.usgTrans = self.core.makeTtable(),usgTrans;
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)
-        self.core.Zblock = makeZblock(self.core);#print 'mfw,zb',shape(self.core.Zblock)
-        self.dicval = core.dicval['Modflow']
+        self.core.Zblock = makeZblock(self.core);
+        dim = self.core.addin.getDim()
+        nx,ny,a,b = getXYvects(self.core)
+        if dim in ['2D','3D']: self.nlay = getNlayers(self.core)
+        else : self.nlay = ny
+        if len(self.usgTrans.items())>0: self.trans = True
+        else : self.trans = False
+        self.dicval = self.core.dicval['Modflow']
         self.core.setValueFromName('Modflow','NPER',self.nper) # nper may be wrong if transietn zones
         self.radfact=1.
         if self.core.addin.getDim() in ['Radial','Xsection']: self.setRadial()
+        lexceptions=['dis.1','dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']#EV 06/11 added 'dis.1'
+        lexceptions.extend(['disu.2','disu.3','disu.6','disu.9']) 
+        lexceptions.extend(['lpf.'+str(a) for a in range(8,14)]) # when wirting by layers
+        lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
+        lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
+        lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
+        lexceptions.extend(['sms.1a','hfb.3'])
+        self.lexceptions = lexceptions
+        lgex = ['DIS','DISU','LPF','RCH','EVT','UPW','UZF','SMS','HFB6']
+        lnorm = ['BAS6','SIP','PCG','SOR','DE4','NWT','GMG'] 
         self.writeNamFile()
-        self.writeFiles()
+        #self.writeFiles() #OA 13/8/19 for loop below is new
+        for grp in self.core.getUsedModulesList('Modflow'):
+            if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # in transientfile
+            elif grp in lnorm : self.writeOneFile(grp,{})
+            elif grp in lgex : exec('self.write'+grp+'()')
         self.writeLmtFile()
         self.writeOcFile()
         #print 'mfwrite',self.ttable
-        if 'bas.5' in list(self.ttable['Transient'].keys()): #in bas.5 initial head there are variable zones
+        if 'bas.5' in list(self.ttable['Transient'].keys()): # var head
             if self.ttable['Transient']['bas.5']:
                 self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
@@ -42,9 +62,6 @@ class modflowWriter:
         g = self.core.addin.getFullGrid()
         self.core.setValueFromName('Modflow','NLAY',g['ny'])
         self.core.setValueFromName('Modflow','NROW',1) 
-#        for n in ['LAYCBD','LAYTYP','LAYAVG','LAYVKA','LAYWET']:
-#            lc = self.core.getValueFromName('Modflow',n);print 'mfw setr',lc,type(lc)
-#            self.core.setValueFromName('Modflow',n,[lc]*int(g['ny']))
 
     """ for the y dimension ipht3d matrices are the inverse of modflow ones
     for vectors, it is taken into account any time a y vector is written
@@ -81,186 +98,234 @@ class modflowWriter:
                 f1.write('CHD     37     ' + self.fName + '.chd\n')
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             f1.write('MNW2     39     ' + self.fName + '.mnwt\n')
+            
+        if self.trans: # OA added for usg
+            f1.write(self.usgTrans['nam'])
+            
         f1.close()
 
-    #*********************** generic file writer ****************
-    def writeFiles(self):
-        """to write all modflow file.
+    #*********************** specific file writers ****************
+            
+    def writeDIS(self):
+        # dis.4
+        dim = self.core.addin.getDim()
+        delr = self.core.dicval['Modflow']['dis.4']
+        s = self.writeVecModflow(delr,'vecfloat')
+        exceptDict={'dis.4':s+'\n'}
+        #dis.5
+        delc = self.core.dicval['Modflow']['dis.5']
+        if dim in ['2D','3D'] : s = self.writeVecModflow(delc[-1::-1],'vecfloat')
+        elif dim=='Radial': s = 'CONSTANT     1  '
+        elif dim=='Xsection': 
+            front = self.core.getValueFromName('Modflow','TOP')
+            end = self.core.getValueFromName('Modflow','BOTM')
+            s = 'CONSTANT    '+str(front-end)
+        exceptDict['dis.5'] =s+'\n'
+        #dis.8'
+        tlist = array(self.ttable['tlist'])
+        perlen = tlist[1:]-tlist[:-1]
+        lval=self.dicval['dis.8'] # contains period sze, end time, 3 things to print
+        SsTr,s1 = 'SS',''
+        if lval[3]==1 : SsTr = 'Tr'
+        for ip in range(self.nper):
+            if ip>0: SsTr='Tr'
+            s1 +=' %9.3e %9i %9.3e ' %(perlen[ip],lval[1],lval[2]) #OA 13/9/18
+            s1 += SsTr.rjust(10)+'\n'
+        exceptDict['dis.8'] =s1+'\n'
+        self.writeOneFile('DIS',exceptDict)
+        
+    def writeDISU(self):
+        nodelay = int(self.core.getValueFromName('Modflow','NODELAY'))
+        exceptDict={'disu.6': 'CONSTANT    '+str(nodelay)+'\n'}
+        
+        s1 = self.core.addin.mfU.writeDisu()
+        tlist = array(self.ttable['tlist'])
+        perlen = tlist[1:]-tlist[:-1]
+        lval=self.dicval['disu.9'] # contains period sze, end time, 3 things to print
+        SsTr = 'SS'
+        if lval[3]==1 : SsTr = 'Tr'
+        for ip in range(self.nper):
+            if ip>0: SsTr='Tr'
+            s1 +=' %9.3e %9i %9.3e ' %(perlen[ip],lval[1],lval[2]) #OA 13/9/18
+            s1 += SsTr.rjust(10)+'\n'
+        exceptDict['disu.9'] = s1
+        self.writeOneFile('DISU',exceptDict)
+        
+    def writeLPF(self):
+        #lpf.2
+        ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
+        val = self.core.dicval['Modflow']['lpf.2']
+        lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+        lval= [item for sublist in lval1 for item in sublist]
+        s=''
+        for i in range(len(lval)):
+            s+=' '+str(int(lval[i])).rjust(2) 
+        exceptDict={'lpf.2':s+'\n'}
+        #lpf.8' writes several lines per layer
+        llist = ['lpf.'+str(a) for a in range(8,14)];#take four lines
+        value = []
+        for l2 in llist:
+            cond = self.Fkey.lines[l2]['cond'];
+            if self.testCondition(cond) == False : continue
+            v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
+            value.append(v0)
+        val,s = self.core.dicval['Modflow']['lpf.2'],'' # EV 23/11/2018
+        ilay=getNlayersPerMedia(self.core) 
+        lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+        lval= [item for sublist in lval1 for item in sublist]
+        for l in range(self.nlay):
+            for i in range(len(value)):
+                if i==3 and lval[l]==0 : continue # specif writing for storage
+                s += self.writeMatModflow(value[i][l],'arrfloat')+'\n'
+        exceptDict['lpf.8'] = s
+        self.writeOneFile('LPF',exceptDict)
+        
+    def writeRCH(self):
+        s= ''
+        #trch = self.ttable['rch.2'] 
+        trch = array(self.ttable['tlist']) #EV 19/08/2019
+        for iper in range(self.nper): 
+            if iper>0 and prod(trch[iper]==trch[iper-1])==1: # same values as previous
+                if self.trans:  s += '    -1      INCONC\n'
+                else :  s += '    -1\n'
+            else :
+                if self.trans:  s += '    0      INCONC\n'
+                else :  s += '    0\n'# 0: data are written not reused from previous
+                m = block(self.core,'Modflow','rch.2',False,None,iper);
+                s += self.writeMatModflow(m[0],'arrfloat')+ '\n'
+                if self.trans: s += self.usgTrans['rch'][iper]
+        exceptDict={'rch.2':s}
+        if self.trans: optionDict = {'rch.1': ' CONC  \n       1'} # one species
+        else : optionDict = {}
+        self.writeOneFile('RCH',exceptDict,optionDict)
+        
+    def writeEVT(self):
+        s = ''
+        for iper in range(self.nper):
+            s += '    0     0    0\n' # INSURF INEVTR INEXDP INIEVT not read
+            for k in range(2,5):
+                m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);
+                s += self.writeMatModflow(m[0],'arrfloat')+'\n'
+        exceptDict={'evt.2':s}
+        self.writeOneFile('EVT',exceptDict)
+
+    def writeUPW(self):
+        #upw.7' writes several lines per layer
+        strt = int(line[-1])
+        llist = [line[:4]+str(a) for a in range(strt,strt+6)];#take four lines
+        value = []
+        for l2 in llist:
+            cond = self.Fkey.lines[l2]['cond'];
+            if self.testCondition(cond) == False : continue
+            v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
+            value.append(v0)
+        val,s = self.core.dicval['Modflow']['lpf.2'],'' # EV 23/11/2018
+        ilay=getNlayersPerMedia(self.core) 
+        lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+        lval= [item for sublist in lval1 for item in sublist]
+        for l in range(nlay):
+            for i in range(len(value)):
+                if i==3 and lval[l]==0 : continue
+                s += self.writeMatModflow(value[i][l],'arrfloat')+'\n'
+        exceptDict['upw.7'] = s
+        self.writeOneFile('UPW',exceptDict)
+        
+    def writeSMS(self):        
+        exceptDict = {'sms.1a':''}
+        a = self.core.dicval['Modflow']['sms.1a'][0];# print 'mfw 168',s, type(s)
+        if a!= 0: 
+            exceptDict['sms.1a'] = self.Fkey.lines['sms.1a']['kw'][i]
+        self.writeOneFile('SMS',exceptDict)
+        
+    def writeUZF(self):
+        #uzf.9' writes an array for each period with zero before
+        m0, s = 0,''
+        for iper in range(self.nper): 
+            m = block(self.core,'Modflow','uzf.10',False,None,iper);
+            s += '    0\n' # 0: data are written not reused from previous
+            s += self.writeMatModflow(m[0],'arrfloat')+'\n'
+        exceptDict = {'uzf.9':s}
+        # in uzf put only one value of these parameters
+        s = ''
+        for line in ['uzf.2','uzf.3','uzf.4','uzf.5','uzf.6','uzf.7']: 
+            m = self.core.getValueLong('Modflow',line,0)
+            s += self.writeMatModflow(m[0],ktyp)+'\n'  # OA 7/3/19
+            exceptDict[line] = s
+        self.writeOneFile(self,'UZF',exceptDict)
+        
+    def writeHFB6(self):
+        #hfb.3': # EV 26/11/2018
+        line= 'hfb.3'
+        zname = self.core.diczone['Modflow'].dic[line]['name']
+        val = self.core.diczone['Modflow'].dic[line]['value'] 
+        nbz = len(zname)
+        nbHfb=[]; s=''
+        for iz in range(nbz):
+            imed = self.core.diczone['Modflow'].getMediaList(line,iz)
+            ilay = media2layers(self.core,imed)
+            hfb = self.writeHfb(line,iz)
+            nbHfb.append(len(ilay)*len(hfb))
+            for n in range(len(ilay)):
+                for i in range(len(hfb)):
+                    s+=str(ilay[n]+1)+' '+str(hfb[i][0])+' '+str(hfb[i][1])
+                    s+=' '+str(hfb[i][2])+' '+str(hfb[i][3])+' '+str(val[iz])+'\n' 
+        exceptDict = {'hfb.3':' 0  0  '+str(sum(nbHfb))+'\n'+s}
+        self.writeOneFile('HFB6',exceptDict)
+        
+    def writeOneFile(self,grp,exceptDict,optionDict={}):
+        """to write one modflow file.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
-        lexceptions=['dis.1','dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']#EV 06/11 added 'dis.1'
-        lexceptions.extend(['disu.2','disu.3','disu.6','disu.9']) 
-        lexceptions.extend(['lpf.'+str(a) for a in range(8,14)]) # when wirting by layers
-        lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
-        lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
-        lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
-        lexceptions.extend(['sms.1a','hfb.3'])
-        for grp in self.core.getUsedModulesList('Modflow'):
-            if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # WEL is written by transientfile
-            ext = grp
-            if grp=='Solver': ext=self.solv
-            f1=open(self.fullPath +'.'+ ext.lower(),'w')
-            llist=self.Fkey.groups[grp];#print('llist',llist)
-            for ll in llist:
-                cond=self.Fkey.lines[ll]['cond'];#print 'mfw 96',ll
-                if self.testCondition(cond)==False : continue
-                kwlist=self.Fkey.lines[ll]['kw']
-                ktyp=self.Fkey.lines[ll]['type'];#print 'mfw',ktyp
-                lval=self.dicval[ll]
-                if (ll in lexceptions) or (ktyp[0][:3]=='lay'):
-                    self.writeExceptions(ll,kwlist,ktyp[0],f1)
-                    continue
-                for ik in range(len(kwlist)):
-                    value=lval[ik]
-                    if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
-                        value=self.core.getValueLong('Modflow',ll,ik);#print 'mfw 106',ll,shape(value)
-                        self.writeBlockModflow(value,f1,ktyp[ik]) # OA 1/8/17
-                    elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
-                        f1.write(str(value).rjust(10))
-                    elif ktyp[ik]=='title': # case of a title line
-                        f1.write('#'+str(value).rjust(10))
-                    else : # values with strings
-                        f1.write(str(value).rjust(10));#print 'write str',ll
-                f1.write('\n')
-            f1.close()
-            #print grp+' written'
-                    
-    def writeExceptions(self,line,kwlist,ktyp,f1):
-        """to write some things modflow wants in a ...specific format"""
+        lexceptions = self.lexceptions 
+        ext, s = grp, ''
+        if grp=='Solver': ext=self.solv
+        f1=open(self.fullPath +'.'+ ext.lower(),'w')
+        llist=self.Fkey.groups[grp];
+        for ll in llist:
+            cond=self.Fkey.lines[ll]['cond']#;print('mfw 96',ll)
+            if self.testCondition(cond)==False : continue
+            kwlist=self.Fkey.lines[ll]['kw']
+            ktyp=self.Fkey.lines[ll]['type'];#print 'mfw',ktyp
+            lval=self.dicval[ll]
+            if (ll in lexceptions):
+                if ll in exceptDict.keys(): s += exceptDict[ll]
+                continue
+            if (ktyp[0][:3]=='lay'):
+                s += self.layerLines(ll)
+                continue
+            for ik in range(len(kwlist)):
+                value=lval[ik]
+                if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
+                    value=self.core.getValueLong('Modflow',ll,ik);#print 'mfw 106',ll,shape(value)
+                    s += self.writeBlockModflow(value,ktyp[ik]) # OA 1/8/17
+                elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
+                    s += str(value).rjust(10)
+                elif ktyp[ik]=='title': # case of a title line
+                    s += '#'+str(value).rjust(10)
+                else : # values with strings
+                    s += str(value).rjust(10);#print 'write str',ll
+            if ll in optionDict.keys(): s+= ' '+optionDict[ll]+'\n'
+            else : s += '\n'
+        f1.write(s);f1.close()
+        
+    def layerLines(self,line):
+        # to print laycbd and others
         dim = self.core.addin.getDim()
         nx,ny,a,b = getXYvects(self.core)
-        if dim in ['2D','3D']: nlay = getNlayers(self.core)
-        else : nlay = ny
-        tlist = array(self.ttable['tlist'])
-        nper = len(tlist)-1
-        
-        if line == 'dis.4': # pb for radial and xsection with layers
-            delr = self.core.dicval['Modflow'][line]
-            self.writeVecModflow(delr,f1,'vecfloat')
-            f1.write('\n')
-        
-        if line == 'dis.5': # row height needs to be inverted
-            delc = self.core.dicval['Modflow'][line]
-            if dim in ['2D','3D'] : self.writeVecModflow(delc[-1::-1],f1,'vecfloat')
-            elif dim=='Radial': f1.write('CONSTANT     1  ')
-            elif dim=='Xsection': 
-                front = self.core.getValueFromName('Modflow','TOP')
-                end = self.core.getValueFromName('Modflow','BOTM')
-                f1.write('CONSTANT    '+str(front-end))
-            f1.write('\n')
-                    
-        if line == 'disu.6':
-            nodelay = int(self.core.getValueFromName('Modflow','NODELAY'))
-            f1.write('CONSTANT    '+str(nodelay)+'\n')
-        
-        if line in ['dis.8','disu.9']: # periods characteristics 4 values per period
-            s1 = ''
-            if line == 'disu.9':
-                s1 = self.core.addin.mfU.writeDisu()
-            perlen = tlist[1:]-tlist[:-1]
-            lval=self.dicval[line] # contains period sze, end time, 3 things to print
-            SsTr = 'SS'
-            if lval[3]==1 : SsTr = 'Tr'
-            for ip in range(nper):
-                if ip>0: SsTr='Tr'
-                s1 +=' %9.3e %9i %9.3e ' %(perlen[ip],lval[1],lval[2]) #OA 13/9/18
-                s1 += SsTr.rjust(10)+'\n'
-            f1.write(s1)
-            
-        if line=='sms.1a':
-            s = self.core.dicval['Modflow'][line][0];# print 'mfw 168',s, type(s)
-            if s!= 0: 
-                f1.write(self.Fkey.lines[line]['kw'][i])
-            
-        if line in ['lpf.8','upw.7']: # writes several lines per layer
-            strt = int(line[-1])
-            llist = [line[:4]+str(a) for a in range(strt,strt+6)];#take four lines
-            value = []
-            for l2 in llist:
-                cond = self.Fkey.lines[l2]['cond'];#print 'mfw cond',l2,cond,self.testCondition(cond)
-                if self.testCondition(cond) == False : continue
-                v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
-                value.append(v0)
-            val = self.core.dicval['Modflow']['lpf.2'] # EV 23/11/2018
-            ilay=getNlayersPerMedia(self.core) 
-            lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
-            lval= [item for sublist in lval1 for item in sublist]
-            for l in range(nlay):
-                for i in range(len(value)):
-                    #print 'mfw 183',l,i,shape(value[i][l])
-                    if i==3 and lval[l]==0 : continue
-                    self.writeMatModflow(value[i][l],f1,'arrfloat');f1.write('\n')
-                    
-        if line in ['rch.2','uzf.9']: # writes an array for each period with zero before
-            if line=='uzf.9': line2='uzf.10'
-            elif line == 'rch.2': line2=line*1
-            #print 'mfw rch',self.core.ttable[line2]
-            m0=0
-            for iper in range(nper): # OA 14/2/2019 modif below if rech remain similar
-                #if iper>0: m0 = block(self.core,'Modflow',line2,False,None,iper); #EV 21/03/2019 remove OA modif 
-                m = block(self.core,'Modflow',line2,False,None,iper);
-                #if sum(m0-m)==0:
-                    #f1.write('    -1\n')
-               # else :
-                f1.write('    0\n') # 0: data are written not reused from previous
-                self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
-
-        if line == 'evt.2': # writes an array for each period with zero before
-            for iper in range(nper):
-                f1.write('    0     0    0\n') # INSURF INEVTR INEXDP INIEVT not read
-                for k in range(2,5):
-                    m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);#print iper,shape(m),amax(m),where(m==1)
-                    self.writeMatModflow(m[0],f1,'arrfloat');f1.write('\n')
-                
-        if line in ['uzf.2','uzf.3','uzf.4','uzf.5','uzf.6','uzf.7']: # in uzf put only one value of these parameters
-            m = self.core.getValueLong('Modflow',line,0)
-            self.writeMatModflow(m[0],f1,ktyp);f1.write('\n')  # OA 7/3/19
-            
-        if line == 'lpf.2':
-            ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
-            val = self.core.dicval['Modflow'][line]
-            lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
-            lval= [item for sublist in lval1 for item in sublist]
-            s=''
-            for i in range(len(lval)):
-                s+=' '+str(int(lval[i])).rjust(2) 
-            f1.write(s+'\n') 
-            
-        #if line in ['lpf.11']
-
-        if ktyp[:3] == 'lay': # to print laycbd and others
-            lval = self.core.dicval['Modflow'][line][0] # in 3D, should be a list of values
-            s=''
-            if dim == '2D' : s=str(lval)
-            elif dim == '3D': #presently there is only one value for all layers
-                s=' '+str(lval).rjust(2)
-                for i in range(1,nlay):
-                    if mod(i,40)==0: s+='\n'
-                    s+=' '+str(lval).rjust(2)
-            else : # radial and xsection
-                s=str(lval).rjust(2)
-                for i in range(1,ny):
-                    if mod(i,40)==0: s+='\n'
-                    s+=' '+str(lval).rjust(2) 
-            f1.write(s+'\n')   
-        
-        if line=='hfb.3': # EV 26/11/2018
-            zname = self.core.diczone['Modflow'].dic[line]['name']
-            val = self.core.diczone['Modflow'].dic[line]['value'] 
-            nbz = len(zname)
-            nbHfb=[]; s=''
-            for iz in range(nbz):
-                imed = self.core.diczone['Modflow'].getMediaList(line,iz)
-                ilay = media2layers(self.core,imed)
-                hfb = self.writeHfb(line,iz)
-                nbHfb.append(len(ilay)*len(hfb))
-                for n in range(len(ilay)):
-                    for i in range(len(hfb)):
-                        s+=str(ilay[n]+1)+' '+str(hfb[i][0])+' '+str(hfb[i][1])
-                        s+=' '+str(hfb[i][2])+' '+str(hfb[i][3])+' '+str(val[iz])+'\n' 
-            f1.write(' 0  0  '+str(sum(nbHfb))+'\n')
-            f1.write(s)               
-            
+        lval = self.core.dicval['Modflow'][line][0] #in 3D,should be list of values
+        s=''
+        if dim == '2D' : s=str(lval)
+        elif dim == '3D': #presently there is only one value for all layers
+            s=' '+str(lval).rjust(2)
+            for i in range(1,self.nlay):
+                if mod(i,40)==0: s+='\n'
+                s+=' '+str(lval).rjust(2)
+        else : # radial and xsection
+            s=str(lval).rjust(2)
+            for i in range(1,ny):
+                if mod(i,40)==0: s+='\n'
+                s+=' '+str(lval).rjust(2) 
+        return s+'\n' 
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
         return self.core.testCondition('Modflow',cond)
@@ -318,7 +383,9 @@ class modflowWriter:
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': k.append(self.getPermScaled(ilay,irow,icol))
             
-        buff = ' %9i   \n' %npts;#print(line,zlist)
+        buff = ' %9i   0   ' %npts;#print(line,zlist)
+        if self.trans: buff += '    AUX CO1  \n'
+        else : buff += '\n'
         #print 'mfw transient',nper
         for ip in range(nper): # get each period
             buff += ' %9i   \n' %npts
@@ -326,7 +393,10 @@ class modflowWriter:
             if len(unique(zlist[:,iz]))>1 : flagTr = True
             for iz in range(nzones): # and each zones
                 val = zlist[ip,iz] # the value of the variable for the period
-                a = core.diczone['Modflow'].getValue(line,'value',iz); #print('dicz',a) # OA 25/4/19
+                if ext in self.usgTrans.keys(): 
+                    soption = self.usgTrans[ext][ip,iz] + '\n'
+                else : soption ='\n'
+                a = core.diczone['Modflow'].getValue(line,'value',iz)
                 if '$' in a: vparms = a.split('$')[1]
                 vnext = zlist[min(ip+1,nper-1),iz] #OA 7/8/17 pb of Chd
                 npz = len(lpts[iz])
@@ -336,22 +406,23 @@ class modflowWriter:
                     else : 
                         zbase = 0 # OA 25/4/19
                     if ext=='wel': 
-                        buff+= lpts[iz][pt]+' %+9.2e'%(float(val)*k[iz][pt])+'\n' #EV 20/02/19
+                        buff+= lpts[iz][pt]+' %+9.2e '%(float(val)*k[iz][pt]) #EV 20/02/19
                     elif ext=='chd': 
-                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g  \n'%(float(val)+zbase,float(vnext)+zbase)
-                    elif ext=='drn': # writes the elevation addiing zbase (polyV), then cond.
+                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g ' %(float(val)+zbase,float(vnext)+zbase)
+                    elif ext=='drn': # elevation adding zbase (polyV), then cond.
                         v1,v2 = val.split();#print(iz,pt,zbase,v1,v2)
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(float(v1)+zbase,float(v2))
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g ' %(float(v1)+zbase,float(v2))
                     elif ext=='ghb':
-                        a,cond = vparms.split(); #conductance is steady (in time and space)
+                        a,cond = vparms.split(); #conductance steady (time & space)
                         if flgTr: hd = float(val)
                         else : hd = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g  \n'%(hd+zbase,float(cond))
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g '%(hd+zbase,float(cond))
                     elif ext=='riv':
                         a,cond,botm = vparms.split()
                         if flgTr: stage = float(val)
                         else : stage = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g  \n'%(stage,float(cond),float(botm)+zbase)
+                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g ' %(stage,float(cond),float(botm)+zbase)
+                    buff += soption
         f1.write(buff)
         f1.close()
         
@@ -381,7 +452,7 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            irow = zmesh(core,dicz,0,iz) # media=0 will calc it below
+            irow = zmesh(core,dicz,0,iz) # media=0 will calc other media below
             n0,irow1 = len(irow),[]
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
@@ -393,7 +464,7 @@ class modflowWriter:
         """return the permeability for a list of layer, col rows scaled by the
         sum of permeability for this list"""
         K = self.core.getValueLong('Modflow','lpf.8',0)
-        #print 'mfw l264',shape(K),ilay,irow,icol
+        #print('mfw l400',shape(K),ilay,irow,icol)
         grd = self.core.addin.getFullGrid()
         dx=grd['dx'];dy=grd['dy'];ny=grd['ny']
         zb = self.core.Zblock
@@ -411,8 +482,8 @@ class modflowWriter:
                 else : 
                     ncell = mh.getNumber('elements') # OA 3/10/18 moved from above
                     irow1 = mod(irow[i],ncell)
-                    vol = mh.carea1[irow[i]]*thick[ilay[i],irow1] # irow is the cell nb
-                    ka[i] = K[ilay[i],irow1*vol]
+                    vol = mh.carea[irow1]*thick[ilay[i],irow1] # irow is the cell nb
+                    ka[i] = K[ilay[i],irow1]*vol # OA modif 1/8 error in calcul
         return ka/sum(ka)
         
     #*************************** fichier MNWT multinode ***********************
@@ -462,74 +533,81 @@ class modflowWriter:
     def writeOcFile(self):
 
         f1=open(self.fullPath +'.oc','w')     
-        f1.write('HEAD SAVE UNIT 30 \nCompact Budget \n')
+        s = 'HEAD SAVE UNIT 30 \n'
+        if len(self.usgTrans.items())>0: s += 'CONC SAVE UNIT 101 \n'
+        s += 'Compact Budget \n'
         nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
         if self.nper>1:
             for p in range(self.nper):
-                f1.write('Period %5i Step %5i \n' %(p+1,nstp))
-                f1.write('Save Head \n')
-        else : f1.write('Period 1 Step 1 \nSave Head\nSave Budget \n')
-        f1.close()
+                s += 'Period %5i Step %5i \n' %(p+1,nstp)
+                s += 'Save Head \n'
+                if len(self.usgTrans.items())>0: 
+                    s += 'Save Conc \n'  # OA 30/7/19 conc
+        else : s += 'Period 1 Step 1 \nSave Head\nSave Budget \n'
+        f1.write(s);f1.close()
         
     #------------------------- fonction  writevect, writemat -------------------
-    def writeVecModflow(self, v, f1,ktyp):
+    def writeVecModflow(self, v,ktyp):
         #print shape(v),amin(v),amax(v)
-        l=len(v);ln=3
+        l=len(v);ln=3;s=''
         if ktyp[3:]=='int': typ='I' #OA 1/8/17
         else : typ='G'
         if amin(v)==amax(v):
-            f1.write('CONSTANT     %9.5e  ' %amin(v))
-            return
+            s += 'CONSTANT     %9.5e  ' %amin(v)
+            return s
         if typ=='I': fmt='1    ('+str(l)+'I'+str(ln)
         else : fmt='0    ('+str(l)+'G12.4'           
-        f1.write('INTERNAL     '+fmt+')     3 \n' )
+        s += 'INTERNAL     '+fmt+')     3 \n'
         
         if typ=='I': fmt='%'+str(ln)+'i'
         else : fmt='%+11.4e '            
 
         for i in range(l):
-            f1.write(fmt %v[i])
-        #f1.write('\n')
+            s += fmt %v[i]
+        return s
 
-    def writeMatModflow(self, m, f1,ktyp):
+    def writeMatModflow(self, m, ktyp):
         #print 'mfw',shape(m),m
-        if len(shape(m))==1: return self.writeVecModflow(m,f1,ktyp)
+        if len(shape(m))==1: return self.writeVecModflow(m,ktyp)
         [l,c] = shape(m);ln=3
         if ktyp[3:]=='int': typ='I' #OA 1/8/17
         else : typ='G'
+        s = ''
         if amin(amin(m))==amax(amax(m)):
-            if typ=='I': f1.write('CONSTANT     %9i  ' %(amin(amin(m))))
-            else : f1.write('CONSTANT     %9.5e  ' %(amin(amin(m))))
-            return
+            if typ=='I': s += 'CONSTANT     %9i  ' %(amin(amin(m)))
+            else : s += 'CONSTANT     %9.5e  ' %(amin(amin(m)))
+            return s
         if typ=='I':
             fmt='1    ('+str(c)+'I'+str(ln)
         else :
             fmt='0    ('+str(c)+'G12.4' #+str(ln)            
-        f1.write('INTERNAL     '+fmt+')     3  \n' )      
+        s += 'INTERNAL     '+fmt+')     3  \n'      
         if typ=='I':
             fmt='%'+str(ln)+'i'
         else :
             fmt='%+11.4e ' #'+str(ln)+'e '            
-        s=''
         for i in range(l-1,-1,-1): # to write the rows from top to bottom
             for j in range(c):
                 s+=fmt %(m[i][j])
             s+='\n'
-        f1.write(s[:-1]) 
+        return s[:-1]
 
-    def writeBlockModflow(self,m,f1,ktyp):
+    def writeBlockModflow(self,m,ktyp):
         #print shape(m),m
+        s = ''
         if len(shape(m))==3:
             nlay,a,b=shape(m);
             for l in range(nlay):
-                self.writeMatModflow(m[l],f1,ktyp)
-                if l<nlay-1: f1.write('\n')
+                s += self.writeMatModflow(m[l],ktyp)
+                if l<nlay-1: s += '\n'
         elif self.core.addin.mesh != None: # unstructured case write nlay vectors
             nlay,a=shape(m);
             for l in range(nlay):
-                self.writeVecModflow(m[l],f1,ktyp)
-                if l<nlay-1: f1.write('\n')        
-        else : self.writeMatModflow(m,f1,ktyp)
+                s += self.writeVecModflow(m[l],ktyp)
+                if l<nlay-1: s += '\n'       
+        else : 
+            s = self.writeMatModflow(m,ktyp)
+        return s
         
     #------------------------- fonction  write HBF -------------------
     def writeHfb(self,line,iz):       # EV 26/11/2018  
@@ -919,7 +997,7 @@ class modflowReader:
             ic1 = int(ic-il*ncell)
             q = array(data[pos[ic]:pos[ic+1]])
             if q[0]!=0: 
-                print(ic)
+                #print(ic)
                 continue # not fair but there seems to be some values where ln does not correpsond to data!!!
             q1 = q[1:ln[ic1]-i3d] # use ic1 to keep it 2d
             s0 = sign(q1)
