@@ -112,12 +112,14 @@ class multiPlot(QDialog):
         QMetaObject.connectSlotsByName(self)  #OA 1/6/19
   
     def getObsZone(self):
+    ## get the names of model observation zone
         dic={'Zones':{}}
         zname=self.core.diczone['Observation'].dic['obs.1']['name']
         dic['Zones'] = list(zip(zname,[False]*len(zname)))
         return dic
     
     def getLayers(self):
+    ## get the number of model layers
         dic={'Layers':{}}
         nblay=getNlayers(self.core)
         lnblay =  [str(x) for x in range(nblay)]
@@ -125,6 +127,7 @@ class multiPlot(QDialog):
         return dic
         
     def getSpecies(self):
+    ## get the names of model chemical species
         dic={'Species':{}} # ; species=[]
         species = self.core.addin.chem.getListSpecies() # OA 25/2/19 comment lines below
         # zchem=self.core.dicaddin['Chemistry']
@@ -136,6 +139,7 @@ class multiPlot(QDialog):
         return dic
     
     def getChoices(self,res,typ):
+    ## return a dic in function of type of graph and result to plot
         dicObsZone=self.getObsZone()
         dicLayers=self.getLayers()
         if res =='Chemistry': 
@@ -150,6 +154,17 @@ class multiPlot(QDialog):
     def getTimeStep(self):
         tlist = self.core.getTlist2()
         return tlist
+    
+    def getValues(self): #EV 14/08/19
+        for k in list(self.nb.dicIn.keys()):
+            if k in list(self.nb.pages.keys()):
+                names,boo = list(zip(*self.nb.dicIn[k]))
+                lout = []
+                items = self.nb.dwidget[k]
+                for item in items:
+                    lout.append(item.checkState())
+                self.nb.dicOut[k] = list(zip(names,lout))
+        return self.nb.dicOut
         
     def getOptions(self):
         '''get the plot options from the window very simple now'''
@@ -158,7 +173,8 @@ class multiPlot(QDialog):
         if ptyp=='B' : dicIn['ptyp']='time'
         if ptyp=='P' : dicIn['ptyp']='space'
         if ptyp=='X' : dicIn['ptyp']='XY'
-        dic=self.nb.getValues()
+        #dic=self.nb.getValues() 
+        dic=self.getValues() #EV 14/08/19
         dicIn['zolist']=[dic['Zones'][i][0] for i in range(len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
             lylist=[dic['Layers'][i][0] for i in range(len(dic['Layers'])) if dic['Layers'][i][1]==2]
@@ -171,10 +187,10 @@ class multiPlot(QDialog):
                 if plotOrder==0 : dicIn['plotOrder']='Zones'
                 if plotOrder==1 : dicIn['plotOrder']='Species'
             dicIn['splist']=[dic['Species'][i][0] for i in range(len(dic['Species'])) if dic['Species'][i][1]==2]
-        else :dicIn['plotOrder']='Zones'       
+        else :dicIn['plotOrder']='Zones'  
         return dicIn
     
-    def buildPlot(self):
+    def buildPlot(self,dicIn):
         '''this method build the piece of code that, when executed will make the graphs
         it has a dicIn as an input, which contains
         - type of plots (ptyp: 'time','space','XY')

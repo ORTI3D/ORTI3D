@@ -168,8 +168,12 @@ class Ui_Show(object):
         elif typ=='C': typ ='X'
         item2 = self.Show.findChild(QComboBox,'Observation_Result_L')
         res = item2.currentText()
-        m = multiPlot(self.gui,self.core,typ,res)
-        m.show()
+        if self.core.diczone['Observation'].dic: #EV 14/08/19
+            m = multiPlot(self.gui,self.core,typ,res)
+            m.show()
+        else : #EV 14/08/19
+            mess=onMessage(self.gui,'Create an observation zone to plot the resuts.')
+            return mess
         
     # def onObservation(self,group,tstep):
     #     if group not in ['Flow','Transport','Chemistry']: 

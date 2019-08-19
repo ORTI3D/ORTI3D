@@ -781,6 +781,8 @@ class dicZone:
             self.dic[line][k].pop(iz)
         nbz = self.getNbZones(line)
         self.dic[line]['number'] = list(range(nbz))
+        if nbz==0: #EV 14/08/19
+            del self.dic[line]
         
     def getTableOfZones(self,line):
         table = list(zip(self.dic[line]['name'],self.dic[line]['media'],self.dic[line]['value']))

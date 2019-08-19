@@ -327,7 +327,8 @@ class myNBpanelGrid(QTableWidget):
                 first_col = selected[0].leftColumn()
                 #copied text is split by '\n' and '\t' to paste to the cells
                 rowText = self.clip.text().split('\n')
-                self.setRowCount(len(rowText)-1)
+                if len(rowText)>self.rowCount(): # OA added if 1/8/19
+                    self.setRowCount(len(rowText)-1)
                 for r, row in enumerate(rowText):
                     for c, text in enumerate(row.split('\t')):
                         self.setItem(first_row+r, first_col+c, QTableWidgetItem(text))
@@ -341,7 +342,7 @@ class myNBpanelGrid(QTableWidget):
                         except AttributeError:
                             s += "\t"
                     s = s[:-1] + "\n" #eliminate last '\t'
-                self.clip.setText(s)
+                self.clip.setText(s[:-1]) # OA added [:-1] 1/8/19
             
 '''##########################" FOR ZONES  ###############################""
 '''

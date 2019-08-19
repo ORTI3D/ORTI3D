@@ -532,12 +532,24 @@ this version sent to elicia
 - in parameters/action l.48-49 added for mt3dms -> usg transport if needed
 - core/writeModel l. 256 added mfUsgTrans + l.257 and 258
 
+1/8/19  OA
+- qtDialogs KeyPressevent : correction of copy paste pb in chemistry, added l.330 and modif 345
+
 05/08/19 EV
-orti3dGui/on3D l.71-72 modified to grey 3D button when not 3D model
-orti3dGui/onRCT l.80-81 modified to grey RCT button when RCT plugin is not used 
-orti3dGui/makePanelParameters l.256-261 added to grey 3D and RCT buttons when start ORTI3D_v3_start
-qtParameters/boutonVisible l.33-36 function modified and get out from UI-Parameters class to set enable parameters buttons
-qtDialog/genericDialog l.91 increased the width of the Long Text dialog box
+- orti3dGui/on3D l.71-72 modified to grey 3D button when not 3D model
+- orti3dGui/onRCT l.80-81 modified to grey RCT button when RCT plugin is not used 
+- orti3dGui/makePanelParameters l.256-261 added to grey 3D and RCT buttons when start ORTI3D_v3_start
+- qtParameters/boutonVisible l.33-36 function modified and get out from UI-Parameters class to set enable parameters buttons
+- qtDialog/genericDialog l.91 increased the width of the Long Text dialog box
 
 13/08/19 EV
-qgisGui/SetupUI change size of the plugin
+- qgisGui/SetupUI change size of the plugin
+
+14/08/19 EV
+- multiplot/getValues l.158-167 added this function (initialy in qtDialogs) to avoid click apply buttons 2 times 
+- multiplot/getOptions l.117 call the getValues function created
+- qtShow/onPlot l.171-171 added condition to avoid error message when use multiplot without observation zone created
+- core/delZone l.778 added condition to delete the line in diczone when there is no zone in this line
+- qtTopBar/UpdatechoiceZone l.336-337 added to update zone value when chossing a line without zone
+- qtTopBar/onChoice l.348 added condition to avoid message error when click on zone box when chossing a line without zone
+- qtTopBar/onValueZ l.354 and setupUI l.283 added condition to avoid message error when click on zone box value when chossing a line without zone

@@ -280,7 +280,7 @@ class Ui_ModifZone(object):
 
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.zmodif,self.zmove,self.zindex=0,0,[]
-        self.currentZone = None;
+        self.currentZlist = None; #EV 14/08/19
         # choice de la zone
         self.choice = QComboBox(self.hlWidget)
         #self.choice.setSizePolicy(policy)
@@ -307,7 +307,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 13/08/2019 ")
+        version = QLabel("       version 19/08/2019 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()
@@ -333,6 +333,8 @@ class Ui_ModifZone(object):
         dicz = self.core.diczone[self.gui.currentModel].dic
         if (line == None) or (line not in list(dicz.keys())): 
             self.setChoiceList(self.choice,[''])
+            self.currentZlist = None #EV 14/08/19
+            self.valZ.setText("Val : ") #EV 14/08/19
             return
         #self.valZ.SetLabel(line+' :')
         self.currentZname = None 
@@ -343,23 +345,25 @@ class Ui_ModifZone(object):
    
     def onChoice(self, evt):  #choice of the  zone
         self.izone = self.choice.currentIndex();
-        self.currentZname = self.currentZlist['name'][self.izone]
-        self.valZ.setText("Val : "+str(self.currentZlist['value'][self.izone])[:5])
-        #self.valZ.Enable(True)
+        if self.currentZlist: #EV 14/08/19
+            self.currentZname = self.currentZlist['name'][self.izone]
+            self.valZ.setText("Val : "+str(self.currentZlist['value'][self.izone])[:5])
+            #self.valZ.Enable(True)
         
     def onValueZ(self, evt):
-        dialg = zoneDialog(self, self.core,self.gui.currentModel,self.gui.currentLine,self.currentZlist,self.izone)
-        result = dialg.saveCurrent() #exec_() #show()
-        if result !=None:
-            line = self.gui.currentLine;#onMessage(self.gui,str(self.currentZlist['value']))
-            val = self.currentZlist['value'][self.izone];#print val
-            self.valZ.setText("Val : "+str(val)[:5])
-            med = self.currentZlist['media'][self.izone]
-            xy = self.currentZlist['coords'][self.izone]
-            self.visu.modifZoneAttr(line, self.izone,val,med,xy)
-            #self.modifZones(line)
-            self.core.makeTtable()  # oa added 16/6 for isntant modif of values for isntnatfit
-            self.record('zoneEnd') # oa 16/6 for the same reason
+        if self.currentZlist: #EV 14/08/19
+            dialg = zoneDialog(self, self.core,self.gui.currentModel,self.gui.currentLine,self.currentZlist,self.izone)
+            result = dialg.saveCurrent() #exec_() #show()
+            if result !=None:
+                line = self.gui.currentLine;#onMessage(self.gui,str(self.currentZlist['value']))
+                val = self.currentZlist['value'][self.izone];#print val
+                self.valZ.setText("Val : "+str(val)[:5])
+                med = self.currentZlist['media'][self.izone]
+                xy = self.currentZlist['coords'][self.izone]
+                self.visu.modifZoneAttr(line, self.izone,val,med,xy)
+                #self.modifZones(line)
+                self.core.makeTtable()  # oa added 16/6 for isntant modif of values for isntnatfit
+                self.record('zoneEnd') # oa 16/6 for the same reason
         
     def txt2coords(self,s):
         s1, xy = s.split('\n'),[]
