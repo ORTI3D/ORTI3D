@@ -65,7 +65,7 @@ class mtUsgWriter:
         """to write all modflow usg transport files.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
-        lexceptions, s = [],''
+        lexceptions, s =['bct.5'],''
         llist=self.Mkey.groups['BCT'];#print n1,name
         for ll in llist:
             cond=self.Mkey.lines[ll]['cond'];#print('mtw 50',ll)
@@ -73,6 +73,8 @@ class mtUsgWriter:
             kwlist=self.Mkey.lines[ll]['kw']
             ktyp=self.Mkey.lines[ll]['type']
             lval=self.core.dicval['MfUsgTrans'][ll];
+            if ll in lexceptions:
+                s += self.writeExceptions(ll);continue
             if ktyp[0] in ['vecint','vecfloat','arrint','arrfloat']:
                 s += self.writeArray(opt,ll,0)
             elif ktyp[0]=='title': # case of a title line
@@ -82,6 +84,7 @@ class mtUsgWriter:
                     if ik<len(lval): s += str(lval[ik]).rjust(10)
                     else : s += '0'.rjust(10)
                 s += '\n'
+        print(s)
         f1=open(self.fDir+os.sep+self.fName +'.bct','w')
         f1.write(s);f1.close()
             #print grp+' written'
@@ -89,6 +92,11 @@ class mtUsgWriter:
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
         return self.core.testCondition('MfUsgTrans',cond)
+        
+    def writeExceptions(self,line):
+        if line == 'bct.5': 
+            s = 'CONSTANT    '+str(self.core.dicval['MfUsgTrans'][line][0])+'\n'
+            return s
         
     def writeArray(self,opt,line,ik):
         """writes arrays, need specific treatment for btn concentrations if pht3d
@@ -166,7 +174,7 @@ class mtUsgWriter:
             nlay,a = shape(m)
             for l in range(nlay):
                 s += self.writeVecModflow(m[l],line)
-                if l<nlay-1: s += '\n'
+                #if l<nlay-1: s += '\n'
         else :
             s += self.writeVecModflow(m,line)            
         return s

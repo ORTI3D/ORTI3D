@@ -66,7 +66,7 @@ class Mf:
         'disu.4':{'comm':'Model properties','cond':'','kw':['NCELL','UNLAY','NJAG','IVSD','UNPER','ITMUNI','LENUNI'],
                'detail':['Nb of cells','Nb of layers','nb of connections','Vert. subdiscretiz.','Nb of periods',['time units','-','sec','min','hours','days','years'],
                 ['length units','-','ft','m','cm']],'type':['int','int','int','int''int','int','choice','choice'],
-                'default':[1,1,0,3,1,4,2]},
+                'default':[1,1,0,-1,1,4,2]},  # OA 19/8/19
         'disu.5':{'comm':'type of layer','cond':'','kw':['LAYCBD(NLAY)'],'detail':[['confining bed below','No','Yes']],
                 'type':['layint'],'default':[0]},
         'disu.6':{'comm':'nb of nodes per layer','cond':'','kw':['NODELAY(NLAY)'],'detail':['confining bed below'],

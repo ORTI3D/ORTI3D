@@ -42,7 +42,7 @@ class modflowUsg:
         nodes,elements,line_dom = readGmshOut(s,outline=True);
         points,elts = nodes[:,1:3],elements[:,-3:]
         npts = len(points)
-        bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
+        #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
         dns = float(dicD['value'][dicD['name'].index('domain')])
         #points = self.addSidesPts(points,bbox,dns);
         mshType = self.core.getValueFromName('Modflow','MshType')
@@ -284,6 +284,7 @@ class myVor:
         #make all calc
         newpts =  list(set(unique(vor.ridge_points))&set(range(npts)))
         npts = len(newpts)
+        #indnew = range(npts)
         for ip in newpts:
             xp,yp = points[ip]
             ir = vor.point_region[ip] # point in the centre of the voronoi
@@ -307,16 +308,31 @@ class myVor:
             xp1,yp1 = points2[plist,0],points2[plist,1]
             dlist = sqrt((xp-xp1)**2+(yp-yp1)**2)/2
             # modify x,y if external
-            pv= Polygon(zip(xv,yv))
-            p1 = pv.intersection(pdom)
-            xv,yv = zip(*(p1.exterior.coords))
-            xv,yv = array(xv),array(yv)
-            indpi = indpi[indpi<len(xv)-1]
-            # calculates area and length
-            area = abs(sum(xv[:-1]*yv[1:]-xv[1:]*yv[:-1]))/2
-            long = sqrt((xv[1:]-xv[:-1])**2+(yv[1:]-yv[:-1])**2) # length of face
-            p.carea.append(area);p.cneighb.append(plist[indpi]);
-            p.fahl.append(long[indpi]);p.cdist.append(dlist[indpi])
+            if ip in line_dom:
+                pv = Polygon(zip(xv,yv))
+                p1 = pv.intersection(pdom)
+                xv,yv = zip(*(p1.exterior.coords))
+                xv,yv = array(xv),array(yv)
+                area = abs(sum(xv[:-1]*yv[1:]-xv[1:]*yv[:-1]))/2
+                long = sqrt((xv[1:]-xv[:-1])**2+(yv[1:]-yv[:-1])**2)
+                #print(ip,round(xv1[0]-xv[0]))
+            #indpi = indpi[indpi<len(xv)-1]
+            else : 
+                xv, yv = r_[xv,xv[0]],r_[yv,yv[0]]
+                area = abs(sum(xv[:-1]*yv[1:]-xv[1:]*yv[:-1]))/2
+                # calc length abd finds correct indices
+                long = sqrt((xv[1:]-xv[:-1])**2+(yv[1:]-yv[:-1])**2)
+            # xi,indl = list(set(xv)&set(xv1)),[]
+            # dec = list(xv1).index(xi[0])-indpi[0]
+            # indl = mod(indpi+dec,nv-1)
+            #for x in xi: indl.append(list(xv1).index(x))
+            #if len(indl)!=len(indpi): indl.append(indl[-1]+(indl[-1]-indl[-2]))
+            # points are 
+            pl2 = list(plist[indpi])
+            indp2 = [newpts.index(a) for a in pl2]
+            p.carea.append(area);p.cneighb.append(indp2);
+            p.fahl.append(long[mod(indpi,len(xv)-1)]) # It is wrong side length not linked to correct sides!!!!
+            p.cdist.append(dlist[indpi])
             p.elx.append(xv);p.ely.append(yv)
             p.nconnect += len(indpi)
             p.nodes.append(points[ip])

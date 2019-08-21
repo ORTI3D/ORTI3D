@@ -53,7 +53,7 @@ class  Mtu:
         'type':['int','int','int','int'],
         'default':[72,73,74,75]},
         # Boundary conditions
-        'bct.2': {'comm':'Boundary conditions','cond':'',
+        'bct.2': {'comm':'Boundary conditions','cond':'ICBNDFLG==0',
         'kw': ['ICBUND'],'detail': ['transpt BC'],
         'type':['arrint'],'default':[1]},
         # porosity
@@ -67,7 +67,7 @@ class  Mtu:
         # angle dispersivity
         'bct.5': {'comm':'dispersivity  angle','cond':'IDISP>0',
         'kw': ['ANGLEX'],'detail': ['Disp. angle'],
-        'type':['arrfloat'],'default':[0.]},
+        'type':['float'],'default':[0.]},
         # long dispersivity
         'bct.6': {'comm':'long. dispersivity','cond':'IDISP==1',
         'kw': ['DL'],'detail': ['long. Disp.'],

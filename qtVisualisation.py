@@ -1,6 +1,8 @@
 #import matplotlib
 #matplotlib.use('WX')
 #import matplotlib.backends.backend_wxagg
+#import matplotlib
+#matplotlib.use("agg")
 import matplotlib.backends.backend_qt5agg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Toolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg

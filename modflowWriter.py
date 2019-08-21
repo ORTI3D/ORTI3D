@@ -182,20 +182,22 @@ class modflowWriter:
         
     def writeRCH(self):
         s= ''
-        #trch = self.ttable['rch.2'] 
-        trch = array(self.ttable['tlist']) #EV 19/08/2019
+        if 'rch.2' in self.ttable:
+            trch = self.ttable['rch.2']; zrch = True
+        else :
+            trch = ones(self.nper); zrch = False # a constant value over the domain
         for iper in range(self.nper): 
-            if iper>0 and prod(trch[iper]==trch[iper-1])==1: # same values as previous
-                if self.trans:  s += '    -1      INCONC\n'
-                else :  s += '    -1\n'
-            else :
-                if self.trans:  s += '    0      INCONC\n'
+            if (iper==0) or (prod(trch[iper]==trch[iper-1])==0): #values diff than previous
+                if 'rch' in self.usgTrans.keys():  s += '    0      INCONC\n'
                 else :  s += '    0\n'# 0: data are written not reused from previous
                 m = block(self.core,'Modflow','rch.2',False,None,iper);
                 s += self.writeMatModflow(m[0],'arrfloat')+ '\n'
-                if self.trans: s += self.usgTrans['rch'][iper]
+                if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
+            else:
+                if 'rch' in self.usgTrans.keys():  s += '    -1      INCONC\n'
+                else :  s += '    -1\n'
         exceptDict={'rch.2':s}
-        if self.trans: optionDict = {'rch.1': ' CONC  \n       1'} # one species
+        if 'rch' in self.usgTrans.keys(): optionDict = {'rch.1': ' CONC  \n       1'} # one species
         else : optionDict = {}
         self.writeOneFile('RCH',exceptDict,optionDict)
         
@@ -553,7 +555,8 @@ class modflowWriter:
         if ktyp[3:]=='int': typ='I' #OA 1/8/17
         else : typ='G'
         if amin(v)==amax(v):
-            s += 'CONSTANT     %9.5e  ' %amin(v)
+            if typ=='I': s += 'CONSTANT     %9i  ' %amin(v)
+            else : s += 'CONSTANT     %9.5e  ' %amin(v)
             return s
         if typ=='I': fmt='1    ('+str(l)+'I'+str(ln)
         else : fmt='0    ('+str(l)+'G12.4'           

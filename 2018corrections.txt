@@ -570,3 +570,19 @@ this version sent to elicia
 
 19/08/19 EV
 - modflowWriter/writeRCH l.186 for trch variable 'rch.2' changed by 'tlist' 
+
+19/08/19 OA
+- qtDialogs/notebook Keypressevent l.331 take all (don't remove last line)
+- core/runModel in runModel l.301 changed name of usg to mfUSGs_1_3
+- core/runModel l.337-340 added for usgTransport
+- modflowKeywords, modif base Disu.3 ISVD to -1
+- modflowUsg l.320,321 added to conisder removed points
+
+20/08/19  OA
+- modflowWriter/writeVecModflow, l.555 reset condition for integer
+- core replace mflowUSGs_1_3 to mfUSGs_1_3
+- addin/initAddin l.56 added pcb, crch... modules
+- modflowWriter writeRCH fully modified for transport
+- mtUsgWriter formatBlockMusg \n removed
+- some modifs in mtUsgKeywords
+- some modifs in mtUsgWriter

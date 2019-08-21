@@ -299,7 +299,7 @@ class Core:
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName  == 'Modflow':
             mod = 'mf2k_PMwin'
-            if 'DISU' in self.getUsedModulesList('Modflow'): mod = 'mfusg_x64'
+            if 'DISU' in self.getUsedModulesList('Modflow'): mod = 'mfUSGs_1_3'
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -334,6 +334,10 @@ class Core:
                     else: return('Model fail to converge') #return self.getTxtFileLastLine('Mt3dms.out',3)#+'\n Mt3dms run done'
                 except IndexError:
                     return('Model fail to converge')
+        if modName == 'MfUsgTrans': # OA 19/8/19
+            s=self.baseDir+sep+'bin'+sep+'mfUSGs_1_3.exe '+self.fileName
+            os.chdir(self.fileDir)
+            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
         if modName == 'Pht3d':
             s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)

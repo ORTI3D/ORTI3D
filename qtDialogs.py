@@ -328,7 +328,7 @@ class myNBpanelGrid(QTableWidget):
                 #copied text is split by '\n' and '\t' to paste to the cells
                 rowText = self.clip.text().split('\n')
                 if len(rowText)>self.rowCount(): # OA added if 1/8/19
-                    self.setRowCount(len(rowText)-1)
+                    self.setRowCount(len(rowText)) # OA 19/8/19
                 for r, row in enumerate(rowText):
                     for c, text in enumerate(row.split('\t')):
                         self.setItem(first_row+r, first_col+c, QTableWidgetItem(text))
