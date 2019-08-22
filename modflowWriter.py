@@ -194,7 +194,7 @@ class modflowWriter:
                 s += self.writeMatModflow(m[0],'arrfloat')+ '\n'
                 if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
             else:
-                if 'rch' in self.usgTrans.keys():  s += '    -1      INCONC\n'
+                if 'rch' in self.usgTrans.keys():  s += '    -1   \n' # OA 21/8/19 removed Inconc
                 else :  s += '    -1\n'
         exceptDict={'rch.2':s}
         if 'rch' in self.usgTrans.keys(): optionDict = {'rch.1': ' CONC  \n       1'} # one species
@@ -679,7 +679,7 @@ class modflowReader:
         """ read .head file 
         in free flow Thksat from flo file must be added (not done)"""    
         if core.mfUnstruct:
-            nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
+            nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements')
             hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
             nlay,ncol,nrow = self.getGeom(core)

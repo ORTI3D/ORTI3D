@@ -586,3 +586,9 @@ this version sent to elicia
 - mtUsgWriter formatBlockMusg \n removed
 - some modifs in mtUsgKeywords
 - some modifs in mtUsgWriter
+
+21/8/19 OA
+- qtVisualisation/ button_release_callback l. 960 added int(len/10) for adding pts in polygons
+- core/writeModel added line 259 to be able to read corectly transport file
+- modflowWriter/writeRCH l.197 removed INCONC
+- one or two modfis in mtUsgwriter

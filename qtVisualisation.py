@@ -1,8 +1,6 @@
 #import matplotlib
 #matplotlib.use('WX')
 #import matplotlib.backends.backend_wxagg
-#import matplotlib
-#matplotlib.use("agg")
 import matplotlib.backends.backend_qt5agg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Toolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -959,7 +957,7 @@ class PolygonInteractor:
         x = self.line.get_xdata()
         y = self.line.get_ydata()  
         v = self.poly.verts
-        for i in range(len(x)/10):
+        for i in range(int(len(x)/10)): #OA 21/8/19
             v[i] = (x[i],y[i])  
         
     def key_press_callback(self, event):

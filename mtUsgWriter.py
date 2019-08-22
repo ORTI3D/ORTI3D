@@ -200,7 +200,7 @@ class mtUsgReader:
         except IOError: return None
         blok=44+ncell*4; # v210 60
         for il in range(nlay):
-            f1.seek(iper*nlay*blok+blok*il+44) #vpmwin
+            f1.seek(iper*nlay*blok+blok*il+44)
             data = arr2('f')
             data.fromfile(f1,ncell)
             if core.mfUnstruct: 

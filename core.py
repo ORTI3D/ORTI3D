@@ -256,8 +256,10 @@ class Core:
         if modName in ['Mt3dms','MfUsgTrans','Pht3d']: # OA 28/7/19
             if 'USG' in self.dicaddin['Model']['group']: #28/7/19 this and 2 below
                 self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
+                self.transReader = mtUsgReader(self.fileDir,self.fileName)    # OA 21/08/19
             else : 
                 self.mtWriter = mtphtWriter(self,self.fileDir,self.fileName)
+                self.transReader = mtphtReader(self.fileDir,self.fileName)   
             parmk = None
             if modName =='Pht3d':
                 dicSpec = self.addin.pht3d.getDictSpecies()
@@ -265,7 +267,6 @@ class Core:
             else : 
                 dicSpec ={'mcomp':1,'ncomp':1,'gcomp':1,'kim':[]}
             self.mtWriter.writeMtphtFiles(dicSpec,modName,parmk)
-            self.transReader = mtphtReader(self.fileDir,self.fileName)   
         if modName[:5]  == 'Min3p':
             self.m3pWriter = min3pWriter(self,self.fileDir,self.fileName)
             self.m3pWriter.writeMin3pFiles(self,modName[5:])
