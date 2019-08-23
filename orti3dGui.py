@@ -79,6 +79,9 @@ class orti3dGui(QMainWindow):
     def onRCT(self,bool):
         boutonVisible(self,'Ad_MtSpecies',bool) #EV 05/08/19
         boutonVisible(self,'Ad_MtReact',bool) #EV 05/08/19
+        
+    def onGridMesh(self,gridtyp):  # OA 22/8/19
+        boutonIcon(self,'Ad_Grid','Ad_'+gridtyp+'.png')
 
     ####################################################
     #                   make menus

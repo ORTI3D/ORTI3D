@@ -1,6 +1,8 @@
 #import matplotlib
 #matplotlib.use('WX')
 #import matplotlib.backends.backend_wxagg
+#import matplotlib
+#matplotlib.use("agg")
 import matplotlib.backends.backend_qt5agg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Toolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -168,13 +170,17 @@ class qtVisualisation(FigureCanvasQTAgg):
         """create the Contour, Vector, dataM are data for matrix, V for vector,
         opt is contour or vector
         """
-        #print 'qtVis',self.gui.guiShow.swiImg,dataM
+        #print('qtVis',self.gui.guiShow.swiImg,dataM)
         if dataM == None : self.drawContour(False)
-        else : 
+        else : # modifs below 22/8/19
             if self.gui.guiShow.swiImg == 'Contour':
                 self.createContour(dataM,value,color)
-            else : 
+            elif self.gui.guiShow.swiImg == 'Image':
                 self.createImage(dataM)
+                self.drawContour(False) # OA 22/8/19
+            elif self.gui.guiShow.swiImg == 'ImageContour':
+                self.createImage(dataM)
+                self.drawContour(True) # OA 22/8/19
         if dataV == None : self.drawVector(False)
         else : self.createVector(dataV)
         
@@ -418,14 +424,11 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.createContour(self.Contour.data,value,col)
 
     def drawContour(self,bool):
-        self.cnv.collections=self.cnv.collections[:3]
-        self.cnv.artists = []
+        # OA 22/8/19 modified to have true and false
+        for c in self.Contour.collections :c.set_visible(bool)
+        for c in self.ContourF.collections :c.set_visible(bool)
+        for c in self.ContourLabel: c.set_visible(bool)
         self.draw()
-        #~ for c in self.Contour.collections :c.set_visible(False)
-        #~ for c in self.ContourF.collections :c.set_visible(False)
-        #~ for a in self.ContourLabel: a.set_visible(False)
-        #~ #self.cnv.collections = self.cnv.collections[:3]
-        #~ self.redraw()
 
     #####################################################################
     #             Gestion de l'affichage de vectors
@@ -957,7 +960,7 @@ class PolygonInteractor:
         x = self.line.get_xdata()
         y = self.line.get_ydata()  
         v = self.poly.verts
-        for i in range(int(len(x)/10)): #OA 21/8/19
+        for i in range(len(x)/10):
             v[i] = (x[i],y[i])  
         
     def key_press_callback(self, event):

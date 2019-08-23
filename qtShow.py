@@ -48,16 +48,17 @@ class Ui_Show(object):
         title.setFont(font)
         title.setMaximumHeight(30)
         topHBox.addWidget(title)
-        but1 = QPushButton()
-        but1.setIcon(QIcon(gui.u_dir+os.sep+'Vis_OriZ.png'))
-        but1.setIconSize(QSize(25, 25))
-        but1.setMaximumWidth(25)
-        but1.setFlat(True)
-        topHBox.addWidget(but1)
+        self.swiPlane = QPushButton()
+        self.swiPlane.setIcon(QIcon(gui.u_dir+os.sep+'Vis_OriZ.png'))
+        self.swiPlane.setIconSize(QSize(25, 25))
+        self.swiPlane.setMaximumWidth(25)
+        self.swiPlane.setFlat(True)
+        topHBox.addWidget(self.swiPlane)
         self.icCont = QIcon(gui.u_dir+os.sep+'Vis_SwiCont.png')
         self.icImg = QIcon(gui.u_dir+os.sep+'Vis_SwiImg.png')
+        self.icImgCont = QIcon(gui.u_dir+os.sep+'Vis_SwiImgCont.png')
         self.swiCont = QPushButton()
-        self.swiCont.setIcon(self.icCont)#;but1.setIconSize(QSize(50, 50))
+        self.swiCont.setIcon(self.icCont)
         self.swiCont.clicked.connect(parent.switchImg) 
         self.swiCont.setIconSize(QSize(25, 25))
         self.swiCont.setMaximumWidth(25)
@@ -66,13 +67,21 @@ class Ui_Show(object):
         topHBox.addStretch(0)
         return topHBox
         
+    def switchPlane(self,plane): # OA added 22/8/19
+        '''plane is  aletter in x,Y,Z'''
+        self.swiPlane.setIcon(QIcon(self.gui.u_dir+os.sep+'Vis_Ori'+plane+'.png'))
+        
     def switchImg(self,evt):
         if self.guiShow.swiImg=='Contour':
             self.swiCont.setIcon(self.icImg)
             self.guiShow.swiImg='Image'
-        else :
+        elif self.guiShow.swiImg=='Image':
+            self.swiCont.setIcon(self.icImgCont)
+            self.guiShow.swiImg='ImageContour'
+        elif self.guiShow.swiImg=='ImageContour':
             self.swiCont.setIcon(self.icCont)
             self.guiShow.swiImg='Contour'
+        self.guiShow.redraw() # OA 22/8/19
 
     def getCurrentTime(self):
         combo = self.Show.findChild(QComboBox,'Model_Tstep_L')
@@ -120,7 +129,7 @@ class Ui_Show(object):
             if len(a) == 3 : nz,ny,nx = a
             else : nz,nn = a;nz +=1; nx,ny = 1,1 # for ogs these are nod layers
             exec('self.guiShow.'+name+'=\"'+str(retour)+'\"')
-            #self.changeIcOri(retour)
+            self.switchPlane(retour) # OA 22/8/19
             if retour =='Z' : self.setNames('Model_Layer_L',list(range(nz-1)))
             if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
             if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))

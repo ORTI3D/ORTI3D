@@ -299,8 +299,8 @@ class Core:
             b=str(self.fileDir).encode("utf-8")
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName  == 'Modflow':
-            mod = 'mf2k_PMwin'
-            if 'DISU' in self.getUsedModulesList('Modflow'): mod = 'mfUSGs_1_3'
+            mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
+            if 'DISU' in self.getUsedModulesList('Modflow'): mod,lastline = 'mfUSGs_1_3',7
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -312,11 +312,13 @@ class Core:
             if info !=False :
                 try :  # EV 13/11 "show model fail to converge"
                     time_model=self.dicval['Modflow']['dis.2'][4]
-                    if time_model==0 : time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[4]
-                    else : time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[(time_model+1)]
+                    if time_model==0 : 
+                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[4]
+                    else : 
+                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[(time_model+1)]
                     time_last=self.getTlist2()[-1]
                     if float(time_out)==float(time_last):
-                        return ('Normal termination of MODFLOW-2000')#self.getTxtFileLastLine(self.fileName+'.lst',3) #+'\nModflow run done'
+                        return ('Normal termination of MODFLOW-2000')
                     else: return('Model fail to converge')
                 except :# IndexError:
                     return('Model fail to converge')

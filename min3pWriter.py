@@ -96,9 +96,7 @@ class min3pWriter:
     def writeGeneral(self,mod,Dict,grp,llist):
         s = '';#print llist
         for l in llist:
-            line = l*1;#print line
-#            if self.xsect and l == 'spat.2': line = 'spat.3' # for coords inversion
-#            if self.xsect and l == 'spat.3': line = 'spat.2'
+            line = l*1;#print(line)
             cond=Dict.lines[line]['cond'];#print line
             if self.core.testCondition(mod,cond)==False : continue
             kwlist=Dict.lines[line]['kw']
@@ -117,7 +115,7 @@ class min3pWriter:
             if (line[:4] not in ['spat','time']) and lprint: 
                 s += '\''+name+'\'\n'
             for ik in range(len(kwlist)):
-                #print line,lval
+                print('min3pw gene',line,ik,lval[ik])
                 value=lval[ik];#
                 if ktyp[ik]=='choice': # where there is a choice print the nb of the choice not the value
                     detail = Dict.lines[line]['detail'][ik]
@@ -138,8 +136,6 @@ class min3pWriter:
                 else : # values with strings
                     if line in ['trac.2']: 
                         value = '\''+self.core.gui.mainDir+os.sep+'utils\''
-#                    if line == 'out.1':
-#                        value = self.getTimeList()
                     s += str(value) +'\n' #';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
         if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
@@ -158,10 +154,14 @@ class min3pWriter:
                     cumul += dx[i]
             return s1
         g = self.grid
-        s = str1dim(g['x0'],g['x1'],g['nx'],g['dx'])
-        s2 = str1dim(g['y0'],g['y1'],g['ny'],g['dy'])
-        if self.xsect==False: s += s2 + '\n1\n1\n0.0 1.0\n'
-        else : s += '\n1\n1\n0.0 1.0\n' + s2
+        s = str1dim(g['x0'],g['x1'],g['nx'],g['dx'])+'\n'
+        s2 = str1dim(g['y0'],g['y1'],g['ny'],g['dy'])+'\n'
+        sz = '\n1\n1\n0.0 1.0\n' # OA 20/7/19 this and 4 lines bleow added for 3d
+        if self.core.addin.getDim()=='3D': 
+            zcoo = self.core.Zblock[-1::-1,0,0];nz = len(zcoo)
+            sz = str(nz-1)+'\n'+'\n'.join(['1\n'+str(zcoo[i])+' '+str(zcoo[i+1]) for i in range(nz-1)])
+        if self.xsect==False: s += s2 + sz
+        else : s += '\n1\n1\n0.0 1.0\n\n' + s2
         if self.meshtype=='mesh': #unstructured
             s += '\'read unstructured grid from file\'\n'
         return s+'\n\'done\'\n\n'
@@ -195,7 +195,7 @@ class min3pWriter:
                     if line[:4]=='poro': s += self.getValue(mod,line,dicz,iz,'zone')
                     else : s += poro_base
                     s += '\'extent of zone'
-                    lzcoords.append(self.getCoords(dicz['coords'][iz],line))
+                    lzcoords.append(self.getCoords(dicz['coords'][iz],dicz['media'][iz],line))
                     s +=  lzcoords[-1]+'\n'
                     s += '\'end of zone\'\n\n'
         self.lznames,self.lzcoords = lznames,lzcoords # OA 25/5 remember the list of zones
@@ -221,7 +221,7 @@ class min3pWriter:
                 s += '\''+zname+'\''  + '\n \'initial condition\'\n'
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],line)+'\n'
+                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line)+'\n'
                 s += '\'end of zone\'\n\n'
         return s+'\n\'done\'\n\n'
                
@@ -234,16 +234,18 @@ class min3pWriter:
         '''
         nbztot = len(self.lznames);# total nb of zones in porous medium
         s= str(nbztot+1)+'\n' # starts at 0 
-        for line in llist: # don't write as spatial data if not array, for engp
+        for line in llist: # don't write as spatial data if not array, for engp,diffu
             if Dict.lines[line]['type'][0][:3] != 'arr': 
                 s += '\''+Dict.lines[line]['comm'].split('(')[0]+'\'\n'
-                s += self.getValue(mod,line,None,0,'whole')
+                for ik in range(len(Dict.lines[line]['kw'])):
+                    s += self.getValue(mod,line,None,ik,'whole')
                 
         s += '\'number and name of zone\'\n1 \n\'domain\'\n'
         for line in llist:
             if Dict.lines[line]['type'][0][:3] != 'arr':  continue
             cond=Dict.lines[line]['cond'];#the conditio to test if the line shall be printed
             if self.core.testCondition(mod,cond)==False : continue
+            print( 'min3pw byz',line)
             info = Dict.lines[line]['comm'].split('(')[0]
             s += '\''+info+'\'' + '\n'
             s += self.getValue(mod,line,None,0,'whole')
@@ -305,7 +307,7 @@ class min3pWriter:
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 # for this zone write extent
                 s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],line,'boundary') +'\n'
+                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line,'boundary') +'\n'
                 s += '\'end of zone\'\n'
         s += self.endkey+'\n'+'\'done\'\n\n'
         return s
@@ -313,7 +315,7 @@ class min3pWriter:
     def writeOut(self,mod,Dict,llist):
         nbz,nbztot = 0,self.getNbZones(mod,llist)   #normally BC zones are "rect" (in fact line)
         self.endkey = ''
-        s = self.getTimeList() +'\n'
+        s = '\'output of spatial data\'\n'+self.getTimeList() +'\n'
 
         s += '\'output of mass through specified boundary\'\n'
         s += str(nbztot)+'\n\n'
@@ -329,7 +331,7 @@ class min3pWriter:
                 info = Dict.lines[line]['comm'].split('(')[0]
                 # for this zone write extent
                 s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],line,'boundary') +'\n'
+                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line,'boundary') +'\n'
                 s += '\'end of zone\'\n'
         s += self.endkey+'\n'+'\'done\'\n\n'
         return s
@@ -356,7 +358,7 @@ class min3pWriter:
                 s+=a+' %+11.4e' %float(vals[i])+'\n'
         else :
             if opt=='whole':
-                vlist = self.core.dicval[mod][line]
+                vlist = self.core.dicval[mod][line][iz:iz+1] # OA 11/8 here iz is keyw nb
             elif opt=='zone':
                 vlist = [dicz[line]['value'][iz]]
             for v in vlist: # to write all keywords
@@ -474,18 +476,27 @@ class min3pWriter:
         for i in lst: s+= str(self.domn[i])+'  '
         return s
 
-    def getCoords(self,coolist,line,opt='all'):
+    def getCoords(self,coolist,imed,line,opt='all'):
         '''returns a formatted string of coords from the orti list, these orti coords are in 
         x and y , they are transformed if Xsection'''
-        nodes = self.min3p.nodes
+        nodes,dicv = self.min3p.nodes,self.core.dicval['Min3pFlow']
         if self.isRectZone(coolist): #squared zones
             s = '\'\n'
             coolist = self.coord2BC(coolist) # OA 25/5 removed the if, may apply to all
             xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
             s0 = str(min(xl))+' '+str(max(xl))+' '
             s1 = str(min(yl))+' '+str(max(yl))+' '
-            if self.xsect : s += s0+str(self.domn[2])+'  '+str(self.domn[3])+'  '+s1
-            else : s += s0+s1+str(self.domn[4])+'  '+str(self.domn[5])+'  '
+            if self.xsect : 
+                s += s0+str(self.domn[2])+'  '+str(self.domn[3])+'  '+s1
+            elif self.core.addin.getDim()=='3D':
+                if type(imed)==type([5]): botm,top = dicv['spat.8'][imed[-1]],dicv['spat.7'][imed[0]]
+                else : botm,top = dicv['spat.8'][imed],dicv['spat.7'][imed]
+                if opt=='boundary':
+                    if imed==0 : s += s0+s1+str(top)+' '+str(top)
+                    else : s += s0+s1+str(botm)+' '+str(botm)
+                else : s += s0+s1+str(botm)+' '+str(top)
+            else : 
+                s += s0+s1+str(self.domn[4])+'  '+str(self.domn[5])+'  '
         else : # usntructured non squared
             s = ': '+opt+' nodes in polygon\'\n\'read data\'\n'
             xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
@@ -783,7 +794,7 @@ class min3pReader:
                     if iper==0: self.data[ext] = zeros((nper,nc-3,nz,ny,nx))
                     mat2 = zeros((nc-3,nz,ny,nx));#print ext,iper,shape(self.data[ext]),shape(mat2)
                     for iv in range(nc-3):
-                        mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))
+                        mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))[::-1,:,:]
                     self.data[ext][iper] = mat2
             else : # unstructured
                 self.names[ext],self.data[ext] = self.readOutputVtk(ext,nper)
@@ -817,7 +828,7 @@ class min3pReader:
 
     def readWcontent(self,core,iper):
         self.core = core
-        wc = self.readOutput('gsp',iper,'s_w') # 3rd variable is theta_w
+        wc = self.readOutput('gsp',iper,'theta_a') 
         return wc
 
     def readFloFile(self,core,iper):

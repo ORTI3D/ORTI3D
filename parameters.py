@@ -85,6 +85,7 @@ class BaseParms:
         a = self.core.makeTtable()
         tl2 = self.core.getTlist2()
         listSpec = self.core.addin.chem.getListSpecies() # just the names
+        self.gui.guiShow.init() # OA 22/8/19 added
         self.gui.guiShow.setChemSpecies(listSpec)
         self.gui.guiShow.resetGlist() # the show panel nows that everything has to be reread
         self.gui.guiShow.setNames('Model_Tstep_L',tl2)

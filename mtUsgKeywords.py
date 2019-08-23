@@ -43,8 +43,7 @@ class  Mtu:
         'choice','choice','float','float','choice',
         'choice','float','choice','choice','choice',
         ],
-        'default':[1,0,1,1,1,0,0,'1e29',1e-9,2,0,
-        1e-10,0,0,0]},
+        'default':[1,0,1,1,1,0,0,'1e29',1e-9,1,0,1e-10,0,0,0]},  # OA 22/8/19 modif 2 to 1 for idisp
 
         'bct.1b': {'comm':'Print flags','cond':'IFMBC>0',
         'kw': ['MBEGWUNF','MBEGWUNT','MBECLNUNF', 'MBECLNUNT'],       

@@ -592,3 +592,18 @@ this version sent to elicia
 - core/writeModel added line 259 to be able to read corectly transport file
 - modflowWriter/writeRCH l.197 removed INCONC
 - one or two modfis in mtUsgwriter
+
+22/8/19  OA
+- in guiShow l.148 created redraw to allow change of type of presnetation (image/cont)
+- in qtShow/switchImg l.76 added the line that calls redraw above
+- qtVisualisation/createAndShowObject modif in showImage et contour
+- qtVisualisation/drawContour modified to have true and false
+- in qtShow/switchPlane created l.70 to switch view x,y, or Z
+- in qtShow/onclick, added line 132
+- in qtParameters l.38 added boutonIcon to change an icon of a button (for mesh type)
+- ortiGui in __init__/ added onGridMesh to change the grid/mesh button
+- addin/doaction in Ad_Model, l.213 et 218 added to change icon when mesh instead of grid (unstruct)
+- addin/doaction l.219 added to have the mesh since model creation
+- core/runModel l.302 adde lastline nb to search final time also for usg
+- mtUsgTrans keywords cahnged default idisp value to 1 (isotropic)
+- parameters writeModel l.88 added init guishow

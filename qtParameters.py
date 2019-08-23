@@ -30,10 +30,15 @@ class Ui_Parameters(object):
         self.mainbx.addStretch(0) # OA 6/11
         QMetaObject.connectSlotsByName(Parameters)
         
-def boutonVisible(self,nomBut,bool): #EV 05/08/19
-    it=self.findChild(QPushButton,nomBut)
+def boutonVisible(wdow,nomBut,bool): #EV 05/08/19
+    it=wdow.findChild(QPushButton,nomBut)
     if it :
         it.setEnabled(bool)
+        
+def boutonIcon(wdow,nomBut,file):  # OA 22/8/19
+    it=wdow.findChild(QPushButton,nomBut)
+    if it :
+        it.setIcon(QIcon(wdow.mainDir+os.sep+wdow.u_dir+os.sep+file))
         
 class Box(): #QGroupBox):
     def __init__(self,Parameters,parent,gr,nb):

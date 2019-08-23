@@ -210,10 +210,13 @@ class addin:
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
             if retour != None:
+                self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'] = retour
                 if 'USG' in m['group']:
                     self.core.mfUnstruct = True
                     self.setMfUnstruct()
+                    self.gui.onGridMesh('Mesh') # to chang the button
+                    self.mesh = self.mfU # OA 22/8/19
                 self.gui.varBox.chooseCategory(m['group'])
                 if m['type']=='Unconfined': #EV 22/07/2018 free -> Unconfined
                     self.core.setValueFromName('Modflow','LAYTYP',1) # 0 for confined, 1 for unconfined
@@ -244,18 +247,20 @@ class addin:
             data = [('Xmin','Text',x0),(vert+'min','Text',y0),
                     ('Xmax','Text',x1),(vert+'max','Text',y1),
                     ('dx','Textlong',g['dx']),(dvert,'Textlong',g['dy'])]
-            dialg = self.dialogs.genericDialog(self.gui,'Grid',data)
-            retour = dialg.getValues()
+            if self.mesh == None: 
+                dialg = self.dialogs.genericDialog(self.gui,'Grid',data)
+                retour = dialg.getValues()
+            else : #mesh case no dialog
+                self.setGridInModel('new')
+                self.gui.visu.initDomain() 
+                retour = None               
             if retour != None:
                 g['x0'],g['y0'],g['x1'],g['y1'],g['dx'],g['dy'] = retour;#print g
                 if self.checkDomain:
-                    x0,x1,y0,y1 = float(g['x0']),float(g['x1']),float(g['y0']),float(g['y1']) # OA 14/11
-                    dicz['dis.1']['coords'][0] = list(zip([x0,x1,x1,x0,x0],[y1,y1,y0,y0,y1])) # OA 14/11 set dis.1 domain new bdy
+                    x0,x1,y0,y1 = float(g['x0']),float(g['x1']),float(g['y0']),float(g['y1']) # OA 14/11/18
+                    dicz['dis.1']['coords'][0] = list(zip([x0,x1,x1,x0,x0],[y1,y1,y0,y0,y1])) # OA 14/11/18 set dis.1 domain new bdy
                 self.setGridInModel('new')
-                if self.gtyp == 'wx':
-                    self.gui.guiShow.dlgShow.onTickBox('Model','Grid','B',True)
                 self.gui.visu.initDomain()
-                #self.gui.resetCurVar()
 
         if actionName == 'Ad_3D':
             m = self.core.dicaddin['3D']
@@ -347,7 +352,6 @@ class addin:
                 dic = self.chem.Base[nameB].copy()
             dialg = self.dialogs.myNoteBook(self.gui,"Chemistry",dic)
             dic2 = dialg.getValues()
-            #print ('dic2 chem',dic2)
             if dic2 != None:
                 for k in list(dic2.keys()): self.chem.Base[nameB][k] = dic2[k]
                 if nameB == 'MChemistry': # OA 1/3/19 for exchange species
@@ -362,7 +366,6 @@ class addin:
                 self.core.dicaddin['Pback1'] = dic2
             else : return
             dic = self.pest.getDicBack2() # provide the values for the selected lines
-            #print ('dic2 pest',dic2)
             dialg = self.dialogs.myNoteBook(self.gui,"Pest background",dic)
             dic2 = dialg.getValues()
             if dic2 != None:
@@ -438,18 +441,13 @@ class addin:
         if retour!= None:
             self.chem.temp['Dbase'] = retour
         self.chem.temp['Dbase']['complex']=cpl
-        #print self.chem.temp['Dbase']
         
     def onInstantFit(self,evt):
         '''creates the box for instant fitting and starts the observer of changes'''
         #create the object that observe the cnage in topbar
         self.fit.setObserver(self.gui,self.gui.modifBox.obs)
         self.fit.startDialog()
-        
-    #def onMultiPlot(self,evt): # OA 28/11/18
-        #m = multiPlot(self.gui,self.core)
-        #m.show()
-        
+
     def onBatchDialog(self,evt):
         from matplotlib import rcParams
         rcParams['interactive']=True
@@ -486,7 +484,6 @@ class addin:
             name=f0.split('formula: ')[0].split(':',1)[1].strip()
             formula=f0.split('formula: ')[1].split('tstep')[0].strip()
             tstep=f0.split('formula: ')[1].split('tstep:')[1].strip()
-            #print('NN',name, 'FF',formula, 'TT', tstep)
             self.core.dicaddin['InitialChemistry']={'name':name,'formula':formula,'tstep':tstep}
         else : 
             self.core.dicaddin['InitialChemistry']={'name':'','formula':'','tstep':''}
@@ -513,10 +510,10 @@ class addin:
         elif mgroup =='Modflow USG':
             self.mfU.buildMesh(opt)
             ncell = self.mfU.ncell
-            self.core.setValueFromName('Modflow','NCELL',int(ncell)) # this is 2D
-            self.core.setValueFromName('Modflow','NODELAY',self.mfU.ncell_lay) # this is 2D
+            self.core.setValueFromName('Modflow','NCELL',int(ncell))
+            self.core.setValueFromName('Modflow','NODELAY',self.mfU.ncell_lay)
             self.core.setValueFromName('Modflow','NJAG',self.mfU.nconnect+ncell)
-        elif mgroup =='Min3p' : # 3D not considered yet
+        elif mgroup =='Min3p' :
             l2,l3 = 'spat.2','spat.3'
             if self.xsect: l2,l3 = 'spat.3','spat.2'
             self.core.dicval['Min3pFlow']['spat.1']=[1,g['nx'],g['x0'],g['x1']] 

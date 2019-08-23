@@ -130,7 +130,7 @@ class guiShow:
                 dataM = self.getUserSpecies(species,plane,layer)
             else :
                 dataM = self.getArray2D(Cgroup,self.arr3,plane,layer)
-        self.data = dataM; #♠print('guish 133',shape(dataM))
+        self.data = dataM; #print('guish 133',shape(dataM))
         # get VECTORS
         dataV = None
         if self.dicVisu['Flow']['Veloc-vect']: 
@@ -145,6 +145,10 @@ class guiShow:
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)
 
+    def redraw(self):
+        group,name,species = self.getCurrentContour()
+        self.onClick2(group,name,species)
+        
     def resetDicContour(self):
         # put all cntour values to none
         for k in list(self.dicVisu.keys()):
@@ -205,7 +209,6 @@ class guiShow:
             Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
         #print 'guish 196',shape(arr3)
         if self.mesh:
-            print('guis207 mesh',shape(arr3))
             return None,None,arr3[section,:]
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:

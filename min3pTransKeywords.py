@@ -33,10 +33,10 @@ class m3T:
         }
         self.lines={
         #'physical parameters – reactive transport'  
-        'trans.1':{'comm':'diffusion coefficients','cond':'','kw':['Diff_w','Diff_a','Diff_choice'],
-                  'detail':['Diff in water (m2/s)','Diff in air (m2/s)',['Diffusion type','Original','Binary','Dusty gas']],
-                   'type':['float','float','choice'],
-                   'default':[1e-10,1e-5,0]},
+        'trans.1':{'comm':'diffusion coefficients','cond':'','kw':['Diff_w','Diff_a','Diff_n','Diff_choice'],
+                  'detail':['Diff in water (m2/s)','Diff in air (m2/s)','Diff in napl',['Diffusion type','Original','Binary','Dusty gas']],
+                   'type':['float','float','float','choice'],
+                   'default':[1e-10,1e-5,0,0]},
         'trans.2':{'comm':'dispersivities','cond':'','kw':['Dsp'],
                   'detail':[''],'type':['arrint'],'default':[1.,0.1,0.1],
                   'names':['DspL','DspT','DspTV'],
