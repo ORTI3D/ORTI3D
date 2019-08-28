@@ -181,8 +181,8 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
                 ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
                 ch.setText(str(dicIn[n][i][0])) # OA modif 2/4
-                s =(dicIn[n][i][1] == "True")
-                ch.setCheckState(s) # OA modif 2/4
+                s =(dicIn[n][i][1] == True) #EV 26/08/19 replaced "True" by True
+                ch.setChecked(s) # OA modif 2/4 , EV 26/08/19 
                 lay.addWidget(ch,il,ic)
             scroll = QScrollArea()
             scroll.setWidget(pg)
@@ -352,7 +352,6 @@ class zoneDialog(QDialog): # Dialog for zone
         QDialog.__init__(self)
         self.gui, self.core, self.model, self.line,  = parent.gui, core,model,line
         self.nb = nb
-        #self.test = 'erty'
         self.glWidget = QWidget(self)
         self.screenShape = QDesktopWidget().screenGeometry()
         self.glWidget.setGeometry(QRect(5, 5, self.screenShape.width()*0.4,self.screenShape.height()*.5))
@@ -367,7 +366,6 @@ class zoneDialog(QDialog): # Dialog for zone
         self.buttonBox.accepted.connect(self.accept1)
         self.buttonBox.rejected.connect(self.reject1)
         self.gl.addWidget(self.buttonBox)
-        #onMessage(self.gui,'base zdialg \n'+str(self)+'\n'+str(self.zones))
 
     def showDialogAndDisconnect(self):
         self.show()
@@ -379,29 +377,30 @@ class zoneDialog(QDialog): # Dialog for zone
         if self.state == 'accept': #EV 22/07/2019
             zp = self.zpanel;
             curdic = self.core.diczone[self.model]
-            #curdic.addZone(self.line)
             curzones = curdic.dic[self.line]
-            #onMessage(self.gui,'in save current \n'+str(curzones))
             curzones['name'][self.nb] = str(zp.name.text())
             media = zp.media.text()
             if '-' in media : #EV 24/10/18 & 22/07/19
                 m1 = media.split('-')
                 m2 = list(range(int(m1[0]),int(m1[1])+1))
-            else :m2 = int(media)
+            else :
+                m2 = int(media)
             curzones['media'][self.nb] = m2;#onMessage(self.gui,str(zp.coords.getValues()['data']))
-            if self.line != 'dis.1': # OA 20/11/18 this is to create modflow domain
+            if self.line != 'dis.1': # OA 20/11/18 this is to create modflow domain for qgis
                 curzones['coords'][self.nb]= self.corrCoords(zp.coords.getValues()['data'])
             else : # OA 20/11/18
                 curzones['coords'][self.nb]= zp.coords.getValues()['data']
             val0 = ''
-            if self.typO: val0 = self.getOpt()
-            #print 'qtdlg 366',self.typS
+            if self.typO: # if several values for one zone
+                val0 = self.getOpt()
             if self.typS==1: # for transient values
                 v0 = zp.valBox.getValues()['data']
                 val = ''
-                for b in v0 : val+=str(b[0])+' '+str(b[1])+'\n'
+                for b in v0 : 
+                    val+=str(b[0])+' '+str(b[1])+'\n'
             else :
-                val = str(zp.valBox.document().toPlainText())            
+                v0 = zp.valBox.document().toPlainText()
+                val = str(v0)            
             first = val.split('\n')[0]
             if first.count('.')>2:   #for pht3d zones 1.0.0.0
                 val = val.replace('.','')
@@ -409,10 +408,12 @@ class zoneDialog(QDialog): # Dialog for zone
                 val = val.replace('\n','')
             curzones['value'][self.nb]= val0+val
             return 'OK'
-        else : return 'None'
+        else : 
+            return 'None'
         
     def accept1(self): 
-        check=self.checkEntry() #EV 22/07/2019
+        self.state = 'reject' 
+        check = self.checkEntry() #EV 22/07/2019
         if check=='ok': #EV 22/07/2019
             self.close()
             self.state = 'accept'        
@@ -424,6 +425,8 @@ class zoneDialog(QDialog): # Dialog for zone
     def checkEntry(self): #EV 22/07/2019
         zp = self.zpanel;
         media = zp.media.text()
+        if not zp.name.text():
+            onMessage(self,"Enter a name for the current zone");return
         if '-' in media :
             m1 = media.split('-')
             try :
@@ -435,11 +438,24 @@ class zoneDialog(QDialog): # Dialog for zone
                 m2 = int(media)
             except ValueError: 
                 m2 = 'None'
-        if not zp.name.text():
-            onMessage(self,"Enter a name for the current zone")
-        elif m2=='None':
-            onMessage(self,"Enter an integer number for media")
-        else : return 'ok'
+        if m2=='None':
+            onMessage(self,"Enter an integer number for media");return
+        if self.typO: # if several values for one zone
+            if self.getOpt() == 'None':
+                onMessage(self,"Enter correct number in properties");return
+        if self.typS==1: # for transient values
+            v0 = zp.valBox.getValues()['data']
+            for b in v0 : 
+                try: float(b[0]);float(b[1])
+                except ValueError:
+                    onMessage(self,"Enter a number in transient data");return
+        else : 
+            v0 = zp.valBox.document().toPlainText() # main value
+            try :float(v0)
+            except ValueError:
+                onMessage(self,"Enter a number in zone data");return 
+        self.state = 'accept'
+        return 'ok'
         
     def corrCoords(self,lcooI):
         '''change coordinates if they are out of the domain'''
@@ -460,6 +476,8 @@ class zoneDialog(QDialog): # Dialog for zone
         data = self.zpanel.GOdata.getValues()['data']; #print 'wxdialog 248',data
         s = '$'
         for i in range(len(data)):
+            try: float(data[i][0])
+            except ValueError: return 'None'
             s += data[i][0]+' \n'
         return s+'$'
      

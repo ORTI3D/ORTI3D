@@ -41,6 +41,7 @@ class BaseParms:
             'Pe_Write': 'self.dialogs.onMessage(self.gui,self.writeModel(\'Pest\'))',
             'Pe_Run': 'self.runModel(\'Pest\')',
             }
+    
     def action(self,name):
         action=self.dicaction[str(name)]
         #print self.core.dicaddin['Model']['group'],action

@@ -334,14 +334,16 @@ class addin:
 #                for name in ['comp','complex','gases']:
 #                    self.chem.readOtherDb(name,bs[name]['rows'])
 #                print bs
+                self.dialogs.onMessage(self.gui,'Database imported')
             else :
                 self.chem = self.pht3d
                 if 'pht3d_datab.dat' not in os.listdir(self.core.fileDir):
                     self.dialogs.onMessage(self.gui,'pht3d_datab.dat file missing')
-                fname = str(self.core.fileDir+os.sep+'pht3d_datab.dat')
-                self.pht3d.tempDbase,self.pht3d.npk= self.pht3d.importDB(fname);
-                self.chem.updateChemistry()
-            self.dialogs.onMessage(self.gui,'Database imported')
+                else : #EV 26/08/19
+                    fname = str(self.core.fileDir+os.sep+'pht3d_datab.dat')
+                    self.pht3d.tempDbase,self.pht3d.npk= self.pht3d.importDB(fname);
+                    self.chem.updateChemistry()
+                    self.dialogs.onMessage(self.gui,'Database imported')
             
         if actionName == 'Ad_Chemistry':
             if self.core.dicaddin['Model']['group'] == 'Min3p': 
@@ -583,7 +585,9 @@ class addin:
             ep = toplist[im]-toplist[im+1]
             for il in range(lilay[im]):
                 dz = dzL[im][il]*ep
-                dic['data'].append([im,nl,str(top)[:5]+' to '+str(top-dz)[:5]])
+                print('top ',top)
+                print('top-dz ',top-dz)
+                dic['data'].append([im,nl,nice(top)+' to '+nice(top-dz)]) # OA 26/8/19 passed to nice format
                 top -= dz
                 nl += 1
         return {'3Dlayers':dic}

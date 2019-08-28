@@ -7,7 +7,7 @@ Created on Sun Dec 15 20:53:49 2013
 sclist = ['amax','amin','arange','arctan','argmin','argsort','around','array','c_','ceil','clip','compress',
     'concatenate','cos','cumsum','dot','equal','exp','floor','linspace','loadtxt','log','log10','logspace','maximum','mean','median',
     'meshgrid','minimum','mod','nonzero','ones','put','putmask','r_','rand','ravel','reshape','savetxt','shape',
-    'sign','sin','sort','sqrt','sum','take','transpose','unique','where','zeros','zeros_like','prod']
+    'sign','sin','sort','sqrt','sum','take','transpose','unique','where','zeros','zeros_like','prod','split']
 for n in sclist: exec('from scipy import '+n)
 
 import matplotlib.tri as mptri
@@ -16,10 +16,12 @@ import warnings,os
 warnings.filterwarnings("ignore")
 
 def nice(x):
-    """makes a flot in anice format"""
-    om=int(round(log10(abs(x))))
+    """makes a flot in a nice format"""
+    if x!=0:om=int(round(log10(abs(x)))) # EV 27/08/19
+    else:om=1 
     dec = max(5-om,0)
-    c = ' %+10.'+str(dec)+'f'
+    if abs(om)<4: c = ' %+10.'+str(dec)+'f'
+    else : c = '%.4e'
     return (c%x).strip()
 
 class Config():

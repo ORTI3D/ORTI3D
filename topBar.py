@@ -112,6 +112,7 @@ class BaseTop:
         line = self.gui.currentLine
         curzones.addZone(line)
         iz = curzones.getNbZones(line)-1;
+        xy = [(nice(a),nice(b)) for a,b in xy] # OA 26/8/19 to have short numbers
         curzones.setValue(line,'coords',iz,xy)
         curzones.setValue(line,'value',iz,' ')
         curzones.setValue(line,'media',iz,self.gui.currentMedia)

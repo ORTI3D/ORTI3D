@@ -43,7 +43,7 @@ class modflowWriter:
         self.writeNamFile()
         #self.writeFiles() #OA 13/8/19 for loop below is new
         for grp in self.core.getUsedModulesList('Modflow'):
-            if grp in ['WEL','DRN','RIV','MNWT','GHB']: continue # in transientfile
+            if grp in ['WEL','DRN','RIV','MNWT','GHB','HFB6']: continue # in transientfile or specific (MNWT&HBF6) # EV 28/08/19
             elif grp in lnorm : self.writeOneFile(grp,{})
             elif grp in lgex : exec('self.write'+grp+'()')
         self.writeLmtFile()
@@ -57,6 +57,8 @@ class modflowWriter:
                 self.writeTransientFile(core,n+'.1',n)
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             self.writeMNwtFile(core)
+        if self.core.diczone['Modflow'].getNbZones('hbf.3')>0: # EV 28/08/19
+            self.writeHFB6()  # EV 28/08/19
             
     def setRadial(self):
         g = self.core.addin.getFullGrid()
@@ -75,12 +77,11 @@ class modflowWriter:
         f1=open(self.fullPath +'.nam','w')
         f1.write('LIST   2  ' + self.fName + '.lst\n')
         for i,mod in enumerate(lmod):
-            if mod in ['RCH','WEL','CHD','MNWT']: continue
+            if mod in ['RCH','WEL','CHD','MNWT','HFB6']: continue # EV 28/08/19
             f1.write(mod+'  '+str(i+10)+'  ' + self.fName + '.'+mod.lower()+'\n')
         f1.write('OC       26    '+ self.fName + '.oc\n')
         f1.write('DATA(BINARY)     30        ' + self.fName + '.head\n')
         f1.write('DATA(BINARY)     31        ' + self.fName + '.budget\n')
-
         if self.core.mfUnstruct==False:
             f1.write('LMT6     28    '+ self.fName + '.lmt\n')
         r0=self.core.getValueFromName('Modflow','RECH')
@@ -91,14 +92,18 @@ class modflowWriter:
         if 'EVT' in lmod:
             if e0>0 or self.core.diczone['Modflow'].getNbZones('evt.2')>0:
                 f1.write('EVT     35     ' + self.fName + '.evt\n')
-        if self.core.diczone['Modflow'].getNbZones('wel.1')>0:
-            f1.write('WEL     36     ' + self.fName + '.wel\n')
+        if 'WEL' in lmod:# EV 28/08/19
+            if self.core.diczone['Modflow'].getNbZones('wel.1')>0:
+                f1.write('WEL     36     ' + self.fName + '.wel\n')
         if 'bas.5' in list(self.ttable['Transient'].keys()):
             if self.ttable['Transient']['bas.5']:
                 f1.write('CHD     37     ' + self.fName + '.chd\n')
-        if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
-            f1.write('MNW2     39     ' + self.fName + '.mnwt\n')
-            
+        if 'MNWT' in lmod: # EV 28/08/19
+            if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
+                f1.write('MNW2     39     ' + self.fName + '.mnwt\n')
+        if 'HFB6' in lmod:# EV 28/08/19
+            if self.core.diczone['Modflow'].getNbZones('hfb.3')>0: # EV 28/08/19
+                f1.write('HFB6     38     ' + self.fName + '.hfb6\n')  # EV 28/08/19  
         if self.trans: # OA added for usg
             f1.write(self.usgTrans['nam'])
             

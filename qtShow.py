@@ -46,7 +46,7 @@ class Ui_Show(object):
         title.setText("Results")
         font = QFont();font.setPointSize(10);font.setBold(True)
         title.setFont(font)
-        title.setMaximumHeight(30)
+        title.setMaximumHeight(40)
         topHBox.addWidget(title)
         self.swiPlane = QPushButton()
         self.swiPlane.setIcon(QIcon(gui.u_dir+os.sep+'Vis_OriZ.png'))

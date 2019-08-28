@@ -42,6 +42,8 @@ class multiPlot(QDialog):
         font.setBold(True)
         self.label.setFont(font)
         self.verticalLayout.addWidget(self.label, alignment=Qt.AlignHCenter)
+    ## model time list
+        self.tlist = self.core.getTlist2()
     ## combo box for chemistry
         if res=='Chemistry' and typ=='B':
             self.plgroup = QComboBox(self)
@@ -63,12 +65,11 @@ class multiPlot(QDialog):
             self.label_2.setMaximumSize(QtCore.QSize(40, 20))
             self.label_2.setText("Tstep")
             self.horizontalLayout2.addWidget(self.label_2)
-            tlist = self.core.getTlist2()
             if typ=='X':
-                tlist=list(tlist)
-                tlist.insert(0, 'All')
+                self.tlist=list(self.tlist)
+                self.tlist.insert(0, 'All')
             self.Tstep = QComboBox(self.frame)
-            self.Tstep.addItems([str(n) for n in tlist])
+            self.Tstep.addItems([str(n) for n in self.tlist])
             self.Tstep.setCurrentIndex(0)
             self.horizontalLayout2.addWidget(self.Tstep)
             self.verticalLayout.addWidget(self.frame) 
@@ -144,16 +145,12 @@ class multiPlot(QDialog):
         dicLayers=self.getLayers()
         if res =='Chemistry': 
             dicSpecies=self.getSpecies()
-            if typ=='X': dic = {**dicObsZone,**dicSpecies}
+            if typ=='X' or len(dicLayers['Layers'])==1: dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
             else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
         else : 
-            if typ=='X' : dic = dicObsZone
+            if typ=='X' or len(dicLayers['Layers'])==1: dic = dicObsZone #EV 26/08/19
             else : dic = {**dicObsZone,**dicLayers}
         return dic
-    
-    def getTimeStep(self):
-        tlist = self.core.getTlist2()
-        return tlist
     
     def getValues(self): #EV 14/08/19
         for k in list(self.nb.dicIn.keys()):
@@ -170,11 +167,13 @@ class multiPlot(QDialog):
         '''get the plot options from the window very simple now'''
         dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
-        if ptyp=='B' : dicIn['ptyp']='time'
-        if ptyp=='P' : dicIn['ptyp']='space'
+        if ptyp=='B' : dicIn['ptyp']='B0'
+        if ptyp=='P' : dicIn['ptyp']='P0'
         if ptyp=='X' : dicIn['ptyp']='XY'
         #dic=self.nb.getValues() 
         dic=self.getValues() #EV 14/08/19
+        nblay=getNlayers(self.core) #EV 26/08/19
+        if nblay==1 : dic['Layers']= [('0', int(2))] #EV 26/08/19
         dicIn['zolist']=[dic['Zones'][i][0] for i in range(len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
             lylist=[dic['Layers'][i][0] for i in range(len(dic['Layers'])) if dic['Layers'][i][1]==2]
@@ -202,93 +201,91 @@ class multiPlot(QDialog):
         The present version executes directly the code for simplificaiton, we can build later one with
         code string
         '''
-        dicIn = self.getOptions() #print('dicIn',dicIn)
+    ## Get the plot options
+        dicIn = self.getOptions() #;print('dicIn',dicIn)
         self.ptyp,self.pOrder,self.zolist,self.splist,lylist =dicIn['ptyp'],dicIn['plotOrder'],dicIn['zolist'],dicIn['splist'],dicIn['lylist']
-        #dataObs = self.getDataObs()
-        #self.core.dataObs = dataObs # may need some transformation
-        # calculates nb of plots, ncol and nrows for subplot
+        if not dicIn['zolist'] : #EV 26/08/2019
+            mess=onMessage(self.gui,'Choose zone(s) to plot the results.')
+            return mess
+        if not dicIn['splist'] : #EV 26/08/2019
+            mess=onMessage(self.gui,'Choose specie(s) to plot the results.')
+            return mess
+        if not dicIn['lylist'] and self.ptyp!='XY': #EV 26/08/2019
+            mess=onMessage(self.gui,'Choose layer(s) to plot the results.')
+            return mess
+    ## Calculates nb of plots, ncol and nrows for subplot
         if self.pOrder=='Zones': nplots = len(self.zolist) 
         if self.pOrder=='Species': nplots = len(self.splist)
-        #if pOrder[0]=='layers': nplots = len(lylist)
         ncols = int(ceil(sqrt(nplots)))
         nrows = int(ceil(nplots/ncols))
-        # sets some plot parameters
-        self.tlist = self.core.getTlist2()
-        if self.ptyp=='time': self.ptyp,iper = 'B0',self.tlist ; self.axlabel='Time [T]' #time series
-        if self.ptyp=='space': 
+    ## sets some plot type parameters
+        if self.ptyp=='B0': ##time series
+            iper = self.tlist ; self.axlabel='Time [T]' 
+        if self.ptyp=='P0': ##Profile
             curTime = int(self.Tstep.currentIndex())
-            self.ptyp,iper = 'P0',curTime ; self.axlabel='Distance [L]' #Profile
-        if self.ptyp=='XY': 
-            if int(self.Tstep.currentIndex())==0: curTime='All'
-            else : curTime = int(self.Tstep.currentIndex()-1)
-            self.ptyp,self.iper = 'XY',curTime # modify core.py to use 'X0' ? 
+            iper = curTime ; self.axlabel='Distance [L]' 
+    ## sets some plot result parameters
         if 'Head' in self.splist : group = 'Flow' ; aylabel = 'Head [L]'
         if 'Wcontent' in self.splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
         elif 'Tracer' in self.splist : group = 'Transport' ; aylabel = 'Concentration [NL$^{-3}$]'
         else : group = 'Chemistry' ; aylabel = 'Concentration [NL$^{-3}$]'
-        # build the plots
+    ## build the plots
         self.figure.clf()
+    ## Calibration graph
         if self.ptyp == 'XY':
-            ptypXY='P0' 
-            if self.iper != 'All' :
-                time=self.tlist[self.iper]
-                self.yobs_all = [] ; self.yy_all = []; self.llabel=['1:1']
-                self._ax=self.figure.add_subplot(1,1,1)
-                for i in range(len(self.splist)):
-                    for j in range(len(self.zolist)):
-                        xobs,self.yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],time)
-                        if len(self.yobs)!=0:
-                            self.yobs_all.append(self.yobs)
-                            x,self.yy,label =  self.core.onPtObs(ptypXY,self.iper,group,self.zolist[j],[self.splist[i]],lobs)
-                            self.yy_all.append(self.yy)
-                            myplot=self._ax.scatter(self.yobs,self.yy)
-                            self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))
-            else :
-                self._ax=self.figure.add_subplot(1,1,1)  
-                self.yobs_all=[]; self.yy_all = [] ; self.llabel=['1:1']
-                for i in range(len(self.splist)):
-                    for j in range(len(self.zolist)):
-                        self.yobsarray = [] ; self.yyarray = [] 
-                        for t in range(len(self.tlist)):
-                            time=self.tlist[t] ; self.iper=t
-                            xobs,self.yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],time)
-                            if len(self.yobs)!=0:
-                                self.yobsarray.append(self.yobs)
-                                x,self.yy,label =  self.core.onPtObs(ptypXY,self.iper,group,self.zolist[j],[self.splist[i]],lobs)
-                                self.yyarray.append(self.yy)
-                        self.yy_all.append(self.yyarray)
-                        self.yobs_all.append(self.yobsarray)
-                        myplot=self._ax.scatter(self.yobsarray,self.yyarray)
-                        self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs)) 
-                time='All'
-            yobs_arr=[item for sublist in self.yobs_all for item in sublist] #EV 02/04/19
-            yobs_arr=np.array(yobs_arr).flatten().tolist()
-            #yobs_arr=np.concatenate(self.yobs_all).ravel().tolist() 
-            myplot2=self._ax.plot([min(yobs_arr),max(yobs_arr)],[min(yobs_arr),max(yobs_arr)],'k')
-            self._ax.set_title('Simulated vs Observed Data: Time = '+str(time)+' [T]',fontweight="bold", size=9)
+            ptypXY='P0' ; self.llabel=['1:1'] ; time=[]
+            self.yobs_all = [] ; self.ysim_all = [] ; self.obs_time = [] ; self.label_all=[] ## for export
+            self._ax=self.figure.add_subplot(1,1,1)
+            if int(self.Tstep.currentIndex())==0: curTime='All' ; time=self.tlist[1:] 
+            else : curTime = int(self.Tstep.currentIndex()) ;time.append(self.tlist[curTime]);self.iper=curTime
+            for i in range(len(self.splist)):
+                for j in range(len(self.zolist)):
+                    yobs_array = [] ; ysim_array = [] 
+                    for t in range(len(time)):
+                        if curTime=='All':self.iper=t
+                        xobs,yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],time[t])
+                        if len(yobs)!=0:
+                            yobs_array.append(yobs[0])
+                            x,y,label =  self.core.onPtObs(ptypXY,self.iper,group,self.zolist[j],[self.splist[i]],lobs)
+                            ysim_array.append(float(y)) 
+                            self.ysim_all.append(float(y))
+                            self.yobs_all.append(yobs[0]) 
+                            self.obs_time.append(time[t])
+                            self.label_all.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))                             
+                    myplot=self._ax.scatter(yobs_array,ysim_array)
+                    self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))  
+            if not self.yobs_all : #EV 26/08/2019
+                mess=onMessage(self.gui,'There is no observation data for this model.') 
+                return mess
+            myplot2=self._ax.plot([min(self.yobs_all),max(self.yobs_all)],[min(self.yobs_all),max(self.yobs_all)],'k')
+            self._ax.set_title('Simulated vs Observed Data: Time = '+str(curTime)+' [T]',fontweight="bold", size=9)
             self._ax.legend(self.llabel,fontsize = 8,loc='upper center', bbox_to_anchor=(0.5, -0.1),ncol=4)
             self._ax.set_ylabel('Simulated '+aylabel, fontsize = 8) 
             self._ax.set_xlabel('Observed '+aylabel, fontsize = 8)
             self._ax.ticklabel_format(useOffset=False, style='sci',scilimits=(-4,4),axis='both',useMathText=True)
             self._ax.tick_params(axis='both', labelsize=8)
             self._ax.figure.canvas.draw()
+    ## Time series and profile graph
         else :
-            if self.pOrder=='Zones':
-                self.arryy=[] ; self.arrx=[]
+            a = lylist.split(',');layers = [int(x) for x in a] #EV 26/08/19
+            if self.pOrder=='Zones': ## for Flow, transport and chemistry
+                self.arryy=[] ; self.arrx=[] ## for export
                 for i in range(nplots):
                     self._ax=self.figure.add_subplot(nrows,ncols,i+1)
                     self.x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[i],self.splist,lylist) 
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
                     myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x)
-                    if self.ptyp=='B0':
+                    if self.ptyp=='B0': ## observed data for time series only
                         if self.checkBox.isChecked():
                             for j in range(len(self.splist)):
-                                xobs,yobs,lobs=self.getDataObs(self.splist[j],self.zolist[i],iper)
-                                myplot2=self._ax.scatter(xobs,yobs,c='k')
-                                if len(yobs)!=0 : 
-                                    if group!='Chemistry':self.llabel.append('lay'+str(lobs)+'(obs)')
-                                    else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
+                                for l in range(len(layers)):
+                                    xobs,yobs,lobs=self.getDataObs(self.splist[j],self.zolist[i],layers[l])
+                                    if len(yobs)!=0 :
+                                        color=j*len(layers)+layers.index(lobs) #EV 26/08/19
+                                        myplot2=self._ax.scatter(xobs,yobs,c='C'+str(color)) #EV 26/08/19
+                                        if group!='Chemistry':self.llabel.append('lay'+str(lobs)+'(obs)')
+                                        else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
                     self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
                     self._ax.legend(self.llabel,fontsize = 8,loc='best')
                     self._ax.set_ylabel(aylabel, fontsize = 8) 
@@ -296,7 +293,7 @@ class multiPlot(QDialog):
                     self._ax.ticklabel_format(useOffset=False, style='sci',scilimits=(-4,4),axis='both',useMathText=True)
                     self._ax.tick_params(axis='both', labelsize=8)
                     self._ax.figure.canvas.draw()
-            if self.pOrder=='Species':
+            if self.pOrder=='Species': ## for time series chemistry only
                 self.arryy=[]
                 for i in range(nplots):
                     self._ax=self.figure.add_subplot(nrows,ncols,i+1)
@@ -306,11 +303,14 @@ class multiPlot(QDialog):
                         self.yyarray = np.append(self.yyarray,yy,axis=1)
                         label=[str(self.zolist[j]+'_lay'+lylist.split(',')[x]+'(sim)') for x in range(len(lylist.split(',')))]
                         self.llabel0.append(label)
-                        if self.ptyp=='B0':
+                        if self.ptyp=='B0': ## observed data for time series only
                             if self.checkBox.isChecked():
-                                xobs,yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],iper)
-                                if len(yobs)!=0 : lobslab.append(self.zolist[j]+'_lay'+str(lobs)+'(obs)')
-                                myplot2=self._ax.scatter(xobs,yobs,c='k')
+                                for l in range(len(layers)):
+                                    xobs,yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],layers[l])
+                                    if len(yobs)!=0 : 
+                                        lobslab.append(self.zolist[j]+'_lay'+str(lobs)+'(obs)')
+                                        color=j*len(layers)+layers.index(lobs) #EV 26/08/19
+                                        myplot2=self._ax.scatter(xobs,yobs,c='C'+str(color)) #EV 26/08/19
                     self.arryy.append(self.yyarray)
                     self.llabel0.append(lobslab)
                     self.llabel = [item for sublist in self.llabel0 for item in sublist]
@@ -323,7 +323,7 @@ class multiPlot(QDialog):
                     self._ax.tick_params(axis='both', labelsize=8)
                     self._ax.figure.canvas.draw()
             
-    def getDataObs(self,splist,zname,iper):
+    def getDataObs(self,splist,zname,opt):
         '''read the data file and returns it'''
         xobs=[];yobs=[];lobs=0 
         if splist in ('Head','Tracer'):
@@ -337,16 +337,17 @@ class multiPlot(QDialog):
         for i in range(len(dic)):
             if dic[i][0]==zname:
                 if self.ptyp=='B0':
-                    if dic[i][ispe]!='': # EV 05/03/19
-                        xobs.append(float(dic[i][2]))     
-                        yobs.append(float(dic[i][ispe]))
-                        lobs=int(dic[i][1])
-                else :
-                    if float(dic[i][2])==float(iper):
+                    if int(dic[i][1])==int(opt):
                         if dic[i][ispe]!='': # EV 05/03/19
                             xobs.append(float(dic[i][2]))     
                             yobs.append(float(dic[i][ispe]))
-                            lobs=int(dic[i][1])                       
+                            lobs=int(dic[i][1])
+                else :
+                    if float(dic[i][2])==float(opt):
+                        if dic[i][ispe]!='': # EV 05/03/19
+                            xobs.append(float(dic[i][2]))     
+                            yobs.append(float(dic[i][ispe]))
+                            lobs=int(dic[i][1])   
         return xobs,yobs,lobs
     
     def onExport(self):
@@ -356,17 +357,14 @@ class multiPlot(QDialog):
         if fDir == None: return
         f1 = open(fDir+os.sep+fName+'.txt','w')
         if self.ptyp == 'XY':
-            f1.write('Well '+'Observed '+'Simulated'+'\n')
-            for n in range(len(self.llabel)): 
-                if n!=0:
-                    for i in range(len(self.yy_all[(n-1)])):
-                        f1.write(self.llabel[n]+' ')
-                        if self.iper=='All':
-                            f1.write(str(self.yobs_all[(n-1)][i][0])+' ')
-                            f1.write(str(self.yy_all[(n-1)][i][0][0])+'\n')
-                        else:
-                            f1.write(str(self.yobs_all[(n-1)][i])+' ')
-                            f1.write(str(self.yy_all[(n-1)][i][0])+'\n')
+            f1.write('Well '+'Type '+'Layer '+'Time '+'Observed '+'Simulated'+'\n')
+            for n in range(len(self.label_all)): 
+                    f1.write(self.label_all[n].split('_')[0]+' ')
+                    f1.write(self.label_all[n].split('_')[1]+' ')
+                    f1.write(self.label_all[n].split('_')[2][3:]+' ')
+                    f1.write(str(self.obs_time[n])+' ')
+                    f1.write(str(self.yobs_all[n])+' ')
+                    f1.write(str(self.ysim_all[n])+'\n')
             f1.close()
         elif self.ptyp=='B0':
             f1.write(self.axlabel.split(' ')[0])

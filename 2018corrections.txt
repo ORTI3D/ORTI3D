@@ -607,3 +607,26 @@ this version sent to elicia
 - core/runModel l.302 adde lastline nb to search final time also for usg
 - mtUsgTrans keywords cahnged default idisp value to 1 (isotropic)
 - parameters writeModel l.88 added init guishow
+
+26/08/19 EV
+multiplot/getChoices l.148-151 added condition to not show list of layers for 2D model
+multiplot/getOptions l.175-176 created a dic 'Layers' with 1 layer for 2D model
+multiplot/buildplot l.207-215,257-259 added message to avoid error when no checkbox is checked or when there is no observed data imported
+multiplot/buildplot l.270,285-286,312-313 added option to put color on observed data plot
+qtDialogs/myNoteBookCheck l.184-185 "True" replaced by True to set check QCheckBox
+addin/doaction l.342 added 'else' to avoid error message when database missing
+
+26/8/19  OA
+- in config, added split (for arrays, for usg), nice redefined
+- in topbar/onZoneCreate l.115 added nice format (from config for chosrt coords)
+- in addin/make3DTable l.586 pb of format for the last line of 3D dialog (str -> nice)
+- qtDialogs/zonedialog several changes in savecurrent to vlaidate all numbers
+
+27/08/19 EV
+- qtVisualisation/createImage l.321 'jet' color added to plot result in image (not contour)
+- config/nice l.20 condition added to fix om at 1 when x = 0
+
+28/08/19 EV
+- modflowWriter/writeModflowFiles l.46, 60-61 option added to avoid to write HBF files if there is no HBF zone
+- modflowWriter/writeNamFile l.80, 104-106 option added to avoid to write HBF in .nam file if there is no HBF zone or module uncheck
+- modflowWriter/writeNamFile l.95,101 option added to avoid to write WELL and MNWT in .nam file if module uncheck

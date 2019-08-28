@@ -318,7 +318,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         X,Y,Z = data;Z1 = array(Z);#print shape(Z1)
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
         if self.mesh==None: # classical square grid
-            image=pl.pcolormesh(X,Y,Z) #,norm='Normalize')
+            image=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
             self.cnv.images=[image]
         elif modgroup[:5] == 'Modfl' :
             data = data[-1][0]# first values are coordinates, and its 3D

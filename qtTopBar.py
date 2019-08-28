@@ -281,18 +281,18 @@ class Ui_ModifZone(object):
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.zmodif,self.zmove,self.zindex=0,0,[]
         self.currentZlist = None; #EV 14/08/19
-        # choice de la zone
+    ## choice de la zone
         self.choice = QComboBox(self.hlWidget)
         #self.choice.setSizePolicy(policy)
         self.choice.setMaximumWidth(85)  
         zoneSizer.addWidget(self.choice)
         self.choice.activated['QString'].connect(self.onChoice)
-        # valeur de la zone selectionnee
+    ## valeur de la zone selectionnee
         self.valZ = QPushButton(self.hlWidget);zoneSizer.addWidget(self.valZ)
         #self.valZ.setSizePolicy(policy)
         self.valZ.setMaximumWidth(85)             
         self.valZ.clicked.connect(self.onValueZ)
-        #bouton  milieu pour zone, puis deplacer, puis modif
+    ##bouton  milieu pour zone, puis deplacer, puis modif
         for n in ['move','modifPoly','supprime','supprimeAll']:       
             but = QPushButton(self.hlWidget);
             but.setObjectName(n)
@@ -307,7 +307,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 23/08/2019 ")
+        version = QLabel("       version 28/08/2019 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()
@@ -351,6 +351,7 @@ class Ui_ModifZone(object):
             #self.valZ.Enable(True)
         
     def onValueZ(self, evt):
+        self.izone = self.choice.currentIndex(); #EV 14/08/19
         if self.currentZlist: #EV 14/08/19
             dialg = zoneDialog(self, self.core,self.gui.currentModel,self.gui.currentLine,self.currentZlist,self.izone)
             result = dialg.saveCurrent() #exec_() #show()
