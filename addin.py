@@ -585,8 +585,6 @@ class addin:
             ep = toplist[im]-toplist[im+1]
             for il in range(lilay[im]):
                 dz = dzL[im][il]*ep
-                print('top ',top)
-                print('top-dz ',top-dz)
                 dic['data'].append([im,nl,nice(top)+' to '+nice(top-dz)]) # OA 26/8/19 passed to nice format
                 top -= dz
                 nl += 1
