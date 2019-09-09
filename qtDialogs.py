@@ -592,7 +592,7 @@ class zonePanel(QWidget):
         '''creates specific dialog part for serveal values in a zone'''
         if '$' in val:
             a,P1,P2 = val.split('$')
-            Parm1 = [[x] for x in P1.split('\n')];#print 'Nwell',Parm1
+            Parm1 = [x.split() for x in P1.split('\n')];# OA 6/9/19
         else : 
             P1 = self.core.dickword[self.model].lines[line]['default']
             Parm1 = [[str(x)] for x in P1]

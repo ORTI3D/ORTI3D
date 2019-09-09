@@ -14,6 +14,12 @@ from .geometry import *
 from .core import *
 from .config import *
 from .guiShow import guiShow
+        
+def selectComboValue(wdow,comboName,txt): #OA 6/9/19
+    combo = wdow.findChild(QComboBox,comboName)
+    if combo :
+        indx = combo.findText(txt)
+        if indx >= 0: combo.setCurrentIndex(indx)
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
@@ -38,6 +44,7 @@ class Ui_Show(object):
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
             pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
+        selectComboValue(self.gui,'Model_Plane_L','Z')
         QMetaObject.connectSlotsByName(Show)
         
     def makeTop(self,parent,gui):  # OA 1/6/19 separated form above  
