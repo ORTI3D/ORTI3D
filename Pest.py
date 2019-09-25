@@ -45,12 +45,14 @@ class Pest:
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             MFlist=['lpf.8','lpf.9','lpf.10','lpf.11','bas.5','rch.2','wel.1']
             MTlist=['btn.11','btn.13','dsp.2','dsp.3','dsp.4','vsc.3a']
-            PHlist=[]
+            PHlist=[]#'Rates','Solutions','Kinetic_Minerals','Phases','Surface'] #EV 23/09/19
             modlist=[MFlist,MTlist,PHlist]
             for i,md in enumerate (list(dic.keys())) :
                 Mlines=self.core.dickword[md].lines ; comm=[]
                 l0 = modlist[i]#list(self.core.dickword[md].lines.keys())
                 for line in l0:
+                    #if l0==PHlist : comm.append(str(line)) #EV 23/09/19
+                    #else : comm.append(str(line+' '+Mlines[line]['comm']))
                     comm.append(str(line+' '+Mlines[line]['comm']))
                 dic[md] = list(zip(comm,[False]*len(l0)))
             return dic

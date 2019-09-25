@@ -7,6 +7,7 @@ Created on Sun Aug 02 10:22:05 2015
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from .qtDialogs import * # OA 18/9/19
         
 class qtValueDialog(QDialog):
     def __init__(self, parent,gui,core,modName):
@@ -63,14 +64,14 @@ class qtBoxKeys:
         
     def addButtons(self,names,values,details,types):
         self.values,self.types = values,types;
-        nb=len(names);
+        self.nb=len(names);
         # clear the layout
         for b in self.labl: b.deleteLater()
         for b in self.lValBut: b.deleteLater()
         self.labl,self.lValBut=[],[];
         #self.parent.gui.onMessage(str(names)+' '+str(values)+' '+str(details))
         
-        for i in range(nb):
+        for i in range(self.nb):
             bname,bcontent,bselect,btype=self.parent.makeButton(names[i],values[i],details[i],types[i])
             #print(bname,bcontent,bselect,btype)
             txt = QLabel(self.layoutWidget)
@@ -79,7 +80,10 @@ class qtBoxKeys:
                 but = QComboBox(self.layoutWidget)
                 but.addItems(bcontent)
                 but.setCurrentIndex(bselect)
-            #elif btype == 'text':
+            elif btype[:3] =='lay':  # OA added 17/9/19
+                but = QPushButton('Media',self.layoutWidget)
+                but.clicked.connect(self.onOpenVectDialog)
+                self.vect = values; # OA 18/9/19 values contain all layers for type lay..
             else :
                 but = QLineEdit(self.layoutWidget)
                 but.setText(str(bcontent))
@@ -90,13 +94,28 @@ class qtBoxKeys:
             self.lValBut.append(but)
             self.gridLayout.addWidget(but,i,1,1,1)
             
+    def onOpenVectDialog(self): # OA 17/9/19
+        ''' creates a vector dialog in case of layint type '''
+        nr = len(self.vect);#print('qtValDlg 98',self.vect)
+        nmed = getNmedia(self.parent.core)#;print('qt val 100',self.vect,nmed)
+        if nr<nmed : self.vect.extend([self.vect[-1]]*(nmed-nr)) # the nb of media is higher than vect
+        elif nr>nmed: self.vect = self.vect[:nmed] # the contrary
+        dicV = {'media':{'cols':['media','val'],'rows':['']*nmed,'data':[[i,a] for i,a in enumerate(self.vect)]}};
+        dlgVect = myNoteBook(self.parent.core.gui,'title',dicV)
+        dicout = dlgVect.getValues()
+        if dicout != None:
+            self.vect = [x[1] for x in dicout['media']['data']]
+            
     def getValues(self):
-        nb = len(self.values)
-        for i in range(nb):
+        #nb = len(self.values) # OA 23/9/19 removed
+        for i in range(self.nb):
             but = self.lValBut[i]
             val = self.values[i]
-            if self.types[i] in ['choice','layint']: #,'layint']: OA 6/11/18 removed layint
+            if self.types[i] == 'choice': #,'layint']: OA 6/11/18 removed layint
                 self.values[i] = but.currentIndex()
+                continue
+            elif self.types[i] == 'layint': # OA added 23/9/19
+                self.values = self.vect
                 continue
             if but.text() not in ['formula','zone','array']:
                 if self.types[i] in ['int','vecint','arrint']:

@@ -45,8 +45,10 @@ class valueDialog:
             lk=self.Mkword.lines[ll];
             for i,kwd in enumerate(lk['kw']):
                 if ll not in list(self.val.keys()): continue
-                if i<len(self.val[ll]): val=self.val[ll][i]
-                else : val=0
+                if lk['type'][:3] == 'lay': val =self.val[ll] # OA added 18/9/19
+                else :
+                    if i<len(self.val[ll]): val=self.val[ll][i]
+                    else : val=0
                 if type(val) in [type('r'),type('r')]: continue
                 if lk['type'][0][:3]=='arr': continue # do not store array
                 kwd=kwd.split('(')[0]
@@ -97,7 +99,7 @@ class valueDialog:
             if 'detail' in lines[n]: details = lines[n]['detail']
             else : details = [None]*len(self.val[n])
             if len(details)==0: details = [None]*len(self.val[n])
-            self.changeButtons(name,lines[n]['kw'],self.val[n],details,lines[n]['type'])
+            self.changeButtons(name,lines[n]['kw'],self.val[n],details,lines[n]['type']);#print('valueD l102',self.val[n])
 
     def OnSetNewVal(self,evt=''):
         """sets the new values when user click on OK in key box"""
@@ -155,6 +157,9 @@ class valueDialog:
                 txt+=' : '+detail
                 bcontent = str(curVal)
         else :
-            bcontent = str(curVal)
-            typ = 'text'
+            if typ[:3] != 'lay':
+                bcontent = str(curVal)
+                typ = 'text'
+            else :
+                bcontent = curVal
         return txt,bcontent,bselect,typ # OA 6/11/18 changed order

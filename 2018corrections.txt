@@ -634,3 +634,16 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 6/9/19  OA
 - qtDialogs/gridSimple l.595 add split to remove blanks
 - qtShow/setupUi added selectComboValue (does not work fully)
+
+16/9/19 OA
+- several modifs in modflowUsg
+- in config, added delete
+
+17/9/19  OA
+- in qtvalueDialogs l. 82/85 added the case of lay to produce a button
+- in qtValueDialog l.96/99 added onOpenVectDialog method
+- in modflowKeywords, dis.3 removed the list of options -> to obtain a button to open a grid
+
+18/9/19 OA
+- in modflowKeywords return to layint for lpf.2
+- in valueDialog /initStoredValues l.48 modif to consider layint
