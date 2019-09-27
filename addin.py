@@ -204,11 +204,12 @@ class addin:
             if m['type']=='confined':
                 m['type']='Confined'
             data = [('dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
-                    ('type','Choice',(m['type'],['Confined','Unconfined'])),  #EV 22/07/2018 free -> Unconfined
+                    ('type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D only)'])),  #EV 22/07/2018 free -> Unconfined
                     ('group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
+            nmed=getNmedia(self.core) #EV 25/09/19
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'] = retour
@@ -218,14 +219,18 @@ class addin:
                     self.gui.onGridMesh('Mesh') # to chang the button
                     self.mesh = self.mfU # OA 22/8/19
                 self.gui.varBox.chooseCategory(m['group'])
+                if m['type']=='Confined': #EV 25/09/19
+                    self.core.setValueFromName('Modflow','LAYTYP',[0]*nmed) # 0 for confined, 1 for unconfined
+                    self.core.setValueFromName('Mt3dms','TLAYCON',[0]*nmed)
                 if m['type']=='Unconfined': #EV 22/07/2018 free -> Unconfined
-                    self.core.setValueFromName('Modflow','LAYTYP',1) # 0 for confined, 1 for unconfined
-                    self.core.setValueFromName('Mt3dms','TLAYCON',1)
+                    self.core.setValueFromName('Modflow','LAYTYP',[1]*nmed) # 0 for confined, 1 for unconfined
+                    self.core.setValueFromName('Mt3dms','TLAYCON',[1]*nmed)
                 if m['dimension'] in ['Xsection','Radial']:
                     self.core.setValueFromName('Modflow','TOP',1.)
                     self.core.setValueFromName('Modflow','BOTM',0.)
                     self.core.setValueFromName('Modflow','DELC',1.)
                     self.core.setValueFromName('Modflow','NROW',1)
+                    self.gui.on3D(False) #EV 26/09/19
                 self.set3D()
                 self.setChemType()
                 

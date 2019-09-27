@@ -62,8 +62,8 @@ class qtBoxKeys:
         
     def setVisible(self,bool):self.layoutWidget.setVisible(bool)
         
-    def addButtons(self,names,values,details,types):
-        self.values,self.types = values,types;
+    def addButtons(self,title,comm,names,values,details,types): #EV 25/09/19
+        self.values,self.types,self.title,self.comm = values,types,title,comm;
         self.nb=len(names);
         # clear the layout
         for b in self.labl: b.deleteLater()
@@ -100,11 +100,11 @@ class qtBoxKeys:
         nmed = getNmedia(self.parent.core)#;print('qt val 100',self.vect,nmed)
         if nr<nmed : self.vect.extend([self.vect[-1]]*(nmed-nr)) # the nb of media is higher than vect
         elif nr>nmed: self.vect = self.vect[:nmed] # the contrary
-        dicV = {'media':{'cols':['media','val'],'rows':['']*nmed,'data':[[i,a] for i,a in enumerate(self.vect)]}};
-        dlgVect = myNoteBook(self.parent.core.gui,'title',dicV)
+        dicV = {self.comm:{'cols':['media','value'],'rows':['']*nmed,'data':[[i,a] for i,a in enumerate(self.vect)]}}; #EV 25/09/19
+        dlgVect = myNoteBook(self.parent.core.gui,self.title,dicV) #EV 25/09/19
         dicout = dlgVect.getValues()
         if dicout != None:
-            self.vect = [x[1] for x in dicout['media']['data']]
+            self.vect = [x[1] for x in dicout[self.comm]['data']]
             
     def getValues(self):
         #nb = len(self.values) # OA 23/9/19 removed
@@ -114,7 +114,7 @@ class qtBoxKeys:
             if self.types[i] == 'choice': #,'layint']: OA 6/11/18 removed layint
                 self.values[i] = but.currentIndex()
                 continue
-            elif self.types[i] == 'layint': # OA added 23/9/19
+            elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
                 self.values = self.vect
                 continue
             if but.text() not in ['formula','zone','array']:

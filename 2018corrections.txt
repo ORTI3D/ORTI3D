@@ -647,3 +647,18 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 18/9/19 OA
 - in modflowKeywords return to layint for lpf.2
 - in valueDialog /initStoredValues l.48 modif to consider layint
+
+25/09/19 EV
+- addin/doaction l.212 added a variable for number of media
+- addin/doaction l.222-224 added condition to change laytyp when clicked 'Confined', added a multiplication by the number of media for value, remove TLAYCON
+- qtValueDialog/addButtons l.65-66 added title and comm as variables in the function
+- qtValueDialog/onOpenVectDialog l.103-104 added self.comm for name of tab and self.title for title of dialog
+- valueDialog/onChoiceLine l.95 added comm variable
+- valueDialog/changeButtons l.136,138 added title and comm as variables in the function
+- valueDialog/OnSetNewVal l.121-126 added condition to change 'type' button when modified lpf.2 values  
+- valueDialog/init l.26 added 'TLAYCON' to blind
+
+26/09/19 EV
+- addin/doaction l. 233 added option to blind 3D button for radial and xsection model
+- modflowWriter/layerLines l.323,326-333 added option to print lay parameters in list and in 1 number format
+- mtphtWriter/ writeExceptions l.236,237,240-251 added option to print lay parameters in list and in 1 number format

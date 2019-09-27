@@ -317,22 +317,31 @@ class modflowWriter:
         
     def layerLines(self,line):
         # to print laycbd and others
+        ilay=getNlayersPerMedia(self.core)
         dim = self.core.addin.getDim()
         nx,ny,a,b = getXYvects(self.core)
-        lval = self.core.dicval['Modflow'][line][0] #in 3D,should be list of values
+        lval = self.core.dicval['Modflow'][line] #in 3D lval is a list of values EV 26/09/19
         s=''
-        if dim == '2D' : s=str(lval)
-        elif dim == '3D': #presently there is only one value for all layers
-            s=' '+str(lval).rjust(2)
-            for i in range(1,self.nlay):
-                if mod(i,40)==0: s+='\n'
-                s+=' '+str(lval).rjust(2)
+        if dim == '2D' : s=str(lval[0])
+        elif dim == '3D': #EV 26/09/19
+            if len(lval)==len(ilay):
+                lval1 = [[lval[x]]*ilay[x] for x in range(len(ilay))]
+                lval= [item for sublist in lval1 for item in sublist]
+                s=''
+                for i in range(len(lval)):
+                    s+=' '+str(int(lval[i])).rjust(2)
+            else : 
+                s=' '+str(lval[0]).rjust(2)
+                for i in range(1,self.nlay):
+                    if mod(i,40)==0: s+='\n'
+                    s+=' '+str(lval[0]).rjust(2)
         else : # radial and xsection
-            s=str(lval).rjust(2)
+            s=str(lval[0]).rjust(2)
             for i in range(1,ny):
                 if mod(i,40)==0: s+='\n'
-                s+=' '+str(lval).rjust(2) 
+                s+=' '+str(lval[0]).rjust(2) 
         return s+'\n' 
+
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
         return self.core.testCondition('Modflow',cond)

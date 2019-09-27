@@ -232,22 +232,30 @@ class mtphtWriter:
             f1.write(s0)
                     
         if ktyp[:3] == 'lay':
-            lval = self.core.dicval['Mt3dms'][line][0] # in 3D, a list of values
+            ilay=getNlayersPerMedia(self.core)
+            lval = self.core.dicval['Mt3dms'][line] # in 3D, a list of values EV 26/09/19
+            if line=='btn.6' : lval = self.core.dicval['Modflow']['lpf.2'] # EV 26/09/19 for type of layer confined or convertible
             s=''
-            if self.dim == '2D' : s=str(lval)
-            elif self.dim == '3D':
-                s=str(lval).rjust(2)
-                for i in range(1,nlay):
-                    if mod(i,40)==0: s+='\n'
-                    s+=str(lval).rjust(2)
+            if self.dim == '2D' : s=str(lval[0])
+            elif self.dim == '3D': # EV 26/09/19
+                if len(lval)==len(ilay):
+                    lval1 = [[lval[x]]*ilay[x] for x in range(len(ilay))]
+                    lval= [item for sublist in lval1 for item in sublist]
+                    s=''
+                    for i in range(len(lval)):
+                        s+=' '+str(int(lval[i])).rjust(2)
+                else : 
+                    s=' '+str(lval[0]).rjust(2)
+                    for i in range(1,self.nlay):
+                        if mod(i,40)==0: s+='\n'
+                        s+=' '+str(lval[0]).rjust(2)
             else : # radial and xsection
-                s=str(lval).rjust(2)
+                s=str(lval[0]).rjust(2)
                 for i in range(1,ny):
                     if mod(i,40)==0: s+='\n'
-                    s+=str(lval).rjust(2) 
+                    s+=str(lval[0]).rjust(2) 
             f1.write(s+'\n')     
 
-            
     def getConcInit(self,typ,line,iper=0):
         """returns the concentrations arrays to be printed for initial conditions"""
         listC=[];names=[] # this will be the list of conc arrays and names of species

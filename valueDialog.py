@@ -23,7 +23,7 @@ class valueDialog:
         # some lines will not be shown (they are in the addin)
         self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS',
                     'NCOMP','MCOMP','GCOMPN','KCOMPN','HTOP','DZ','PRSTY','ICBUND','SCONC','MTRECH',
-                    'SP1','SP2','RC1','RC2','SWC','SDH'] # OA 24/5/19 removed al, trpt, trpv, dmcoef...
+                    'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON'] # OA 24/5/19 removed al, trpt, trpv, dmcoef... EV 25/09/19 add TLAYCON
         #print self.Mkword.lines
 
     def show(self):
@@ -92,6 +92,7 @@ class valueDialog:
     def onChoiceLine(self,name):
         """ action when a line choice is clicked : change the interface"""
         lines=self.Mkword.lines
+        comm = name.split('-')[1]  #EV 25/09/19
         name = name.split('-')[0]
         if name in list(lines.keys()):
             n=str(name);
@@ -99,11 +100,11 @@ class valueDialog:
             if 'detail' in lines[n]: details = lines[n]['detail']
             else : details = [None]*len(self.val[n])
             if len(details)==0: details = [None]*len(self.val[n])
-            self.changeButtons(name,lines[n]['kw'],self.val[n],details,lines[n]['type']);#print('valueD l102',self.val[n])
+            self.changeButtons(name,comm,lines[n]['kw'],self.val[n],details,lines[n]['type']);#print('valueD l102',self.val[n])
 
     def OnSetNewVal(self,evt=''):
         """sets the new values when user click on OK in key box"""
-        values=self.dialg.boxkeys.getValues();#print 'vdialg, setnew',values
+        values=self.dialg.boxkeys.getValues()#;print ('vdialg, setnew',self.currentLine,values)
         for i in range(len(values)):
             #print (self.val[self.currentLine][i])
             self.val[self.currentLine][i]=values[i]
@@ -116,6 +117,13 @@ class valueDialog:
             names.append(l+'- '+self.Mkword.lines[l]['comm'])
         self.changeCombo(self.dialg.chlines,names)
         self.dialg.boxkeys.setVisible(False) # OA 10/09/2018
+        #readapt unconfined / confined for lpf.2
+        if self.currentLine == 'lpf.2':  #EV 25/09/19
+            if set(values)=={'0'}:
+                self.core.dicaddin['Model']['type']='Confined'
+            elif set(values)=={'1'}:
+                self.core.dicaddin['Model']['type']='Unconfined'
+            else : self.core.dicaddin['Model']['type']='Mix (for 3D only)'            
 
     def showBox(self,box,bool):
         box.setVisible(bool)    
@@ -125,11 +133,12 @@ class valueDialog:
         for n in names:
             comboName.addItem(n)
 
-    def changeButtons(self,title,names,values,details,types):
+    def changeButtons(self,title,comm,names,values,details,types):  #EV 25/09/19
         self.showBox(self.dialg.boxkeys,True)
-        self.dialg.boxkeys.addButtons(names,values,details,types)
+        self.dialg.boxkeys.addButtons(title,comm,names,values,details,types) #EV 25/09/19
 #        if self.gtyp=='qt':
 #            self.dialg.boxkeys.title.SetLabel(n)        
+        
     def makeButton(self,name,value,detail,typ):
         # find the dimension of the array
         txt = name
