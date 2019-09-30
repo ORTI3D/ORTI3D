@@ -214,8 +214,10 @@ class Menus:
         maindir=self.gui.mainDir
         dirdoc=maindir+os.sep+'doc'
         dirutil=maindir+os.sep+'utils'
+        dirbin=maindir+os.sep+'bin'
         dirdoc=os.path.normpath(dirdoc)
         dirutil=os.path.normpath(dirutil)
+        dirbin=os.path.normpath(dirbin)
         if self.cfg.typInstall=='python': 
             dirlib=maindir+os.sep+'ilibq'
         else : 
@@ -241,8 +243,10 @@ class Menus:
             for n in os.listdir(dirlib):
                 if ('.chm' in n) or ('.pdf' in n): 
                     os.system('move '+dirlib+os.sep+n+' '+dirdoc)
-                if ('.gif' in n) or ('.dbs' in n): 
+                if ('.png' in n) or ('.dbs' in n): #EV 30/09/19 add .png
                     os.system('move '+dirlib+os.sep+n+' '+dirutil)
+                if ('.exe' in n) : #EV 30/09/19 add .png
+                    os.system('move '+dirlib+os.sep+n+' '+dirbin)
         else : # the windows version
             znew.extractall(dirutil) # EV 23/10/18 new exe version
             os.system('xcopy /Y /E '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib) #EV 26/11/18
