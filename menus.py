@@ -245,11 +245,16 @@ class Menus:
                     os.system('move '+dirlib+os.sep+n+' '+dirdoc)
                 if ('.png' in n) or ('.dbs' in n): #EV 30/09/19 add .png
                     os.system('move '+dirlib+os.sep+n+' '+dirutil)
-                if ('.exe' in n) : #EV 30/09/19 add .png
+                if ('.exe' in n) : #EV 30/09/19 
                     os.system('move '+dirlib+os.sep+n+' '+dirbin)
         else : # the windows version
             znew.extractall(dirutil) # EV 23/10/18 new exe version
             os.system('xcopy /Y /E '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib) #EV 26/11/18
+            for n in os.listdir(dirlib): #EV 30/09/19 
+                if ('.png' in n) or ('.dbs' in n): #EV 30/09/19 add .png
+                    os.system('move '+dirlib+os.sep+n+' '+dirutil)
+                if ('.exe' in n) : #EV 30/09/19 
+                    os.system('move '+dirlib+os.sep+n+' '+dirbin)
             #zlib=zp.ZipFile(dirlib,'r'); #print 'menu dwnload 157', dirlib
             #zlib.extractall(maindir+os.sep+'temp')
             #zlib.close()
