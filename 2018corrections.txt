@@ -670,3 +670,4 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 30/09/19 EV
 - menus/onDownload some modif to download .png file to utils and .exe file to bin  
+- core/openModel l.190 added option to change grid button when open modflow usg model

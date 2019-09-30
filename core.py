@@ -187,6 +187,7 @@ class Core:
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
+            self.gui.onGridMesh('Mesh') #EV 30/09/19 to change the button
         mtype = mtype[:5]
         if mtype == 'Modfl':
             self.flowReader = modflowReader(fDir,fName)
