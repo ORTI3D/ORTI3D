@@ -7,7 +7,8 @@ Created on Sun Dec 15 20:53:49 2013
 sclist = ['amax','amin','arange','arctan','argmin','argsort','around','array','c_','ceil','clip','compress',
     'concatenate','cos','cumsum','dot','equal','exp','floor','linspace','loadtxt','log','log10','logspace','maximum','mean','median',
     'meshgrid','minimum','mod','nonzero','ones','put','putmask','r_','rand','ravel','reshape','savetxt','shape',
-    'sign','sin','sort','sqrt','sum','take','transpose','unique','where','zeros','zeros_like','prod','split']
+    'sign','sin','sort','sqrt','sum','take','transpose','unique','where','zeros','zeros_like','prod','split',
+    'delete']
 for n in sclist: exec('from scipy import '+n)
 
 import matplotlib.tri as mptri

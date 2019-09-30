@@ -565,22 +565,24 @@ def gmeshString(core,dicD,dicM):
     s,p_list,p_link = '',[],[]
     i_domn = dicD['name'].index('domain') # search for the line called domain
     dcoords = dicD['coords'][i_domn]
-    ddens = dicD['value'][i_domn]
+    ddens = float(dicD['value'][i_domn])
+    ddens = corrMeshDens(dcoords,ddens)
     if isPolyTrigo(dcoords) : dcoords = dcoords[-1::-1] # poly mus tbe clockwise
     mgroup = core.addin.getModelGroup()
     if mgroup=='Opgeo': dens =  str(core.dicval[mgroup+'Flow']['domn.4'][0])
     ldom=len(dcoords)
     # domain points
     for i,pt in enumerate(dcoords):
-        s+='Point('+str(i+1)+')={'+str(pt[0])+','+str(pt[1])+',0,'+ddens+'}; \n'
+        s+='Point('+str(i+1)+')={'+str(pt[0])+','+str(pt[1])+',0,'+str(ddens[i])+'}; \n'
         p_list.append(pt)
     npt = i+1
     # domain lines
     s+= stringLine(p_link,list(range(ldom)),1,opt='close')
     #other points: present in domain, name shall start by point
     indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='point']
-    p_coord = [dicD['coords'][iz] for iz in indx]
-    p_dens = [dicD['value'][iz] for iz in indx]
+    p_coord = [dicD['coords'][iz] for iz in indx] # a list of all coords in zone points...
+    p_dens = [dicD['value'][iz] for iz in indx] # same for densities
+    #p_dens = corrMeshDens(p_coord,p_dens)
     if len(p_coord)>0:
         p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
         s+=sa
@@ -622,7 +624,17 @@ def gmeshString(core,dicD,dicM):
     for il in range(npt-1):
         s+='Line{'+str(il+1)+'} In Surface{1}; \n'
     return s#+'Recombine Surface{1}; \n'
-            
+    
+def corrMeshDens(coord,dens): # OA added 28/9/19
+    npts=len(coord)
+    try: len(dens)
+    except TypeError: dens = [dens]*npts
+    coo,dns = array(coord,ndmin=2),array(dens)
+    dst = sqrt((coo[1:,0]-coo[:-1,0])**2+(coo[1:,1]-coo[:-1,1])**2)
+    dstmin = r_[dns[0],minimum(dst[:-1],dst[1:]),dns[-1]]
+    dns[dns>dstmin] = dstmin[dns>dstmin]
+    return dns
+                
 def stringPoints(p_list,p_coord,p_dens,istart):    
     '''creates lines of points from coordinates and returns the point list'''
     def isCooInList(coo,lst,eps):
@@ -644,8 +656,8 @@ def stringPoints(p_list,p_coord,p_dens,istart):
             p_link.append([istart+ip,idx]) # make the link btw the present pt and the existing one with same coords
             prf='//' # don't add twice the same point
         p_list.append(coo) # store the point
-        dens = p_dens[ip]
         if type(coo[0])==type((5,6)): coo = coo[0]
+        dens = p_dens[ip]
         s+=prf+'Point('+str(istart+ip+1)+')={'+str(coo[0])+','+str(coo[1])+',0,'+dens+'}; \n'
         spt+= str(istart+ip+1)+','
     return p_list,p_link,spt,s

@@ -662,3 +662,8 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - addin/doaction l. 233 added option to blind 3D button for radial and xsection model
 - modflowWriter/layerLines l.323,326-333 added option to print lay parameters in list and in 1 number format
 - mtphtWriter/ writeExceptions l.236,237,240-251 added option to print lay parameters in list and in 1 number format
+
+27/09/19  OA
+- config added delete in scipy fucntion imported
+- several corrections in modflowUsg
+- some modifs in gmeshstring
