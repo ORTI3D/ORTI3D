@@ -425,6 +425,7 @@ class qtVisualisation(FigureCanvasQTAgg):
 
     def drawContour(self,bool):
         # OA 22/8/19 modified to have true and false
+        if self.Contour == None : return # added 2/10/19
         for c in self.Contour.collections :c.set_visible(bool)
         for c in self.ContourF.collections :c.set_visible(bool)
         for c in self.ContourLabel: c.set_visible(bool)

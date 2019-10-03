@@ -76,11 +76,11 @@ class qtBoxKeys:
             #print(bname,bcontent,bselect,btype)
             txt = QLabel(self.layoutWidget)
             txt.setText(bname)
-            if btype == 'choice': 
+            if btype in ['choice','laychoice']: 
                 but = QComboBox(self.layoutWidget)
                 but.addItems(bcontent)
                 but.setCurrentIndex(bselect)
-            elif btype[:3] =='lay':  # OA added 17/9/19
+            elif btype in ['layint','layfloat']:  # OA modif  2/10/19
                 but = QPushButton('Media',self.layoutWidget)
                 but.clicked.connect(self.onOpenVectDialog)
                 self.vect = values; # OA 18/9/19 values contain all layers for type lay..
@@ -111,7 +111,7 @@ class qtBoxKeys:
         for i in range(self.nb):
             but = self.lValBut[i]
             val = self.values[i]
-            if self.types[i] == 'choice': #,'layint']: OA 6/11/18 removed layint
+            if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
                 self.values[i] = but.currentIndex()
                 continue
             elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat

@@ -671,3 +671,20 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 30/09/19 EV
 - menus/onDownload some modif to download .png file to utils and .exe file to bin  
 - core/openModel l.190 added option to change grid button when open modflow usg model
+
+1/10/19  OA
+- guiShow, removed calc keyword in Glist dict: not used
+- guishow removed resetGlist (was modyfying calc)
+- parameters/writeModel l.91 changed restGlist to restDicContour
+- qtShow/onChange l. 175 added to get teh species, to have contours fixed also for chemistry
+- qDialogs/onListUser l.730 commented to get the list of values working
+
+2/10/19  OA
+- qtVisualisation/drawContour l .428 added condition !=None
+- modflowKeywords lpf.5 and lpf.6 layint -> laychoice
+- qtValueDialog/addButtons l.79 et 83 changed to consider laychoice, same in getValues l.
+
+3/10/19  OA
+- in addin/setTime l.603 f was missing to modflow! -> pb for nper and thus for lpf.10 and 11
+- parameters, last line : removed usePostFix, it does not exist anymore in core
+- in mtphtKeywords, btn.20 changed to default true and 1 to remove the for... files, mass will be printed

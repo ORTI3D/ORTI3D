@@ -688,7 +688,7 @@ class dialogContour(QDialog):
         self.log = QCheckBox(self.glWidget);self.log.setCheckState(valeur[4]=='log')
         self.gl.addWidget(self.log,5,1,1,1)
 
-        self.butlist = QPushButton(self.glWidget)
+        self.butlist = QPushButton('User List',self.glWidget) # OA 1/10/19 added user list
         self.butlist.clicked.connect(self.onListUser)
         self.gl.addWidget(self.butlist,6,0,1,1)
         self.user = QCheckBox(self.glWidget)
@@ -727,7 +727,7 @@ class dialogContour(QDialog):
     
     def onListUser(self,event):
         """ opens a dialog to set some values"""
-        if self.user.getValue()==False: return
+        #if self.user.getValue()==False: return # OA removed 1/10/19
         data  =[('values','Textlong',[''])]
         if self.valeur!=None:
             if type(self.valeur[5])==type([1]): 

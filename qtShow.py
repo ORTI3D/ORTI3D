@@ -172,6 +172,7 @@ class Ui_Show(object):
 #                color=[(c[0].Red(),c[0].Green(),c[0].Blue()),(c[1].Red(),c[1].Green(),c[1].Blue()),
 #                     (c[2].Red(),c[2].Green(),c[2].Blue()),int(c[3])];#print 'in change',color
 #            else : return
+        if name == 'Species': Cgroup,Cname,name = self.guiShow.getCurrentContour() # OA 1/10/19
         self.guiShow.setGlistParm(group,name,'value',value)
         self.guiShow.setGlistParm(group,name,'color',color)
         #self.onTickBox(group,name,tag,True)

@@ -713,9 +713,9 @@ class modflowReader:
                 hd[il] = m[::-1] #=1::=1
         f1.close()  
         #modify the head if free and in 3D
-#        if core.addin.getDim() in ['3D','Xsection','Radial']:   
-#            if core.addin.getModelType()=='free':
-#                hd = self.getHeadFree(hd)
+        # if core.addin.getDim() in ['3D','Xsection','Radial']:   
+        #     if core.addin.getModelType()=='Unconfined':  # OA 2/10/19 fre-> unconfined
+        #         hd = self.getHeadFree(core,hd)
         return hd
         
     def getGeom(self,core):
@@ -738,11 +738,12 @@ class modflowReader:
         thksat[thksat>1e5]=0;#print 'mfw 409 thksat',thksat
         return thksat
         
-    def getHeadFree(self,head):
+    def getHeadFree(self,core,head):
         """the head in the layer where it is 0 must be replaced by the one
         of the layer below"""
         hd1 = head[1:]*1;#print 'mfw 414 hd',head[:-1]==0
-        hd2 = hd1*(head[:-1]==0)
+        hdry = core.dicval['Modflow']['lpf.1'][1]
+        hd2 = hd1*(abs(head[:-1]-hdry)<1e-3)
         hd3 = head*1;hd3[:-1]=head[:-1]+hd2;#print 'mfw 414 hd',head,hd1,hd2,hd3
         return hd3
 

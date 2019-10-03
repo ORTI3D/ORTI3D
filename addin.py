@@ -600,7 +600,7 @@ class addin:
         tlist = self.core.getTlist2();nper = len(tlist)
         self.gui.guiShow.setNames('Model_Tstep_L',tlist,'numbers')
         mgroup = self.getModelGroup()
-        if mgroup =='Modlow series':
+        if mgroup =='Modflow series': # OA 3/10 f was missing
             self.core.setValueFromName('Modflow','NPER',nper)
         elif mgroup =='Modflow USG':
             self.core.setValueFromName('Modflow','UNPER',nper)

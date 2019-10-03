@@ -67,21 +67,21 @@ class guiShow:
         if group in self.Glist:
             if name in self.Glist[group]: return self.Glist[group][name] 
             else :
-                self.Glist[group][name] = {'value':None,'color':None,'calc':False}
+                self.Glist[group][name] = {'value':None,'color':None}
         else :
             self.Glist[group] = {}
-            self.Glist[group][name] = {'value':None,'color':None,'calc':False}
+            self.Glist[group][name] = {'value':None,'color':None}
         return self.Glist[group][name] 
     
     def setGlistParm(self,group,name,parm,value):
         #print 'guish 67', group,name,parm, value
         self.Glist[group][name][parm]= value
         
-    def resetGlist(self):
-        """reset all Glist tags 'calc' to False"""
-        for group in list(self.Glist.keys()):
-            for name in list(self.Glist[group].keys()): 
-                self.Glist[group][name]['calc'] = False
+    # def resetGlist(self):
+    #     """reset all Glist tags 'calc' to False"""
+    #     for group in list(self.Glist.keys()):
+    #         for name in list(self.Glist[group].keys()): 
+    #             self.Glist[group][name]['calc'] = False
 
     def onClick2(self,group,name,retour):
         """after the click the type of object is defined and data are retrieved 
@@ -114,7 +114,7 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour()#;print('quishow',Cname,species)
+        Cgroup,Cname,species = self.getCurrentContour();#print('quishow 117',Cname,species)
         self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
         self.curName,self.curSpecies = Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
@@ -140,7 +140,7 @@ class guiShow:
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
         glist = self.getGlist(Cgroup,toshow)
-        value,color = glist['value'],glist['color'];#print 'guishow 122',Cgroup,Cname,value,color
+        value,color = glist['value'],glist['color'];print('guishow 143',Cgroup,Cname,value,color)
         if layer !=0 : self.visu.changeAxesOri(plane)
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)

@@ -57,7 +57,7 @@ class  Mt:
         'btn.19':{'comm':'Obs points cells','cond':'NOBS>0','kw':['KOBS','IOBS','JOBS'],
                   'detail':[''],'type':['int','int','int']},
         'btn.20':{'comm':'mass printing','cond':'','kw':['CHKMAS','NPRMAS'],'detail':['',''],
-                  'type':['string','int'],'default':['F',0]},
+                  'type':['string','int'],'default':['T',1]}, # OA 3/10/19 changed to true and 1 to remov. for file
         'btn.21':{'comm':'Periods','cond':'','kw':['PERLEN(NPER)','NSTP(NPER)','TSMULT(NPER)','SSFLAG'],
                 'detail':['Period length','nb of time steps','multiplying factor','Flag steady'],
                 'type':['float','int','float','string'],'default':[1.,1,1.05,'']},
