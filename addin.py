@@ -675,6 +675,7 @@ class addin:
             #[xp,yp,tp,cu1,nt] = iphtC1.calcPart1(data,dx,dy,vx[0],vy[0],clim)
             [xp,yp,tp,cu1,nt] = self.calcPartGrid(data,dx,dy,startTime,iper,ilay,zoneMatrix) #,clim)
             xp,yp,tp = xp[:nt],yp[:nt],tp[:nt]
+            xp,yp,tp = xp[tp>=0],yp[tp>=0],tp[tp>=0] # OA added 14/10/19
         self.particle['data'] = [xp,yp,tp]
         
     def calcPartGrid(self,datain,dxi,dyi,startTime,iper,ilay,zoneMatrix=None):

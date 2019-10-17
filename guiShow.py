@@ -53,6 +53,10 @@ class guiShow:
         if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
         if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
         if self.core.mfUnstruct: self.mesh=True
+        
+    def openModel(self):
+        if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['X','Y','Z'])
+        else : self.setNames('Model_Plane_L',['Z'])
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)
@@ -140,7 +144,7 @@ class guiShow:
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
         glist = self.getGlist(Cgroup,toshow)
-        value,color = glist['value'],glist['color'];print('guishow 143',Cgroup,Cname,value,color)
+        value,color = glist['value'],glist['color'];#print('guishow 143',Cgroup,Cname,value,color)
         if layer !=0 : self.visu.changeAxesOri(plane)
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)

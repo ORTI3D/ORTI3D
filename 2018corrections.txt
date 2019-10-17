@@ -688,3 +688,8 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in addin/setTime l.603 f was missing to modflow! -> pb for nper and thus for lpf.10 and 11
 - parameters, last line : removed usePostFix, it does not exist anymore in core
 - in mtphtKeywords, btn.20 changed to default true and 1 to remove the for... files, mass will be printed
+
+14/10/19 OA
+- in addin/calcparticules l.678 added to limit to positive times
+- menus/onOpen1 l.44 added openModel in guishow
+- guishow added function onpenModel to change some combo during model opening

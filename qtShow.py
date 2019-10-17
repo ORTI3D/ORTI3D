@@ -44,7 +44,6 @@ class Ui_Show(object):
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
             pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
-        selectComboValue(self.gui,'Model_Plane_L','Z')
         QMetaObject.connectSlotsByName(Show)
         
     def makeTop(self,parent,gui):  # OA 1/6/19 separated form above  
@@ -76,6 +75,7 @@ class Ui_Show(object):
         
     def switchPlane(self,plane): # OA added 22/8/19
         '''plane is  aletter in x,Y,Z'''
+        selectComboValue(self.gui,'Model_Plane_L','Z')
         self.swiPlane.setIcon(QIcon(self.gui.u_dir+os.sep+'Vis_Ori'+plane+'.png'))
         
     def switchImg(self,evt):

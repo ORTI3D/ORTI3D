@@ -41,7 +41,7 @@ class Menus:
         listSpec = self.core.addin.chem.getListSpecies() # just the names
         self.core.addin.set3D()
         mtype = self.core.dicaddin['Model']['group']
-        self.gui.guiShow.init()
+        self.gui.guiShow.openModel() # OA 14/10
         if self.gtyp =='qt':
             if 'obs.1' in list(self.core.diczone['Observation'].dic.keys()):
                 onames = self.core.diczone['Observation'].dic['obs.1']['name']
