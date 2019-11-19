@@ -23,7 +23,7 @@ class valueDialog:
         # some lines will not be shown (they are in the addin)
         self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS',
                     'NCOMP','MCOMP','GCOMPN','KCOMPN','HTOP','DZ','PRSTY','ICBUND','SCONC','MTRECH',
-                    'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON'] # OA 24/5/19 removed al, trpt, trpv, dmcoef... EV 25/09/19 add TLAYCON
+                    'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON','LAYCBD'] # OA 24/5/19 removed al, trpt, trpv, dmcoef... EV 25/09/19 add TLAYCON EV 15/11/2019 add LAYCBD
         #print self.Mkword.lines
 
     def show(self):

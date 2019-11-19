@@ -121,15 +121,15 @@ class Menus:
         m=impObsData(self.gui,self.core,'Chemistry')
         m.show()
         
-    def OnImportSolutions(self,evt=None):
-        """import a text file to store solutions"""
-        dlg = self.dialogs.myFileDialog()
-        fDir,fName =dlg.getsetFile(self.gui,'Open solutions',"*.txt")
-        if fDir == None: return
-        else : 
-            self.core.importSolutions(fDir,fName)
-            self.dialogs.onMessage(self.gui,'Solutions imported')
-            #self.gui.OnMessage("Fichier donnees importe")
+    #def OnImportSolutions(self,evt=None):                               #EV 14/11/19
+    #    """import a text file to store solutions"""
+    #    dlg = self.dialogs.myFileDialog()
+    #    fDir,fName =dlg.getsetFile(self.gui,'Open solutions',"*.txt")
+    #    if fDir == None: return
+    #    else : 
+    #        self.core.importSolutions(fDir,fName)
+    #        self.dialogs.onMessage(self.gui,'Solutions imported')
+    #        #self.gui.OnMessage("Fichier donnees importe")
             
     def OnImportUserSpecies(self,evt=None):
         dlg = self.dialogs.myFileDialog()

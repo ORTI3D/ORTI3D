@@ -916,10 +916,12 @@ class PolygonInteractor:
         x, y = self.poly.get_xdata(),self.poly.get_ydata()
         self.lx=list(x);self.ly=list(y)
         self.line = Line2D(x,y,marker='o', markerfacecolor='r')
-        self.typeVariable, self.ind = typeVariable, ind
+        self.typeVariable = typeVariable
         
         cid = self.poly.add_callback(self.poly_changed)
         self._ind = None # the active vert
+        self.canvas.setFocusPolicy( Qt.ClickFocus) # OA added for Qt to focus on keyboard 19/11/19
+        self.canvas.setFocus()
 
         self.c1 = self.canvas.mpl_connect('button_press_event', self.button_press_callback)
         self.c2 = self.canvas.mpl_connect('key_press_event', self.key_press_callback)        
@@ -950,6 +952,7 @@ class PolygonInteractor:
             self._ind = int(self.get_ind_under_point(event))
         if event.button==3:
             self.disable();self.gui.finModifZone()
+        print(self._ind)
 
     def button_release_callback(self, event):
         'whenever a mouse button is released'
@@ -961,20 +964,20 @@ class PolygonInteractor:
         x = self.line.get_xdata()
         y = self.line.get_ydata()  
         v = self.poly.verts
-        for i in range(len(x)/10):
+        for i in range(len(x)):
             v[i] = (x[i],y[i])  
         
     def key_press_callback(self, event):
         'whenever a key is pressed'
         if not event.inaxes: return
-        if event.key=='t':
-            self.showverts = not self.showverts
-            self.line.set_visible(self.showverts)
-            if not self.showverts: self._ind = None
-        elif event.key=='d':
-            ind = self.get_ind_under_point(event)
+        # if event.key=='t':
+        #     self.showverts = not self.showverts
+        #     self.line.set_visible(self.showverts)
+        #     if not self.showverts: self._ind = None
+        if event.key=='d':
+            ind = self.get_ind_under_point(event);print(ind)
             if ind is not None:
-                self.lx.pop(ind);self.ly.pop(ind)
+                self.lx.pop(ind[0]);self.ly.pop(ind[0]) # added 0 OA 19/11/19
                 self.line.set_data(self.lx,self.ly)
         elif event.key=='i':            
             #xys = self.poly.get_transform().seq_xy_tups(self.poly.verts)
@@ -987,8 +990,7 @@ class PolygonInteractor:
                     self.lx.insert(i+1,event.xdata)
                     self.ly.insert(i+1,event.ydata)
                     self.line.set_data(self.lx,self.ly)
-                    break              
-            
+                    break                          
         self.canvas.draw_idle()
 
     def motion_notify_callback(self, event):

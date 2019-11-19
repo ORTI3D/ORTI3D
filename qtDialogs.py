@@ -451,9 +451,10 @@ class zoneDialog(QDialog): # Dialog for zone
                     onMessage(self,"Enter a number in transient data");return
         else : 
             v0 = zp.valBox.document().toPlainText() # main value
-            try :float(v0)
-            except ValueError:
-                onMessage(self,"Enter a number in zone data");return 
+            if self.line not in ('obs.1','ghb.1','drn.1','riv.1'): #EV 29/10/19
+                try :float(v0)
+                except ValueError:
+                    onMessage(self,"Enter a number in zone data");return 
         self.state = 'accept'
         return 'ok'
         

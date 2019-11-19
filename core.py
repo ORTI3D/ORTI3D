@@ -413,10 +413,10 @@ class Core:
         dicData = importer.impTabFile(fileDir+os.sep+fileName+'.txt')
         self.data = dicData
 
-    def importSolutions(self,fileDir,fileName):
-        importer = impFile(self.gui,self)
-        dicData = importer.impTabFile(fileDir+os.sep+fileName+'.txt')
-        self.addin.pht3d.setImportedSolutions(dicData)
+    #def importSolutions(self,fileDir,fileName):                #EV 14/11/19
+    #    importer = impFile(self.gui,self)
+    #    dicData = importer.impTabFile(fileDir+os.sep+fileName+'.txt')
+    #    self.addin.pht3d.setImportedSolutions(dicData)
         
     def importZones(self,fileDir,fileName,modName,line):
         importer = impFile(self.gui,self)

@@ -693,3 +693,19 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in addin/calcparticules l.678 added to limit to positive times
 - menus/onOpen1 l.44 added openModel in guishow
 - guishow added function onpenModel to change some combo during model opening
+
+29/10/19 EV
+- qtDialogs/checkEntry l.454 added option to avoid a message when no value in zone value for obs.1, ghb.1, drn.1 and riv.1,
+
+14/11/19 EV
+- orti3dGui/makeMenus l.124-126, 137 removed import solution from menu
+- menus l.124-133 removed OnImportSolutions function 
+- core l.416-419 removed importSolutions function
+
+15/11/19 EV
+- valueDialog/init l.26 added 'LAYCBD' to blind in order to remove quasi3D option
+
+19/11/19  OA
+- in qtVisualization, polygonInteractor, added two lines (923-924) for Qt
+- in qtVisualisation, key_press_callback remvoed the t option
+- in qtVisualisation, key_press_callback in event-key l.930 ind -> ind[0]
