@@ -1,6 +1,6 @@
 class Mf:
     def __init__(self):
-        self.grpList=['DIS','DISU','BAS6','LPF','WEL','RCH','EVT','DRN','RIV','CHD','GHB','SIP','PCG','SOR','DE4',\
+        self.grpList=['DIS','DISU','BAS6','LPF','WEL','RCH','EVT','DRN','RIV','GHB','SIP','PCG','SOR','DE4',\
         'UPW','NWT','UZF','MNWT','SMS','GMG','HFB6'] # CHD written in auto mode
         self.groups={
         'DIS':['dis.'+str(i) for i in range(1,9)],

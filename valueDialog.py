@@ -100,7 +100,9 @@ class valueDialog:
             if 'detail' in lines[n]: details = lines[n]['detail']
             else : details = [None]*len(self.val[n])
             if len(details)==0: details = [None]*len(self.val[n])
-            self.changeButtons(name,comm,lines[n]['kw'],self.val[n],details,lines[n]['type']);#print('valueD l102',self.val[n])
+            #print(n,lines[n]['type'])
+            self.changeButtons(name,comm,lines[n]['kw'],self.val[n],details,lines[n]['type']);
+            #print('valueD l102',self.val[n])
 
     def OnSetNewVal(self,evt=''):
         """sets the new values when user click on OK in key box"""
@@ -140,6 +142,7 @@ class valueDialog:
 #            self.dialg.boxkeys.title.SetLabel(n)        
         
     def makeButton(self,name,value,detail,typ):
+        #print('vdlg 145',name,typ)
         # find the dimension of the array
         txt = name
         a=txt.split('(')
@@ -152,23 +155,22 @@ class valueDialog:
         #make the choice lists
         curVal = value
         bselect = None
-        if detail not in [None,[]]: 
-            if type(detail) == type([5]): #typ == choice does not work'
-                txt+=' : '+detail[0]
-                bcontent = detail[1:] #1st item is title line
-                bselect = curVal
-                typ = 'choice'
-            elif typ == 'textlong' :
-                txt+=' : '+detail
-                bcontent = str(curVal)
-            else :
-                typ = 'text'
-                txt+=' : '+detail
-                bcontent = str(curVal)
+        #if detail not in [None,[]]:  # OA 21/11/19
+        if typ == 'choice' : 
+            txt+=' : '+detail[0]
+            bcontent = detail[1:] #1st item is title line
+            bselect = curVal
+        elif typ == 'textlong' :
+            if detail !=None: txt+=' : '+detail
+            bcontent = str(curVal)
         else :
-            if typ[:3] != 'lay':
-                bcontent = str(curVal)
-                typ = 'text'
-            else :
-                bcontent = curVal
+            typ = 'text'
+            if detail !=None: txt+=' : '+detail
+            bcontent = str(curVal)
+        # else :  # OA 21/11/19
+        #     if typ[:3] != 'lay':
+        #         bcontent = str(curVal)
+        #         typ = 'text'
+        #     else :
+        #         bcontent = curVal
         return txt,bcontent,bselect,typ # OA 6/11/18 changed order

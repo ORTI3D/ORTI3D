@@ -709,3 +709,16 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in qtVisualization, polygonInteractor, added two lines (923-924) for Qt
 - in qtVisualisation, key_press_callback remvoed the t option
 - in qtVisualisation, key_press_callback in event-key l.930 ind -> ind[0]
+
+20/11/19  OA
+- in guiShow added Tstep in init
+- in qtVisualisation removed l.549
+- in addin/calcPartGrid l. 708 changed iper+1 -> -1 for last time step
+- in qtShow changed order of layers (Z first)
+- in addin l.241 in Ad_Grid, added conditon for qgis (for domain zone)
+
+21/11/19  OA
+- in modflowKeywords, removed CHD from the list
+- in valueDialog/makebutton commmented line, changed detail.. to choice and removed else condition
+- in qtvalueDialog/addButtons  87 added condition textlong
+- in qtvalueDialog/getvalues 125 added the condition textlong

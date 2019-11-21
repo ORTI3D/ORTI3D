@@ -536,15 +536,17 @@ class qtVisualisation(FigureCanvasQTAgg):
         for i,data in enumerate(self.Particles['data']):
             X,Y,T = data
             self.Particles['line'][i].set_data(X,Y)
-            if T != None:
+            try:
                 tx,ty,tt = self.ptsPartic(X,Y,T,float(value))
                 txt = []
                 for i in range(len(tx)):
                     a=str(tt[i]);b=a.split('.');ln=max(4,len(b[0]))
                     txt.append(pl.text(tx[i],ty[i],a[:ln],fontsize='8'))
                 self.Particles['txt'].append(txt)
+            except: 
+                a=1
         self.partVisible(True)
-        self.gui_repaint()
+        #self.gui_repaint()  #OA removed 20/11/19
         self.draw()
         
     def partVisible(self,bool):

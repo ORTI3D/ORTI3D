@@ -238,7 +238,7 @@ class addin:
             g = self.core.dicaddin['Grid']
             x0,x1,y0,y1 = g['x0'],g['x1'],g['y0'],g['y1'] # OA 6/11/18
             dicz = self.core.diczone['Modflow'].dic # OA 6/11/18
-            if 'dis.1' in dicz.keys(): # OA 6/11/18
+            if ('dis.1' in dicz.keys()) and (self.gtyp=='qgis'): # OA 6/11/18, modif 20/11/19
                 data = [('Use the dis.1 domain zone?','Check',self.checkDomain)]
                 dlg1 = self.dialogs.genericDialog(self.gui,'domain zone',data) # OA 14/11
                 retour = dlg1.getValues() # OA 14/11
@@ -705,7 +705,7 @@ class addin:
         while (it<nt) and (ptin==1): # and (tp[it]>0):
             it+=1
             dxc = 0.; dyc = 0.;dt = 0.; #dx=dxi[jp]; dy=dyi[ip]; print ip,jp
-            if tp[it-1]>tlist[iper+1] :
+            if tp[it-1]>tlist[-1] : # OA 20/11/19 changed iper+1
                 if self.particle['type'] == 'steady': iper = 0 #0 transietn, 1 steady
                 elif tp[it-1]<tlist[-1]:  
                     a=tlist-tp[it-1];iper=min(where(a>0)[0])-2

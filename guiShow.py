@@ -8,7 +8,7 @@ class guiShow:
         self.Glist = {}
         #self.SetBackgroundColour('#EDFAFF')
         self.groups={
-            'Model':[0,['Plane',['X','Y','Z']],['Layer',['___']],
+            'Model':[0,['Plane',['Z','X','Y']],['Layer',['___']], #OA 20/11/19  order
                 ['Tstep',['_____']],'Grid','Map'], #,'Variable'],
             'Flow':[1,'Head','Wcontent','Veloc-vect','Veloc-magn','Particles'],
             'Transport':[2,'Tracer'],
@@ -32,7 +32,7 @@ class guiShow:
             'Array' : ['Head','Wcontent','Veloc-magn','Tracer','Species','User'],
             'Image': ['Variable','Map'],'Grid':['Grid'],'Particles':['Particles'],
             'Vector' : ['Veloc-vect']}
-        self.gui,self.visu = gui,gui.visu
+        self.gui,self.visu,self.Tstep = gui,gui.visu,0  # OA 20/11/19 added tstep
         cfg = Config(self.core)
         self.gtyp = cfg.gtyp
         if self.gtyp=='wx': 
@@ -55,7 +55,7 @@ class guiShow:
         if self.core.mfUnstruct: self.mesh=True
         
     def openModel(self):
-        if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['X','Y','Z'])
+        if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
         else : self.setNames('Model_Plane_L',['Z'])
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()

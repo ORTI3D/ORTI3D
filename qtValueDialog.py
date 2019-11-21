@@ -84,6 +84,11 @@ class qtBoxKeys:
                 but = QPushButton('Media',self.layoutWidget)
                 but.clicked.connect(self.onOpenVectDialog)
                 self.vect = values; # OA 18/9/19 values contain all layers for type lay..
+            elif btype =='textlong':  # OA modif  21/11/19
+                scrollArea = QScrollArea(self.layoutWidget)
+                scrollArea.setGeometry(QRect(50, 50, 100, 50))
+                but = QTextEdit(scrollArea)
+                but.setText(str(bcontent))
             else :
                 but = QLineEdit(self.layoutWidget)
                 but.setText(str(bcontent))
@@ -117,6 +122,9 @@ class qtBoxKeys:
             elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
                 self.values = self.vect
                 continue
+            elif self.types[i]=='textlong': # added 21/11/19
+                self.values = [but.document().toPlainText()]
+                continue
             if but.text() not in ['formula','zone','array']:
                 if self.types[i] in ['int','vecint','arrint']:
                     val=int(but.text())
@@ -125,6 +133,6 @@ class qtBoxKeys:
                 else :  
                     val=str(but.text())  # OA 10/9/18 added str
             else :  
-                val=str(but.text())  # OA 10/9/18 added str
+                val=str(but.text());#print(val)  # OA 10/9/18 added str
             self.values[i]=val*1
         return self.values
