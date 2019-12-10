@@ -154,12 +154,13 @@ class Ui_Show(object):
         color = self.guiShow.getGlist(group,name)['color']
         value = self.guiShow.getGlist(group,name)['value']
         if name in list(change.keys()): # case different than contours
-            if color == None : color = (0,0,0)
+            try : len(color) # OA 22/11/19
+            except TypeError : color = (0,0,0)
             lst0=[(name,'Color',color)]
             if change[name] != None:
                 lst0.append((change[name][0],'Text',change[name][1]))
             dialg = genericDialog(self.gui,name,lst0)
-            lst1 = dialg.getValues()
+            lst1 = dialg.getValues();#print(lst1)
             if lst1 != None:
                 color = lst1[0]
                 if len(lst1)>1: value=lst1[1]

@@ -477,7 +477,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Vector.set_segments(list(zip(dep,arr)))
         #self.Vector.set_transform(self.transform)
         #a=col.Get();col=(a[0]/255,a[1]/255,a[2]/255)
-        #self.Vector.set_color(col);
+        self.Vector.set_color(col);
         self.Vector.set_visible(True)
         #self.cnv.collections[2]=self.Vector
         self.Vector.data = [dep,arr,ech,col]
@@ -790,8 +790,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             if self.typeZone=="POLYV": # and evt.button ==1:
                 rep = self.polyVdialog()  # dialog for the current value of z
                 if rep==False : return
-            self.x1.append(float(str(evt.xdata)))# OA 14/2 removed [:6] for long coordinates
-            self.y1.append(float(str(evt.ydata)))
+            self.x1.append(float(evt.xdata))# OA 14/2 removed [:6] for long coordinates
+            self.y1.append(float(evt.ydata))
             if self.typeZone=="LINE" or self.typeZone=="RECT" :
                 self.deconnecte()  #fin des le 2eme point
                 self.setZoneEnd(evt)

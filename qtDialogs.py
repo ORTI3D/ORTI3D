@@ -46,7 +46,7 @@ class textDialog(QDialog): # Text dialog for batch, formula, initial chemistry
         
 class genericDialog(QDialog): # Dialog for addin parameters and options for plot results
     def __init__(self, gui, title, data):
-        self.gui,self.data = gui,data
+        self.gui,self.data,self.color = gui,data,data[0][2]  # OA 22/11/19 added color
         QDialog.__init__(self)
         self.setWindowTitle(title)
         self.glWidget = QWidget(self)
@@ -97,6 +97,10 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 self.item[i].setText(str(value))
                 scrollArea.setWidget(self.item[i])                
                 self.gl.addWidget(scrollArea,i,1,1,1)
+            elif typ=='Color': # OA added 22/11/19
+                self.item[i] = QPushButton('Color',self.glWidget)
+                self.item[i].clicked.connect(self.onColor)
+                self.gl.addWidget(self.item[i],i,1,1,1)
             i+=1
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setOrientation(Qt.Horizontal)
@@ -119,6 +123,8 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         self.close(); self.state = 'accept'
     def reject1(self): 
         self.close(); self.state = 'reject'
+    def onColor(self): #◙ OA added 22/11/19
+        self.color = array(QColorDialog.getColor().getRgb())/255.
 
     def getValues(self):
         self.exec_()
@@ -131,7 +137,8 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             if typ == 'Check': val[i] = self.item[i].checkState()
             if typ == 'Textlong': 
                 v0 = str(self.item[i].document().toPlainText())
-                val[i] = v0.split('\n')            
+                val[i] = v0.split('\n')   
+            if typ == 'Color': val[i] = self.color # OA 22/11/19
         if self.state =='accept' : return val
         else : return None
 

@@ -722,3 +722,13 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in valueDialog/makebutton commmented line, changed detail.. to choice and removed else condition
 - in qtvalueDialog/addButtons  87 added condition textlong
 - in qtvalueDialog/getvalues 125 added the condition textlong
+
+22/11/19  OA
+- in qtDialogs/genericdialog l.100 added the button for colors, l.49 set slef.color
+- in qtDialogs for l.126 added dialog color
+- in qtDialogs/generic/getValues, added color
+- in qtShow onChange l.155 ==None replaced by try
+
+25/11/19  OA
+- in Pht3d/updateChemsistry, comment line 87/88 to allow decreasing solu number
+- in topbar changed line 115 for the pb of drn nice format
