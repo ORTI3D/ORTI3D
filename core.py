@@ -284,8 +284,9 @@ class Core:
             self.transReader=self.flowReader = sutraReader(self.fileDir,self.fileName)
             self.flowReader.read = False
         if modName == 'Pest':
-            self.addin.pest.writeFiles()
-        if info !=False :return 'Files written'            
+            info=self.addin.pest.writeFiles() #EV 11/12/19
+        if info ==True :return 'Files written'
+        else : return info  #EV 11/12/19        
       
     def runModel(self,modName,info=True):
         tabRes, sep = [],os.sep

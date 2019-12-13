@@ -732,3 +732,22 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 25/11/19  OA
 - in Pht3d/updateChemsistry, comment line 87/88 to allow decreasing solu number
 - in topbar changed line 115 for the pb of drn nice format
+
+11/12/19 EV
+- orti3dGui/makeMenus l.127 spelling changed
+- guishow/init  l.44 variable curName and arr3 defined to None
+- menus/OnExportParm l.165-167 condition added to add a message when parm not selected 
+- menus/OnExportResu l.175-177 condition added to add a message when result not selected
+- menus/OnExportParmVtk l.188-190, 193 condition added to add a message when parm not selected and cancel button pressed
+- menus/OnExportResuVtk l.202-204, 207 condition added to add a message when result not selected and cancel button pressed
+- core/writemodel l.287, 289 added option to not receive 'Files written' message when pest_obs.txt file is missing
+- pest/getOsbPt l.329-334 added option to receive a message when pest_obs.txt file is missing
+- pest/Pestchek l.583-590 added option to receive a message when pest files have not been written
+- pest/writeFiles l.611 added condition to not write files when pest_obs.txt file is missing
+- orti3dGui/makeMenus l.170-172, 178 'download develop' removed from help menu
+
+13/12 OA
+- Pht3d/updateChem l96 replaced Ass_SI removed (useless)
+- mtphtwrier/getConcInit l.330 and 336 changed to remove ass_Si
+- ortigui added function sendMessage to have a message instead of printing in dos window
+- ortigui added line 69 to call the above function

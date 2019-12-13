@@ -93,7 +93,8 @@ class PHT3D:
         lk.append('Formula');
         lph=['C','Backg_SI','Backg_Moles']
         for i in range(nphase):
-            lph.extend(['Ass'+str(i+1)+'_SI','Ass'+str(i+1)+'_Moles'])
+            lph.append('Ass'+str(i+1)+'_Moles')
+            #lph.extend(['Ass'+str(i+1)+'_SI','Ass'+str(i+1)+'_Moles'])
         lex=['C','Backgrd']
         for i in range(nexch): lex.append('Assembl'+str(i+1))
         lsu=['C','Site_back']

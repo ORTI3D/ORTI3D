@@ -325,19 +325,28 @@ class Pest:
         self.obs=[] #list that will contain the time and  value of observed data
         self.oweight=[] #dict that will contain the weight
         self.ogrp=[] #dict that will contain the group 
-        f1=open('pest_obs.txt','r') #a file with all obs, 1st col obs point, 2nd time, then variables
-        titl=f1.readline()
-        for l in f1:
-            l1 = l.split()
-            self.ospec.append(l1[0])
-            self.onames.append(l1[1])
-            self.obs.append(l1[2:4])
-            self.oweight.append(l1[4])
-            self.ogrp.append(l1[5])
-        self.nobs = len(self.onames)  # number of observation
-        self.nobsgrp = len(unique(self.ogrp)) # number off observation group
-        f1.close()
-        print('observation read')
+        fil=os.listdir(self.fdir)
+        try : #EV 11/12/2019
+            f1=open('pest_obs.txt','r')
+        except IOError:
+            mess='Add pest_obs.txt file in the model project folder'
+            return mess
+        else :
+            mess=True
+            f1=open('pest_obs.txt','r') #a file with all obs, 1st col obs point, 2nd time, then variables
+            titl=f1.readline()
+            for l in f1:
+                l1 = l.split()
+                self.ospec.append(l1[0])
+                self.onames.append(l1[1])
+                self.obs.append(l1[2:4])
+                self.oweight.append(l1[4])
+                self.ogrp.append(l1[5])
+            self.nobs = len(self.onames)  # number of observation
+            self.nobsgrp = len(unique(self.ogrp)) # number off observation group
+            f1.close()
+            print('observation read')
+            return mess
 
     def writeInst(self):
     # write the instruction files (from ev)
@@ -571,15 +580,23 @@ class Pest:
         d1=d0.split(os.sep)
         self.fdir = '//'.join(d1)
         os.chdir(self.fdir)
-        if self.core.dicval['Pest']['ctd.1'][1]==2:
-            s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'r.pst'
-            os.system(s+ " & pause")
-            return (self.fname+'r.pst file checked')
-        else :
-            s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'.pst'
-            os.system(s+ " & pause")
-            #subprocess.Popen('start /wait '+s+ " & pause", shell=True)
-            return (self.fname+'.pst file checked')
+        try : #EV 11/12/19
+            open(self.fname+'r.pst','r')
+        except IOError:
+            try :
+                open(self.fname+'.pst','r')
+            except IOError:
+                return 'Write the Pest files before used Pestchek'
+            else :
+                if self.core.dicval['Pest']['ctd.1'][1]==2:
+                    s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'r.pst'
+                    os.system(s+ " & pause")
+                    return (self.fname+'r.pst file checked')
+                else :
+                    s = self.mdir+os.sep+'bin'+os.sep+'pestchek '+self.fname+'.pst'
+                    os.system(s+ " & pause")
+                    #subprocess.Popen('start /wait '+s+ " & pause", shell=True)
+                    return (self.fname+'.pst file checked')
 
     def writeFiles(self): 
         d0,self.fname = self.core.fileDir,self.core.fileName
@@ -590,12 +607,15 @@ class Pest:
         self.mdir = '//'.join(d1)
         sys.path.append(self.mdir)
 
-        self.dic2parms(self.core.dicaddin['Pback2'],self.core.dicaddin['Pzones2'])
-        self.writeTpl()
-        self.writeBat()
-        self.getObsPt()
-        self.writeInst()
-        self.writePyscript()
-        self.writePst()
-        self.writeRegPst()
+        obs=self.getObsPt()
+        if obs == True: #EV 11/12/19
+            self.dic2parms(self.core.dicaddin['Pback2'],self.core.dicaddin['Pzones2'])
+            self.writeTpl()
+            self.writeBat()
+            self.writeInst()
+            self.writePyscript()
+            self.writePst()
+            self.writeRegPst()
+            return True
+        else : return obs
 

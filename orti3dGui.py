@@ -16,6 +16,11 @@ from .core import *
 from .addin import *
 from . import config
 
+class sendMessage: # OA added 13/12/19
+    def __init__(self,gui): self.gui=gui
+    def write(self,txt):
+        onMessage(self.gui,txt)
+
 class orti3dGui(QMainWindow):
     
     def __init__(self,title):
@@ -61,7 +66,8 @@ class orti3dGui(QMainWindow):
         self.setCentralWidget(self.widget)
         self.setWindowTitle(title)
         sys.excepthook = self.myExceptionHandler
-        
+        sys.stdout=sendMessage(self) # OA added 13/12/19
+
     def myExceptionHandler(self, type, value, trace_b): # OA added 25/9/18
         """Catch exceptions and show error dialog"""
         f = traceback.format_tb(trace_b, limit=10) # OA modif 1/10
@@ -124,7 +130,7 @@ class orti3dGui(QMainWindow):
         #isoluAction = QAction("&Solutions", self,                         #EV 14/11/19
                 #statusTip="import chemical solutions from text file",
                 #triggered=self.menus.OnImportSolutions)
-        iuspecAction = QAction("&Users Species", self, 
+        iuspecAction = QAction("&User species", self, #EV 11/12/19
                 statusTip="import user species text file",
                 triggered=self.menus.OnImportUserSpecies)
         ipostfAction = QAction("&Postfix species", self, # OA 30/6/19
@@ -161,21 +167,21 @@ class orti3dGui(QMainWindow):
 
         #Help
         menuHelp = self.menuBar().addMenu("&Help")
-        #hAction = QAction("&Help", self, 
-                #statusTip="Help file",
-                #triggered=self.menus.OnHelp)
+        hAction = QAction("&Help", self,
+                statusTip="Help file",
+                triggered=self.menus.OnHelp)
         dwnsAction = QAction("&Download stable", self, 
                 statusTip="download stable version from github",
                 triggered=self.menus.OnDownloadLast)
-        dwndAction = QAction("&Download develop", self, 
-                statusTip="download development version from github",
-                triggered=self.menus.OnDownloadDev)
-        #dwnlAction = QAction("&Download local", self, 
+        #dwndAction = QAction("&Download develop", self, 
+                #statusTip="download development version from github",
+                #triggered=self.menus.OnDownloadDev)
+        #dwnlAction = QAction("&Download local", self, #EV 11/12/19
                 #statusTip="download any version from local file",
                 #triggered=self.menus.OnDownloadLocal)
-        #menuHelp.addAction(hAction)
+        menuHelp.addAction(hAction)
         menuHelp.addAction(dwnsAction)
-        menuHelp.addAction(dwndAction)
+        #menuHelp.addAction(dwndAction) #EV 11/12/19
         #menuHelp.addAction(dwnlAction)
 
     def enableMenu(self,nomM,bool):

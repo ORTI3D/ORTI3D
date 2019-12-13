@@ -203,9 +203,9 @@ class addin:
                 m['type']='Unconfined' 
             if m['type']=='confined':
                 m['type']='Confined'
-            data = [('dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
-                    ('type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D only)'])),  #EV 22/07/2018 free -> Unconfined
-                    ('group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
+            data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
+                    ('Type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D model)'])),  #EV 22/07/2018 free -> Unconfined
+                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
@@ -271,7 +271,7 @@ class addin:
             m = self.core.dicaddin['3D']
             data = [('Top of Media','Textlong',m['topMedia']),
                     ('Bottom','Text',m['zmin']),
-                    ('nb of layers','Textlong',m['listLayers'])
+                    ('Nb of layers','Textlong',m['listLayers'])
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'3D',data)
             retour = dialg.getValues()

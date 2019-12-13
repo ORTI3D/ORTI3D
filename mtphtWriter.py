@@ -327,12 +327,13 @@ class mtphtWriter:
                     rcol=list(range(2,ncol)) # the range of columns to be read
                     if longn[i] in ['Phases','Gases']: 
                         m0=pht*0.+float(data[inde][2])
-                        rcol=list(range(4,ncol,2))
-                    else : m0=pht*0.+float(data[inde][1])
+                        rcol=list(range(3,ncol)) # OA 13/12/19 removed SI for asemble
+                    else : 
+                        m0=pht*0.+float(data[inde][1])
                     if longn[i]=='Surface': rcol=list(range(2,ncol-3))
                     for c in rcol:
                         if longn[i] in ['Phases','Gases']: 
-                            m0[m1==(c/2-1)]=float(data[inde][c])
+                            m0[m1==(c-2)]=float(data[inde][c]) # OA 13/12/19
                         else : 
                             m0[m1==(c-1)]=float(data[inde][c])
                     if dim =='Radial' and longn[i] in ['Phases','Gases','Exchange']:

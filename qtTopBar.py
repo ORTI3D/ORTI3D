@@ -98,7 +98,7 @@ class Ui_Var(object):
         self.gridLayout.addWidget(self.choiceT)#, 0, 8, 1, 1)
 
         label = QLabel(self.hlWidget)
-        label.setText(" view")#;label.setSizePolicy(policy);label.setMaximumWidth(25)
+        label.setText(" View")#;label.setSizePolicy(policy);label.setMaximumWidth(25)
         label.setMaximumWidth(45)
         self.gridLayout.addWidget(label)
         self.chkView = QCheckBox(self.hlWidget)  
@@ -307,7 +307,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 21/11/2019 ")
+        version = QLabel("       version 13/12/2019 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

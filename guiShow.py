@@ -41,6 +41,7 @@ class guiShow:
             self.dlgShow = gui.dlgShow
         self.dialogs = cfg.dialogs
         self.dicplots={'X_head':None,'X_tracer':None}
+        self.curName, self.arr3= None, None #EV 11/12/19
         self.init()
         
     def init(self):     

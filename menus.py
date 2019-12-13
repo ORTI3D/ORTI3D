@@ -56,7 +56,7 @@ class Menus:
         tl2 = self.core.getTlist2()
         self.gui.guiShow.setNames('Model_Tstep_L',tl2)
         self.gui.guiShow.setChemSpecies(listSpec)
-        self.dialogs.onMessage(self.gui,'file opened')
+        self.dialogs.onMessage(self.gui,'File opened')
             
     def OnSave(self,evt=None):
         if self.core.fileDir!=None:
@@ -65,7 +65,7 @@ class Menus:
             if self.gtyp=='qgis':
                 self.gui.visu.zonesQgs2core()
             self.core.saveModel()
-            self.dialogs.onMessage(self.gui,'file saved')
+            self.dialogs.onMessage(self.gui,'File saved')
         else :
             self.OnSaveAs(evt)
             
@@ -148,7 +148,7 @@ class Menus:
             self.gui.guiShow.setUserSpecies(dicSp)    
             nameBox = 'Chemistry_User_L'
             self.gui.guiShow.setNames(nameBox,list(dicSp.keys()))
-        self.dialogs.onMessage(self.gui,'User Species imported')
+        self.dialogs.onMessage(self.gui,'User species imported')
         
     def OnImportPostfixSpecies(self,evt=None): # oa added 30/6/19 (some modifs, added core.)
         if 'postfix.phrq' in os.listdir(self.core.fileDir):
@@ -158,42 +158,56 @@ class Menus:
                 if self.gui != None:
                     self.gui.guiShow.setUserSpecies(d);#print 'core203',d
                     self.gui.guiShow.setNames('Chemistry_User_L',list(d.keys()))
-                self.dialogs.onMessage(self.gui,'Postfix Species imported')
+                self.dialogs.onMessage(self.gui,'Postfix species imported')
             
     def OnExportParm(self,evt=None): # added 28/3/17 oa
         model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
-        name = line.replace('.','')
-        fname = self.core.fileDir+os.sep+ name
-        data = self.core.getValueLong(model,line,0)[media2layers(self.core,media)[0]] # returns just the 1st layer of the considered medium
-        savetxt(fname+'.txt',data)  
-        self.dialogs.onMessage(self.gui,'file '+name+' saved')
+        if not line : #EV 11/12/19
+            self.dialogs.onMessage(self.gui,'Select a parameter to export')
+        else :
+            name = line.replace('.','')
+            fname = self.core.fileDir+os.sep+ name
+            data = self.core.getValueLong(model,line,0)[media2layers(self.core,media)[0]] # returns just the 1st layer of the considered medium
+            savetxt(fname+'.txt',data)  
+            self.dialogs.onMessage(self.gui,'File '+name+' saved')
 
     def OnExportResu(self,evt=None): # modif 28/3/17 oa for correct name
-        if self.gui.guiShow.curSpecies != True :
-            name = self.gui.guiShow.curName+self.gui.guiShow.curSpecies;# OA modified 10/5/17
-        else : name = self.gui.guiShow.curName
-        fname = self.core.fileDir+os.sep+ name
-        data = self.gui.guiShow.data[-1]
-        savetxt(fname+'.txt',data)  
-        self.dialogs.onMessage(self.gui,'file '+name+' saved')
+        if not self.gui.guiShow.curName : #EV 11/12/19
+             self.dialogs.onMessage(self.gui,'Select a result to export')
+        else :
+            if self.gui.guiShow.curSpecies != True :
+                name = self.gui.guiShow.curName+self.gui.guiShow.curSpecies;# OA modified 10/5/17
+            else : name = self.gui.guiShow.curName
+            fname = self.core.fileDir+os.sep+ name
+            data = self.gui.guiShow.data[-1]
+            savetxt(fname+'.txt',data)  
+            self.dialogs.onMessage(self.gui,'File '+name+' saved')
         
     def OnExportParmVtk(self,evt=None): # added 28/3/17 oa
+        model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
+        if not line : #EV 11/12/19
+            self.dialogs.onMessage(self.gui,'Select a parameter to export')
+            return
         dlg = self.dialogs.myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
-        model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
-        name = line.replace('.','')
-        data = self.core.getValueLong(model,line,0)
-        s = writeVTKstruct(self.core,data)
-        f1=open(fDir+os.sep+fName,'w');f1.write(s);f1.close()
-        self.dialogs.onMessage(self.gui,'file '+fName+' saved')
+        if fName : 
+            name = line.replace('.','')
+            data = self.core.getValueLong(model,line,0)
+            s = writeVTKstruct(self.core,data)
+            f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
+            self.dialogs.onMessage(self.gui,'File '+fName+' saved')
         
     def OnExportResuVtk(self,evt=None): # modif 28/3/17 oa for correct name
+        data = self.gui.guiShow.arr3#;print('menu 151',shape(data))
+        if not shape(data) : #EV 11/12/19
+            self.dialogs.onMessage(self.gui,'Select a result to export')
+            return
         dlg = self.dialogs.myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
-        data = self.gui.guiShow.arr3;print('menu 151',shape(data))
-        s = writeVTKstruct(self.core,data)
-        f1=open(fDir+os.sep+fName,'w');f1.write(s);f1.close()
-        self.dialogs.onMessage(self.gui,'file '+fName+' saved')
+        if fName :
+            s = writeVTKstruct(self.core,data)
+            f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
+            self.dialogs.onMessage(self.gui,'file '+fName+' saved')
             
     def OnHelp(self,evt=None): #,lang):
         """calling help file"""
