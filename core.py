@@ -149,7 +149,7 @@ class Core:
         """opens an orti file, stored in xml"""
         self.fileDir,self.fileName = fDir,fName
         self.initAll()
-        fullName = fDir+os.sep+fName; print(fullName)
+        fullName = fDir+os.sep+fName; #print(fullName) #EV 06/01/20
         #if fName == '' : return
         if fName+'.orti' in os.listdir(self.fileDir): fullName +='.orti'
         else : fullName +='.iqpht'
@@ -684,8 +684,8 @@ class Core:
             p1=zeros((len(t2),len(pt)));#print(t2)# p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
             for i in range(len(pt)):
-                #print(i,pt[i],pt)
-                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); #conc, pt[i] is a table (nper,nrow)
+                #print('ptobs',i,pt[i],pt)
+                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); #conc, pt[i] is a table (nper,nrow) 
                 elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux,axis=1)/sum(flux,axis=1) # weighted conc
                 elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch,axis=1); #total discharge
                 elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux,axis=1); #average flux

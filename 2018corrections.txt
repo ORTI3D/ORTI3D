@@ -751,3 +751,15 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - mtphtwrier/getConcInit l.330 and 336 changed to remove ass_Si
 - ortigui added function sendMessage to have a message instead of printing in dos window
 - ortigui added line 69 to call the above function
+
+6/1/20 OA
+- min3pwriter, removed the print during writing the files
+- min3pwriter: pb call of gui (absent in batch mode) modif line 138
+- min3pWriter : line 791-798 replaced iper by ip as iper is an input of the function
+- min3pwriter l.879 886 all funciton same format, now include periods for breakthrough
+
+6/01/20 EV
+- min3pWriter/writeSpat l.165-166 added condition to wrtite radial coordinates when radial option is checked in the gui
+- min3pWriter/readoutput l.799 removed minus in font of ::1 to plot result in the right direction
+- core/openModel l.152 removed print fullName
+ 

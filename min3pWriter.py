@@ -115,7 +115,7 @@ class min3pWriter:
             if (line[:4] not in ['spat','time']) and lprint: 
                 s += '\''+name+'\'\n'
             for ik in range(len(kwlist)):
-                print('min3pw gene',line,ik,lval[ik])
+                #print('min3pw gene',line,ik,lval[ik])
                 value=lval[ik];#
                 if ktyp[ik]=='choice': # where there is a choice print the nb of the choice not the value
                     detail = Dict.lines[line]['detail'][ik]
@@ -135,7 +135,7 @@ class min3pWriter:
                     s += '#'+str(value)+'\n'
                 else : # values with strings
                     if line in ['trac.2']: 
-                        value = '\''+self.core.gui.mainDir+os.sep+'utils\''
+                        value = os.path.dirname(self.core.baseDir)+'\\utils' # OA 6/1/20
                     s += str(value) +'\n' #';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
         if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
@@ -162,6 +162,8 @@ class min3pWriter:
             sz = str(nz-1)+'\n'+'\n'.join(['1\n'+str(zcoo[i])+' '+str(zcoo[i+1]) for i in range(nz-1)])
         if self.xsect==False: s += s2 + sz
         else : s += '\n1\n1\n0.0 1.0\n\n' + s2
+        if self.core.addin.getDim()=='Radial': # EV 06/01/20
+            s += '\'radial coordinates\'\n' # EV 06/01/20
         if self.meshtype=='mesh': #unstructured
             s += '\'read unstructured grid from file\'\n'
         return s+'\n\'done\'\n\n'
@@ -245,7 +247,7 @@ class min3pWriter:
             if Dict.lines[line]['type'][0][:3] != 'arr':  continue
             cond=Dict.lines[line]['cond'];#the conditio to test if the line shall be printed
             if self.core.testCondition(mod,cond)==False : continue
-            print( 'min3pw byz',line)
+            #print( 'min3pw byz',line)
             info = Dict.lines[line]['comm'].split('(')[0]
             s += '\''+info+'\'' + '\n'
             s += self.getValue(mod,line,None,0,'whole')
@@ -755,7 +757,7 @@ class min3pWriter:
             fil2=os.path.normpath(fil2) #EV 18/02/19
             if name+'.dbs' not in os.listdir(self.fDir): # OA added 23/5/17
                 os.system('copy '+fil1+' '+fil2)
-                print('ok')
+                #print('ok')
 #        for name in ['redox','mineral']: # 23/5 OA removed ,not usefull and print bad data
 #            if len(self.chem.Base['MChemistry'][name]['rows'])>0:
 #                f1 = open(self.fDir+os.sep+name+'.dbs','w')
@@ -788,14 +790,14 @@ class min3pReader:
                 nam = f1.readline().replace('"','').replace(' ','').replace('fh_w','h_w').replace('\n','')
                 f1.close()
                 self.names[ext] = nam.split(',')[3:];#print nx,ny,nz,self.names
-                for iper in range(nper-1):
-                    mat = loadtxt(self.fullPath+'_'+str(iper+1)+'.'+ext,skiprows = 3) # OA 14/6 pb read _0
+                for ip in range(nper-1):
+                    mat = loadtxt(self.fullPath+'_'+str(ip+1)+'.'+ext,skiprows = 3) # OA 14/6 pb read _0
                     nr,nc = shape(mat);#print nr,nc
-                    if iper==0: self.data[ext] = zeros((nper,nc-3,nz,ny,nx))
+                    if ip==0: self.data[ext] = zeros((nper,nc-3,nz,ny,nx))
                     mat2 = zeros((nc-3,nz,ny,nx));#print ext,iper,shape(self.data[ext]),shape(mat2)
                     for iv in range(nc-3):
-                        mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))[::-1,:,:]
-                    self.data[ext][iper] = mat2
+                        mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))[::1,:,:] # EV 06/01/20
+                    self.data[ext][ip] = mat2
             else : # unstructured
                 self.names[ext],self.data[ext] = self.readOutputVtk(ext,nper)
             self.flags[ext] = True
@@ -828,12 +830,12 @@ class min3pReader:
 
     def readWcontent(self,core,iper):
         self.core = core
-        wc = self.readOutput('gsp',iper,'theta_a') 
+        wc = self.readOutput('gsp',iper,'s_w')#'theta_a') 
         return wc
 
     def readFloFile(self,core,iper):
         self.core = core
-        vel = self.readOutput('vel',iper,rnge(2))
+        vel = self.readOutput('vel',iper,range(2))
         nv,nz,ny,nx = shape(vel);#print 'redflo',shape(vel)
         # velocity have diff shape
         vel = concatenate((vel[:,:,:,:1],vel,vel[:,:,:,-1:]),axis=3);#print 'redflo',shape(vel)
@@ -877,13 +879,11 @@ class min3pReader:
         #print('mpwrite 339',ilay,icol,irow)
         specname = specname.lower()
         if option in ['Tracer','Chemistry']: # transport or chemistry
-            a = self.readUCN(core,option,iper,ispec,specname);#print shape(a)
-            obs = a[ilay,irow,icol] # OA 25/2/19
+            obs = self.readUCN(core,option,iper,ispec,specname)[:,ilay,irow,icol] # OA 25/2/19
         elif option == 'Head':
-            data = self.readHeadFile(core,iper);#print(iper,shape(data))
-            obs = data[ilay,irow,icol]
+            obs = self.readHeadFile(core,iper)[:,ilay,irow,icol]
         elif option == 'Wcontent':
-            obs = self.readWcontent(core,iper)[ilay,irow,icol]
+            obs = self.readWcontent(core,iper)[:,ilay,irow,icol]
         elif option == 'flux': 
             obs = self.readFloFile(core,iper)[:,ilay,irow,icol]
         return obs
