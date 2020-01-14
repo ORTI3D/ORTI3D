@@ -830,7 +830,7 @@ class min3pReader:
 
     def readWcontent(self,core,iper):
         self.core = core
-        wc = self.readOutput('gsp',iper,'s_w')#'theta_a') 
+        wc = self.readOutput('gsp',iper,'s_w')#'theta_a')  # EV 06/01/20
         return wc
 
     def readFloFile(self,core,iper):

@@ -762,4 +762,5 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - min3pWriter/writeSpat l.165-166 added condition to wrtite radial coordinates when radial option is checked in the gui
 - min3pWriter/readoutput l.799 removed minus in font of ::1 to plot result in the right direction
 - core/openModel l.152 removed print fullName
+- min3pWriter/readWcontent replaced theta_a by s_w
  
