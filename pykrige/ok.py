@@ -177,6 +177,7 @@ class OrdinaryKriging:
         self.verbose = verbose
         self.enable_plotting = enable_plotting
         if self.enable_plotting and self.verbose:
+            self.t="TEST ok Plotting Enabled\n" #EV
             print("Plotting Enabled\n")
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
@@ -187,6 +188,7 @@ class OrdinaryKriging:
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             if self.verbose:
+                self.t+="Adjusting data for anisotropy..." #EV
                 print("Adjusting data for anisotropy...")
             self.X_ADJUSTED, self.Y_ADJUSTED = \
                 _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
@@ -637,6 +639,7 @@ class OrdinaryKriging:
         """
 
         if self.verbose:
+            t=self.t #EV
             print("Executing Ordinary Kriging...\n")
 
         if style != 'grid' and style != 'masked' and style != 'points':
@@ -768,4 +771,4 @@ class OrdinaryKriging:
             zvalues = zvalues.reshape((ny, nx))
             sigmasq = sigmasq.reshape((ny, nx))
 
-        return zvalues, sigmasq
+        return zvalues, sigmasq, t #EV

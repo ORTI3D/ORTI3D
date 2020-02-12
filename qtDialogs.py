@@ -101,11 +101,18 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 self.item[i] = QPushButton('Color',self.glWidget)
                 self.item[i].clicked.connect(self.onColor)
                 self.gl.addWidget(self.item[i],i,1,1,1)
+            elif typ=='File': #EV 07/02/20
+                self.item[i] = QPushButton('Browse',self.glWidget)
+                self.item[i].clicked.connect(self.onFile)
+                self.tex= QLineEdit(self.glWidget)
+                self.tex.setText(value[3])
+                self.gl.addWidget(self.item[i],i,2,1,1)
+                self.gl.addWidget(self.tex,i,1,1,1)
+                self.value=value
             i+=1
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
-
         self.glWidget2 = QWidget(self)
         self.glWidget2.setGeometry(QRect(5, nb*20+y0*160+30, self.screenShape.width()*.15, 40))
         self.gl2 = QGridLayout(self.glWidget2)
@@ -123,8 +130,16 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         self.close(); self.state = 'accept'
     def reject1(self): 
         self.close(); self.state = 'reject'
-    def onColor(self): #◙ OA added 22/11/19
+    def onColor(self): # OA added 22/11/19
         self.color = array(QColorDialog.getColor().getRgb())/255.
+    
+    def onFile(self,evt): #EV 07/02/20
+        dlg = myFileDialog()
+        title, ext, opt = self.value[0],self.value[1],self.value[2]
+        file=self.value[3]
+        self.fDir,self.fName=dlg.getsetFile(self.gui,title, ext, opt)
+        file = str(self.fDir+self.fName)
+        self.tex.setText(file)
 
     def getValues(self):
         self.exec_()
@@ -139,13 +154,14 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 v0 = str(self.item[i].document().toPlainText())
                 val[i] = v0.split('\n')   
             if typ == 'Color': val[i] = self.color # OA 22/11/19
+            if typ == 'File' : val[i] =str(self.tex.text()) #EV 07/02/20
         if self.state =='accept' : return val
         else : return None
 
 class myFileDialog: # Dialog to open or save a file 
     def __init__(self,opt='Open'):
         self.opt = opt
-    def getsetFile(self,gui,title,filt):
+    def getsetFile(self,gui,title,filt,opt=False): #EV 07/02/20
         settings = QSettings("ORTI3D_team","ORTI3D")
         folder = settings.value("last_file")
         if folder=='' : folder = ' '
@@ -158,7 +174,7 @@ class myFileDialog: # Dialog to open or save a file
         fileName = fileName[0] # OA 1/10 for python 3
         fName = fileName.split('/')[-1]
         fDir = fileName.replace(fName,'')
-        fName = fName.split('.')[0]
+        if opt!=True : fName = fName.split('.')[0] #EV 07/02/20
         if fDir!='' : settings.setValue("last_file", fDir)# QVariant(QString(fDir)))
         return str(fDir),str(fName)
 

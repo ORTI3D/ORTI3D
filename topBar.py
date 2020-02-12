@@ -61,16 +61,19 @@ class BaseTop:
         to get the value of the given keyword in the last line
         """
         ll = self.gui.currentLine
-        formula = self.core.getFormula(self.gui.currentModel,ll)[0]; #onMessage(self.gui,formula)
+        media = self.gui.currentMedia # EV 3/2/20
+        formula = self.core.getFormula(self.gui.currentModel,ll,media) # EV 3/2/20
         dialg = textDialog(self.gui,'input python formula',(340,300),str(formula))
         formula = dialg.getText()
         if formula != None :
-            self.core.dicformula[self.gui.currentModel][ll]=[str(formula)]
-            self.core.dictype[self.gui.currentModel][ll]=['formula']
+            self.core.dicformula[self.gui.currentModel][ll][media]=str(formula) # EV 4/2/20 add Media
+            self.core.dictype[self.gui.currentModel][ll][media]='formula'# EV 3/2/20 add Media
                
     def onInterpolate(self):
         """creates the string for a specific formula"""
         ll = self.gui.currentLine
+        media = self.gui.currentMedia # EV 3/2/20
+        nmedia = getNmedia(self.core)
         model = self.gui.currentModel
         reg = 'Regular'
         if model[:5]=='Opgeo': reg = 'Unstruct'
@@ -78,10 +81,37 @@ class BaseTop:
         s+='#choices : interp. Kr, interp. ID; vtype: spher, gauss, gauss3\n'
         s+='opt = \'interp. Kr;vrange=22;vtype=@spher@\'\n'
         s+='value = block'+reg+'(self,modName,line,intp,opt,0)'
-        self.core.dicformula[model][ll]=[s]
-        self.core.dictype[model][ll]=['formula']
-        #self.choiceT.setCurrentIndex(self.typeList.index('formula'))
+        self.core.dicformula[model][ll]=['None']*nmedia# EV 3/2/20 
+        self.core.dicformula[model][ll][media]=s
+        self.core.dictype[model][ll][media]='formula' # EV 3/2/20 add media
         self.onFormula()
+    
+    def onImportArray(self):
+        """Open a dialog to choose an array file and save the name in a dic EV 05/02/20"""
+        ll = self.gui.currentLine
+        media = self.gui.currentMedia # EV 3/2/20
+        model = self.gui.currentModel
+        nmedia = getNmedia(self.core)
+        if ll in self.core.dicarray[model]: 
+            try : self.core.dicarray[model][ll][media]
+            except IndexError :
+                arr=len(self.core.dicarray[model][ll])
+                narr=len(arr)
+                if narr<nmedia : arr.extend(['']*(nmedia-narr))
+                f=''
+            else :
+                f = str(self.core.dicarray[model][ll][media])
+        else :
+            self.core.dicarray[model][ll] = ['']*nmedia
+            f=''
+        data=[('Media '+str(media),'File',['Choose Array','*.asc;*.vtk;*.dat;*.txt',True,f])]
+        dialg = genericDialog(self.gui,'Choose Array',data)
+        retour = dialg.getValues()
+        if retour != [''] :
+            self.core.dicarray[model][ll][media]=retour[0]
+        else : 
+            self.core.dictype[model][ll][media]='one_value'
+            self.core.dicarray[model][ll][media]=retour[0]
         
     def getCurVariable(self):
         """used to see the current variable for current medium"""

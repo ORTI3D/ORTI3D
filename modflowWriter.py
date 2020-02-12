@@ -82,7 +82,7 @@ class modflowWriter:
         f1.write('OC       26    '+ self.fName + '.oc\n')
         f1.write('DATA(BINARY)     30        ' + self.fName + '.head\n')
         f1.write('DATA(BINARY)     31        ' + self.fName + '.budget\n')
-        if self.core.mfUnstruct==False:
+        if 'USG' not in self.core.dicaddin['Model']['group']:
             f1.write('LMT6     28    '+ self.fName + '.lmt\n')
         r0=self.core.getValueFromName('Modflow','RECH')
         if 'RCH' in lmod:
@@ -195,7 +195,8 @@ class modflowWriter:
             if (iper==0) or (prod(trch[iper]==trch[iper-1])==0): #values diff than previous
                 if 'rch' in self.usgTrans.keys():  s += '    0      INCONC\n'
                 else :  s += '    0\n'# 0: data are written not reused from previous
-                m = block(self.core,'Modflow','rch.2',False,None,iper);
+                #m = block(self.core,'Modflow','rch.2',False,None,iper); #EV 04/02/20 
+                m = self.core.getValueLong('Modflow','rch.2',0,iper) #EV 04/02/20
                 s += self.writeMatModflow(m[0],'arrfloat')+ '\n'
                 if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
             else:
@@ -211,7 +212,8 @@ class modflowWriter:
         for iper in range(self.nper):
             s += '    0     0    0\n' # INSURF INEVTR INEXDP INIEVT not read
             for k in range(2,5):
-                m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);
+                #m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);#EV 04/02/20
+                m = self.core.getValueLong('Modflow',line[:4]+str(k),0,iper) #EV 04/02/20
                 s += self.writeMatModflow(m[0],'arrfloat')+'\n'
         exceptDict={'evt.2':s}
         self.writeOneFile('EVT',exceptDict)
@@ -248,7 +250,8 @@ class modflowWriter:
         #uzf.9' writes an array for each period with zero before
         m0, s = 0,''
         for iper in range(self.nper): 
-            m = block(self.core,'Modflow','uzf.10',False,None,iper);
+            #m = block(self.core,'Modflow','uzf.10',False,None,iper); #EV 04/02/20
+            m = self.core.getValueLong('Modflow','uzf.10',0,iper) #EV 04/02/20
             s += '    0\n' # 0: data are written not reused from previous
             s += self.writeMatModflow(m[0],'arrfloat')+'\n'
         exceptDict = {'uzf.9':s}

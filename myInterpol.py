@@ -92,9 +92,9 @@ def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     vparms = [0.5*variance(zpt),rg,0] # sill, range, nugget
     #print('vparms',vparms,vtype)
     OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model=vtype,
-        variogram_parameters=vparms, verbose=False, enable_plotting= False)#'spherical'
-    zvalues, sigmasq = OK.execute('points', x, y)
-    return zvalues
+        verbose=True, enable_plotting= True)#'spherical'
+    zvalues, sigmasq, text = OK.execute('points', x, y) # EV 04/02/20 added verbose and text option and plot variogram
+    return zvalues, text
     
 import itertools
 from numpy.linalg import lstsq

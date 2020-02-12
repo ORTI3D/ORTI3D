@@ -763,4 +763,63 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - min3pWriter/readoutput l.799 removed minus in font of ::1 to plot result in the right direction
 - core/openModel l.152 removed print fullName
 - min3pWriter/readWcontent replaced theta_a by s_w
- 
+
+6/2/20  OA
+- qtVisualisation l.915 zind added as ano object of polygonInteractor (was missing)
+- qtVisualisation l.738 ind replaced by zind
+
+8/2/20  OA
+- core, commented line 190 because the gui shall not be changed in core,
+- menus added l.37 in OnOpen the line above
+
+9/2/20  OA
+- addin added at l.149 setUsgRect function
+- addin l.224-225 use of the setUsgRect 
+- addin l.216 added a new model group : modflow USG_rect, rectangular grid (mainly for tests)
+- addin l.524 grid in model aded usg_rect
+- core l.305 modif to run modflow-usg (use self.mfUnstruct) in order to be able to use dis
+- core openModel modf l.186 to ge tonly usg and not usg_rect
+- core in writer l.257 modif to consider all usg
+- modflowWriter l.85 in writeFiel modif to remove lmt6 for all usg models
+- geometry in getTopBottom, l.215 added line for mflowUSG_rect
+- mtUsgWriter, added getGeomfct at the end, from ModflowWriter
+
+10/2/20  OA
+- core l.252 (+258) added to use specifci writer for usg
+- modflowkeywords bas6 l.85 changed to FREE
+
+03/02/20 - 12/02/20 EV (importArray development)
+- core.py initAll l.84 removed self.dicarray[mod] variable to get dicarray empty
+- core.py initArray l.104 removed array variable to get dicarray empty
+- core.py getFormula added media as function parameter, extend the number of formula at the number of media
+- core.py openModel l.183 added option to update dicarray
+- core.py openModel l.165, l.184-187 removed old option for import array
+- core.py saveModel l.236-240 removed old option for import array
+- core.py getValueLong added iper as function parameter, added intp variable to define the type of the model parameter
+- geometry.py makeZblock l.154-162 added option to define model and line (was in getTopBotm)
+- geometry.py makeZblock l.172-176 extend the number of type (in dictype) at the number of media
+- geometry.py makeZblock l.177-196 added intp variable to define the type of model parameter for each media
+- geometry.py makeZblock l.199, 205, 208 added modName, line, replaced intFlag by intp as parameter in getTopBotm function
+- geometry.py getTopBotm removed option to define model and line (moved in makeZblock)
+- geometry.py getTopBotm added intp variable condition for zone, interpolation and added import array option
+- geometry.py blockRegular l.396-404 and l.405-413 added intp variable condition for zone, interpolation and added import array option
+- geometry.py zone2array l.999-1024 create zone2array function
+- modflowWriter.py writeRCH l.198-199 replaced block function by getValueLong  
+- modflowWriter.py writeEVT l.215-216 replaced block function by getValueLong  
+- modflowWriter.py writeUZF l.253-254 replaced block function by getValueLong  
+- mtphWriter.py getConcRch l.357-358 replaced block function by getValueLong
+- mtphWriter.py writeSsmFile l.518-519 replaced block function by getValueLong
+- multiplot. py l.100, 106-107 added some option for axes option 
+- myInterpol/krige added verbose and text option and plot variogram
+- qtDialog/genericDialog l.104-111 added File type to create a button with open a FileDialog
+- qtDialog/genericDialog onFile l.136-142 added onFile option to connect File type
+- qtDialog/genericDialog getValues added File type
+- qtDialog/myFileDialog getsetFile l.164, 177 added option to get fName with or without the extention (.txt,.dat ...)
+- qtTopBar.py l.95 added importArray type option
+- qtTopBar.py onChoiceLine l.171-174 extend the number of type (in dictype) at the number of media
+- qtTopBar.py onChoiceMedia l.186-188 added option to change the type when change media selection 
+- qtTopBar.py onChoiceType added option to get the type in function of media and added importArray option
+- topBar.py onFormula l.65 added media as parameter in getFormula function
+- topBar.py onFormula l.69-70 added option to assign formula in function of media
+- topBar.py onInterpolate added option to assign formula of interpolation in function of media
+- topBar.py onImportArray l.89-114 added this function to open a dialog, choose an array file and save the name in a dic

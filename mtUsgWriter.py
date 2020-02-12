@@ -14,6 +14,8 @@ class mtUsgWriter:
         self.mfloW = modflowWriter(core,fDir,fName) # OA 6/5/19
 
     def writeMtphtFiles(self,listEsp,opt,parmk=None):
+        self.mgroup = self.core.dicaddin['Model']['group']
+        self.listEsp = listEsp
         usgTrans = {'active':True}
         self.ttable = self.core.makeTtable();#print 'mtpht ttable',self.ttable
         self.dim = self.core.addin.getDim()
@@ -27,15 +29,13 @@ class mtUsgWriter:
         if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
             usgTrans['wel'] = self.writeWelValues()            
         self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
-        mcomp,ncomp,gcomp = listEsp['mcomp'],listEsp['ncomp'],listEsp['gcomp']
-        self.nesp = ncomp
-        nkim = len(listEsp['kim'])
-        self.writeFiles(opt)
+        self.writeBCT(opt)
         if opt=='Pht3d':
             self.writePhFile(self.core,listEsp,parmk)
-            self.writePhreeqc(self.core,listEsp);
+            #self.writePhreeqc(self.core,listEsp);
         if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()):
-            self.writePcbFile(self.core)
+            if self.mgroup == 'Modflow USG_rect': self.writePcbRectFile(self.core)
+            else :self.writePcbFile(self.core)
         return 
         
     def writeNamString(self,opt):
@@ -43,30 +43,21 @@ class mtUsgWriter:
         if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()):
             s += 'PCB  42 '+self.fName+'.pcb\n'
         if opt=='Pht3d':
-            s += ' PHC  64    Pht3d_ph.dat\n'
+            s += ' PHT  64    Pht3d_ph.dat\n'
         s += 'DATA(BINARY) 101  '+self.fName+'.conc\n'
         return s
         
-    def writeWelValues(self,opt=None):
-        '''a table of value that will be used in modflow'''
-        return self.core.ttable['cwell.1']
-        
-    def writeRchString(self,opt=None):
-        '''this list of strings will be used by modflow, one string for each
-        stress period'''
-        ls = []
-        for iper in range(self.nper): 
-            m = block(self.core,'MfUsgTrans','crch.1',False,None,iper);
-            ls.append(self.writeVecModflow(m[0],'arrfloat'))
-        return ls
-        
-    #*********************** generic file writer ****************
-    def writeFiles(self,opt):
-        """to write all modflow usg transport files.
+    #*********************** BCT file writer ****************
+    def writeBCT(self,opt):
+        """to write modflow usg BCT transport file.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
         lexceptions, s =['bct.5'],''
         llist=self.Mkey.groups['BCT'];#print n1,name
+        if opt=='Pht3d':
+            self.core.setValueFromName('MfUsgTrans','MCOMP',self.listEsp['mcomp']+1)
+            nimcomp = self.listEsp['ncomp']-self.listEsp['mcomp']
+            self.core.setValueFromName('MfUsgTrans','NIMCOMP',nimcomp+1)
         for ll in llist:
             cond=self.Mkey.lines[ll]['cond'];#print('mtw 50',ll)
             if self.testCondition(cond)==False : continue
@@ -81,13 +72,14 @@ class mtUsgWriter:
                 s += '#'+str(ktyp[0]).rjust(10)+'\n'
             else : # classical keywords
                 for ik in range(len(kwlist)):
-                    if ik<len(lval): s += str(lval[ik]).rjust(10)
+                    if ik<len(lval): 
+                        if type(lval[ik])==type(5):s += ' %3i' %lval[ik]
+                        elif type(lval[ik])==type(5.0):s += ' %13.4e' %lval[ik]
+                        else :s +=  lval[ik]
                     else : s += '0'.rjust(10)
                 s += '\n'
-        print(s)
         f1=open(self.fDir+os.sep+self.fName +'.bct','w')
         f1.write(s);f1.close()
-            #print grp+' written'
 
     def testCondition(self,cond):
         """ test if the condition is satisfied"""
@@ -95,7 +87,8 @@ class mtUsgWriter:
         
     def writeExceptions(self,line):
         if line == 'bct.5': 
-            s = 'CONSTANT    '+str(self.core.dicval['MfUsgTrans'][line][0])+'\n'
+            if self.mgroup == 'Modflow USG_rect': s=''
+            else : s = 'CONSTANT    '+str(self.core.dicval['MfUsgTrans'][line][0])+'\n'
             return s
         
     def writeArray(self,opt,line,ik):
@@ -103,7 +96,7 @@ class mtUsgWriter:
         and also for react modules of MfUsgTrans"""
         grd = self.core.addin.getFullGrid()
         dx,ny = array(grd['dx']),int(grd['ny'])
-        if (opt=='Pht3d') and (line in ['btn.13','rct.2c']):
+        if (opt=='Pht3d') and (line == 'bct.20'):
             s = ''
             self.Conc, self.Names = self.getConcInit('main','ph.3',iper=0);
             nspec = len(self.Names)
@@ -113,8 +106,135 @@ class mtUsgWriter:
             arr = self.core.getValueLong('MfUsgTrans',line,ik);
             s = self.formatBlockMusg(arr,line)
         return s 
+
+    def getConcInit(self,typ,line,iper=0):
+        """returns the concentrations arrays to be printed for initial conditions
+        initial chemistry has been removed
+        radial also (made with the grid in usg?)
+        """
+        listC=[];names=[] # this will be the list of conc arrays and names of species
+        dictE = self.core.addin.pht3d.getDictSpecies()
+        Chem = self.core.addin.pht3d.Base['Chemistry']
+        pht = self.core.getValueLong('Pht3d',line,0)
+        dim = self.core.addin.getDim()
+        grd = self.core.addin.getFullGrid()
+        dx,ny = array(grd['dx']),int(grd['ny'])
+        if typ=='rech': pht=pht[0] # only the 1st layer for recharge
+        dInd={'Solutions':pht/1000.,
+              'Phases':mod(pht,1000)/100,'Gases':mod(pht,1000)/100,
+              'Exchange':mod(pht,100)/10,
+              'Surface':mod(pht,10)}
+        shortn=['k','i','kim','g','p','e','s','kp']
+        longn=['Solutions','Solutions','Solutions','Gases','Phases','Exchange','Surface',
+               'Phases']
+        # classical case
+        listC=[pht*0,pht*0,pht*0];names=['a1','a2','a3'] # unknown species!!
+        for i,kw in enumerate(shortn):
+            m1 = dInd[longn[i]].astype('int');
+            chm = Chem[longn[i]]
+            data,rows = chm['data'],chm['rows']
+            for ie,e in enumerate(dictE[kw]):
+                ncol = len(data[0])
+                names.append(e)
+                inde = rows.index(e) # finds the index of the species e
+                # set background value
+                rcol = list(range(2,ncol)) # the range of columns to be read
+                if longn[i] in ['Phases','Gases']: 
+                    m0 = pht*0.+float(data[inde][2])
+                    rcol = list(range(3,ncol)) # OA 13/12/19 removed SI for asemble
+                else : 
+                    m0 = pht*0.+float(data[inde][1])
+                if longn[i]=='Surface': rcol=list(range(2,ncol-3))
+                for c in rcol:
+                    if longn[i] in ['Phases','Gases']: 
+                        m0[m1==(c-2)] = float(data[inde][c]) # OA 13/12/19
+                    else : 
+                        m0[m1==(c-1)] = float(data[inde][c])
+                listC.append(m0)
+        return listC,names
+        
+    #************************ write wells, rech, evt... ******************
+    def writeWelValues(self,opt=None):
+        '''a table of value that will be used in modflow'''
+        if opt == 'Pht3d':
+            ttable = self.core.ttable['ph.4']
+            lsolu = unique(ttable) 
+            schem = self.phval2conc(len(lsolu))
+            for i,solu in lsolu:
+                ttable[ttable==solu] = schem[int(solu)]
+            return ttable
+        else : 
+            return self.core.ttable['cwell.1']
+
+    def phval2conc(self,nsol):
+        '''returns the composition of solutions for 'k','i','kim'''
+        schem = [0]*nsol
+        listE = self.core.addin.pht3d.getDictSpecies()
+        chm = self.core.addin.pht3d.Base['Chemistry']['Solutions']
+        data,rows = chm['data'],chm['rows']
+        ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
+        for kw in['k','i','kim']:
+            for e in listE[kw]:
+                inde = rows.index(e) # finds the index of the species e
+                for c in rcol: # fills the matrix with the solutions
+                    schem[c-1]=float(data[inde][c])
+        return schem
+        
+    def writeRchString(self,opt=None):
+        '''this list of strings will be used by modflow, one string for each
+        stress period'''
+        ls = []
+        for iper in range(self.nper): 
+            if (opt=='Pht3d'):
+                s = ''
+                self.Conc, self.Names = self.getConcRch('ph.3',iper=0);
+                nspec = len(self.Names)
+                for i in range(nspec):
+                    s += self.formatBlockMusg(self.Conc[i],self.Names[i])
+                ls.append(s)
+            else :
+                m = block(self.core,'MfUsgTrans','crch.1',False,None,iper);
+                ls.append(self.writeVecModflow(m[0],'arrfloat'))
+        return ls
+
+    def getConcRch(self,typ,line,iper=0):
+        """returns the concentrations arrays to be printed for recharge
+        order : 'k','i','kim','g',
+        """
+        listC=[];names=[] # this will be the list of conc arrays and names of species
+        listE=self.core.addin.pht3d.getDictSpecies()
+        chm = self.core.addin.pht3d.Base['Chemistry']['Solutions']
+        data,rows = chm['data'],chm['rows']
+        ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
+        pht = block(self.core,'Pht3d',line,False,None,iper).astype('int') # solution number
+        for kw in['k','i','kim']:
+            for e in listE[kw]:
+                names.append(e)
+                inde = rows.index(e) # finds the index of the species e
+                m0 = pht*0.+float(data[inde][1]) # fills with background
+                for c in rcol: # fills the matrix with the solutions
+                    m0[pht==(c-1)]=float(data[inde][c])
+                listC.append(m0)
+        # gases
+        gases = self.core.addin.pht3d.Base['Chemistry']['Gases']
+        data,rows = gases['data'],gases['rows']
+        if len(gases['rows'])>0:
+            ncol = len(data[0]);rcol=list(range(2,ncol,2))
+            for e in listE['g']:
+                names.append(e)
+                inde = rows.index(e) # finds the index of the species e
+                m0 = pht*0.+float(data[inde][2]) # fills with background
+                for c in rcol: # fills the matrix with the solutions
+                    m0[pht==(c/2)]=float(data[inde][c])
+                listC.append(m0)
+        # # other species, set to 0 in recharge    
+        # for kw in ['p','e','s','kp']:
+        #     for e in listE[kw]:
+        #         names.append(e)
+        #         listC.append(m0*0.)
+        return listC,names
             
-    #************************ file for transient data ******************
+    #************************ file for boundary conditions ******************
     def writePcbFile(self,core):
         # finds if the zones are transient and their values
         nzones,line = 0,'pcb.2'
@@ -143,6 +263,121 @@ class mtUsgWriter:
                     s1 += str(clist[ip,iz]).rjust(10)+'\n' # Conc
         f1=open(self.fullPath+'.pcb','w')            
         f1.write(s1);f1.close()
+        
+    #************************ samebut for a regular grid ******************
+    def writePcbRegFile(self,core):
+        # finds if the zones are transient and their values
+        nzones,line = 0,'pcb.2'
+        dicz = core.diczone['MfUsgTrans'].dic[line]
+        if line in self.ttable:
+            clist = self.ttable[line];
+            nzones = len(dicz['name'])
+        # find the nodes of the zones
+        intp = 0
+        znum = blockRegular('MfUsgTrans',line,intp,'zon',0)
+        nbcell = sum(znum>0)
+        #write the values for every period
+        s1 = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB
+        for ip in range(self.nper):
+            s1 += str(nbcell).rjust(10)+'  0\n' # ITMP MP
+            for iz in range(nzones):
+                il,iy,ix = where(znum==iz+1)[0]
+                for i in range(len(il)) : 
+                    s1 += str(il+1).rjust(10)+ str(iy+1).rjust(10)+ str(ix+1).rjust(10)
+                    s1 +='        1 ' # iSpecies_No
+                    s1 += str(clist[ip,iz]).rjust(10)+'\n' # Conc
+        f1=open(self.fullPath+'.pcb','w')            
+        f1.write(s1);f1.close()
+
+    #********************************* write Pht3d file ********************
+    def writePhFile(self,core,listE,parmk):
+        # order of species 'k','i','kim','g','p','e','s','kp'
+        # writes the first two lines
+        s=''
+        dicval = core.dicval['Pht3d']
+        for v in dicval['ph.1'] : 
+            s += str(v).rjust(10)
+        s += '\n'+str(dicval['ph.2'][0]).rjust(10)+'\n'
+        # determine nb of kinetic species and make a list
+        nInorg=len(listE['i']); #+len(self.lists);
+        nKmob = len(listE['k'])
+        nKimob = len(listE['kim']);
+        nMinx= len(listE['p'])
+        nExch=len(listE['e'])
+        nGas=len(listE['g'])
+        nSurf=len(listE['s'])
+        s += '%9i\n' %(nInorg)# PH3 nb inorg compounds
+        # PH4 nb minerals and gases
+        nMin2 = nMinx+nGas
+        s += '%9i %9i\n' %(nMin2, nGas)
+        s += '%9i %9i\n' %(nExch, 0)# PH5 nb ech ions, 0 je sais pas pourquoi
+        # PH6 surface complexation 
+        s += '%9i\n' %nSurf
+        # PH7 Record: NR_MOB_KIN NR_MIN_KIN NR_SURF_KIN NR_IMOB_KIN
+        # nb of kinetic species mobiles, minerales, surfaces et substeps pour plus tard
+        nKsurf,nKmin = 0,len(listE['kp'])
+        s += '%9i %9i %9i %9i\n' %(nKmob, nKmin, nKsurf, nKimob)
+        # PH8 : NR_OUTP_SPEC (complexes) PR_ALKALINITY_FLAG (futur)
+        s += '%9i %9i\n' %(0,0)
+        ## nb units are useless because pht3d considers that it is always days
+        Chem = core.addin.pht3d.Base['Chemistry']
+        if 'Rates' in Chem:
+            rates=Chem['Rates'];
+            for nom in listE['k']:
+                iek = rates['rows'].index(nom);
+                s += nom+'%5i \n '%(parmk[nom])  #param k
+                for ip in range(parmk[nom]):
+                    s += str(rates['data'][iek][ip+2])+' \n'
+                if type(rates['data'][iek][-1])==type(0.):
+                    self.core.gui.onMessage(nom+' missing formula')
+                s += '-formula '+rates['data'][iek][-1] +'\n' # formula
+        for n in listE['i']:
+            add='';
+            #if optsu.strip() == n: add=' charge'
+            s += n.replace('(+','(')+add+'\n' # que reac isntant et AE, pH pe
+        # kinetic immobile
+        if 'Rates' in Chem:
+            rates=Chem['Rates'];
+            for nom in listE['kim']:
+                iek = rates['rows'].index(nom);
+                s += nom+'%5i \n '%(parmk[nom])  #param k
+                for ip in range(parmk[nom]):
+                    s += str(rates['data'][iek][ip+2])+' \n'
+                if type(rates['data'][iek][-1])==type(0.):
+                    self.core.gui.onMessage(nom+' missing formula')
+                s += '-formula '+rates['data'][iek][-1] +'\n' # formula
+        for p in listE['g']:
+            ip=Chem['Gases']['rows'].index(p)
+            s += p+'  '+str(Chem['Gases']['data'][ip][1])+' \n' # phase name + SI backgrd
+        for p in listE['p']:
+            ip=Chem['Phases']['rows'].index(p)
+            s += p+'  '+str(Chem['Phases']['data'][ip][1])+' \n' # phase name + SI backgrd
+        # exchanger
+        for n in listE['e']: s += n+' -1 \n' 
+        if 'Surface' in Chem: # surface
+            su=Chem['Surface']
+            for esp in listE['s']:
+                icol=su['cols'].index('Specif_area')
+                st=esp;ies=su['rows'].index(esp)
+                st+=' '+str(su['data'][ies][icol])
+                st+=' '+str(su['data'][ies][icol+1])
+                if su['data'][ies][icol+2]!='': st+=' '+su['data'][ies][icol+2]  # name
+                if su['data'][ies][icol+3]!='': st+=' '+su['data'][ies][icol+3]  # name
+                s += st+' \n' 
+            if len(listE['s'])>0 : 
+                su_opt = self.core.getValueFromName('Pht3d','SU_OPT')
+                if su_opt in ['no_edl','diffuse_layer','Donnan','cd_music']:
+                    s+= '-'+su_opt+'\n'
+        if 'Kinetic_Minerals' in Chem:
+            kp=Chem['Kinetic_Minerals']
+            for nom in listE['kp']:
+                iek = kp['rows'].index(nom);
+                s += nom+'%5i \n '%(parmk[nom])  #param k
+                for ip in range(parmk[nom]):
+                    s += '%9.5e \n' %float(kp['data'][iek][ip+1])
+        f1 = open(self.fDir+os.sep+'Pht3d_ph.dat','w')
+        f1.write(s)
+        f1.close()
         
 
     #  '''''''''''''''' fonction writeBlockMusg '''''''''''''''''''''''''''
@@ -210,3 +445,11 @@ class mtUsgReader:
                 cnc[il] = m[::-1] #=1::=1
         f1.close()  
         return cnc
+
+    def getGeom(self,core):
+        grd = core.addin.getFullGrid()
+        ncol, nrow = grd['nx'], grd['ny']
+        nlay=getNlayers(core);#print iper, nlay,ncol,nrow
+        if core.addin.getDim() in ['Xsection','Radial']:
+            nlay=nrow;nrow=1
+        return nlay,ncol,nrow

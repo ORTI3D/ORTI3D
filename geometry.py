@@ -147,10 +147,20 @@ def makeZblock(core):
     """to create the block of cells in 3D,
     for modflow it is a 3D matrix
     for unstruct it is 2D"""
-    nlay, lilay, dzL = makeLayers(core);#print 'geom l 113',nlay, lilay, dzL
-    nbM,optionT,optionB = len(lilay),None,None
-    nx,ny,xvect,yvect = getXYvects(core); #print 'geom 118',nx,ny,xvect,yvect
+    nlay, lilay, dzL = makeLayers(core)
+    nx,ny,xvect,yvect = getXYvects(core); 
     mgroup = core.dicaddin['Model']['group']
+    nbM,optionT,optionB = len(lilay),None,None
+    #### choise of line depending the type of model # EV 10/02/20
+    mgroup = core.dicaddin['Model']['group']
+    modName,line = mgroup.split()[0],'dis.6'
+    if modName == 'Opgeo': modName += 'Flow'
+    if mgroup in ['Modflow series','Modflow USG_rect']: lineTop='dis.6'; lineBot='dis.7'
+    elif mgroup == 'Modflow USG': lineTop='disu.7'; lineBot='disu.8' # OA 1/8/19 changed UNS to USG
+    elif mgroup == 'Min3p': 
+        modName = 'Min3pFlow'; lineTop='spat.7'; lineBot='spat.8'
+    elif mgroup == 'Opgeo': lineTop='domn.5' ; lineBot='domn.6'
+    #### stucture of Zblock
     if core.addin.getDim() not in ['Radial','Xsection']: # 2 or 3D case
         if core.addin.mesh==None: # OA 18/7/19 pb for min3p
             Zblock = zeros((nlay+1,ny,nx)) 
@@ -158,85 +168,76 @@ def makeZblock(core):
             if mgroup[0]=='M': #Min3p amd Modfow USG
                 Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
             elif mgroup[0]=='O': # opengeosys
-                Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys
-        intFlagT,intFlagB,option = False,False,''
-        if core.dictype['Modflow']['dis.6'][0] =='formula': 
-            formula = core.dicformula['Modflow']['dis.6'][0]
-            if 'interp' not in formula: # in top all values are given by one formula
-                value=core.formExec(formula) #EV 21/11/18
-                #exec(formula.replace('self','core'))
-                return value # returns the whole block
-            else : #case of interpolation, try to get the parameters
-               for2 = formula.split('\n')
-               for n in for2 : # to go only to opt but not until the calculation of value (not to do it twice)
-                   exec(n.replace('self','core'))
-                   if 'opt' in n: break
-               intFlagT, optionT = True, opt
-        #for bottom
-        if core.dictype['Modflow']['dis.7'][0]=='formula':
-            formula = core.dicformula['Modflow']['dis.7'][0]
-            if 'interp' in formula: 
+                Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys   
+        #### extend the number of type at the number of media # EV 10/02/20
+        vtypeTop=core.dictype[modName][lineTop]
+        if len(vtypeTop)<nbM:vtypeTop.extend([vtypeTop[0]]*(nbM-len(vtypeTop)))
+        vtypeBot=core.dictype[modName][lineBot]
+        if len(vtypeBot)<nbM:vtypeBot.extend([vtypeBot[0]]*(nbM-len(vtypeBot)))
+        #### get the type of model parameter for each media # EV 10/02/20
+        intp=[]
+        for im in range(nbM): ## im is the media number
+            if im<nbM-1:line=lineTop
+            else : line=lineBot
+            vtype=core.dictype[modName][line][im] ## get the type of entrance data (zone, array, interpolation...) 
+            if vtype=='importArray': intp.append(4) 
+            elif vtype=='one_value' or 'zone': intp.append(3)
+            elif vtype=='interpolate' : 
+                intp.append(1) 
+                formula = core.dicformula[modName][line][im]
                 for2 = formula.split('\n')
-                for n in for2 : # to go only to opt but not until the calculation of value (not to do it twice)
+                for n in for2 : ## to go only to opt but not until the calculation of value (not to do it twice)
                     exec(n.replace('self','core'))
                     if 'opt' in n: break
-                intFlagB, optionB = True, opt
-        # creates the first layer
-        top = getTopBotm(core,intFlagT,0,optionT,refer=None,mat='top')
+                optionT=opt ; optionB=opt
+            else: ## formula 
+                formula = core.dicformula[modName][line][im]
+                value=core.formExec(formula)
+                return value
+        #### creates the first media
+        i= 0
+        top = getTopBotm(core,modName,lineTop,intp[0],0,optionT,refer=None,mat='top') # EV 10/02/20
         Zblock[0] = top
-        i = 0
-        for im in range(nbM): # im is the media number
-            if im<nbM-1: # bottom is in top matrix
-                botm = getTopBotm(core,intFlagT,im+1,optionT,refer=top,mat='top');#print im,botm
-            else : # last one, we take the bottom
-                botm = getTopBotm(core,intFlagB,im,optionB,refer=top,mat='botm')
-            #creates the sublayers
-            if lilay[im]==1: # just one sublayer
+        #### create the other media and the layers
+        for im in range(nbM):
+            if im<nbM-1: ## bottom is in top matrix
+                line=lineTop
+                botm = getTopBotm(core,modName,line,intp[im+1],im+1,optionT,refer=top,mat='top');#print im,botm
+            else : ## last one, we take the bottom
+                line=lineBot
+                botm = getTopBotm(core,modName,line,intp[im],im,optionB,refer=top,mat='botm')
+            ## creates the sublayers
+            if lilay[im]==1: ## just one sublayer
                 dff = top-botm;
-                limit = amax(amax(dff))/25 # limit the thick not to be 0
-                if type(dzL[im])==type([5]): dzL[im]=dzL[im][0] # don't understand why i need that
+                limit = amax(amax(dff))/25 ## limit the thick not to be 0
+                if type(dzL[im])==type([5]): dzL[im]=dzL[im][0] ## don't understand why i need that
                 Zblock[i+1] = top - maximum(dff,limit)*dzL[im]
                 i+=1
-            else: #dzL[im] is a list
-                dz = array(dzL[im]);#print i,nbM,nlay,lilay,dzL
+            else: ## dzL[im] is a list
+                dz = array(dzL[im]);
                 for il in range(lilay[im]):
                     dff = top-botm
                     limit = amax(amax(dff))/100
                     Zblock[i+1] = top - maximum(dff,limit)*sum(dz[:il+1])
                     i += 1
             top = botm
-    else : # radial and Xsection cases
+    else : ## radial and Xsection cases
         Zblock = ones((ny+1,1,nx));#print yvect
         for i in range(len(yvect)):
             Zblock[i] = yvect[ny-i];#print i,yvect[ny-i]
     #print Zblock
     return Zblock
     
-def getTopBotm(core,intFlagT,im,optionT,refer,mat):
-    '''a way to get the top and bottom of different layers'''
-    mgroup = core.dicaddin['Model']['group']
-    modName,line = mgroup.split()[0],'dis.6'
-    if modName == 'Opgeo': modName += 'Flow'
-    if mgroup == 'Modflow series':
-        if mat=='top': line='dis.6'
-        elif mat=='botm' : line='dis.7'
-    elif mgroup == 'Modflow USG': # OA 1/8/19 changed UNS to USG
-        if mat=='top': line='disu.7'
-        elif mat=='botm' : line='disu.8'
-    elif mgroup == 'Min3p':
-        modName = 'Min3pFlow'
-        if mat=='top': line='spat.7'
-        elif mat=='botm' : line='spat.8'
-    elif mgroup == 'Opgeo':
-        if mat=='top': line='domn.5'
-        elif mat=='botm' : line='domn.6'
-    if intFlagT:
+def getTopBotm(core,modName,line,intp,im,optionT,refer,mat):
+    if intp==1: # EV 11/02/20
         z = zone2interp(core,modName,line,im,optionT,refer)
-    else : 
+    elif intp==3 :# EV 11/02/20
         if  core.addin.mesh==None: z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
             if mgroup == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes')
             else : z = zone2mesh(core,modName,line,im,loc='elements')
+    elif intp==4 : # EV 11/02/20
+        z = zone2array(core,modName,line,im)
     return z
     
 def getXYvects(core):
@@ -385,20 +386,32 @@ def blockRegular(core,modName,line,intp,opt,iper):
     nlayers = getNlayers(core)
     lilay = getNlayersPerMedia(core)
     g = core.addin.getFullGrid()
-    if type(intp)!=type([5,6]): intp=[intp]*nmedia # to create a list of interpolation
+    if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
+    #print('lineG', line, 'intp', intp)
+    #### interpolation and array option for 2D and 3D model #EV 07/02/20
     if core.addin.getDim() in ['2D','3D']:
         m0 = ones((nlayers,ny,nx))
         lay = 0
         for im in range(nmedia): # 3D case, includes 2D
-            if intp[im]>0 :
+            if intp[im]==1 :
                 a = zone2interp(core,modName,line,im,opt,ityp=intp[im])
-            else :
+            elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
+            elif intp[im]==4 :
+                a = zone2array(core,modName,line,im)
             for il in range(int(lilay[im])): # several layers can exist in each media
                 m0[lay]=a
                 lay +=1
-    else : #X section and radial
-        a = zone2grid(core,modName,line,0,opt,iper)
+    #### interpolation and array option for Xsection & radial model #EV 07/02/20
+    else : 
+        for im in range(nmedia): 
+            if intp[im]==1 :
+                a = zone2interp(core,modName,line,im,opt,ityp=intp[im])
+            elif intp[im]==3 :
+                a = zone2grid(core,modName,line,im,opt,iper)
+            elif intp[im]==4 :
+                a = zone2array()
+        #a = zone2grid(core,modName,line,0,opt,iper)
         m0 = reshape(a,(ny,1,nx))
         m0 = m0[-1::-1]
     linesRadial = ['bcf.4','bcf.6','bcf.7','bcf.8','lpf.8','lpf.10','lpf.11',
@@ -867,7 +880,7 @@ def writeVTKstruct(core,data):
     s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
     s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     return s
-    
+
 ###################### INTERPOLATION ####################
 
 def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
@@ -952,7 +965,7 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
         else : rg = vrange
         if ityp==2: zpt=log10(zpt)
         if len(xpt)<5: m2 = m
-        else : m2 = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
+        else : m2,mess = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
         if ityp==2 : m2 = 10**m2
         
     elif option=='interp. Th': # Thissen polygons
@@ -982,3 +995,32 @@ def smoo2d(m):
     m1=m*1
     m1[1:-1,1:-1]=m1[1:-1,:-2]/5+m1[1:-1,1:-1]/5+m1[1:-1,2:]/5+m1[:-2,1:-1]/5+m1[2:,1:-1]/5
     return m1
+
+###################### ARRAY ####################
+
+'''Import array from one media (im) EV 07/02/20'''
+def zone2array(core,modName,line,im):
+    file = core.dicarray[modName][line][im]
+    fNameExt = file.split('/')[-1]
+    fDir = file.replace(fNameExt,'')
+    ext=fNameExt[-3:]
+    arr=None
+    if ext == 'asc':
+        arr=core.importAscii(fDir,fNameExt)
+        arr=arr.astype(np.float)
+    if ext == 'txt' or ext == 'dat' :
+        arr=loadtxt(file)
+    #if ext == 'vtk' :
+       # arr=vtk2numpy(file)
+    if arr.all():
+        shpArr=arr.shape
+        grd = core.addin.getFullGrid()
+        shp = (grd['nx'],grd['ny'])
+        if shpArr != shp:
+            arr2=zeros((grd['nx'], grd['ny']))
+            xx,yy=getXYmeshCenters(core,'Z',0)
+            arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy)
+            return arr2
+        else : return arr[::-1]        
+       
+    

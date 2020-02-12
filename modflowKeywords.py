@@ -81,7 +81,8 @@ class Mf:
                 'default':[1.,1,1.,0],'units':['T','','','']},
         #BA6
         'bas.1':{'comm':'Bas title 1','cond':'','kw':['title'],'detail':[],'type':['title']},
-        'bas.2':{'comm':'Bas options','cond':'','kw':['bas_opt'],'detail':[],'type':['']},
+        'bas.2':{'comm':'Bas options','cond':'','kw':['bas_opt'],'detail':[],
+                'type':[''],'default':['FREE']},  # OA 10/2/20 changed to free
         'bas.3':{'comm':'Boundary conditions','cond':'','kw':['IBOUND(NLAY,NROW,NCOL)'],'detail':[],
                         'type':['arrint'],'default':[1]},
         'bas.4':{'comm':'value of head for no flow','cond':'','kw':['HNOFLO'],'detail':[],

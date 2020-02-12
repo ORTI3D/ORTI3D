@@ -92,7 +92,7 @@ class Ui_Var(object):
         self.choiceT = QComboBox(self.hlWidget)
         #self.choiceT.setSizePolicy(policy)
         self.choiceT.setMaximumWidth(120);
-        self.typeList = ['one_value','zone','formula','interpolate','importZones']
+        self.typeList = ['one_value','zone','formula','interpolate','importArray','importZones'] # EV 04/02/20
         self.choiceT.addItems(self.typeList)
         self.choiceT.activated['QString'].connect(self.onChoiceType)
         self.gridLayout.addWidget(self.choiceT)#, 0, 8, 1, 1)
@@ -168,8 +168,10 @@ class Ui_Var(object):
         nmedia = getNmedia(self.core)
         if nval<nmedia : vallist.extend([vallist[0]]*(nmedia-nval))
         self.backg.setText(str(vallist[media])) # set to the new value
-        typ = self.core.dictype[self.gui.currentModel][line][0]
-        i = self.choiceT.findText(typ)
+        typ = self.core.dictype[self.gui.currentModel][line]#[0] # EV 3/2/20
+        ntyp = len(typ) # EV 3/2/20
+        if ntyp<nmedia : typ.extend([typ[0]]*(nmedia-ntyp)) # EV 3/2/20
+        i = self.choiceT.findText(typ[media]) # EV 3/2/20
         self.choiceT.setCurrentIndex(i)
         self.gui.modifBox.updateChoiceZone(line)
         self.base.changeVisu()
@@ -181,6 +183,9 @@ class Ui_Var(object):
         line = self.gui.currentLine
         vallist = self.core.dicval[self.gui.currentModel][line]
         self.backg.setText(str(vallist[media]))
+        typ = self.core.dictype[self.gui.currentModel][line] # EV 3/2/20
+        i = self.choiceT.findText(typ[media]) # EV 3/2/20
+        self.choiceT.setCurrentIndex(i) # EV 3/2/20
         self.base.changeVisu()
         
     def onBackOk(self):
@@ -190,14 +195,16 @@ class Ui_Var(object):
         
     def onChoiceType(self):
         line = self.gui.currentLine
+        media = self.gui.currentMedia # EV 3/2/20
         choice = str(self.choiceT.currentText()); #print choice
-        self.core.dictype[self.gui.currentModel][line] = [choice]
+        self.core.dictype[self.gui.currentModel][line][media] = choice # EV 3/2/20
         if choice =='zone': self.base.changeVisu()
         elif choice == 'formula': self.base.onFormula()
         elif choice == 'interpolate': self.base.onInterpolate()
+        elif choice == 'importArray' : self.base.onImportArray() # EV 3/2/20
         elif choice == 'importZones': 
             self.base.onImportZones()
-            self.core.dictype[self.gui.currentModel][line] = ['zone']
+            self.core.dictype[self.gui.currentModel][line][media] = 'zone' # EV 3/2/20
         if line in list(self.cfg.curVar.keys()): 
             self.cfg.curVar.pop(line);#print line,self.curVar.keys() # when a type is selected, it removes the stored  view
 
@@ -307,7 +314,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 06/01/2020 ")
+        version = QLabel("       version 12/02/2020 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

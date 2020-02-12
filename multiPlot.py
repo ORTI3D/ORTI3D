@@ -97,12 +97,14 @@ class multiPlot(QDialog):
      ## the right panel vertical layout
         self.verticalLayout2 = QVBoxLayout()
      ## the matplotlib figure 
-        self.figure = Figure(tight_layout=True,figsize=(7.8, 3))
+        self.figure = Figure(tight_layout=True,figsize=(7.8, 3), dpi=100) # EV 04/02/20 
         self.cnv = FigureCanvas(self.figure) 
         #self._ax = self.cnv.figure.subplots()#.add_axes([0.1, 0.15, 0.7, 0.8])
     ## add matplotlib figure
         #self.horizontalLayout.addWidget(self.cnv)
         self.verticalLayout2.addWidget(self.cnv)
+        self.toolbar = NavigationToolbar(self.cnv, self) # EV 04/02/20 
+        self.verticalLayout2.addWidget(self.toolbar, alignment=Qt.AlignHCenter) # EV 04/02/20 
     ## Export button
         self.pushButton2 = QPushButton(self)
         self.pushButton2.setText('Export')

@@ -81,7 +81,7 @@ class Core:
         self.mfUnstruct,self.ttable = False,None
         for mod in self.modelList:
             self.dicval[mod] = self.initVal(mod)
-            self.dictype[mod],self.dicarray[mod] = self.initArray(mod)
+            self.dictype[mod] = self.initArray(mod) # ,self.dicarray[mod] #EV 06/02/20
             self.diczone[mod] = dicZone(self,mod)
 
     def initVal(self,modName):
@@ -101,17 +101,26 @@ class Core:
                 array[n],atype[n] = None,['one_value']
             else : 
                 atype[n]=['one_value']
-        return atype,array
+        return atype#,array #EV 06/02/20
     
-    def getFormula(self,modName,line):
+    def getFormula(self,modName,line,media): #EV 06/02/20
         """if the formula exists it returns it, if not, it
         creates a void one in the dic and returns it"""
+        nmedia = getNmedia(self)
         if line in self.dicformula[modName]: 
-            return self.dicformula[modName][line]
-        else :
-            kys = self.dickword[modName].lines[line]['kw']
-            self.dicformula[modName][line] = ['value =']
-            return ['value =']
+            try : self.dicformula[modName][line][media]
+            except IndexError :
+                form=len(self.dicformula[modName][line])
+                nform=len(form)
+                if nform<nmedia : form.extend(['None']*(nmedia-nform))
+                self.dicformula[modName][line][media] = 'value ='
+                return 'value ='
+            else : 
+                return self.dicformula[modName][line][media]
+        else : 
+            self.dicformula[modName][line] = ['None']*nmedia
+            self.dicformula[modName][line][media] = 'value ='
+            return 'value ='
             
     def updateDicts(self):
         """this methods copies the values in one model to another one if 
@@ -153,14 +162,13 @@ class Core:
         #if fName == '' : return
         if fName+'.orti' in os.listdir(self.fileDir): fullName +='.orti'
         else : fullName +='.iqpht'
-        flgArr = False
+        #flgArr = False
         f1 = open(fullName, 'r');doc = f1.read();f1.close()
         #if 'compressdata.npz' in os.listdir(fDir):
         #    darr = npload(fDir+os.sep+'compressdata.npz');flgArr = True
         dom = xdom.parseString(doc)    
         dicts = dom.getElementsByTagName("dict")
         for d in dicts:
-            #print(d)
             dname = d.getElementsByTagName("name")[0].childNodes[0].data
             model,typ = dname.split('_')
             if (model not in self.modelList) & (model!='dic'): continue
@@ -172,10 +180,11 @@ class Core:
             if typ=='val': self.dicval[model].update(dict1);#print self.dicval[model]
             elif typ=='type': self.dictype[model].update(dict1)
             elif typ=='zone': self.diczone[model].setDic(dict1)
-            elif typ=='array' and flgArr: 
-                for k in keys : 
-                    kname = str(k.getElementsByTagName("name")[0].childNodes[0].data)
-                    self.dicarray[model][kname] = darr[kname.replace('.','')]
+            elif typ=='array' : self.dicarray[model].update(dict1) #EV 07/02/20
+            #elif typ=='array' and flgArr: #EV 07/02/20
+                #for k in keys : 
+                    #kname = str(k.getElementsByTagName("name")[0].childNodes[0].data)
+                    #self.dicarray[model][kname] = darr[kname.replace('.','')]
             elif typ=='formula': self.dicformula[model].update(dict1)
             elif typ=='addin': self.addin.update1(dict1)
             #print self.dicaddin
@@ -183,25 +192,24 @@ class Core:
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         mtype = self.dicaddin['Model']['group']
-        if 'USG' in mtype: 
+        if mtype == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
-            self.gui.onGridMesh('Mesh') #EV 30/09/19 to change the button
-        mtype = mtype[:5]
-        if mtype == 'Modfl':
+            #self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
+        if mtype[:5] == 'Modfl': #OA 02/20
             self.flowReader = modflowReader(fDir,fName)
             if 'USG' in mtype: self.transReader = mtUsgReader(fDir,fName)
             else : self.transReader = mtphtReader(fDir,fName)
-        elif mtype == 'Min3p' :
+        elif mtype[:5] == 'Min3p' :
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        elif mtype == 'Opgeo' :
+        elif mtype[:5] == 'Opgeo' :
             self.addin.opgeo.buildMesh()
             self.flowReader = ogReader(fDir,fName,'flow')
             self.transReader = ogReader(fDir,fName,'trans')
-        elif mtype == 'Sutra' :
+        elif mtype[:5] == 'Sutra' :
             self.flowReader = sutraReader(fDir,fName)
             self.transReader = sutraReader(fDir,fName)
         if self.Zblock==None: self.Zblock = makeZblock(self)
@@ -224,17 +232,16 @@ class Core:
                     for k in list(dic.dic.keys()):
                         str1 += '<key><name>'+k+'</name><content>'+str(dic.dic[k])+\
                             '</content></key>\n'
-                elif t=='array':
-                    for k in list(dic.keys()):
-                        if dic[k] != None:
-                            str1 += '<key><name>'+k+'</name><content>\'infile\'</content></key>\n'
-                            darray[k]=dic[k] # consider only one array in that line
+                #elif t=='array': #EV 07/02/20
+                    #for k in list(dic.keys()):
+                        #if dic[k] != None:
+                            #str1 += '<key><name>'+k+'</name><content>\'infile\'</content></key>\n'
+                            #darray[k]=dic[k] # consider only one array in that line
                 else :
                     for k in list(dic.keys()):
                         str1 += '<key><name>'+k+'</name><content>'+str(dic[k])+\
                             '</content></key>\n'                    
-                str1+= '</dict>\n'
-                
+                str1+= '</dict>\n'             
         str1+= '<dict>\n<name>dic_addin</name>\n'
         for k in list(self.dicaddin.keys()):
             str1 += '<key><name>'+k+'</name><content>'+str(self.dicaddin[k])+\
@@ -250,12 +257,13 @@ class Core:
         
     def writeModel(self,modName,info=True):
         """ writes the ascii file for modflow series, does nothing for fipy"""
+        mtype = self.dicaddin['Model']['group']  # OA 10/2/2020
         if modName  == 'Modflow':
             self.mfWriter = modflowWriter(self,self.fileDir,self.fileName)
             self.mfWriter.writeModflowFiles(self)
             self.flowReader = modflowReader(self.fileDir,self.fileName)
         if modName in ['Mt3dms','MfUsgTrans','Pht3d']: # OA 28/7/19
-            if 'USG' in self.dicaddin['Model']['group']: #28/7/19 this and 2 below
+            if 'USG' in mtype: #28/7/19 this and 2 below # oa modif 10/2/20
                 self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
                 self.transReader = mtUsgReader(self.fileDir,self.fileName)    # OA 21/08/19
             else : 
@@ -302,7 +310,7 @@ class Core:
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName  == 'Modflow':
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
-            if 'DISU' in self.getUsedModulesList('Modflow'): mod,lastline = 'mfUSGs_1_3',7
+            if 'USG' in modName: mod,lastline = 'mfUSGs_1_3',7 # OA 9/2/20
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -531,44 +539,41 @@ class Core:
             size.append(int(n))
         return size
 
-    def getValueLong(self,modName,line,ik):
+    def getValueLong(self,modName,line,ik,iper=0):
         """get the vector or array of a keyword using the size of a vector, an array
         or a formula"""
-        vtype = self.dictype[modName][line][0];#print 'core 422',vtype # type of value
         valIn = self.dicval[modName][line][ik]
         kw = self.dickword[modName].lines[line]['kw'][ik]
+        #print('vtype', vtype, 'valIn', valIn, 'kw', kw)
         cond = self.dickword[modName].lines[line]['cond']
         if self.testCondition(modName,cond)==False: return None
         size = self.getSizeKw(modName,kw)
         kw = kw.split('(')[0]
+        #print('size',size, 'kw', kw)
         numtype = self.dickword[modName].lines[line]['type'][ik];#int, float or lay
-        #if line in ['dis.6','dis.7','btn.9','btn.10']: makeZblock(self), done in writers
-        #print 'core 448',self.Zblock
+        #print('numtype', numtype)
         if line =='dis.6' : return self.Zblock[:-1] # several top
         if line =='btn.9' : return self.Zblock[0] # only the top        
         if line == 'dis.7': return self.Zblock[-1:] # one bottom
         if line == 'btn.10': return abs(self.Zblock[1:]-self.Zblock[:-1]) #[-1::-1]
-        # generic writing
-        if vtype=='one_value':
-            if type(valIn)==type([5,6]): # case of a list
-                value = array(valIn)
-            else :
-                if numtype[3:] in ['float','int']: # case of only one value
-                    value = block(self,modName,line,intp=False) #value = ones(size)*valIn
-        elif vtype in ['formula','interpolate']: # case of a formula
+        ### generic writing
+        vtype = self.dictype[modName][line]
+        nmedia = len(vtype)
+        intp=[]
+        for i in range(nmedia):
+            if vtype[i]=='importArray': intp.append(4) 
+            elif vtype[i]=='one_value' or 'zone': intp.append(3)
+            elif vtype[i]=='interpolate' : intp.append(1) 
+            else: intp.append(0)
+        #print('line',line,'intp',intp)
+        if vtype in ['formula']: # case of a formula   
             f = self.dicformula[modName][line][0]
             value = array(self.formExec(f),ndmin=3) ; # modif OA 3/10/18
-        elif vtype=='array':
-            value = self.dicarray[modName][line]
-            if type(value)==type([5]):value = value[0]
-        elif vtype=='zone':
-            value = block(self,modName,line,intp=False)
-        else : #case of one string must be converted to float
-            value = ones(size)*float(valIn)
-        value = value.astype(numtype[3:])
-        #print 'core',line,vtype,value
+        else : 
+            value = block(self,modName,line,intp,iper=iper)
+            #print('lineC', line, 'intp', intp)
         return value
-        
+
     def formExec(self,s):
         s1 = s.replace('\n','\n\t')
         s1 = 'def yoyo(self):\n\t'+s1+'\n\treturn value'

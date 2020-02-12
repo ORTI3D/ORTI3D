@@ -213,7 +213,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         if type(self.core.Zblock) != type(array(5)): 
             self.core.Zblock = makeZblock(self.core)
         grp = self.core.addin.getModelGroup()
-        self.mesh=None
+        self.mesh=None;#print('in qtvisu unstr:',self.core.mfUnstruct)
         if grp[:2]=='Op' and self.core.dicval[grp+'Flow']['domn.1'][0]>0:
             self.mesh = self.core.addin.opgeo
         if grp[:2]=='Mi' and self.core.dicval[grp+'Flow']['spat.4'][0]>0:
@@ -735,7 +735,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.polyInteract.set_visible(False)
             self.polyInteract.disable()
             # on informe la GUI des nouvelles coordonnees
-            var, ind = self.polyInteract.typeVariable,self.polyInteract.ind
+            var, ind = self.polyInteract.typeVariable,self.polyInteract.zind #OA 6/2/20 ind-zind
             x,y=self.polyInteract.lx,self.polyInteract.ly;#print x,y
             xy=list(zip(x,y));self.gui.modifBox.onModifZoneCoord(var, ind, xy)
             zone =self.listeZone[var][ind]
@@ -909,10 +909,10 @@ class PolygonInteractor:
 
     showverts = True
 
-    def __init__(self, gui,poly, typeVariable, ind):
+    def __init__(self, gui,poly, typeVariable, zind):
         if poly.figure is None:
             raise RuntimeError('You must first add the polygon to a figure or canvas before defining the interactor')
-        self.canvas,self.gui = poly.figure.canvas,gui
+        self.canvas,self.gui,self.zind = poly.figure.canvas,gui,zind #OA 6/2/20
         self.poly = poly
         self.epsilon=(gui.xlim[1]-gui.xlim[0])/100
         x, y = self.poly.get_xdata(),self.poly.get_ydata()
@@ -954,7 +954,7 @@ class PolygonInteractor:
             self._ind = int(self.get_ind_under_point(event))
         if event.button==3:
             self.disable();self.gui.finModifZone()
-        print(self._ind)
+        #print(self._ind)
 
     def button_release_callback(self, event):
         'whenever a mouse button is released'

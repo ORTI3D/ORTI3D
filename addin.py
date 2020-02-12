@@ -146,6 +146,14 @@ class addin:
         val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
+    def setUsgRect(self): #OA added 17/9/17 for modflow UNS
+        lmodules,val = self.core.dicaddin['usedM_Modflow']
+        val[lmodules.index('DIS')] = True
+        val[lmodules.index('PCG')] = False
+        val[lmodules.index('DISU')] = False
+        val[lmodules.index('SMS')] = True
+        self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
+        
     def setChemType(self):
         self.chem = self.pht3d
         if self.core.dicaddin['Model']['group'] == 'Min3p': 
@@ -205,7 +213,7 @@ class addin:
                 m['type']='Confined'
             data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
                     ('Type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D model)'])),  #EV 22/07/2018 free -> Unconfined
-                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
+                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG_rect','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
@@ -213,7 +221,10 @@ class addin:
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'] = retour
-                if 'USG' in m['group']:
+                if m['group'] == 'Modflow USG_rect':  # OA 02/20
+                    self.core.mfUnstruct = False
+                    self.setUsgRect()
+                if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
                     self.setMfUnstruct()
                     self.gui.onGridMesh('Mesh') # to chang the button
@@ -434,6 +445,7 @@ class addin:
                 if data[1][i]: l0.append(data[0][i])
             self.gui.varBox.setChoiceList(item,l0)
         mtm,mtval = self.core.dicaddin['usedM_Mt3dms']
+        if 'DIS' in mtm: bDis = mtval[mtm.index('DIS')] # OA 02/20
         bool = False
         if 'RCT' in mtm : bool = mtval[mtm.index('RCT')]
         self.gui.onRCT(bool)
@@ -509,7 +521,7 @@ class addin:
         self.mesh, self.xsect = None, False
         mgroup = self.core.dicaddin['Model']['group'];#print 'addin line 316 mgroup', mgroup
         if self.getDim() in ['Radial','Xsection']: self.xsect = True # oa 26/5
-        if mgroup =='Modflow series':
+        if mgroup in ['Modflow series','Modflow USG_rect']: # oa 9/2/20 added rect
             self.core.dicval['Modflow']['dis.4']=list(g['dx']) # pb with setting list
             self.core.dicval['Modflow']['dis.5']=list(g['dy'])
             self.core.setValueFromName('Modflow','NCOL',g['nx'])

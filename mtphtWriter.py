@@ -354,7 +354,8 @@ class mtphtWriter:
         chm = self.core.addin.pht3d.Base['Chemistry']['Solutions']
         data,rows = chm['data'],chm['rows']
         ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
-        pht = block(self.core,'Pht3d',line,False,None,iper).astype('int') # solution number
+        #pht = block(self.core,'Pht3d',line,[3],None,iper).astype('int') # solution number #EV 04/02/20
+        pht = self.core.getValueLong('Pht3d',line,0,iper).astype('int') #EV 04/02/20
         for kw in['k','i','kim']:
             for e in listE[kw]:
                 names.append(e)
@@ -514,7 +515,8 @@ class mtphtWriter:
             npts, s0,s1 = 0, '',''
             if flg['iRCH']: # modfi OA 3/10
                 if opt =='Mt3dms' :
-                    rch = block(self.core,opt,'btn.23',intp=False,opt=None,iper=ip)
+                    #rch = block(self.core,opt,'btn.23',intp=False,opt=None,iper=ip)#EV 04/02/20
+                    rch = self.core.getValueLong('Mt3dms','btn.23',0,iper) #EV 04/02/20
                     s0 = '    1\n' + self.formatBlockMt3d(rch[0],'rech')
                 if opt =='Pht3d':
                     rch ,names = self.getConcRch('main','ph.5',ip)
