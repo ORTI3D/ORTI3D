@@ -150,7 +150,8 @@ def makeZblock(core):
     nlay, lilay, dzL = makeLayers(core)
     nx,ny,xvect,yvect = getXYvects(core); 
     mgroup = core.dicaddin['Model']['group']
-    nbM,optionT,optionB = len(lilay),None,None
+    #nbM,optionT,optionB = len(lilay),None,None # EV 19/02/20
+    nbM = len(lilay)
     #### choise of line depending the type of model # EV 10/02/20
     mgroup = core.dicaddin['Model']['group']
     modName,line = mgroup.split()[0],'dis.6'
@@ -181,31 +182,26 @@ def makeZblock(core):
             else : line=lineBot
             vtype=core.dictype[modName][line][im] ## get the type of entrance data (zone, array, interpolation...) 
             if vtype=='importArray': intp.append(4) 
-            elif vtype=='one_value' or 'zone': intp.append(3)
+            elif vtype in ['one_value','zone']: intp.append(3)
             elif vtype=='interpolate' : 
                 intp.append(1) 
-                formula = core.dicformula[modName][line][im]
-                for2 = formula.split('\n')
-                for n in for2 : ## to go only to opt but not until the calculation of value (not to do it twice)
-                    exec(n.replace('self','core'))
-                    if 'opt' in n: break
-                optionT=opt ; optionB=opt
             else: ## formula 
                 formula = core.dicformula[modName][line][im]
                 value=core.formExec(formula)
                 return value
         #### creates the first media
         i= 0
-        top = getTopBotm(core,modName,lineTop,intp[0],0,optionT,refer=None,mat='top') # EV 10/02/20
+        top = getTopBotm(core,modName,lineTop,intp[0],0,refer=None,mat='top') # EV 10/02/20 # EV 19/02/20
+        #top = getTopBotm(core,modName,lineTop,intp[0],0,optionT,refer=None,mat='top')
         Zblock[0] = top
         #### create the other media and the layers
         for im in range(nbM):
             if im<nbM-1: ## bottom is in top matrix
                 line=lineTop
-                botm = getTopBotm(core,modName,line,intp[im+1],im+1,optionT,refer=top,mat='top');#print im,botm
+                botm = getTopBotm(core,modName,line,intp[im+1],im+1,refer=top,mat='top')# EV 19/02/20
             else : ## last one, we take the bottom
                 line=lineBot
-                botm = getTopBotm(core,modName,line,intp[im],im,optionB,refer=top,mat='botm')
+                botm = getTopBotm(core,modName,line,intp[im],im,refer=top,mat='botm') # EV 19/02/20
             ## creates the sublayers
             if lilay[im]==1: ## just one sublayer
                 dff = top-botm;
@@ -228,16 +224,29 @@ def makeZblock(core):
     #print Zblock
     return Zblock
     
-def getTopBotm(core,modName,line,intp,im,optionT,refer,mat):
+def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
     if intp==1: # EV 11/02/20
-        z = zone2interp(core,modName,line,im,optionT,refer)
+        opt = core.dicinterp[modName][line][im] # EV 19/02/20
+        z, mess = zone2interp(core,modName,line,im,opt,refer) # EV 19/02/20
     elif intp==3 :# EV 11/02/20
         if  core.addin.mesh==None: z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
-            if mgroup == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes')
+            if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
             else : z = zone2mesh(core,modName,line,im,loc='elements')
     elif intp==4 : # EV 11/02/20
-        z = zone2array(core,modName,line,im)
+        try: z = zone2array(core,modName,line,im) # EV 20/02/20
+        except : 
+            file = core.dicarray[modName][line][im]
+            fNameExt = file.split('/')[-1]
+            cfg = Config(core)
+            dialogs = cfg.dialogs
+            txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
+                   'Default values or zones values will be used.'+'\n\n'
+                   +'Please select an other file to import an array for the parameter '+
+                   str(line)+' at media '+str(im)+'.')
+            dialogs.onMessage(core.gui,txt) 
+            z = zone2grid(core,modName,line,im)
+            core.dictype[modName][line][im]='one_value'
     return z
     
 def getXYvects(core):
@@ -306,13 +315,13 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
         
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''
-    if intp==0:
+    if 1 in intp : # OA 17/2/20
+        m, mess = zone2interp(core,modName,line,0,opt);#print 'geom 282',amax(m) # EV 19/02/20
+        return m
+    else: # changed from 0 to []
         m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
         for im in range(1,getNmedia(core)):
             m = r_[m,array(zone2mesh(core,modName,line,im),ndmin=2)]
-        return m
-    else : 
-        m = zone2interp(core,modName,line,0,opt);#print 'geom 282',amax(m)
         return m
         
 def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
@@ -386,19 +395,33 @@ def blockRegular(core,modName,line,intp,opt,iper):
     nlayers = getNlayers(core)
     lilay = getNlayersPerMedia(core)
     g = core.addin.getFullGrid()
+    #if type(intp)==type(False): intp=[intp] #OA 16/02/20
     if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
-    #print('lineG', line, 'intp', intp)
     #### interpolation and array option for 2D and 3D model #EV 07/02/20
     if core.addin.getDim() in ['2D','3D']:
         m0 = ones((nlayers,ny,nx))
         lay = 0
         for im in range(nmedia): # 3D case, includes 2D
+            #print('lin',line, 'im',im, 'intp', intp[im])
             if intp[im]==1 :
-                a = zone2interp(core,modName,line,im,opt,ityp=intp[im])
+                parms = core.dicinterp[modName][line][im] # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,parms) # EV 19/02/20
             elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
-                a = zone2array(core,modName,line,im)
+                try : a = zone2array(core,modName,line,im) # EV 20/02/20
+                except : 
+                    file = core.dicarray[modName][line][im]
+                    fNameExt = file.split('/')[-1]
+                    cfg = Config(core)
+                    dialogs = cfg.dialogs
+                    txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
+                           'Default values or zones values will be used.'+'\n\n'
+                           +'Please select an other file to import an array for the parameter '
+                           +str(line)+' at media '+str(im)+'.')
+                    dialogs.onMessage(core.gui,txt) 
+                    a = zone2grid(core,modName,line,im,opt,iper)
+                    core.dictype[modName][line][im]='one_value'
             for il in range(int(lilay[im])): # several layers can exist in each media
                 m0[lay]=a
                 lay +=1
@@ -406,7 +429,8 @@ def blockRegular(core,modName,line,intp,opt,iper):
     else : 
         for im in range(nmedia): 
             if intp[im]==1 :
-                a = zone2interp(core,modName,line,im,opt,ityp=intp[im])
+                opt = core.dicinterp[modName][line][im] # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,opt) # EV 19/02/20
             elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
@@ -883,26 +907,26 @@ def writeVTKstruct(core,data):
 
 ###################### INTERPOLATION ####################
 
-def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
+def zone2interp(core,modName,line,media,option,refer=None): # EV 19/02/20
     """ interpolation case from points or zones to matrix
-    option interp. ID or interp. Kr
-    for interp. Kr, you can add range and type : 'interp. Kr;vrange=2.;vtype=\'spher\''
-    type are presently spher for spherical and gauss for gaussian
-    if refer is not None, it is a reference grid and the interpolation will be done
-    on the difference btw the present variable and the reference
-    itpy = 1 normal interpolation, ityp=2 log10"""
-    #print 'interp 512', line,media, option
-    # find the interpolation options
-    vrange,vtype,variable = None,None,None
-    #print ('op',option)
-    if ';' in option: 
-        op = option.split(';')
-        option  = op[0]
-        for i in range(1,len(op)): exec(op[i].replace('@','\''))
-        vrange=float(op[1].split('=')[1]) #EV 01/02/19
-        vtype=op[2].split('@')[1] #EV 01/02/19
+    option[0] : interpolation method 
+        0: kriging
+        1: Inverse distance
+        2: Triangulation
+    option[1-8] : option for interpolation 
+        kringing: 1.Automatic parameter(True,False), 2.Log Values(True,False), 3.Plot Variogram(True,False),
+                  4.nlags(6), 5.Variogram model(power,gaussian,Spherical,Exponential), 
+                  6.Sill(Text), 7.Range(Text), 8.Nugget(Text), 
+        Inverse distance : Power(1,2,3), Radius(text)
+        Triangulation : """
+    #### Interpolation method and base
+    intpMtd = int(option[0]) ## interpolation method
     vbase=float(core.dicval[modName][line][media])
-    # create the vector of points on which interpolation will be done
+    #variable=None EV 20/02/20
+    logOpt = 0  ## option of log transformation for interpolation initializing to 0 (false) 
+    
+    #### create the vector of points on which interpolation will be done
+    mess = None
     if modName[:5] == 'Opgeo':
         mesh = core.addin.opgeo  # OA 3/10/18
         xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
@@ -920,56 +944,70 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
     else : 
         if modName[:5] != 'Opgeo':
             m = reshape(m,(ny,nx))
-        return m # strange!!
-    #creates the list of point values
+        return m, mess # strange!!
+    
+    #### creates the list of point values
     xpt,ypt,zpt=[],[],[];
     for iz in range(nz):  # loop on zones to get coordinates
-        lmed = diczone['media'][iz]*1
+        lmed = int(diczone['media'][iz])#*1
         if type(lmed) != type([5,6]): lmed = [lmed]# not a list
-        if media not in lmed : continue
+        if media not in lmed : 
+            continue
         xy = coords[iz]
         if len(xy[0])==2: #normal zone
             x,y = list(zip(*xy))
-            if variable != None: z = float(diczone['value'][iz].split('$')[1].split('\n')[variable])
-            else : z = float(diczone['value'][iz])
+            #if variable != None: z = float(diczone['value'][iz].split('$')[1].split('\n')[variable]) EV 20/02/20
+            #else : EV 20/02/20
+            z = float(diczone['value'][iz])
             z = [z]*len(x);#print i,z
         elif len(xy[0])==3: # variable polygon
             x,y,z = list(zip(*xy))
+        #print(diczone['name'][iz], z)
         xpt.extend(list(x));ypt.extend(list(y));zpt.extend(list(z))            
     xpt,ypt,zpt = array(xpt),array(ypt),array(zpt);#print 'geom, xpt',xpt,ypt,zpt
-
     if len(xpt)==0: 
         if modName[:5] != 'Opgeo': m = reshape(m,(ny,nx))
-        return m
-    #makes the difference if refer is not none
+        return m, mess
+    
+    #### makes the difference if refer is not none to avoid negative thickness (dis.6, dis.7)
     #print shape(xc),shape(yc)
     if refer != None:
         for i in range(len(xpt)):
             d = sqrt((xpt[i]-xc)**2+(ypt[i]-yc)**2)
             ix = where(d==amin(d))[0];#print ix
             zpt[i] = refer[ix[0]]-zpt[i]
-
-    #print 'geom 503',modName,line,option
-    if option=='interp. ID':
+            
+    #### interpolation method
+    if intpMtd ==1: ## inverse distance
+        pw = float(option[1])
         pol=polyfit2d(xpt,ypt,zpt,order=1)
         z0=polyval2d(xpt,ypt,pol);#print 'z0',z0
         dz=zpt-z0;#print 'dz',xpt,ypt,zpt,z0,dz
         m0=polyval2d(xc,yc,pol);#print 'm0',m0
-        m1 = invDistance(xpt,ypt,dz,xc,yc,power=0.66);#print 'm1',m1
+        m1 = invDistance(xpt,ypt,dz,xc,yc,power=pw);#print 'm1',m1
         m2 = m0+m1 
 
-    elif option =='interp. Kr':
-        #print('krige vrange,vtype',vrange,vtype)
-        mxdist = sqrt((max(xc)-min(xc))**2+(max(yc)-min(yc))**2)
-        if vrange==None: rg = mxdist/4.
-        else : rg = vrange
-        if ityp==2: zpt=log10(zpt)
-        if len(xpt)<5: m2 = m
-        else : m2,mess = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
-        if ityp==2 : m2 = 10**m2
+    elif intpMtd ==0 : ## Kriging
+        vparm = int(option[1])
+        vtype =str(option[5]) ## variogram model
+        if vparm == 1 : vparm = None ## automatic parameter calculation
+        else :
+            sill = float(option[6]) ## sill
+            rg = float(option[7]) ## range
+            ng = float(option[8]) ## nugget
+            vparm =[sill, rg, ng] ## variogram parameter 
+        nlags = int(option[4]) 
+        logOpt = int(option[2]) ## log option
+        if logOpt==1 : zpt=log10(zpt)
+        if len(xpt)<5: 
+            m2 = m
+        #else : m2,mess = krige(xpt,ypt,zpt,rg,xc,yc,vtype)
+        else : m2,mess = krige(xpt,ypt,zpt,xc,yc,vtype,vparm,nlags)#,vplot)
+        if logOpt==1 : m2 = 10**m2
+        #print('Mess',mess)
         
-    elif option=='interp. Th': # Thissen polygons
-        #print('thiessen')
+    elif intpMtd ==2: ## Thissen polygons (Triangulation)
+        vrange=float(option[1])
         listP = list(zip(xpt,ypt))
         xb,yb = [min(xc),max(xc)],[min(yc),max(yc)]
         polylist = getPolyList(listP,xb,yb);#print 'geom 830 thiess',polylist
@@ -980,16 +1018,15 @@ def zone2interp(core,modName,line,media,option,refer=None,ityp=1):
             nxp,nyp,nzp=zone2index(core,x,y,z);
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m2, ind==1, [zpt[i]]);#print 'geom 611',xpt[i],ypt[i],zpt[i],poly
-    #if refer != None:
-        #m2 = refer - m2#
+
     if modName[:5] != 'Opgeo':
         m2 = reshape(m2,(ny,nx))
-        if option=='interp. Th':   #smoothing of thiessen polys  # OA 17/3/19 added int()   
+        if intpMtd ==2:   #smoothing of thiessen polys  # OA 17/3/19 added int()   
             for n in range(int(vrange)): m2 = smoo2d(m2)
 
-    if ityp!=2: m2 = clip(m2,amin(zpt)*0.9,amax(zpt)*1.1);#print amin(amin(m2))
+    if logOpt!=1: m2 = clip(m2,amin(zpt)*0.9,amax(zpt)*1.1);#print amin(amin(m2))
 
-    return m2
+    return m2, mess
     
 def smoo2d(m):
     m1=m*1
@@ -1002,7 +1039,8 @@ def smoo2d(m):
 def zone2array(core,modName,line,im):
     file = core.dicarray[modName][line][im]
     fNameExt = file.split('/')[-1]
-    fDir = file.replace(fNameExt,'')
+    #fDir = file.replace(fNameExt,'')
+    fDir = core.fileDir
     ext=fNameExt[-3:]
     arr=None
     if ext == 'asc':
@@ -1010,6 +1048,7 @@ def zone2array(core,modName,line,im):
         arr=arr.astype(np.float)
     if ext == 'txt' or ext == 'dat' :
         arr=loadtxt(file)
+        #print('arr',arr[0])
     #if ext == 'vtk' :
        # arr=vtk2numpy(file)
     if arr.all():

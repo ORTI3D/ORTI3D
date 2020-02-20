@@ -34,7 +34,7 @@ class Menus:
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.iqpht;*.orti');
         if fName == '': return
         self.onOpen1(fDir,fName) # OA 16/12/18 to separate if file dir is already known
-        self.gui.onGridMesh('Mesh') # OA /2/20 removed from core, set here
+        if self.core.mfUnstruct: self.gui.onGridMesh('Mesh') # OA 18/2/20 removed from core, set here
         
     def onOpen1(self,fDir,fName): # OA 16/12/18 to be able to use only that part
         self.core.openModel(fDir,fName)

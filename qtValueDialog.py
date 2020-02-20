@@ -73,7 +73,6 @@ class qtBoxKeys:
         
         for i in range(self.nb):
             bname,bcontent,bselect,btype=self.parent.makeButton(names[i],values[i],details[i],types[i])
-            #print(bname,bcontent,bselect,btype)
             txt = QLabel(self.layoutWidget)
             txt.setText(bname)
             if btype in ['choice','laychoice']: 

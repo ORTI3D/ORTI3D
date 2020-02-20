@@ -49,11 +49,13 @@ class Core:
         self.dickword = {}
         self.dicarray = {}
         self.dicformula = {}
+        self.dicinterp = {} # EV 20/02/20
         for mod in self.modelList:
             self.dicval[mod] = {}
             self.dictype[mod] = {}
             self.dicarray[mod] = {}
             self.dicformula[mod] = {}
+            self.dicinterp[mod] = {} # EV 20/02/20
         # OA 30/07 Mf... are now defined as classes : more correct and usefull for python3
         self.dickword['Modflow'] = Mf()
         self.dickword['Mt3dms'] = Mt()
@@ -180,18 +182,24 @@ class Core:
             if typ=='val': self.dicval[model].update(dict1);#print self.dicval[model]
             elif typ=='type': self.dictype[model].update(dict1)
             elif typ=='zone': self.diczone[model].setDic(dict1)
-            elif typ=='array' : self.dicarray[model].update(dict1) #EV 07/02/20
+            elif typ=='array' : 
+                self.dicarray[model].update(dict1) #EV 07/02/20
             #elif typ=='array' and flgArr: #EV 07/02/20
                 #for k in keys : 
                     #kname = str(k.getElementsByTagName("name")[0].childNodes[0].data)
                     #self.dicarray[model][kname] = darr[kname.replace('.','')]
-            elif typ=='formula': self.dicformula[model].update(dict1)
+            elif typ=='formula': 
+                self.dicformula[model].update(dict1)
+            elif typ=='interp': 
+                self.dicinterp[model].update(dict1) # EV 20/02/20
             elif typ=='addin': self.addin.update1(dict1)
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         mtype = self.dicaddin['Model']['group']
+        if mtype == 'Modflow USG_rect': # OA 17/02/20
+            self.addin.setUsgRect()
         if mtype == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
@@ -225,7 +233,7 @@ class Core:
         farrname = self.fileDir+os.sep+'compressdata.npz'
         f1 = open(filename,'w');str1 = '<ORTi3Ddoc>\n'
         for md in self.modelList:
-            for t in ['val','type','zone','formula','array']:
+            for t in ['val','type','zone','formula','array','interp']: # EV 20/02/20
                 dic = eval('self.dic'+t+'[md]'); # OA 1/8/17 exec to eval for python3
                 str1+= '<dict>\n<name>'+md+'_'+t+'</name>\n'
                 if t=='zone' :
@@ -562,16 +570,15 @@ class Core:
         intp=[]
         for i in range(nmedia):
             if vtype[i]=='importArray': intp.append(4) 
-            elif vtype[i]=='one_value' or 'zone': intp.append(3)
-            elif vtype[i]=='interpolate' : intp.append(1) 
+            elif vtype[i] in ['one_value','zone'] : intp.append(3) 
+            elif vtype[i]=='interpolate' : intp.append(1)  
             else: intp.append(0)
-        #print('line',line,'intp',intp)
-        if vtype in ['formula']: # case of a formula   
+        if 'formula' in vtype : # case of a formula  
             f = self.dicformula[modName][line][0]
             value = array(self.formExec(f),ndmin=3) ; # modif OA 3/10/18
         else : 
             value = block(self,modName,line,intp,iper=iper)
-            #print('lineC', line, 'intp', intp)
+        value = value.astype(numtype[3:]) # OA re-added line, it is necessary for int
         return value
 
     def formExec(self,s):
@@ -581,6 +588,20 @@ class Core:
         exec(s1,globals(),dct)
         b = types.MethodType(dct['yoyo'], self)
         return b()
+    
+    def runInterp(self,model,line,media,allOpt): # function added EV 19/02/20
+        value,mess=zone2interp(self,model,line,media,allOpt)
+        value=value[::-1] 
+        nx,ny,x,y = getXYvects(self)
+        extent = np.min(x), np.max(x), np.min(y), np.max(y)
+        return value,mess,extent
+    
+    def save2array(self,model,line,media): # function added EV 19/02/20
+        if line in 'dis.6': value=makeZblock(self)[:-1][media]
+        elif line in 'dis.7': value=makeZblock(self)[-1:]
+        else : value= self.getValueLong(model,line,media,iper=0)[media]
+        value=value[::-1] ;#print('val1',value[0])
+        return value
         
     def getUnits(self,modName,line,ik):   
         '''returns the units for a given line and keyword index'''

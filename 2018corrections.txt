@@ -823,3 +823,54 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - topBar.py onFormula l.69-70 added option to assign formula in function of media
 - topBar.py onInterpolate added option to assign formula of interpolation in function of media
 - topBar.py onImportArray l.89-114 added this function to open a dialog, choose an array file and save the name in a dic
+
+12/02/20 OA
+- addin onUsedModules l.347-350 added to set teh grid/mesh button
+- menus onOpen1 added lines 59-60 for mesh icon
+
+13/2/20  OA
+- in modfloWriter replaced 9.6g by 9.4e (seem to be a problem when we have 1: it is not a float)
+- in modflowKeywords, modif of default values of wmd solver(in sms)
+
+16/2/20  OA
+- in geometry added line l.389 for case of intp is not a list #commented because i don't know
+- in addin modlchoice l.224 and 231 moved unstruct to be ok in all cases
+- in core getvaluelong re-added las line to get the correct type
+
+17/2/20  OA
+- geometry l.237 mgroup replaced by modName (due to EV changes above)
+- in parameters added l.51 to run usg
+
+17/2/20  OA
+- geometry in blockUnstruct, several changes due to changes in intp
+- in core openModel added line 194-195 for usg_rect
+- menus onopen l.37 added a condition
+
+13/02/20 - 19/02/20 EV (interpolation development)
+- core.py runInterp l.583-588 function added
+- core.py save2array l.590-596 function added
+- geometry.py makeZblock l.153, 194, 201, 204 removed optionB and optionT 
+- geometry.py getTopBotm l.227 remoded optionT as function parameter
+- geometry.py getTopBotm l.229 added opt to get interpolation option
+- geometry.py getTopBotm l.230 added mess for the return of zone2interp
+- geometry.py blockUnstruct l.312 added mess for the return of zone2interp
+- geometry.py blockRegular l.395 and 408 added opt to get interpolation option
+- geometry.py blockRegular l.396 and 409 added mess for the return of zone2interp
+- geometry.py zone2interp a lot of change 
+- importExport impzones l.39 added int to import zone media with the right format
+- qtDialogs genericDialog l.81 replaced setCheckState (3 states) by setChecked (2 states)
+- topBar l.5 added import of myInterpol 
+- topbar onInterpolate l.79-108 a lot of modification 
+- topbar onZoneCreate l.179 added media 
+- myInterpol l.14 added import of qtDialogs
+- myInterpol l.21 - 242 added IntpDialog 
+- myInterpol l. 243 until the end : arrange the function by interpolation method ans added title
+- myInterpol/krige a lot of modification
+- pyKrige/ok.py l.422-424 added get_variogram_model function
+
+20/02/20 EV
+- geometry.py zone2interp l.902, 936-937 comment variable
+- geometry.py blockregular l.413-425 added try except to avoid error when the array to import do not exist
+- geometry.py getTopBotm l.237-425 added try except to avoid error when the array to import do not exist
+- core.py l.52, 58, 191, 233 added dicinterp for store interpolation parameters
+- valueDialog.py l.20, 33, 38 added dicinterp for store interpolation parameters

@@ -1,6 +1,7 @@
 # -*- coding: cp1252 -*-
 from array import array as arr2
 import os,time
+import numpy as np
 from .mtUsgKeywords import Mtu
 from .geometry import *
 from .modflowWriter import * # OA 6/5/19
@@ -27,7 +28,9 @@ class mtUsgWriter:
         if amax(self.core.getValueLong('MfUsgTrans','crch.1',0))>0: 
             usgTrans['rch'] = self.writeRchString()
         if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
-            usgTrans['wel'] = self.writeWelValues()            
+            usgTrans['wel'] = self.writeWelValues(opt)            
+        if 'bas.5' in self.core.diczone['Modflow'].dic.keys():
+            usgTrans['chd'] = self.writeChdValues(opt)            
         self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         self.writeBCT(opt)
         if opt=='Pht3d':
@@ -45,6 +48,7 @@ class mtUsgWriter:
         if opt=='Pht3d':
             s += ' PHT  64    Pht3d_ph.dat\n'
         s += 'DATA(BINARY) 101  '+self.fName+'.conc\n'
+        s += 'DATA(BINARY) 102  '+self.fName+'.cbb\n'
         return s
         
     #*********************** BCT file writer ****************
@@ -55,9 +59,12 @@ class mtUsgWriter:
         lexceptions, s =['bct.5'],''
         llist=self.Mkey.groups['BCT'];#print n1,name
         if opt=='Pht3d':
-            self.core.setValueFromName('MfUsgTrans','MCOMP',self.listEsp['mcomp']+1)
+            self.core.setValueFromName('MfUsgTrans','MCOMP',self.listEsp['mcomp']+3)
             nimcomp = self.listEsp['ncomp']-self.listEsp['mcomp']
-            self.core.setValueFromName('MfUsgTrans','NIMCOMP',nimcomp+1)
+            self.core.setValueFromName('MfUsgTrans','NIMCOMP',nimcomp)
+        else :
+            self.core.setValueFromName('MfUsgTrans','MCOMP',1)
+            self.core.setValueFromName('MfUsgTrans','NIMCOMP',0)
         for ll in llist:
             cond=self.Mkey.lines[ll]['cond'];#print('mtw 50',ll)
             if self.testCondition(cond)==False : continue
@@ -74,7 +81,7 @@ class mtUsgWriter:
                 for ik in range(len(kwlist)):
                     if ik<len(lval): 
                         if type(lval[ik])==type(5):s += ' %3i' %lval[ik]
-                        elif type(lval[ik])==type(5.0):s += ' %13.4e' %lval[ik]
+                        elif type(lval[ik])==type(5.0):s += ' %9.3e' %lval[ik]
                         else :s +=  lval[ik]
                     else : s += '0'.rjust(10)
                 s += '\n'
@@ -157,27 +164,44 @@ class mtUsgWriter:
     def writeWelValues(self,opt=None):
         '''a table of value that will be used in modflow'''
         if opt == 'Pht3d':
-            ttable = self.core.ttable['ph.4']
+            ttable = self.core.ttable['ph.4'];ny,nx = shape(ttable)
             lsolu = unique(ttable) 
             schem = self.phval2conc(len(lsolu))
-            for i,solu in lsolu:
-                ttable[ttable==solu] = schem[int(solu)]
-            return ttable
+            a0 = ' '*len(schem[0])
+            ttabl1 = np.full((ny,nx),a0)
+            for i,solu in enumerate(lsolu):
+                iy,ix = where(ttable==solu)
+                ttabl1[iy,ix] = schem[i]
+            return ttabl1
         else : 
             return self.core.ttable['cwell.1']
-
+        
+    def writeChdValues(self,opt=None):
+        ttable = self.core.ttable['bas.5'];ny,nx = shape(ttable)
+        s0 = ''
+        if opt == 'Pht3d':
+            for i in range(self.listEsp['mcomp']+3): s0 += ' %9.3e' %0.
+        else :
+            s0 = ' %9.3e' %0.
+        ttabl1 = np.full((ny,nx),s0)
+        return ttabl1
+            
     def phval2conc(self,nsol):
         '''returns the composition of solutions for 'k','i','kim'''
-        schem = [0]*nsol
+        schem = ['']*nsol;
         listE = self.core.addin.pht3d.getDictSpecies()
         chm = self.core.addin.pht3d.Base['Chemistry']['Solutions']
         data,rows = chm['data'],chm['rows']
-        ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
+        ncol=len(data[0]);#rcol=list(range(2,ncol)) # the range of columns to be read
+        for il in range(nsol): # fills the matrix with the solutions
+            schem[il] = ' %9.3e %9.3e %9.3e' %(1e-15,1e-15,1e-15)
         for kw in['k','i','kim']:
+            if len(listE[kw])==0 : continue
             for e in listE[kw]:
+                if e in ['pH','pe']: continue
                 inde = rows.index(e) # finds the index of the species e
-                for c in rcol: # fills the matrix with the solutions
-                    schem[c-1]=float(data[inde][c])
+                for il in range(nsol): # fills the matrix with the solutions
+                    schem[il] += ' %9.3e' %float(data[inde][il+2])
         return schem
         
     def writeRchString(self,opt=None):
@@ -293,11 +317,11 @@ class mtUsgWriter:
     def writePhFile(self,core,listE,parmk):
         # order of species 'k','i','kim','g','p','e','s','kp'
         # writes the first two lines
-        s=''
-        dicval = core.dicval['Pht3d']
-        for v in dicval['ph.1'] : 
-            s += str(v).rjust(10)
-        s += '\n'+str(dicval['ph.2'][0]).rjust(10)+'\n'
+        s = ' 2  25  1   0   0\n0 \n' # !!!!! to be modified
+        # dicval = core.dicval['Pht3d']
+        # for v in dicval['ph.1'] : 
+        #     s += str(v).rjust(10)
+        # s += '\n'+str(dicval['ph.2'][0]).rjust(10)+'\n'
         # determine nb of kinetic species and make a list
         nInorg=len(listE['i']); #+len(self.lists);
         nKmob = len(listE['k'])
@@ -306,19 +330,19 @@ class mtUsgWriter:
         nExch=len(listE['e'])
         nGas=len(listE['g'])
         nSurf=len(listE['s'])
-        s += '%9i\n' %(nInorg)# PH3 nb inorg compounds
+        s += '%3i\n' %(nInorg)# PH3 nb inorg compounds
         # PH4 nb minerals and gases
         nMin2 = nMinx+nGas
-        s += '%9i %9i\n' %(nMin2, nGas)
-        s += '%9i %9i\n' %(nExch, 0)# PH5 nb ech ions, 0 je sais pas pourquoi
+        s += '%3i\n' %(nMin2) #, nGas)
+        s += '%3i %3i\n' %(nExch, 0)# PH5 nb ech ions, 0 je sais pas pourquoi
         # PH6 surface complexation 
-        s += '%9i\n' %nSurf
+        s += '%3i\n' %nSurf
         # PH7 Record: NR_MOB_KIN NR_MIN_KIN NR_SURF_KIN NR_IMOB_KIN
         # nb of kinetic species mobiles, minerales, surfaces et substeps pour plus tard
         nKsurf,nKmin = 0,len(listE['kp'])
-        s += '%9i %9i %9i %9i\n' %(nKmob, nKmin, nKsurf, nKimob)
+        s += '%3i %3i %3i %3i\n' %(nKmob, nKmin, nKsurf, nKimob)
         # PH8 : NR_OUTP_SPEC (complexes) PR_ALKALINITY_FLAG (futur)
-        s += '%9i %9i\n' %(0,0)
+        #s += '%9i %9i\n' %(0,0)
         ## nb units are useless because pht3d considers that it is always days
         Chem = core.addin.pht3d.Base['Chemistry']
         if 'Rates' in Chem:

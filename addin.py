@@ -139,7 +139,7 @@ class addin:
         
     def setMfUnstruct(self): #OA added 17/9/17 for modflow UNS
         lmodules,val = self.core.dicaddin['usedM_Modflow']
-        bool = self.core.mfUnstruct
+        bool = self.core.mfUnstruct;#print('in mfuns',bool,lmodules)
         val[lmodules.index('DIS')] = not bool
         val[lmodules.index('PCG')] = not bool
         val[lmodules.index('DISU')] = bool
@@ -151,7 +151,7 @@ class addin:
         val[lmodules.index('DIS')] = True
         val[lmodules.index('PCG')] = False
         val[lmodules.index('DISU')] = False
-        val[lmodules.index('SMS')] = True
+        val[lmodules.index('SMS')] = True;#print('in usgrect',lmodules,val)
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
     def setChemType(self):
@@ -221,14 +221,14 @@ class addin:
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'] = retour
+                self.core.mfUnstruct = False;self.setMfUnstruct()
                 if m['group'] == 'Modflow USG_rect':  # OA 02/20
-                    self.core.mfUnstruct = False
                     self.setUsgRect()
                 if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
-                    self.setMfUnstruct()
                     self.gui.onGridMesh('Mesh') # to chang the button
                     self.mesh = self.mfU # OA 22/8/19
+                    self.setMfUnstruct()
                 self.gui.varBox.chooseCategory(m['group'])
                 if m['type']=='Confined': #EV 25/09/19
                     self.core.setValueFromName('Modflow','LAYTYP',[0]*nmed) # 0 for confined, 1 for unconfined

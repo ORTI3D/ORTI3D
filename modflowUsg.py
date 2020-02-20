@@ -168,6 +168,12 @@ class modflowUsg:
         self.ncell =  ncell2d*nlay
         self.ncell_lay =  ncell2d
         self.nconnect = self.nconnect*nlay+ncell2d*2*(nlay-1)
+        
+    def connectZones(self):
+        '''this function creates a local dictionnary that details teh connection between transp/pht3d
+        zones and the flow ones. 1st from each point in a zone search for the corresp cell.
+        2nd compare the cells with all of each modflow zones
+        '''
 
 class myTrg:
     def __init__(self,parent, nodes, elements):

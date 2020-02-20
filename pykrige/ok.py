@@ -176,9 +176,10 @@ class OrdinaryKriging:
 
         self.verbose = verbose
         self.enable_plotting = enable_plotting
+        self.t=''#EV
         if self.enable_plotting and self.verbose:
-            self.t="TEST ok Plotting Enabled\n" #EV
-            print("Plotting Enabled\n")
+            self.t=''#EV
+            #print("Plotting Enabled\n")#EV
 
         # adjust for anisotropy... only implemented for euclidean (rectangular)
         # coordinates, as anisotropy is ambiguous for geographic coordinates...
@@ -188,8 +189,8 @@ class OrdinaryKriging:
             self.anisotropy_scaling = anisotropy_scaling
             self.anisotropy_angle = anisotropy_angle
             if self.verbose:
-                self.t+="Adjusting data for anisotropy..." #EV
-                print("Adjusting data for anisotropy...")
+                self.t=''#EV
+                #print("Adjusting data for anisotropy...")
             self.X_ADJUSTED, self.Y_ADJUSTED = \
                 _adjust_for_anisotropy(np.vstack((self.X_ORIG, self.Y_ORIG)).T,
                                        [self.XCENTER, self.YCENTER],
@@ -229,7 +230,8 @@ class OrdinaryKriging:
             self.variogram_function = self.variogram_dict[self.variogram_model]
 
         if self.verbose:
-            print("Initializing variogram model...")
+            self.t=''#EV
+            #print("Initializing variogram model...")
 
         vp_temp = _make_variogram_parameter_list(self.variogram_model,
                                                  variogram_parameters)
@@ -241,30 +243,40 @@ class OrdinaryKriging:
                                         weight, self.coordinates_type)
 
         if self.verbose:
-            print("Coordinates type: '%s'" % self.coordinates_type, '\n')
+            #print("Coordinates type: '%s'" % self.coordinates_type, '\n')
+            self.t=''#EV
             if self.variogram_model == 'linear':
                 print("Using '%s' Variogram Model" % 'linear')
                 print("Slope:", self.variogram_model_parameters[0])
                 print("Nugget:", self.variogram_model_parameters[1], '\n')
             elif self.variogram_model == 'power':
-                print("Using '%s' Variogram Model" % 'power')
-                print("Scale:", self.variogram_model_parameters[0])
-                print("Exponent:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                self.t+="'%s' Variogram Model" % 'power' + '\n'#EV
+                self.t+="Scale: "+ '{:.1f}'.format(self.variogram_model_parameters[0]) + '\n'
+                self.t+="Exponent: "+ '{:.1f}'.format(self.variogram_model_parameters[1])  + '\n'
+                self.t+="Nugget: " + '{:.1f}'.format(self.variogram_model_parameters[2])+ '\n'
+                #print("Using '%s' Variogram Model" % 'power')
+                #print("Scale:", self.variogram_model_parameters[0])
+                #print("Exponent:", self.variogram_model_parameters[1])
+                #print("Nugget:", self.variogram_model_parameters[2], '\n')
             elif self.variogram_model == 'custom':
                 print("Using Custom Variogram Model")
             else:
-                print("Using '%s' Variogram Model" % self.variogram_model)
-                print("Partial Sill:", self.variogram_model_parameters[0])
-                print("Full Sill:", self.variogram_model_parameters[0] +
-                      self.variogram_model_parameters[2])
-                print("Range:", self.variogram_model_parameters[1])
-                print("Nugget:", self.variogram_model_parameters[2], '\n')
+                self.t+="'%s' Variogram Model" % self.variogram_model + '\n' #EV
+                self.t+="Sill :"+ '{:.1e}'.format(self.variogram_model_parameters[0] + self.variogram_model_parameters[2]) +'\n'
+                self.t+="Range :"+ '{:.1f}'.format(self.variogram_model_parameters[1]) +'\n'
+                self.t+="Nugget :"+ '{:.1e}'.format(self.variogram_model_parameters[2])+ '\n'
+                #print("Using '%s' Variogram Model" % self.variogram_model)
+                #print("Partial Sill:", self.variogram_model_parameters[0])
+                #print("Full Sill:", self.variogram_model_parameters[0] +
+                      #self.variogram_model_parameters[2])
+                #print("Range:", self.variogram_model_parameters[1])
+                #print("Nugget:", self.variogram_model_parameters[2], '\n')
         if self.enable_plotting:
             self.display_variogram_model()
 
         if self.verbose:
-            print("Calculating statistics on variogram model fit...")
+            self.t+=''#EV
+            #print("Calculating statistics on variogram model fit...")
         if enable_statistics:
             self.delta, self.sigma, self.epsilon = \
                 _find_statistics(np.vstack((self.X_ADJUSTED,
@@ -317,7 +329,8 @@ class OrdinaryKriging:
            anisotropy_angle != self.anisotropy_angle:
             if self.coordinates_type == 'euclidean':
                 if self.verbose:
-                    print("Adjusting data for anisotropy...")
+                    self.t+=''#EV
+                    #print("Adjusting data for anisotropy...")
                 self.anisotropy_scaling = anisotropy_scaling
                 self.anisotropy_angle = anisotropy_angle
                 self.X_ADJUSTED, self.Y_ADJUSTED = \
@@ -405,6 +418,10 @@ class OrdinaryKriging:
                 self.variogram_function(self.variogram_model_parameters,
                                         self.lags), 'k-')
         plt.show()
+        
+    def get_variogram_model(self):  # EV 19/02/20
+        """Get variogram model value."""
+        return self.lags, self.semivariance, self.variogram_function(self.variogram_model_parameters, self.lags)
 
     def switch_verbose(self):
         """Allows user to switch code talk-back on/off. Takes no arguments."""
@@ -637,10 +654,10 @@ class OrdinaryKriging:
             set of points. If style was specified as 'masked', sigmasq
             will be a numpy masked array.
         """
-
+        t=None #EV
         if self.verbose:
             t=self.t #EV
-            print("Executing Ordinary Kriging...\n")
+            #print("Executing Ordinary Kriging...\n")
 
         if style != 'grid' and style != 'masked' and style != 'points':
             raise ValueError("style argument must be 'grid', "

@@ -78,8 +78,9 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 self.item[i].setCurrentIndex(value[1].index(value[0]))
                 self.gl.addWidget(self.item[i],i,1,1,1)
             elif typ=='Check':
-                self.item[i] = QCheckBox(self.glWidget)
-                self.item[i].setCheckState(value)
+                self.item[i] = QCheckBox(self.glWidget) #EV 18/02/20
+                #self.item[i].setCheckState(value)
+                self.item[i].setChecked(value)
                 self.gl.addWidget(self.item[i],i,1,1,1)
             elif typ=='Text':
                 self.item[i] = QLineEdit(self.glWidget)

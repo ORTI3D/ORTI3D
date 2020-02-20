@@ -48,6 +48,7 @@ class BaseParms:
         mgroup = self.core.dicaddin['Model']['group']
         if 'USG' in mgroup: # only the transport is different in USG
             action=action.replace('Mt3dms','MfUsgTrans')            
+            action=action.replace('Modflow','Modflow_USG')         # OA 17/2/20
         if mgroup =='Min3p':
             action=action.replace('Modflow','Min3pFlow')
             action=action.replace('Mt3dms','Min3pTrans')

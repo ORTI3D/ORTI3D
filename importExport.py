@@ -36,7 +36,7 @@ class impFile:
             name.append(l1[1]) 
             val.append(l1[3])
             if len(l1[5])==1 :
-                med.append(l1[5])
+                med.append(int(l1[5])) #EV 19/02/20
             else : 
                 m=l1[5].split(',')
                 m = [int(i) for i in m]

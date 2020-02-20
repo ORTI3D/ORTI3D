@@ -22,7 +22,8 @@ class  Mtu:
             #BCT
         'bct.1a': {'comm':'Main flags','cond':'',
         'kw': ['ITRNSP','IBCTCB','MCOMP','ICBNDFLG','ITVD','IADSORB','ICT','CINACT','CICLOSE',\
-        'IDISP','IXDISP','DIFFNC','IZOD','IFOD','IFMBC','UKN1','NIMCOMP','UKN2','UKN3'],
+        'IDISP','IXDISP','DIFFNC','IZOD','IFOD','IFMBC','IHEAT','NIMCOMP','IDISPCLN','NSEQITR',\
+        'ITRNSP'],
         'detail' : [
         ['simulation','no','steady or each flow step','not implemented'], # -1 not set
         'save budget','nb of mobile species',
@@ -37,15 +38,17 @@ class  Mtu:
         'Diffusion coeff',
         ['zero order decay','no','water','soil','soil+water'],
         ['1st order decay','no','water','soil','soil+water'],
-        ['mass bal errors''no','computed'],
-        'unkn1','nb of immobile species','unkn2','unkn3'
+        ['mass bal errors','no','computed'],
+        'index for heat','nb of immobile species','CLN-GW equation','Nb sequential iterations',
+        'Transport follows flow'
         ],
+  
         'type':['choice','int','int','choice','int',
         'choice','choice','float','float','choice',
         'choice','float','choice','choice','choice',
         'int','int','int','int','int','int','int'
         ],
-        'default':[1,0,1,1,1,0,0,1e29,1e-9,1,0,1e-10,0,0,0,0,0,0,0]},  # OA 22/8/19 modif 2 to 1 for idisp
+        'default':[1,0,1,1,0,0,0,-1.0,1e-9,1,0,1e-10,0,0,0,0,0,0,1,1]},  # OA 22/8/19 modif 2 to 1 for idisp
 
         'bct.1b': {'comm':'Print flags','cond':'IFMBC>0',
         'kw': ['MBEGWUNF','MBEGWUNT','MBECLNUNF', 'MBECLNUNT'],       

@@ -2,6 +2,7 @@ from os import sep
 from .geometry import *
 from .qtDialogs import *
 from .config import *
+from .myInterpol import IntpDialog # EV 19/02/20
     
 class BaseTop:
     def __init__(self,gui,core):
@@ -75,16 +76,36 @@ class BaseTop:
         media = self.gui.currentMedia # EV 3/2/20
         nmedia = getNmedia(self.core)
         model = self.gui.currentModel
-        reg = 'Regular'
-        if model[:5]=='Opgeo': reg = 'Unstruct'
-        s='modName = \''+model+'\'\nline = \''+ll+'\'\nintp = 1\n'
-        s+='#choices : interp. Kr, interp. ID; vtype: spher, gauss, gauss3\n'
-        s+='opt = \'interp. Kr;vrange=22;vtype=@spher@\'\n'
-        s+='value = block'+reg+'(self,modName,line,intp,opt,0)'
-        self.core.dicformula[model][ll]=['None']*nmedia# EV 3/2/20 
-        self.core.dicformula[model][ll][media]=s
-        self.core.dictype[model][ll][media]='formula' # EV 3/2/20 add media
-        self.onFormula()
+        if ll in self.core.dicinterp[model]:  # EV 19/02/20
+            try : self.core.dicinterp[model][ll][media]
+            except IndexError :
+                form=len(self.core.dicinterp[model][ll])
+                nform=len(form)
+                if nform<nmedia : form.extend(['']*(nmedia-form))
+                opt=None
+            else :
+                opt = self.core.dicinterp[model][ll][media]
+        else :
+            self.core.dicinterp[model][ll] = ['']*nmedia
+            opt=None
+        m = IntpDialog(self.gui,self.core,opt)
+        m.show()
+        parms=m.saveResult()
+        if parms != None :
+            self.core.dicinterp[model][ll][media]=parms
+            if parms[-1]== 1 :
+                self.core.dictype[model][ll][media]='interpolate'
+            else :
+                value = self.core.save2array(model,ll,media)
+                dlg = myFileDialog('Save')
+                fDir,fName = dlg.getsetFile(self.gui,'Save to array','*.dat')
+                if fName == '': file=None
+                else :
+                    file = str(fDir+fName)
+                    savetxt(file+'.dat',value)  
+                if file :
+                    self.core.dicarray[model][ll][media]=file+'.dat'
+                    self.core.dictype[model][ll][media]='importArray'
     
     def onImportArray(self):
         """Open a dialog to choose an array file and save the name in a dic EV 05/02/20"""
@@ -104,14 +125,14 @@ class BaseTop:
         else :
             self.core.dicarray[model][ll] = ['']*nmedia
             f=''
-        data=[('Media '+str(media),'File',['Choose Array','*.asc;*.vtk;*.dat;*.txt',True,f])]
+        data=[('Media '+str(media),'File',['Choose Array','*.asc;*.dat;*.txt',True,f])] #;*.vtk
         dialg = genericDialog(self.gui,'Choose Array',data)
         retour = dialg.getValues()
-        if retour != [''] :
+        print('array', retour)
+        if retour :
             self.core.dicarray[model][ll][media]=retour[0]
-        else : 
+        if retour == [''] : 
             self.core.dictype[model][ll][media]='one_value'
-            self.core.dicarray[model][ll][media]=retour[0]
         
     def getCurVariable(self):
         """used to see the current variable for current medium"""
@@ -156,7 +177,7 @@ class BaseTop:
             lz = curzones.dic[line]
             self.gui.visu.addZone(lz['media'][iz],lz['name'][iz],lz['value'][iz],lz['coords'][iz])
             if self.gtyp == 'qt': self.gui.modifBox.updateChoiceZone(line)
-            self.core.dictype[self.gui.currentModel][line]=['zone']
+            self.core.dictype[self.gui.currentModel][line][self.gui.currentMedia]='zone' #EV 13/02/20
             self.core.makeTtable();#print core.ttable
             #self.modifZones(line)
         else : #cancel

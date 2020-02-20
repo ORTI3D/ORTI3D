@@ -17,6 +17,7 @@ class valueDialog:
         self.zone = core.diczone[modName]
         self.array = core.dicarray[modName]
         self.formula = core.dicformula[modName]
+        self.interp = core.dicinterp[modName] # EV 20/02/20
         self.initStoredValues();# to get the conditions from the dictionnary
         #self.currentGroup,self.currentLine = self.gui.currentGroup,self.gui.currentLine
         self.dialg = qtValueDialog(self,gui,core,modName)
@@ -29,11 +30,12 @@ class valueDialog:
     def show(self):
         self.dialg.exec_()
             
-    def setDictionnaries(self,dicval,diczone,dicarray,dicformula):
+    def setDictionnaries(self,dicval,diczone,dicarray,dicformula,dicinterp): # EV 20/02/20
         self.val = dicval
         self.zone = diczone
         self.array = dicarray
         self.formula = dicformula
+        self.interp = dicinterp # EV 20/02/20
         self.initStoredValues()
         
     def initStoredValues(self):

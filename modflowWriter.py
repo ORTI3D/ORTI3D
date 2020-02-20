@@ -400,7 +400,8 @@ class modflowWriter:
                 else : #unstruct grid irow is the node number
                     lpts[iz].append(str(irow[i]+1).rjust(9))
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
-            if ext=='wel': k.append(self.getPermScaled(ilay,irow,icol))
+            if ext=='wel': 
+                k.append(self.getPermScaled(ilay,irow,icol))
             
         buff = ' %9i   0   ' %npts;#print(line,zlist)
         if self.trans: buff += '    AUX CO1  \n'
@@ -425,22 +426,22 @@ class modflowWriter:
                     else : 
                         zbase = 0 # OA 25/4/19
                     if ext=='wel': 
-                        buff+= lpts[iz][pt]+' %+9.2e '%(float(val)*k[iz][pt]) #EV 20/02/19
+                        buff+= lpts[iz][pt]+' %9.3e '%(float(val)*k[iz][pt]) #EV 20/02/19
                     elif ext=='chd': 
-                        buff+=lpts[iz][pt]+' %+9.5g%+9.5g ' %(float(val)+zbase,float(vnext)+zbase)
+                        buff+=lpts[iz][pt]+' %9.3e %9.3e ' %(float(val)+zbase,float(vnext)+zbase)
                     elif ext=='drn': # elevation adding zbase (polyV), then cond.
                         v1,v2 = val.split();#print(iz,pt,zbase,v1,v2)
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g ' %(float(v1)+zbase,float(v2))
+                        buff+=lpts[iz][pt]+' %9.3e %9.3e ' %(float(v1)+zbase,float(v2))
                     elif ext=='ghb':
                         a,cond = vparms.split(); #conductance steady (time & space)
                         if flgTr: hd = float(val)
                         else : hd = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g '%(hd+zbase,float(cond))
+                        buff+=lpts[iz][pt]+' %9.3e %9.3e '%(hd+zbase,float(cond))
                     elif ext=='riv':
                         a,cond,botm = vparms.split()
                         if flgTr: stage = float(val)
                         else : stage = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %+9.6g %+9.6g %+9.6g ' %(stage,float(cond),float(botm)+zbase)
+                        buff+=lpts[iz][pt]+' %9.3e %9.3e %9.3e ' %(stage,float(cond),float(botm)+zbase)
                     buff += soption
         f1.write(buff)
         f1.close()
