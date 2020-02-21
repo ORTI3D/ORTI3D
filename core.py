@@ -590,7 +590,7 @@ class Core:
         return b()
     
     def runInterp(self,model,line,media,allOpt): # function added EV 19/02/20
-        value,mess=zone2interp(self,model,line,media,allOpt)
+        value,mess=zone2interp(self,model,line,media,allOpt,iper=0)
         value=value[::-1] 
         nx,ny,x,y = getXYvects(self)
         extent = np.min(x), np.max(x), np.min(y), np.max(y)

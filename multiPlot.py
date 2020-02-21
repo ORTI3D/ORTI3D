@@ -3,6 +3,7 @@ from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 from .qtDialogs import *
+from .geometry import *
 #from .qtShow import * # OA 1/6/19
 import numpy as np
 import matplotlib.ticker as ticker

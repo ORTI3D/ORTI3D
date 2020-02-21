@@ -128,7 +128,6 @@ class BaseTop:
         data=[('Media '+str(media),'File',['Choose Array','*.asc;*.dat;*.txt',True,f])] #;*.vtk
         dialg = genericDialog(self.gui,'Choose Array',data)
         retour = dialg.getValues()
-        print('array', retour)
         if retour :
             self.core.dicarray[model][ll][media]=retour[0]
         if retour == [''] : 

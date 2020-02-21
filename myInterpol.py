@@ -129,7 +129,6 @@ class IntpDialog(QDialog):
     
     def getData(self,opt):
         if opt :
-            print('opt',opt)
             val=opt
         else : val=[0,True,True,False,6,'spherical',1e-3,50,0,0]
         self.mth=val[0]

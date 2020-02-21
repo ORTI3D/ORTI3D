@@ -874,3 +874,12 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - geometry.py getTopBotm l.237-425 added try except to avoid error when the array to import do not exist
 - core.py l.52, 58, 191, 233 added dicinterp for store interpolation parameters
 - valueDialog.py l.20, 33, 38 added dicinterp for store interpolation parameters
+
+20/2/20 OA
+- in geometry zone2mesh, l.354,355, 361_62 modif to be bale to use transient zones
+- in geometry pointsinpoly added 1st line to make ptx pty arrays
+- in geometry added import np at beginning, used as np.mod in l.835
+- in mtUsgWriter added unstruct part in zptsIndices l.238-253 #still not good fro some pts
+
+21/02/20 EV
+- geometry/zone2interp l. 918, 967, 968 added option to interpolate tansient value 

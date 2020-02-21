@@ -516,7 +516,7 @@ class mtphtWriter:
             if flg['iRCH']: # modfi OA 3/10
                 if opt =='Mt3dms' :
                     #rch = block(self.core,opt,'btn.23',intp=False,opt=None,iper=ip)#EV 04/02/20
-                    rch = self.core.getValueLong('Mt3dms','btn.23',0,iper) #EV 04/02/20
+                    rch = self.core.getValueLong('Mt3dms','btn.23',0,iper=ip) #EV 04/02/20
                     s0 = '    1\n' + self.formatBlockMt3d(rch[0],'rech')
                 if opt =='Pht3d':
                     rch ,names = self.getConcRch('main','ph.5',ip)

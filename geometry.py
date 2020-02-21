@@ -2,6 +2,7 @@ from .config import *
 #from matplotlib import pylab as pl
 from .myInterpol import *
 import matplotlib.tri as mptri
+import numpy as np
 
 """all geometrical operations are performed here
 all coordinates are in real world ones. so matrices have index 0 for rows
@@ -226,8 +227,8 @@ def makeZblock(core):
     
 def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
     if intp==1: # EV 11/02/20
-        opt = core.dicinterp[modName][line][im] # EV 19/02/20
-        z, mess = zone2interp(core,modName,line,im,opt,refer) # EV 19/02/20
+        parms = core.dicinterp[modName][line][im] # EV 19/02/20
+        z, mess = zone2interp(core,modName,line,im,parms,refer,iper=0) # EV 19/02/20
     elif intp==3 :# EV 11/02/20
         if  core.addin.mesh==None: z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
@@ -316,7 +317,8 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''
     if 1 in intp : # OA 17/2/20
-        m, mess = zone2interp(core,modName,line,0,opt);#print 'geom 282',amax(m) # EV 19/02/20
+        parms = core.dicinterp[modName][line][0]
+        m, mess = zone2interp(core,modName,line,0,parms,iper=iper);#print 'geom 282',amax(m) # EV 19/02/20
         return m
     else: # changed from 0 to []
         m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
@@ -351,14 +353,16 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
         except TypeError : continue # the zone media is not the right one
         pindx[idx] = i+1
     if val == 'nb': return pindx
-    zval,onev = [],False # zvla contians all the values in the zone list
-    for v in dicz['value']:
+    zval,onev = [],True # zval contains all the values in the zone list
+    for iz,v in enumerate(dicz['value']): # OA 20/2/20
         if '$' in v: 
+            onev = False # OA 20/2/20
             v1 = v.split('$')[2]
             try : zval.append(int(v1))
             except ValueError : pass
+        elif '\n' in v: # a transient zone added OA 20/2/20
+            zval.append(float(core.ttable[line][iper,iz]))
         else : 
-            onev = True
             zval.append(float(v))
     if onev: zval.insert(0,vbase) # not for multiple value where the domain is a zone
     zval = array(zval)
@@ -405,7 +409,7 @@ def blockRegular(core,modName,line,intp,opt,iper):
             #print('lin',line, 'im',im, 'intp', intp[im])
             if intp[im]==1 :
                 parms = core.dicinterp[modName][line][im] # EV 19/02/20
-                a,mess = zone2interp(core,modName,line,im,parms) # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
             elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
@@ -429,8 +433,8 @@ def blockRegular(core,modName,line,intp,opt,iper):
     else : 
         for im in range(nmedia): 
             if intp[im]==1 :
-                opt = core.dicinterp[modName][line][im] # EV 19/02/20
-                a,mess = zone2interp(core,modName,line,im,opt) # EV 19/02/20
+                parms = core.dicinterp[modName][line][im] # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
             elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
@@ -821,10 +825,10 @@ def lcoefsFromPoly(poly):
 
 def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
     '''finds if a point is in a polygon for a list of points of coords ptx pty
-    ptx,pty must be arrays
     we use an horizontal line that start from the ptx,pty point
     lcoefs [2,n] for n pts in poly are the eq of ax+by=1 with a,b=lcoefs[:,i]
     polygon is in a trigo direction and must be closed'''
+    ptx,pty =array(ptx),array(pty) # OA 20/2/20
     x,y = list(zip(*poly))
     n,count = len(x),ptx*0
     for i in range(n-1):
@@ -832,7 +836,11 @@ def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
         pos = lcoefs[0,i]*ptx+lcoefs[1,i]*pty-1
         #if pos==0 : return True
         count += (pty>=ymin)*(pty<=ymax)*( sign(pos)==sign(lcoefs[0,i]))
-    return list(mod(count,2)==1)# an odd number gives point in the poly
+    try :
+        len(count)
+        return list((np.mod(count,2)==1)*1)# an odd number gives point in the poly   
+    except TypeError : 
+        return [(np.mod(count,2)==1)*1]
 
 def dstPointPoly(lpts,poly):
     '''finds the shortest distance from each point in a list (lpts) to a polygon (poly)'''   
@@ -907,7 +915,7 @@ def writeVTKstruct(core,data):
 
 ###################### INTERPOLATION ####################
 
-def zone2interp(core,modName,line,media,option,refer=None): # EV 19/02/20
+def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02/20 #EV 21/02/20
     """ interpolation case from points or zones to matrix
     option[0] : interpolation method 
         0: kriging
@@ -956,9 +964,10 @@ def zone2interp(core,modName,line,media,option,refer=None): # EV 19/02/20
         xy = coords[iz]
         if len(xy[0])==2: #normal zone
             x,y = list(zip(*xy))
+            if line in list(core.ttable.keys()): #EV 21/02/20
+                z=float(core.ttable[line][iper,iz]) 
             #if variable != None: z = float(diczone['value'][iz].split('$')[1].split('\n')[variable]) EV 20/02/20
-            #else : EV 20/02/20
-            z = float(diczone['value'][iz])
+            else : z = float(diczone['value'][iz])
             z = [z]*len(x);#print i,z
         elif len(xy[0])==3: # variable polygon
             x,y,z = list(zip(*xy))
