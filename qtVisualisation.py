@@ -255,7 +255,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.Grid[2]=col
         if len(self.cnv.collections)<2: self.cnv.collections=[0,0]
 
-        if self.mesh != None:# case irregular mesh (from matplotlib2dviewer)
+        if self.mesh != None and self.core.getValueFromName('Modflow','MshType')>0:# case irregular mesh (from matplotlib2dviewer)
             xcoo = self.mesh.elx
             ycoo = self.mesh.ely
             lines = [list(zip(x,y)) for x,y in list(zip(xcoo,ycoo))]
@@ -398,7 +398,7 @@ class qtVisualisation(FigureCanvasQTAgg):
                 b.append((lim[i][0],c3,c3))
             cdict={'red':r,'green':g,'blue':b}
             cmap=mpl.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
-        if self.mesh==None:
+        if self.mesh==None or self.core.getValueFromName('Modflow','MshType')<1: # OA 29/2/20
             cf = pl.contourf(pl.array(X),pl.array(Y),Z2,V, cmap=cmap)
             c = pl.contour(pl.array(X),pl.array(Y),Z2,V, cmap=cmap)
         else :

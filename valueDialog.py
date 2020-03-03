@@ -10,6 +10,7 @@ class valueDialog:
     it uses the keyword dictionnaries to create the structure
     and also to test conditions for entering some specific values"""
     def __init__(self,gui,title,core,modName):
+        if modName == 'Modflow_USG' : modName = 'Modflow'
         self.butNb,self.fDir,self.fName=500,None,None
         self.gui,self.core,self.modName = gui,core,modName
         self.Mkword = core.dickword[modName] # contains groups and lines

@@ -89,7 +89,7 @@ class modflowWriter:
             if r0>0 or self.core.diczone['Modflow'].getNbZones('rch.2')>0:
                 f1.write('RCH     34     ' + self.fName + '.rch\n')
         e0=self.core.getValueFromName('Modflow','EVT')
-        if 'EVT' in lmod:
+        if 'EVTR' in lmod: #EV 28/02/20
             if e0>0 or self.core.diczone['Modflow'].getNbZones('evt.2')>0:
                 f1.write('EVT     35     ' + self.fName + '.evt\n')
         if 'WEL' in lmod:# EV 28/08/19
@@ -213,7 +213,7 @@ class modflowWriter:
             s += '    0     0    0\n' # INSURF INEVTR INEXDP INIEVT not read
             for k in range(2,5):
                 #m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);#EV 04/02/20
-                m = self.core.getValueLong('Modflow',line[:4]+str(k),0,iper) #EV 04/02/20
+                m = self.core.getValueLong('Modflow','evt.'+str(k),0,iper) #EV 04/02/20 #EV 28/02/20
                 s += self.writeMatModflow(m[0],'arrfloat')+'\n'
         exceptDict={'evt.2':s}
         self.writeOneFile('EVT',exceptDict)
@@ -403,12 +403,18 @@ class modflowWriter:
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
             
-        buff = ' %9i   0   ' %npts;#print(line,zlist)
-        if self.trans: buff += '    AUX CO1  \n'
+        buff = ' %9i' %npts;#print(line,zlist)
+        #if ext == 'wel': buff += ' 31'#EV 25/02/20 it was 90
+        buff += ' 31'
+        if self.trans: 
+            nspec = len(self.usgTrans[ext][0,0].split())
+            for i in range(nspec): buff += ' AUX C%02i' %(i+1)
+            buff += '\n'
         else : buff += '\n'
         #print 'mfw transient',nper
         for ip in range(nper): # get each period
-            buff += ' %9i   \n' %npts
+            if ext == 'wel': buff += '%9i  0  0\n' %npts
+            else: buff +=  '%9i \n' %npts
             flgTr = False
             if len(unique(zlist[:,iz]))>1 : flagTr = True
             for iz in range(nzones): # and each zones
@@ -472,7 +478,7 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            irow = zmesh(core,dicz,0,iz) # media=0 will calc other media below
+            irow = where(zmesh(core,dicz,0,iz))[0] # OA 22/2/20
             n0,irow1 = len(irow),[]
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
@@ -561,6 +567,7 @@ class modflowWriter:
             for p in range(self.nper):
                 s += 'Period %5i Step %5i \n' %(p+1,nstp)
                 s += 'Save Head \n'
+                s += 'Save Budget \n'
                 if len(self.usgTrans.items())>0: 
                     s += 'Save Conc \n'  # OA 30/7/19 conc
         else : s += 'Period 1 Step 1 \nSave Head\nSave Budget \n'

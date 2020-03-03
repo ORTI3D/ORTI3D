@@ -21,38 +21,46 @@ class modflowUsg:
         '''opt=old the .msh file is used if it is found, new : it is rewritten'''
         self.core.addin.mesh = self
         dct = self.core.diczone['Modflow'].dic
-        fmsh = self.core.fileName+'_out.msh'
-        os.chdir(self.core.fileDir)
-        if fmsh not in os.listdir(os.getcwd()): opt = 'new'
-        dicD = dct['disu.3'] # where the domain boundaries are 
-        idom = dicD['name'].index('domain')
-        dcoo = dicD['coords'][idom]
-        dcoo = self.verifyDomain(dcoo)
-        # if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
-        # else : 
-        dicK = {'name':[]}
-        if opt=='new':
-            s = gmeshString(self.core,dicD,dicK)
-            f1 = open('gm_in.txt','w');f1.write(s);f1.close()
-            bindir = self.core.baseDir+os.sep+'bin'+os.sep
-            #clmax = self.core.dicval['Modflow']['disu.3'][0];print('start gmesh')
-            #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -clmax '+str(clmax)+' -o '+fmsh)
-            #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -o '+fmsh)
-            os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
-        f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
-        nodes,elements,line_dom = readGmshOut(s,outline=True);
-        points,elts = nodes[:,1:3],elements[:,-3:]
-        points,elts,line_dom = self.verifyMesh(points,elts,line_dom)
-        npts = len(points)
-        #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
-        dns = float(dicD['value'][dicD['name'].index('domain')])
         mshType = self.core.getValueFromName('Modflow','MshType')
-        if mshType == 0: # triangle
+        if mshType >1: # case of true unstructured grid built through gmesh
+            fmsh = self.core.fileName+'_out.msh'
+            os.chdir(self.core.fileDir)
+            if fmsh not in os.listdir(os.getcwd()): opt = 'new'
+            dicD = dct['disu.3'] # where the domain boundaries are 
+            idom = dicD['name'].index('domain')
+            dcoo = dicD['coords'][idom]
+            dcoo = self.verifyDomain(dcoo)
+            # if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
+            # else : 
+            dicK = {'name':[]}
+            if opt=='new':
+                s = gmeshString(self.core,dicD,dicK)
+                f1 = open('gm_in.txt','w');f1.write(s);f1.close()
+                bindir = self.core.baseDir+os.sep+'bin'+os.sep
+                #clmax = self.core.dicval['Modflow']['disu.3'][0];print('start gmesh')
+                #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -clmax '+str(clmax)+' -o '+fmsh)
+                #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -o '+fmsh)
+                os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
+            f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
+            nodes,elements,line_dom = readGmshOut(s,outline=True);
+            points,elts = nodes[:,1:3],elements[:,-3:]
+            points,elts,line_dom = self.verifyMesh(points,elts,line_dom)
+            npts = len(points)
+            #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
+            dns = float(dicD['value'][dicD['name'].index('domain')])
+        if mshType == 0: # regular cells
+            msh = myRect(self)
+            msh.calc()
+        if mshType == 1: # nested
+            #msh = myRect(self,nodes,elements)
+            #msh.calc()
+            pass
+        if mshType == 2: # triangle
             msh = myTrg(self,nodes,elements)
             msh.calc()
             xe,ye = self.elcenters[:,0],self.elcenters[:,1]
             self.trg = mptri.Triangulation(xe,ye) #
-        if mshType == 1: # voronoi
+        if mshType == 3: # voronoi
             msh = myVor(self)
             msh.transformVor(points,elts,dcoo,line_dom)
             xn,yn = self.nodes[:,0],self.nodes[:,1]
@@ -174,7 +182,38 @@ class modflowUsg:
         zones and the flow ones. 1st from each point in a zone search for the corresp cell.
         2nd compare the cells with all of each modflow zones
         '''
+class myRect:
+    def __init__(self,parent):
+        ''' the grid is made of rectangular cells, include variables width or height'''
+        self.parent = parent
 
+    def calc(self):
+        p = self.parent
+        p.carea,p.fahl,p.cneighb,p.cdist=[],[],[],[]
+        grd = self.parent.core.addin.getFullGrid()
+        dx,dy = array(grd['dx']), array(grd['dy']);
+        nx,ny,x0,y0 = grd['nx'],grd['ny'],grd['x0'],grd['y0']
+        xv,yv = r_[x0,x0+cumsum(dx)],r_[y0,y0+cumsum(dy)]
+        ncell = nx*ny;p.ncell = ncell
+        p.carea = zeros(ncell)
+        p.nconnect = (nx-2)*(ny-2)*4+(nx-2)*3*2+(ny-2)*3*2+4*2
+        cn,fa,ds,ex,ey=[],[],[],[],[]
+        for j in range(ny):
+            for i in range(nx):
+                a,b,c = [],[],[]
+                if i>0: a.append(j*nx+i-1);b.append(dy[j]);c.append(dx[i]/2) # left
+                if j>0: a.append((j-1)*nx+i);b.append(dx[i]);c.append(dy[j]/2) # top
+                if i<nx-1: a.append(j*nx+i+1);b.append(dy[j]);c.append(dx[i]/2) # right
+                if j<ny-1: a.append((j+1)*nx+i);b.append(dx[i]);c.append(dy[j]/2) # bottom
+                cn.append(a);fa.append(b);ds.append(c)
+                ex.append(array([xv[i],xv[i+1],xv[i+1],xv[i]]))
+                ey.append(array([yv[j],yv[j],yv[j+1],yv[j+1]]))
+                p.carea[j*nx+i] = dy[j]*dx[i]
+        p.cneighb, p.fahl,p.cdist,p.elx,p.ely = cn,fa,ds,ex,ey             
+        xc,yc = array([mean(a) for a in p.elx]),array([mean(a) for a in p.ely])
+        p.elcenters = c_[xc,yc]
+        p.nodes = p.elcenters
+        
 class myTrg:
     def __init__(self,parent, nodes, elements):
         self.parent,self.nodes,self.elements = parent,nodes, elements
@@ -241,15 +280,13 @@ class myVor:
     def transformVor(self,points,elts,dcoo,line_dom):
         '''reads the voronoi to create several objects:
         cells ordered as the initial points, removing the ones that contain -1
-        - nodes : the inital points
-        - xyverts : an array of vertices coordinates
-        - cverts: for each cell a list of n vertices (points of the cell)
-        - rarray: same but in a form of an array with last point till the max size
+        - nodes : the inital points (on the triangular gmesh grid)
         - carea: for each cell its area ((x1y2-x2y1)+(x2y1-x3y2)..)/2
         - (for each cell a list of n-1 ridges (the sides))
         - fahl : for each cell a list of ridges length
         - cneighb: for each cell a list of n-1 connecting other cell
         - cdist: for each cell a list of n-1 distances from node to face
+        - elx and ely he coordinates of the elements nodes
         note : cdist, cneighb, fahl only include the links to cells that are inside 
         the domain an thus contain elements
         dcoo: coordinates of the domain
@@ -304,21 +341,36 @@ class myVor:
         # store the data as list where the list index is the cell nb
         ip1 = M[:,1].astype('int')
         indsplit = where(ip1[1:]-ip1[:-1]==1)[0]+1 # this is the nb of points for each elt
-        p.nconnect,a = shape(M)
+        p.nconnect = shape(M)[0]
         p.cneighb = split(M[:,2].astype('int'),indsplit);nc=len(p.cneighb)
         lvx = split(M[:,3],indsplit);p.elx = [r_[v,v[0]] for v in lvx]
         lvy = split(M[:,4],indsplit);p.ely = [r_[v,v[0]] for v in lvy]
         p.cdist = split(M[:,5],indsplit)
         xmd1,ymd1 = split(M[:,6],indsplit),split(M[:,7],indsplit)
         # redo differently elx,ely and length for the poly at the boundaries (the rest is ok)
-        indx = []
-        for ip1 in range(ndom):
+        indx = [] # to remove the face that are not connected
+        for ip1 in range(line_dom[0]): # points on angles
             ip2 = p.cneighb[ip1]
             if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
                 p.ely[ip1][0] = ymd1[ip1][0]
                 p.elx[ip1][-1] = xmd1[ip1][-1]
-                p.ely[ip1][-1] = ymd1[ip1][-1]
+                p.ely[ip1][-1] = ymd1[ip1][-1] 
+                p.elx[ip1] = r_[p.elx[ip1],points[ip1,0],p.elx[ip1][0]]
+                p.ely[ip1] = r_[p.ely[ip1],points[ip1,1],p.ely[ip1][0]]
+                indx.append([len(ip2)-1,len(ip2)]) # different from line
+            else : # the 2 pts in line_dom are in the middle of the poly
+                ia=where(ip2<=ndom)[0]
+                p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia[0]],points[ip1,0],xmd1[ip1][ia[1]],p.elx[ip1][ia[-1]+1:]]
+                p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia[0]],points[ip1,1],ymd1[ip1][ia[1]],p.ely[ip1][ia[-1]+1:]]
+                indx.append(ia) # different from line
+        for ip1 in range(line_dom[0],ndom+1): # points on lines
+            ip2 = p.cneighb[ip1]
+            if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
+                p.elx[ip1][0] = xmd1[ip1][0]
+                p.ely[ip1][0] = ymd1[ip1][0]
+                p.elx[ip1][-1] = xmd1[ip1][-1]
+                p.ely[ip1][-1] = ymd1[ip1][-1] 
                 p.elx[ip1] = r_[p.elx[ip1],p.elx[ip1][0]]
                 p.ely[ip1] = r_[p.ely[ip1],p.ely[ip1][0]]
                 indx.append(-1)
@@ -334,7 +386,7 @@ class myVor:
         p.carea = array(la)
         p.nodes = array(points,ndmin=2)
         p.elcenters = p.nodes
-        
+               
     def verifyDomain(self,line_dom,points):
         lout=[line_dom[0]]
         for i in range(1,len(line_dom)):

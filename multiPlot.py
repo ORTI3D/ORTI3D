@@ -10,11 +10,13 @@ import matplotlib.ticker as ticker
 
 class multiPlot(QDialog):
     '''This dialog provides multiplot, there are mainly three types of plots :
-    - time series (or breakthrough
-    - space series or profiles
-    - XY or correlation
-    the species that can be represented are head, tracer and all chemical species concentrations
-    they can also be compared to data
+    - Time series
+    - Horizontal profiles
+    - Calibration graph
+    The result that can be represented are flow (head, Wcontent, Darcy flux), 
+    Transport (Tracer concentration, flux and mass), Chemistry (chemical species 
+    concentrations, flux and mass).
+    They can also be compared to data.
     '''
     def __init__(self,gui,core,typ,res):
         self.gui,self.core= gui,core
@@ -45,35 +47,59 @@ class multiPlot(QDialog):
         self.verticalLayout.addWidget(self.label, alignment=Qt.AlignHCenter)
     ## model time list
         self.tlist = self.core.getTlist2()
-    ## combo box for chemistry
+    ## frame 
+        self.frame = QtWidgets.QFrame(self)
+        self.frame.setMaximumSize(QtCore.QSize(250, 60)) 
+        self.gl = QGridLayout(self.frame)
+    ## type of result 
+        if res != 'W content':
+            self.label_0 = QtWidgets.QLabel(self.frame)
+            #self.label_0.setMaximumSize(QtCore.QSize(40, 20))
+            self.label_0.setText("Type of result")
+            self.gl.addWidget(self.label_0,0,0,1,1)
+            self.rgroup = QComboBox(self)
+            if res == 'Flow' : self.rgroup.addItems(['Head','Darcy flux'])
+            if res == 'Transport' : 
+                self.rgroup.addItems(['Tracer concentration','Tracer mass flux'
+                                      ,'Tracer mass'])
+            if res == 'Chemistry' : 
+                self.rgroup.addItems(['Species concentration',
+                                      'Species mass flux','Species mass'])
+            self.rgroup.setCurrentIndex(0)
+            self.gl.addWidget(self.rgroup,0,1,1,1)
+    ## Plot order combo box for chemistry
         if res=='Chemistry' and typ=='B':
+            self.label_1 = QtWidgets.QLabel(self.frame)
+            #self.label_1.setMaximumSize(QtCore.QSize(40, 20))
+            self.label_1.setText("Plot order")
+            self.gl.addWidget(self.label_1,1,0,1,1)
             self.plgroup = QComboBox(self)
             self.plgroup.addItems(['By zone','By species'])
             self.plgroup.setCurrentIndex(0)
-            self.verticalLayout.addWidget(self.plgroup) 
-    ## combo box for profile
+            self.gl.addWidget(self.plgroup,1,1,1,1)
+            #!self.verticalLayout.addWidget(self.plgroup) 
+    ## Time combo box for profile and calibration graph
         if typ=='P' or typ=='X':
-            self.frame = QtWidgets.QFrame(self)
-            self.frame.setMaximumSize(QtCore.QSize(120, 38))
-            #self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-            #self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
-            #self.frame.setObjectName("frame")
-            self.horizontalLayout2 = QHBoxLayout(self.frame)
-            self.horizontalLayout2.setContentsMargins(0, 0, 0, 0)
-            self.horizontalLayout2.setSpacing(0)
-            #self.horizontalLayout.setObjectName("horizontalLayout")
+            #!self.frame = QtWidgets.QFrame(self)
+            #!self.frame.setMaximumSize(QtCore.QSize(120, 38))
+            #!self.horizontalLayout2 = QHBoxLayout(self.frame)
+            #!self.horizontalLayout2.setContentsMargins(0, 0, 0, 0)
+            #!self.horizontalLayout2.setSpacing(0)
             self.label_2 = QtWidgets.QLabel(self.frame)
             self.label_2.setMaximumSize(QtCore.QSize(40, 20))
-            self.label_2.setText("Tstep")
-            self.horizontalLayout2.addWidget(self.label_2)
+            self.label_2.setText("Time")
+            self.gl.addWidget(self.label_2,1,0,1,1)
+            #!self.horizontalLayout2.addWidget(self.label_2)
             if typ=='X':
                 self.tlist=list(self.tlist)
                 self.tlist.insert(0, 'All')
             self.Tstep = QComboBox(self.frame)
             self.Tstep.addItems([str(n) for n in self.tlist])
             self.Tstep.setCurrentIndex(0)
-            self.horizontalLayout2.addWidget(self.Tstep)
-            self.verticalLayout.addWidget(self.frame) 
+            self.gl.addWidget(self.Tstep,1,1,1,1)
+            #!self.horizontalLayout2.addWidget(self.Tstep)
+            #!self.verticalLayout.addWidget(self.frame) 
+        self.verticalLayout.addWidget(self.frame) 
     ## choise plot obsData
         if typ=='B': # only for time series graphs for now (or typ=='P') 
             self.checkBox = QCheckBox(self)
@@ -132,13 +158,8 @@ class multiPlot(QDialog):
         
     def getSpecies(self):
     ## get the names of model chemical species
-        dic={'Species':{}} # ; species=[]
-        species = self.core.addin.chem.getListSpecies() # OA 25/2/19 comment lines below
-        # zchem=self.core.dicaddin['Chemistry']
-        # zname=zchem['Chemistry']['Solutions']['rows']
-        # for i in range(len(zname)) :
-        #     if (zchem['Chemistry']['Solutions']['data'][i][0])!=False :
-        #         species.append(zname[i])
+        dic={'Species':{}} 
+        species = self.core.addin.chem.getListSpecies() 
         dic['Species']=list(zip(species,[False]*len(species)))
         return dic
     
@@ -170,6 +191,8 @@ class multiPlot(QDialog):
         '''get the plot options from the window very simple now'''
         dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
+        #!rtyp = int(self.rgroup.currentIndex())
+        #!dicIn['ptyp']=str(ptyp+rtyp)
         if ptyp=='B' : dicIn['ptyp']='B0'
         if ptyp=='P' : dicIn['ptyp']='P0'
         if ptyp=='X' : dicIn['ptyp']='XY'
@@ -181,7 +204,8 @@ class multiPlot(QDialog):
         if ptyp!='X':
             lylist=[dic['Layers'][i][0] for i in range(len(dic['Layers'])) if dic['Layers'][i][1]==2]
             dicIn['lylist']=','.join(lylist)
-        dicIn['splist']=[self.res]
+        #dicIn['splist']=[self.res]
+        dicIn['splist']=[self.rgroup.currentText()]
         if self.res=='Chemistry' :
             if ptyp=='X' or ptyp=='P': dicIn['plotOrder']='Zones'
             else :
@@ -192,17 +216,12 @@ class multiPlot(QDialog):
         else :dicIn['plotOrder']='Zones'  
         return dicIn
     
-    def buildPlot(self,dicIn):
+    def buildPlot(self): #,dicIn
         '''this method build the piece of code that, when executed will make the graphs
         it has a dicIn as an input, which contains
         - type of plots (ptyp: 'time','space','XY')
         - lists of zones (zolist), species (splist), layers (lylist)
-        - ordering by : plotOrder a list of two in : zones, layer or species
-        - text data file location (organised as : zone/layer/time/ and n columns of species)
-        - useData
-        due to scale questions we consider that the user will not mix in the same plot heads, tracer
-        The present version executes directly the code for simplificaiton, we can build later one with
-        code string
+        - ordering by : plotOrder a list of two in : zones or species 
         '''
     ## Get the plot options
         dicIn = self.getOptions() #;print('dicIn',dicIn)
@@ -222,20 +241,23 @@ class multiPlot(QDialog):
         ncols = int(ceil(sqrt(nplots)))
         nrows = int(ceil(nplots/ncols))
     ## sets some plot type parameters
-        if self.ptyp=='B0': ##time series
+        #!if self.ptyp=='B0': ##time series
+        if self.ptyp[0]=='B': ##time series
             iper = self.tlist ; self.axlabel='Time [T]' 
-        if self.ptyp=='P0': ##Profile
+        #!if self.ptyp=='P0': ##Profile
+        if self.ptyp[0]=='P': ##Profile
             curTime = int(self.Tstep.currentIndex())
             iper = curTime ; self.axlabel='Distance [L]' 
     ## sets some plot result parameters
         if 'Head' in self.splist : group = 'Flow' ; aylabel = 'Head [L]'
-        if 'Wcontent' in self.splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
+        elif 'Wcontent' in self.splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
         elif 'Tracer' in self.splist : group = 'Transport' ; aylabel = 'Concentration [NL$^{-3}$]'
         else : group = 'Chemistry' ; aylabel = 'Concentration [NL$^{-3}$]'
     ## build the plots
         self.figure.clf()
     ## Calibration graph
         if self.ptyp == 'XY':
+            
             ptypXY='P0' ; self.llabel=['1:1'] ; time=[]
             self.yobs_all = [] ; self.ysim_all = [] ; self.obs_time = [] ; self.label_all=[] ## for export
             self._ax=self.figure.add_subplot(1,1,1)
@@ -258,7 +280,7 @@ class multiPlot(QDialog):
                     myplot=self._ax.scatter(yobs_array,ysim_array)
                     self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))  
             if not self.yobs_all : #EV 26/08/2019
-                mess=onMessage(self.gui,'There is no observation data for this model.') 
+                mess=onMessage(self.gui,'There is no observation data for these zone(s).') 
                 return mess
             myplot2=self._ax.plot([min(self.yobs_all),max(self.yobs_all)],[min(self.yobs_all),max(self.yobs_all)],'k')
             self._ax.set_title('Simulated vs Observed Data: Time = '+str(curTime)+' [T]',fontweight="bold", size=9)
@@ -278,7 +300,7 @@ class multiPlot(QDialog):
                     self.x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[i],self.splist,lylist) 
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
                     myplot=self._ax.plot(self.x,yy)
-                    self.arryy.append(yy) ; self.arrx.append(self.x)
+                    self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
                     if self.ptyp=='B0': ## observed data for time series only
                         if self.checkBox.isChecked():
                             for j in range(len(self.splist)):
@@ -286,7 +308,7 @@ class multiPlot(QDialog):
                                     xobs,yobs,lobs=self.getDataObs(self.splist[j],self.zolist[i],layers[l])
                                     if len(yobs)!=0 :
                                         color=j*len(layers)+layers.index(lobs) #EV 26/08/19
-                                        myplot2=self._ax.scatter(xobs,yobs,c='C'+str(color)) #EV 26/08/19
+                                        myplot2=self._ax.plot(xobs,yobs,c='C'+str(color)) #EV 26/08/19
                                         if group!='Chemistry':self.llabel.append('lay'+str(lobs)+'(obs)')
                                         else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
                     self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
@@ -327,7 +349,10 @@ class multiPlot(QDialog):
                     self._ax.figure.canvas.draw()
             
     def getDataObs(self,splist,zname,opt):
-        '''read the data file and returns it'''
+        '''read the data file and returns it
+        splist: head, tracer or chemical species
+        zname: name of the zone
+        opt: time for '''
         xobs=[];yobs=[];lobs=0 
         if splist in ('Head','Tracer'):
             dicName=str('obs'+splist)

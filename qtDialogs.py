@@ -189,7 +189,7 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
         self.setGeometry(QRect(40, 40, 280,530))
         glWidget = QWidget(self)
         nb = QTabWidget(glWidget)
-        nb.setGeometry(QRect(5, 5, 250,450))
+        nb.setGeometry(QRect(5, 5, 250,350))
         self.dwidget = {}
         for n in list(dicIn.keys()):
             if dicIn[n]==None:continue

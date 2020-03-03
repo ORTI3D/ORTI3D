@@ -146,14 +146,6 @@ class addin:
         val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
-    def setUsgRect(self): #OA added 17/9/17 for modflow UNS
-        lmodules,val = self.core.dicaddin['usedM_Modflow']
-        val[lmodules.index('DIS')] = True
-        val[lmodules.index('PCG')] = False
-        val[lmodules.index('DISU')] = False
-        val[lmodules.index('SMS')] = True;#print('in usgrect',lmodules,val)
-        self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
-        
     def setChemType(self):
         self.chem = self.pht3d
         if self.core.dicaddin['Model']['group'] == 'Min3p': 
@@ -213,7 +205,7 @@ class addin:
                 m['type']='Confined'
             data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
                     ('Type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D model)'])),  #EV 22/07/2018 free -> Unconfined
-                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG_rect','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
+                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
@@ -221,12 +213,10 @@ class addin:
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'] = retour
-                self.core.mfUnstruct = False;self.setMfUnstruct()
-                if m['group'] == 'Modflow USG_rect':  # OA 02/20
-                    self.setUsgRect()
+                self.core.mfUnstruct = False;self.setMfUnstruct() # OA 1/3/20 added cond
                 if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
-                    self.gui.onGridMesh('Mesh') # to chang the button
+                    if self.core.getValueFromName('Modflow','MshType')>0: self.gui.onGridMesh('Mesh') # to chang the button
                     self.mesh = self.mfU # OA 22/8/19
                     self.setMfUnstruct()
                 self.gui.varBox.chooseCategory(m['group'])
@@ -263,7 +253,7 @@ class addin:
             data = [('Xmin','Text',x0),(vert+'min','Text',y0),
                     ('Xmax','Text',x1),(vert+'max','Text',y1),
                     ('dx','Textlong',g['dx']),(dvert,'Textlong',g['dy'])]
-            if self.mesh == None: 
+            if self.mesh == None or self.core.getValueFromName('Modflow','MshType')==0: #OA 21/3/20
                 dialg = self.dialogs.genericDialog(self.gui,'Grid',data)
                 retour = dialg.getValues()
             else : #mesh case no dialog
@@ -521,7 +511,7 @@ class addin:
         self.mesh, self.xsect = None, False
         mgroup = self.core.dicaddin['Model']['group'];#print 'addin line 316 mgroup', mgroup
         if self.getDim() in ['Radial','Xsection']: self.xsect = True # oa 26/5
-        if mgroup in ['Modflow series','Modflow USG_rect']: # oa 9/2/20 added rect
+        if mgroup in ['Modflow series']: # oa 9/2/20 added rect, 29/2 removed
             self.core.dicval['Modflow']['dis.4']=list(g['dx']) # pb with setting list
             self.core.dicval['Modflow']['dis.5']=list(g['dy'])
             self.core.setValueFromName('Modflow','NCOL',g['nx'])

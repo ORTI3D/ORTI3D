@@ -17,8 +17,10 @@ class guiShow:
                      ['User',['_______']]],
             #'Observation':[4,['Type',['Profile','Breakthrough','XYplot']],
                         #   ['Zone',['_______']]]}
-            'Observation':[4,['Type',['Time-series Graphs','Profile Graphs','Calibration Graphs']],
-                           ['Result',['Head','Wcontent','Tracer','Chemistry']]]} # OA 21/2/2019
+            'Observation':[4,['Type',['Time-series Graphs','Profile Graphs',
+                                      'Calibration Graphs']],#'Mass balance Graphs'
+                                      #,'Zone budget Graphs']],
+                           ['Result',['Flow','W content','Transport','Chemistry']]]} # OA 21/2/2019
         self.dicVisu = {'Model':{'Plane':'Z','Layer':0,'Tstep':0,'Grid':False,'Map':False,'Variable':False},
                 'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,'Veloc-magn':False,'Particles':False},
                 'Transport':{'Tracer':False},
@@ -53,7 +55,7 @@ class guiShow:
         self.mesh = False
         if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
         if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
-        if self.core.mfUnstruct: self.mesh=True
+        if modgroup=='Modflow USG': self.mesh=True # OA 24/2/20
         
     def openModel(self):
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
@@ -200,9 +202,10 @@ class guiShow:
         return arr
         
     def getArray2D(self,group,arr3,plane,section):
-        #print group,plane,section,shape(arr3),self.Species,self.Units
+        '''uses the 3D array to and plane to return a 2D array'''
         X,Y = getXYmeshSides(self.core,plane,section)# X,Y can be in Z for presention purpose
         self.Umult, units = 1.,self.dicVisu['Chemistry']['Units']
+        #print('guish l 206',shape(arr3))
         if group =='Chemistry':
             if self.dicVisu['Chemistry']['Species'] not in ['pH','ph','pe']:
                 if units == 'mmol/L': self.Umult = 1000.
@@ -213,7 +216,7 @@ class guiShow:
             X=(X[:,:-1]+X[:,1:])/2;X=X[1:,:]
             Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
         #print 'guish 196',shape(arr3)
-        if self.mesh:
+        if self.mesh and self.core.getValueFromName('Modflow','MshType')>0: # OA 29/2/20
             return None,None,arr3[section,:]
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:

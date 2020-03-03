@@ -59,7 +59,7 @@ class Mf:
         #DISU for modflow UNS
         'disu.1':{'comm':'Title','cond':'','kw':['title'],'detail':[],'type':['title'],'default':['#']},
         'disu.2':{'comm':'Type of mesh','cond':'','kw':['MshType'],
-                'detail':[['','Triangle','Voronoi']],
+                'detail':[['','Rectangle','Nested','Triangle','Voronoi']],
                 'type':['choice'],'default':[0]},
         'disu.3':{'comm':'Mesh','cond':'','kw':['U_Mesh'],'detail':[],
                   'type':['arrfloat'],'default':[0.]},
@@ -105,8 +105,8 @@ class Mf:
         #LPF
         'lpf.0':{'comm':'Lpf title 1','cond':'','kw':['title'],'detail':[],'type':['title']},
         'lpf.1':{'comm':'General flags','cond':'','kw':['ILPFCB','HDRY','NPLPF'],
-               'detail':[['write budget','no','yes'],'head for dry cells','Nb Lpf params'],
-               'type':['choice','float','int'],'default':[0,0.01,0]},
+               'detail':['Write budget','head for dry cells','Nb Lpf params'],#EV 25/02/20
+               'type':['int','float','int'],'default':[0,0.01,0]},
         'lpf.2':{'comm':'Type of layer: confined(0) or convertible(1)','cond':'','kw':['LAYTYP(NLAY)'],'detail':[],'type':['layint']}, #[['confinement','confined','convertible']],
         #'lpf.2':{'comm':'Type of layer: confined(0) or convertible(1)','cond':'','kw':['LAYTYP(NLAY)'],'detail':['Confined or convertible'],'type':['arrint'],'default':[0]},
         'lpf.3':{'comm':'Type of averaging','cond':'','kw':['LAYAVG(NLAY)'],'detail':[['type of average','harmonic','logarithmic','harm/log']],'type':['layint']},

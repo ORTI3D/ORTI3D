@@ -157,7 +157,7 @@ def makeZblock(core):
     mgroup = core.dicaddin['Model']['group']
     modName,line = mgroup.split()[0],'dis.6'
     if modName == 'Opgeo': modName += 'Flow'
-    if mgroup in ['Modflow series','Modflow USG_rect']: lineTop='dis.6'; lineBot='dis.7'
+    if mgroup in ['Modflow series']: lineTop='dis.6'; lineBot='dis.7' # oa 2/2/20 removed usg_rect
     elif mgroup == 'Modflow USG': lineTop='disu.7'; lineBot='disu.8' # OA 1/8/19 changed UNS to USG
     elif mgroup == 'Min3p': 
         modName = 'Min3pFlow'; lineTop='spat.7'; lineBot='spat.8'
@@ -309,7 +309,7 @@ def getMesh3Dcenters(core):
     
 def block(core,modName,line,intp=False,opt=None,iper=0):
     #print("block",core.addin.mesh)
-    if core.addin.mesh == None : # OA 18/7/19 reversed to get all 3D correct (exchanged options below)
+    if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
         return blockUnstruct(core,modName,line,intp,opt,iper)
@@ -387,7 +387,7 @@ def zmesh(core,dicz,media,i):
     elif (abs(x[0]-x[-1])<d/20) & (abs(y[0]-y[-1])<d/20): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs))
     else : # a line
-        idx = cellsUnderPoly(mesh,poly,llcoefs)>0
+        idx = cellsUnderPoly(core,dicz,media,i)>0 # OA added core
     return idx
         
 def blockRegular(core,modName,line,intp,opt,iper):
@@ -482,7 +482,12 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         if type(zmedia)!=type([5]): zmedia=[zmedia]
         zmedia = [int(a) for a in zmedia]
         if int(media) not in zmedia: continue # the zone is not in the correct media
-        if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
+        #if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
+        if line in list(core.ttable.keys()): 
+            if line == 'obs.1' : #EV 26/02/20
+                if diczone['name'][i] in opt: zv0= int(diczone['number'][i])
+                else : continue
+            else : zv0=float(core.ttable[line][iper,i])
         if opt=='zon': zv0=i+1 # OA added 8/5/19
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
@@ -863,23 +868,59 @@ def dstPointPoly(lpts,poly):
         i += 1
     return dst
         
-def cellsUnderPoly(mesh,poly,lcoefs):
+def cellsUnderPoly(core,dicz,media,iz):
     '''finds the cells that are under each line of a poly. 
     It uses an array of coordinates of the cell vertices
     Then calculates the position of the cell points
     relative to a line (can be one line of a  poly) and if there are both
     positive and negative values, the cell is under the line
     the input is two arrays for x and y vertices positions and the line pos'''
+    mesh = core.addin.mesh
     xc,yc,idcell = mesh.elcenters[:,0],mesh.elcenters[:,1],mesh.idc
     elxa, elya = array(mesh.elxa),array(mesh.elya)
+    poly = dicz['coords'][iz]
+    lcoefs=lcoefsFromPoly(poly)
+    l0 = zptsIndices(core,dicz)[iz]
     indx = zeros(len(idcell))
     for i in range(len(poly)-1):
         x,y = list(zip(*poly[i:i+2]))
         pos = sign(lcoefs[0,i]*elxa+lcoefs[1,i]*elya-1) # posit. vs the line
         dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
         dpos = array(dpos)
-        indx += (dpos>0)*(xc<max(x))*(xc>min(x))*(yc<max(y))*(yc>min(y))*1
+        x0,x1 = min(xc[l0[i:i+2]]),max(xc[l0[i:i+2]])
+        y0,y1 = min(yc[l0[i:i+2]]),max(yc[l0[i:i+2]])
+        indx += (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
     return indx
+
+def zptsIndices(core,dicz):
+    '''finds the indices of the zones'''
+    mgroup = core.dicaddin['Model']['group']
+    if core.getValueFromName('Modflow','MshType')<1: 
+        nx,ny,xv,yv=getXYvects(core)
+        lindx = []
+        for iz in range(len(dicz['name'])):
+            l0 = []
+            for coo in dicz['coords'][iz]:
+                ix = where(argsort(r_[xv,coo[0]])==nx+1)[0][0]-1
+                iy = where(argsort(r_[yv,coo[1]])==ny+1)[0][0]-1
+                l0.append((ix,iy))
+            lindx.append(l0)
+    else : # fully unstruct
+        mesh = core.addin.mesh
+        xc,yc = mesh.getCenters()
+        lindx = []
+        for iz in range(len(dicz['name'])):
+            l0 = []
+            for coo in dicz['coords'][iz]:
+                dst=sqrt((coo[0]-xc)**2+(coo[1]-yc)**2)
+                iclosept = argsort(dst)[:3]
+                for ip in iclosept:
+                    poly=list(zip(mesh.elx[ip],mesh.ely[ip]))
+                    lcoefs=lcoefsFromPoly(poly)
+                    if pointsInPoly(coo[0],coo[1],poly,lcoefs)[0]:
+                        l0.append(ip)
+            lindx.append(l0)
+    return lindx
     
 def findSideNodes(core,nodes):
     '''retunrs index of nodes that are on the sides of the domain

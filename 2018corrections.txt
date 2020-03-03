@@ -883,3 +883,33 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 21/02/20 EV
 - geometry/zone2interp l. 918, 967, 968 added option to interpolate tansient value 
+
+29/2/20  OA  (29, once every 4 years!)
+- modflowKeywords, disu.2 added options for rectangular and nested grids (for usg)
+- core l.201,202 removed option modflow USG-Rect removed, it is now in generic Usg
+- core writeModel added modflow_USG same line as modlfow, same in runModel l.318
+- addin line 148-155 removed to remove usg_rect
+- addin doaction l.208 removed option _rect
+- addin doaction l.217 218 removed for usg_rect
+- addin l.514 removed usg_rect
+- addin doaction l.219 added condition for mesh
+- addin doaction l.256 added condition for mesh
+- lot of changes in ModflowUsg
+- changes in mtUsgWriter
+- geometry l;160 removed usg_rect
+- geometry zptsIndices l.893 changed usg_rect to mshtype
+- geometry block l.312 added meshtype for rect grid to go to regular and not unstruct
+- qtVisualisaiotn creategrid l.258 added condition for unstruct mesh (type>0)
+- qtVisualisation createContours l.401 added to mesh==none a rectanuglar mesh
+- valueDialog l.13 added: for paramters modflow_USG = Modflow
+- guiShow getAray2D l. 216 added condition for usg
+- modflowWriter xyzone2mdflow l.461 added type of mesh for usg rectangle cells
+- modflowWriter xyzone2Mflow added line 480 481 to transform classical coord to usg nodes
+- modflowWriter xyzone2Mflow l.456 added as pcb (usgTrans) uses xyzzones2mflow + same for l.461
+- modflowWriter readHeadFile l.702 added condition
+- modflowWriter readHeadFile l.715 added condition to transform usg data to gridded for rect case
+- modflowWriter writeTRansientZone l.406-408 replaced by 406-411 lost in one exchange
+- modflowWriter : lots of change because for usg the cells must be ordered!!! l.389 added lindx
+- same : l.396 added lindx, added l.407 to sort, l.418 added buf1 (a list), in 435-450 buff replaced by s1
+- same : aded line 452-453 to sort the buf1 list with the cell number
+- mtUsgWriter readUCN l.515 and 525 added condition for usg rect case

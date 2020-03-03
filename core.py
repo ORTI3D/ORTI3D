@@ -198,8 +198,6 @@ class Core:
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         mtype = self.dicaddin['Model']['group']
-        if mtype == 'Modflow USG_rect': # OA 17/02/20
-            self.addin.setUsgRect()
         if mtype == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
@@ -266,7 +264,8 @@ class Core:
     def writeModel(self,modName,info=True):
         """ writes the ascii file for modflow series, does nothing for fipy"""
         mtype = self.dicaddin['Model']['group']  # OA 10/2/2020
-        if modName  == 'Modflow':
+        #print('in core',modName)
+        if modName  in ['Modflow','Modflow_USG']:
             self.mfWriter = modflowWriter(self,self.fileDir,self.fileName)
             self.mfWriter.writeModflowFiles(self)
             self.flowReader = modflowReader(self.fileDir,self.fileName)
@@ -316,7 +315,7 @@ class Core:
             b=str(self.baseDir).encode("utf-8")
             b=str(self.fileDir).encode("utf-8")
         except UnicodeEncodeError: return 'Bad caracters in folder name'
-        if modName  == 'Modflow':
+        if modName in ['Modflow','Modflow_USG']:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
             if 'USG' in modName: mod,lastline = 'mfUSGs_1_3',7 # OA 9/2/20
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
@@ -621,67 +620,76 @@ class Core:
     def onPtObs(self,typ,iper,group,zname,esp,layers=0):
         """ get the values at observation zones, esp can be a list of species names
         typ[0]: B: breakthrough, P: profile, X : XYplot 
-        typ[1]: 
+        typ[1]: 0:head/conc, 1:weighted conc, 2:total discharge, 3:average flux
         group : Flow, Transport, Chemistry
         zname : zone name
-        esp : the species list (F:Head,Wcontent; T:)
+        esp : list of species (F:Head,Wcontent; T:Tracer, C:species)
+        layers : list of layer 
         """
-        # typ is breakthrough or profile  
-        #print typ,iper,group,zname,esp,layers
-        zlist=self.diczone['Observation'].dic['obs.1']
-        nx,ny,xvect,yvect = getXYvects(self)
+    ### Get some parameters
+        zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
+        nx,ny,xvect,yvect = getXYvects(self) 
         grd = self.addin.getFullGrid()
-        dim = self.addin.getDim();#print 'core 494',dim
-        mtype = self.dicaddin['Model']['group'][:3]
-        if typ[0]=='X': #XYplot
+        #dim = self.addin.getDim() EV 21/02/20 no used
+        mtype = self.dicaddin['Model']['group'][:3] ## model type, modflow or other
+    ### Get a list of icol, irow, ilay
+        if typ[0]=='X': ## XYplot
             ix=[];iy=[];typ='X0'
+            #for i in zname: # zname is a list
+               # ind = zlist['name'].index(zname)
+               # x,y = list(zip(*zlist['coords'][ind]))
             for xy in zlist['coords']:
                 x,y = list(zip(*xy))
                 a,b,c = zone2index(self,x,y,x*1)
                 ix.append(a[0]);iy.append(b[0])
             ix2=array(ix);iy2=array(iy);iz2=ix2*0.
-            layers= [0]
-        else:    
+            #layers= [0]
+        else:    ## TimeSerie & Profile
             ind = zlist['name'].index(zname)
             x,y = list(zip(*zlist['coords'][ind]))
-            ix,iy,a,asin,acos = zone2index(self,x,y,x*1,'angle');#ix,iy are ipht indices (not modflow)
+            ix,iy,a,asin,acos = zone2index(self,x,y,x*1,'angle') ## ix,iy are orti indices (not modflow)
             if isclosed(self,x,y): # polygon
                 iy,ix = where(fillZone(nx,ny,ix,iy,a));
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
-            #add layers :can be '4','1,2','3-5'
-            try: 
-                layers=[int(layers)]
-                ix2,iy2,iz2,asin2,acos2=ix*1,iy*1,layers*len(ix),asin,acos
-            except ValueError:
-                if '-' in layers :
-                        l1 = layers.split('-')
-                        layers = list(range(int(l1[0]),int(l1[1])+1))
-                elif ',' in layers:
-                    a = layers.split(',');layers = [int(x) for x in a]
-                for il in layers: 
-                    ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
-                    asin2.extend(asin);acos2.extend(acos)
+    ### Get a list of layer
+        try: 
+            layers=[int(layers)]
+            ix2,iy2,iz2,asin2,acos2=ix*1,iy*1,layers*len(ix),asin,acos
+        except:
+            if '-' in layers :
+                    l1 = layers.split('-')
+                    layers = list(range(int(l1[0]),int(l1[1])+1))
+            elif ',' in layers:
+                a = layers.split(',');layers = [int(x) for x in a]
+            for il in layers: 
+                ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
+                asin2.extend(asin);acos2.extend(acos)
+    ### Transform icol for modflow
         if mtype=='Mod': iym = [ny-y-1 for y in iy2] # transform to modflow coords
         else : iym =iy2
-        t2 = self.getTlist2();#print 'core 565',layers,ix2,iy2,iz2,t2
-        if typ[0]=='B': iper=list(range(len(t2))) # breakthrough
+    ### Get list of time and period 
+        t2 = self.getTlist2()
+        if typ[0]=='B': iper=list(range(len(t2))) ## time-serie graph
         else : iper = [iper]
-        pt=[] # pt will be a list of tables (iper,irows) provided by the reader
+    ### Get the value
+        pt=[] ## pt will be a list of tables (iper,irows) provided by the reader
         labels=[''] 
-        ###### the cocnernend species (that can be head)
+       ## For Head and Wcontent
         if esp[0] in ['Head','Wcontent']: 
             for il in layers: # we may want data from several different layers
                 if il!= -1: iz2=[il]*len(ix2)
-                pt.append(self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])); # irow,icol,ilay
+                pt.append(self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])); ## irow,icol,ilay
                 labels.append('lay'+str(il))
             #print('pthead',pt)
+       ## For Tracer
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
             elif mtype in ['Sut','Min','Opg']: opt = 'Tracer' # OA 19/3/19
             for il in layers:
                 if il!= -1: iz2=[il]*len(ix2)
-                pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt)); # irow,icol,ilay
+                pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt)); ## irow,icol,ilay
                 labels.append('lay'+str(il))
+       ## For chemistry
         elif group=='Chemistry': 
             iesp,lesp = 0,self.addin.chem.getListSpecies()
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
@@ -692,46 +700,51 @@ class Core:
                     if il!= -1: iz2=[il]*len(ix2)
                     pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e))
                     labels.append(e+'_lay'+str(il))
-        else : pt=[1.] # for flux
-        ######## calculating the flux
-        #print 'core 597',typ,esp,ix,ix2,iy,iy2
-        if typ[1]!='0' or esp[0]=='Flux': # to get the flux, shall be a matrix (nper,nrow)
-            disx,disy = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,'flux'); # provides the total flux from each cell
-            disch = sqrt(disx**2+disy**2) # this is the discharge per cell
+        else : pt=[1.] ## for flux
+       ## For Darcy flux
+        if typ[1]!='0' or esp[0]=='Flux': ## to get the flux, shall be a matrix (nper,nrow)
+            disx,disy = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,'flux'); ## provides the total flux from each cell
+            disch = sqrt(disx**2+disy**2) ## this is the discharge per cell
             thick = self.flowReader.getThicknessZone(self,iper,iz2,ix2,iym)
-            dx,dy = array(grd['dx'])[ix2],array(grd['dy'])[iy2]; #print disx,ansin,dy,thick
-            f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick;#print disx,f1,disy,f2 # this is the flux
-            flux = sqrt(f1**2+f2**2) #self.moyvect(f1)+self.moyvect(f2)) # flux shall be a vector
+            dx,dy = array(grd['dx'])[ix2],array(grd['dy'])[iy2]
+            f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux
+            flux = sqrt(f1**2+f2**2) ## flux shall be a vector
             flux[flux<1e-8]=1e-8
-            #print dx,dy,iy2,asin2,acos2,disch,flux,thick
+            #print('iz2',iz2,'disx',disx,'thick',thick,'asin2',asin2)
+            print('asin2',asin2,'thick',thick,'dy',dy)
+            print('disx',disx)
+            print('f1',f1)
+    ### Transform values for different type of graph and return them
         if esp[0] in ['Head','Wcontent']: typ=typ[0]+'0'
-        xzon=xvect[ix2];yzon=yvect[iy2];
-        if typ[0]=='B':  ########### Breakthrough
-            p1=zeros((len(t2),len(pt)));#print(t2)# p1 : to make a table of (ntimes,nspecies)
+       ## Time-serie graph
+        if typ[0]=='B': 
+            p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
             for i in range(len(pt)):
-                #print('ptobs',i,pt[i],pt)
-                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); #conc, pt[i] is a table (nper,nrow) 
-                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux,axis=1)/sum(flux,axis=1) # weighted conc
-                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch,axis=1); #total discharge
-                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux,axis=1); #average flux
+                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); ## conc, pt[i] is a table (nper,nrow) 
+                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux,axis=1)/sum(flux,axis=1) ## weighted conc
+                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch,axis=1); ## total discharge
+                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux,axis=1); ## average flux
             return t2,p1,labels
-        elif typ[0]=='P':  ############ Profile
+       ## Profile
+        elif typ[0]=='P':  
+            xzon=xvect[ix2];yzon=yvect[iy2];
             d0=sqrt((xzon[1:]-xzon[:-1])**2.+(yzon[1:]-yzon[:-1])**2.)
             dist = concatenate((array(0.,ndmin=1),cumsum(d0)))
             p1=zeros((len(dist),len(pt)))
             labels[0]='distance'
             for i in range(len(pt)):
                 if typ[1]=='0': p1[:,i]=pt[i]
-                elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux # weigthed conc= darcy flux
-                elif typ[1]=='2': p1[:,i]=pt[i]*disch #discharge or mass discharge
+                elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux ## weigthed conc= darcy flux
+                elif typ[1]=='2': p1[:,i]=pt[i]*disch ## discharge or mass discharge
             return dist,p1,labels
-        elif typ[0]=='X': # XY plot
+       ## XY plot
+        elif typ[0]=='X': 
             indCol = self.data['cols'].index(esp[0])
             labels = zlist['name']
             mes0=self.data['data'][:,indCol]; # OA 20/6 added three lines here to reorder and get labels
             npts = len(mes0)
-            mes1,pt1,idx,pt0 = mes0*0,zeros((1,npts)),0,pt[0];print((mes0,self.data['rows'],labels,pt[0]))
+            mes1,pt1,idx,pt0 = mes0*0,zeros((1,npts)),0,pt[0]
             for i in range(len(labels)): 
                if labels[i] in self.data['rows']:
                    mes1[idx] = mes0[self.data['rows'].index(labels[i])]
@@ -739,6 +752,10 @@ class Core:
                    idx+=1
             p1=zeros((len(mes1),1));p1[:,0]=pt1;
             return mes1,p1,'correl'
+            
+    def diffvect(self,v):
+        v= v[1:]-v[:-1]
+        return concatenate([v,v[-1:]])
             
     def diffvect(self,v):
         v= v[1:]-v[:-1]

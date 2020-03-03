@@ -29,7 +29,7 @@ class mtUsgWriter:
             usgTrans['rch'] = self.writeRchString()
         if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
             usgTrans['wel'] = self.writeWelValues(opt)            
-        if 'bas.5' in self.core.diczone['Modflow'].dic.keys():
+        if 'bct.20' in self.core.diczone['MfUsgTrans'].dic.keys():
             usgTrans['chd'] = self.writeChdValues(opt)            
         self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         self.writeBCT(opt)
@@ -74,7 +74,7 @@ class mtUsgWriter:
             if ll in lexceptions:
                 s += self.writeExceptions(ll);continue
             if ktyp[0] in ['vecint','vecfloat','arrint','arrfloat']:
-                s += self.writeArray(opt,ll,0)
+                s += self.writeArray(opt,ll,ktyp[0]) + '\n'
             elif ktyp[0]=='title': # case of a title line
                 s += '#'+str(ktyp[0]).rjust(10)+'\n'
             else : # classical keywords
@@ -98,20 +98,18 @@ class mtUsgWriter:
             else : s = 'CONSTANT    '+str(self.core.dicval['MfUsgTrans'][line][0])+'\n'
             return s
         
-    def writeArray(self,opt,line,ik):
+    def writeArray(self,opt,line,ktyp):
         """writes arrays, need specific treatment for btn concentrations if pht3d
         and also for react modules of MfUsgTrans"""
-        grd = self.core.addin.getFullGrid()
-        dx,ny = array(grd['dx']),int(grd['ny'])
         if (opt=='Pht3d') and (line == 'bct.20'):
             s = ''
             self.Conc, self.Names = self.getConcInit('main','ph.3',iper=0);
             nspec = len(self.Names)
             for i in range(nspec):
-                s += self.formatBlockMusg(self.Conc[i],self.Names[i])
+                s += self.formatBlockMt(self.Conc[i],self.Names[i]) +'\n'
         else: # normal print of array
-            arr = self.core.getValueLong('MfUsgTrans',line,ik);
-            s = self.formatBlockMusg(arr,line)
+            arr = self.core.getValueLong('MfUsgTrans',line,0);
+            s = self.formatBlockMt(arr,ktyp)
         return s 
 
     def getConcInit(self,typ,line,iper=0):
@@ -163,29 +161,35 @@ class mtUsgWriter:
     #************************ write wells, rech, evt... ******************
     def writeWelValues(self,opt=None):
         '''a table of value that will be used in modflow'''
-        if opt == 'Pht3d':
-            ttable = self.core.ttable['ph.4'];ny,nx = shape(ttable)
-            lsolu = unique(ttable) 
-            schem = self.phval2conc(len(lsolu))
-            a0 = ' '*len(schem[0])
-            ttabl1 = np.full((ny,nx),a0)
-            for i,solu in enumerate(lsolu):
-                iy,ix = where(ttable==solu)
-                ttabl1[iy,ix] = schem[i]
-            return ttabl1
+        if opt == 'Pht3d': 
+            return self.getTransTable(opt,'ph.4','wel.1')
         else : 
-            return self.core.ttable['cwell.1']
-        
+            return self.getTransTable(opt,'cwell.1','wel.1')
+
     def writeChdValues(self,opt=None):
-        ttable = self.core.ttable['bas.5'];ny,nx = shape(ttable)
-        s0 = ''
-        if opt == 'Pht3d':
-            for i in range(self.listEsp['mcomp']+3): s0 += ' %9.3e' %0.
+        if opt == 'Pht3d': 
+            return self.getTransTable(opt,'ph.4','bas.5')
         else :
-            s0 = ' %9.3e' %0.
-        ttabl1 = np.full((ny,nx),s0)
+            return self.getTransTable(opt,'bct.20','bas.5')
+               
+    def getTransTable(self,opt,tline,mfline):
+        '''returns a transient table containing the species'''
+        #if tline not in self.core.ttable.keys(): return None
+        ttable = self.core.ttable[tline];nt,nzo = shape(ttable)
+        lsolu = unique(ttable) 
+        if opt == 'Pht3d' :
+            spec0,spec = self.phval2conc(len(lsolu))
+        else :
+            spec0,spec = ' 0.000e+00',lsolu
+        lout,nzmf = self.connectZones(tline,mfline) # the index correct for modflow
+        ttabl1 = np.full((nt,nzmf),spec0)
+        if len(lout)>0:
+            for i,solu in enumerate(lsolu):
+                it,izo = where(ttable==solu)
+                izo2 = array(lout)[izo]
+                ttabl1[it,izo2] = spec[i] # lout[izo] allow to place the ph zone in correc tplace for modflow
         return ttabl1
-            
+        
     def phval2conc(self,nsol):
         '''returns the composition of solutions for 'k','i','kim'''
         schem = ['']*nsol;
@@ -200,10 +204,34 @@ class mtUsgWriter:
             for e in listE[kw]:
                 if e in ['pH','pe']: continue
                 inde = rows.index(e) # finds the index of the species e
-                for il in range(nsol): # fills the matrix with the solutions
-                    schem[il] += ' %9.3e' %float(data[inde][il+2])
-        return schem
+                for il in range(nsol): # fills the matrix with the back and solutions
+                    schem[il] += ' %9.3e' %float(data[inde][il+1])
+        schem0 = ' 0.000e+00'*len(schem[0].split())
+        return schem0,schem
         
+    def connectZones(self,tline,mfline):
+        '''connect the modflow zones to the pht3d zones, returns a list of
+        indices that correspond to the order of the ones existing in modflow
+        the first number is the ph.4 zone number corresponding to the 1st modlfow zone
+        '''
+        if tline[:2]=='ph': 
+            dicz = self.core.diczone['Pht3d'].dic['ph.4']
+            litrans = zptsIndices(self.core,dicz)
+        else : 
+            dicz = self.core.diczone['MfUsgTrans'].dic['bct.20']
+            litrans = zptsIndices(self.core,dicz)
+        dicz = self.core.diczone['Modflow'].dic[mfline]
+        limod = zptsIndices(self.core,dicz)
+        lout = []
+        for i0,ipts in enumerate(limod):
+            for ipt2 in litrans: # the zone in pht
+                a = 0
+                for coo in ipt2 :
+                    if coo in ipts: a += 1 # nb of points recognized in ipts
+                if a == len(ipt2):
+                    lout.append(i0)
+        return lout,len(limod)
+                    
     def writeRchString(self,opt=None):
         '''this list of strings will be used by modflow, one string for each
         stress period'''
@@ -270,8 +298,13 @@ class mtUsgWriter:
         nbe = core.addin.mesh.getNumber('elements');
         pindx,nbelts = zeros(nbe),0 # this will be the index, 0 for the background, then poly number
         for iz in range(nzones):
-            media = dicz['media'][iz]
-            idx = zmesh(core,dicz,media,iz)
+            #media = dicz['media'][iz]
+            ilay,idx,icol,zmat=self.mfloW.xyzone2Mflow(core,line,iz)
+#
+#            if core.getValueFromName('Modflow','MshType')<1:
+#                idx = 
+#            else :
+#                idx = zmesh(core,dicz,media,iz)
             try : len(idx) 
             except TypeError : continue # the zone media is not the right one
             pindx[idx] = iz+1
@@ -288,30 +321,30 @@ class mtUsgWriter:
         f1=open(self.fullPath+'.pcb','w')            
         f1.write(s1);f1.close()
         
-    #************************ samebut for a regular grid ******************
-    def writePcbRegFile(self,core):
-        # finds if the zones are transient and their values
-        nzones,line = 0,'pcb.2'
-        dicz = core.diczone['MfUsgTrans'].dic[line]
-        if line in self.ttable:
-            clist = self.ttable[line];
-            nzones = len(dicz['name'])
-        # find the nodes of the zones
-        intp = 0
-        znum = blockRegular('MfUsgTrans',line,intp,'zon',0)
-        nbcell = sum(znum>0)
-        #write the values for every period
-        s1 = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB
-        for ip in range(self.nper):
-            s1 += str(nbcell).rjust(10)+'  0\n' # ITMP MP
-            for iz in range(nzones):
-                il,iy,ix = where(znum==iz+1)[0]
-                for i in range(len(il)) : 
-                    s1 += str(il+1).rjust(10)+ str(iy+1).rjust(10)+ str(ix+1).rjust(10)
-                    s1 +='        1 ' # iSpecies_No
-                    s1 += str(clist[ip,iz]).rjust(10)+'\n' # Conc
-        f1=open(self.fullPath+'.pcb','w')            
-        f1.write(s1);f1.close()
+#    #************************ samebut for a regular grid ******************
+#    def writePcbRegFile(self,core):
+#        # finds if the zones are transient and their values
+#        nzones,line = 0,'pcb.2'
+#        dicz = core.diczone['MfUsgTrans'].dic[line]
+#        if line in self.ttable:
+#            clist = self.ttable[line];
+#            nzones = len(dicz['name'])
+#        # find the nodes of the zones
+#        intp = 0
+#        znum = blockRegular('MfUsgTrans',line,intp,'zon',0)
+#        nbcell = sum(znum>0)
+#        #write the values for every period
+#        s1 = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB
+#        for ip in range(self.nper):
+#            s1 += str(nbcell).rjust(10)+'  0\n' # ITMP MP
+#            for iz in range(nzones):
+#                il,iy,ix = where(znum==iz+1)[0]
+#                for i in range(len(il)) : 
+#                    s1 += str(il+1).rjust(10)+ str(iy+1).rjust(10)+ str(ix+1).rjust(10)
+#                    s1 +='        1 ' # iSpecies_No
+#                    s1 += str(clist[ip,iz]).rjust(10)+'\n' # Conc
+#        f1=open(self.fullPath+'.pcb','w')            
+#        f1.write(s1);f1.close()
 
     #********************************* write Pht3d file ********************
     def writePhFile(self,core,listE,parmk):
@@ -405,15 +438,15 @@ class mtUsgWriter:
         
 
     #  '''''''''''''''' fonction writeBlockMusg '''''''''''''''''''''''''''
-    def writeVecModflow(self, v,line):
+    #------------------------- fonction  writevect, writemat -------------------
+    def formatVecMt(self, v,ktyp):
         #print shape(v),amin(v),amax(v)
         l=len(v);ln=3;s=''
-        a=str(type(v[0]))
-        if 'int' in a: typ='I'
+        if ktyp[3:]=='int': typ='I' #OA 1/8/17
         else : typ='G'
         if amin(v)==amax(v):
-            if typ=='I': s += 'CONSTANT     %9i  \n' %amin(v)
-            else : s += 'CONSTANT     %9.5e  \n' %amin(v)
+            if typ=='I': s += 'CONSTANT     %9i  ' %amin(v)
+            else : s += 'CONSTANT     %9.5e  ' %amin(v)
             return s
         if typ=='I': fmt='1    ('+str(l)+'I'+str(ln)
         else : fmt='0    ('+str(l)+'G12.4'           
@@ -424,18 +457,49 @@ class mtUsgWriter:
 
         for i in range(l):
             s += fmt %v[i]
-        return s+'\n'
+        return s
 
-
-    def formatBlockMusg(self,m,line):
-        s=''
-        if len(shape(m))==2:
-            nlay,a = shape(m)
-            for l in range(nlay):
-                s += self.writeVecModflow(m[l],line)
-                #if l<nlay-1: s += '\n'
+    def formatMatMt(self, m, ktyp):
+        #print 'mfw',shape(m),m
+        if len(shape(m))==1: return self.formatVecMt(m,ktyp)
+        [l,c] = shape(m);ln=3
+        if ktyp[3:]=='int': typ='I' #OA 1/8/17
+        else : typ='G'
+        s = ''
+        if amin(amin(m))==amax(amax(m)):
+            if typ=='I': s += 'CONSTANT     %9i  ' %(amin(amin(m)))
+            else : s += 'CONSTANT     %9.5e  ' %(amin(amin(m)))
+            return s
+        if typ=='I':
+            fmt='1    ('+str(c)+'I'+str(ln)
         else :
-            s += self.writeVecModflow(m,line)            
+            fmt='0    ('+str(c)+'G12.4' #+str(ln)            
+        s += 'INTERNAL     '+fmt+')     3  \n'      
+        if typ=='I':
+            fmt='%'+str(ln)+'i'
+        else :
+            fmt='%+11.4e ' #'+str(ln)+'e '            
+        for i in range(l-1,-1,-1): # to write the rows from top to bottom
+            for j in range(c):
+                s+=fmt %(m[i][j])
+            s+='\n'
+        return s[:-1]
+
+    def formatBlockMt(self,m,ktyp):
+        #print shape(m),m
+        s = ''
+        if len(shape(m))==3:
+            nlay,a,b=shape(m);
+            for l in range(nlay):
+                s += self.formatMatMt(m[l],ktyp)
+                if l<nlay-1: s += '\n'
+        elif self.core.addin.mesh != None: # unstructured case write nlay vectors
+            nlay,a=shape(m);
+            for l in range(nlay):
+                s += self.formatVecMt(m[l],ktyp)
+                if l<nlay-1: s += '\n'       
+        else : 
+            s = self.formatMatMt(m,ktyp)
         return s
               
 class mtUsgReader:
@@ -447,8 +511,10 @@ class mtUsgReader:
 
     def readUCN(self,core,opt,iper,iesp,specname=''): 
         """ read .conc file, here opt, iesp, specname are not used
-        in free flow Thksat from flo file must be added (not done)"""    
-        if core.mfUnstruct:
+        in free flow Thksat from flo file must be added (not done)"""  
+        if opt=='Pht3d': 
+            return self.readACN(core,opt,iper,iesp)
+        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             cnc=zeros((nlay,ncell));#print('mfw 491', shape(cnc))
         else :
@@ -462,14 +528,29 @@ class mtUsgReader:
             f1.seek(iper*nlay*blok+blok*il+44)
             data = arr2('f')
             data.fromfile(f1,ncell)
-            if core.mfUnstruct: 
+            if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0: 
                 cnc[il] = data
             else : 
                 m = reshape(data,(nrow,ncol)) #
                 cnc[il] = m[::-1] #=1::=1
         f1.close()  
         return cnc
-
+    
+    def readACN(self,core,opt,iper,iesp,specname=''): 
+        if opt != 'Pht3d': return
+        if iesp<9: f1 = self.fDir+os.sep+'PHT3D00'+str(iesp+1)+'.ACN'
+        else : f1 = self.fDir+os.sep+'PHT3D0'+str(iesp+1)+'.ACN'
+        m = loadtxt(f1);
+        if core.mfUnstruct:
+            nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
+            ncellt = nlay*ncell
+            cnc=reshape(m[iper*ncellt:(iper+1)*ncellt],(nlay,ncell))
+        else :
+            nlay,ncol,nrow = self.getGeom(core)
+            ncell = nlay*nrow*ncol
+            cnc=reshape(m[iper*ncell:(iper+1)*ncell],(nlay,nrow,ncol))
+        return cnc
+    
     def getGeom(self,core):
         grd = core.addin.getFullGrid()
         ncol, nrow = grd['nx'], grd['ny']
