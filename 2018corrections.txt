@@ -913,3 +913,33 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - same : l.396 added lindx, added l.407 to sort, l.418 added buf1 (a list), in 435-450 buff replaced by s1
 - same : aded line 452-453 to sort the buf1 list with the cell number
 - mtUsgWriter readUCN l.515 and 525 added condition for usg rect case
+
+4/3/2  OA
+- core l. 362-364 added to run pht3d_usg
+- modflowWriter l.389 added lindx, l.396 condition on lindx
+- modflowWriter transientZone changed l.412, to consider that ext sometime ie not in trans.keys
+- modflowWriter transientZone l.421 added buf1 that is a list
+- modflowWriter transientZone l.426,427 removed '\n'
+- modflowWriter transientZone l.438,440,443,448,443 replaced buff+= by s1=
+- modflowWriter transientZone replaced l.455 by 454-456 to condier the lindx (reordering for usg)
+- modflowWriter xyzMoflow added line 463-464 to use by pcb (usgtrans)
+- modflowWriter xyzMoflow l.471 and 474 replaced modflow by modname
+- modflowWriter xyzMoflow l.474 aded condition for usg regular grids
+- modflowWriter xyzMoflow l.488 conditon was not set to ==1
+- modflowWriter xyzMoflow added l. 493 494 to write cell nb for usg regular grids
+- modflowREader l.720 getGeom removed from condition, set for all (l.715)
+- modflowREader l.716 added condition to read only true unstructured, same at l.730
+- mtUsgWriter nb modifs mais qui n'interfère pas avec les tiennes, donc tu peux le prendre tel quel (phase développement)
+
+22/02/20 - 11/03/20 EV (Budget development)
+- mybudget.py creation of the file
+- geometry.py zone2grid l.466, 490-493, 495 added to create zone file for zone budget
+- core.py onPtObs annotate added to explain the function 
+- core.py runZonebud function created to run zone budget
+- modflowWriter.py writeTransientZones l.407-408 added 31 to write budget by default
+- modflowWriter.py l.92 replaced EVT by EVTR, l.216 replaced line[:4] by 'evt.'
+- modflowWriter.py writeOcFile l.570 added to write budget by default
+- topBar onZoneCreate l.185-187 remove these line because no use anymore
+- multiplot getOptions l.60-65 modified to take into account W content and weighted concentration
+- multiplot getOptions l.190-195 modified to take into account W content and weighted concentration
+- guishow l.22, 23 added Mass balance graphs and zone budget graphs, removed W content 

@@ -452,15 +452,18 @@ def blockRegular(core,modName,line,intp,opt,iper):
     return m0
 
 def zone2grid(core,modName,line,media,opt=None,iper=0):
-    """ put zone information on the correct grid
-    if the grid is 3D then looks for information of layers
-    zone keys 'number','name','coords','media','value','type'
-    shall work with regular and vairable grids, but does not provide filled zone 
-    if the zone contains z values (variable polygon)"""
+    """ Put zone information on the correct grid.
+    If the grid is 3D then looks for information of layers
+    zone keys 'number','name','coords','media','value','type'.
+    Shall work with regular and vairable grids, but does not provide filled zone 
+    if the zone contains z values (variable polygon).
+    If line in observation (obs.1), opt is a list of zone to consider and 
+    the nb of zone instead of value is used.
+    """
     lval = core.dicval[modName][line]
     if media<len(lval): vbase=float(lval[media])
     else : vbase =float(lval[0])
-    if opt in['BC','zon']: vbase=0
+    if line != 'obs.1' and opt in['BC','zon']: vbase=0 #EV 26/02/20
     nx,ny,xvect,yvect = getXYvects(core)
     m0=ones((ny,nx))*vbase
     #print 'geom 322',line,core.dictype[modName][line],#core.diczone[modName].dic
@@ -476,7 +479,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
     #print 'geo z2g',line,core.ttable[line]
     
     for i in range(lz):  # loop on zones
-        if diczone['value'][i]=='': continue
+        if line != 'obs.1' and diczone['value'][i]=='': continue
         xy = diczone['coords'][i]#;core.gui.onMessage(str(xy))
         zmedia = diczone['media'][i] # a media or a list of media for the zone
         if type(zmedia)!=type([5]): zmedia=[zmedia]
@@ -485,10 +488,11 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         #if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
         if line in list(core.ttable.keys()): 
             if line == 'obs.1' : #EV 26/02/20
-                if diczone['name'][i] in opt: zv0= int(diczone['number'][i])
+                if diczone['name'][i] in opt: 
+                    zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
                 else : continue
             else : zv0=float(core.ttable[line][iper,i])
-        if opt=='zon': zv0=i+1 # OA added 8/5/19
+        if line != 'obs.1' and opt=='zon': zv0=i+1 # OA added 8/5/19 #EV 26/02/20
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
         if len(xy)==1:  # case point

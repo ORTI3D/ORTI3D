@@ -188,10 +188,10 @@ class Ui_Show(object):
         item2 = self.Show.findChild(QComboBox,'Observation_Result_L')
         res = item2.currentText()
         if self.core.diczone['Observation'].dic: #EV 14/08/19
-            #if typ in ['M','Z']:
-                #m = mybudget(self.gui,self.core,typ,res)
-            #else : 
-            m = multiPlot(self.gui,self.core,typ,res)
+            if typ in ['M','Z']:
+                m = mybudget(self.gui,self.core,typ,res)
+            else : 
+                m = multiPlot(self.gui,self.core,typ,res)
             m.show()
         else : #EV 14/08/19
             mess=onMessage(self.gui,'Create an observation zone to plot the resuts.')

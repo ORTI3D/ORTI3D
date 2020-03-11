@@ -52,12 +52,14 @@ class IntpDialog(QDialog):
         txtMhd.setFont(font)
         self.verticalLayout.addWidget(txtMhd)
         self.plgroup = QComboBox()
-        self.plgroup.addItems(['Kriging','Inverse distance','Thiessen polygons'])
+        self.plgroup.addItems(['Kriging','Inverse distance',
+                               'Thiessen polygons'])
         self.plgroup.setCurrentIndex(self.mth)
         self.plgroup.activated['QString'].connect(self.onChoiceOption)
         self.verticalLayout.addWidget(self.plgroup)
     ## spacer 1 vH1 
-        self.verticalLayout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.verticalLayout.addSpacerItem(QSpacerItem(
+                20, 50, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
     ## Interpolation parameters vH1.2
         title2 = QLabel(self)
         title2.setText('Interpolation parameters') 
@@ -87,21 +89,27 @@ class IntpDialog(QDialog):
         self.verticalLayout.addWidget(title3)
        ## choise save or recalculate
         self.choise = QComboBox(self)
-        self.choise.addItems(['Save results as array','Recalculate each time files are written'])
+        self.choise.addItems(['Save results as array',
+                              'Recalculate each time files are written'])
         self.choise.setCurrentIndex(self.ch)
         self.verticalLayout.addWidget(self.choise) 
     ## spacer 2 vH1 
-        self.verticalLayout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.verticalLayout.addSpacerItem(
+                QSpacerItem(20, 50, QSizePolicy.MinimumExpanding,
+                            QSizePolicy.Minimum))
        ## save button
         self.saveButton = QDialogButtonBox(self)
         self.saveButton.setOrientation(Qt.Horizontal)
-        self.saveButton.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Save)
-        self.verticalLayout.addWidget(self.saveButton, alignment=Qt.AlignHCenter)
+        self.saveButton.setStandardButtons(QDialogButtonBox.Cancel|
+                QDialogButtonBox.Save)
+        self.verticalLayout.addWidget(self.saveButton, 
+                                      alignment=Qt.AlignHCenter)
         self.saveButton.accepted.connect(self.accept1)
         self.saveButton.rejected.connect(self.reject1)
     ## add vertical layout vH1  
         self.horizontalLayout.addLayout(self.verticalLayout,2)
-        self.horizontalLayout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.horizontalLayout.addSpacerItem(QSpacerItem(
+                20, 20, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
     ## the right panel vertical layout
         self.verticalLayout2 = QVBoxLayout()
     ## parameter of variogram
@@ -160,8 +168,9 @@ class IntpDialog(QDialog):
                             ('Log Values','Check',True),
                             ('Plot Variogram','Check',False),
                             ('nlags','Text',6),
-                            ('Variogram model','Choice',('spherical',['power','gaussian',
-                                        'spherical','exponential'])),
+                            ('Variogram model','Choice',
+                             ('spherical',['power','gaussian',
+                                           'spherical','exponential'])),
                             ('Sill / Scale*','Text',1e-4),
                             ('Range / Exponent*','Text',30),
                             ('Nugget','Text',0)
@@ -186,7 +195,7 @@ class IntpDialog(QDialog):
         intpMtd = int(self.plgroup.currentIndex())
         for i in range(nb):
             typ = self.dialg.data[i][1]
-            if typ == 'Choice': parms[i] = str(self.dialg.item[i].currentText())
+            if typ == 'Choice': parms[i]= str(self.dialg.item[i].currentText())
             if typ == 'Text': parms[i] = str(self.dialg.item[i].text())
             if typ == 'Check': 
                 if self.dialg.item[i].isChecked() : parms[i] = 1
@@ -335,7 +344,7 @@ def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     
 def krige(xpt,ypt,zpt,x,y,vtype,vparm,nlags): #EV 19/02/20
     OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model=vtype,
-                 variogram_parameters=vparm, variogram_function=None, nlags=nlags,
+                 variogram_parameters=vparm,variogram_function=None,nlags=nlags,
                  weight=False, anisotropy_scaling=1.0, anisotropy_angle=0.0,
                  verbose=True, enable_plotting=False, enable_statistics=False,
                  coordinates_type='euclidean')

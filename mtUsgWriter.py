@@ -541,7 +541,7 @@ class mtUsgReader:
         if iesp<9: f1 = self.fDir+os.sep+'PHT3D00'+str(iesp+1)+'.ACN'
         else : f1 = self.fDir+os.sep+'PHT3D0'+str(iesp+1)+'.ACN'
         m = loadtxt(f1);
-        if core.mfUnstruct:
+        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             ncellt = nlay*ncell
             cnc=reshape(m[iper*ncellt:(iper+1)*ncellt],(nlay,ncell))
@@ -549,6 +549,7 @@ class mtUsgReader:
             nlay,ncol,nrow = self.getGeom(core)
             ncell = nlay*nrow*ncol
             cnc=reshape(m[iper*ncell:(iper+1)*ncell],(nlay,nrow,ncol))
+            cnc = cnc[:,::-1,:]
         return cnc
     
     def getGeom(self,core):

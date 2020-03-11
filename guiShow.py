@@ -18,9 +18,9 @@ class guiShow:
             #'Observation':[4,['Type',['Profile','Breakthrough','XYplot']],
                         #   ['Zone',['_______']]]}
             'Observation':[4,['Type',['Time-series Graphs','Profile Graphs',
-                                      'Calibration Graphs']],#'Mass balance Graphs'
-                                      #,'Zone budget Graphs']],
-                           ['Result',['Flow','W content','Transport','Chemistry']]]} # OA 21/2/2019
+                                      'Calibration Graphs','Mass balance Graphs'
+                                      ,'Zone budget Graphs']], # EV 02/03/20 
+                           ['Result',['Flow','Transport','Chemistry']]]} # OA 21/2/2019 # EV 02/03/20 'W content',
         self.dicVisu = {'Model':{'Plane':'Z','Layer':0,'Tstep':0,'Grid':False,'Map':False,'Variable':False},
                 'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,'Veloc-magn':False,'Particles':False},
                 'Transport':{'Tracer':False},

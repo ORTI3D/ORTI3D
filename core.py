@@ -359,7 +359,10 @@ class Core:
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
         if modName == 'Pht3d':
-            s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
+            if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
+                s = self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName           
+            else :
+                s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
@@ -422,6 +425,12 @@ class Core:
         a= f1.read().split('\n')
         f1.close()
         return a[-line]
+    
+    def runZonebud(self): # EV 04/03/20
+        s=self.baseDir+os.sep+'bin'+os.sep+'zonbud.exe'
+        myinput = open(self.fileDir+os.sep+'zonbud.in')
+        os.chdir(self.fileDir)
+        p = Popen(s,stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()
         
 #********************** import and export functions *****************
     def importData(self,fileDir,fileName):
@@ -711,9 +720,9 @@ class Core:
             flux = sqrt(f1**2+f2**2) ## flux shall be a vector
             flux[flux<1e-8]=1e-8
             #print('iz2',iz2,'disx',disx,'thick',thick,'asin2',asin2)
-            print('asin2',asin2,'thick',thick,'dy',dy)
-            print('disx',disx)
-            print('f1',f1)
+            #print('asin2',asin2,'thick',thick,'dy',dy)
+            #print('disx',disx)
+            #print('f1',f1)
     ### Transform values for different type of graph and return them
         if esp[0] in ['Head','Wcontent']: typ=typ[0]+'0'
        ## Time-serie graph

@@ -33,10 +33,10 @@ class multiPlot(QDialog):
         self.verticalLayout = QVBoxLayout()
         #self.verticalLayout.setGeometry(QRect(5, 5, 250, screenShape.height()*.68))
     ## title
-        if typ == 'B' : title = 'Time-series graph'
-        if typ == 'P' : title = 'Profile graph'
-        if typ == 'X' : title = 'Calibration graph'
-        label = str(title +' - '+res)
+        if self.typ == 'B' : title = 'Time-series graph'
+        if self.typ == 'P' : title = 'Profile graph'
+        if self.typ == 'X' : title = 'Calibration graph'
+        label = str(title +' - '+self.res)
         self.label = QtWidgets.QLabel(self)
         self.label.setMaximumSize(250, 24)
         self.label.setText(label)
@@ -52,23 +52,19 @@ class multiPlot(QDialog):
         self.frame.setMaximumSize(QtCore.QSize(250, 60)) 
         self.gl = QGridLayout(self.frame)
     ## type of result 
-        if res != 'W content':
+        if self.res != 'W content':
             self.label_0 = QtWidgets.QLabel(self.frame)
             #self.label_0.setMaximumSize(QtCore.QSize(40, 20))
             self.label_0.setText("Type of result")
             self.gl.addWidget(self.label_0,0,0,1,1)
             self.rgroup = QComboBox(self)
-            if res == 'Flow' : self.rgroup.addItems(['Head','Darcy flux'])
-            if res == 'Transport' : 
-                self.rgroup.addItems(['Tracer concentration','Tracer mass flux'
-                                      ,'Tracer mass'])
-            if res == 'Chemistry' : 
-                self.rgroup.addItems(['Species concentration',
-                                      'Species mass flux','Species mass'])
+            if self.res == 'Flow' : self.rgroup.addItems(['Head','W content']) #EV 02/03/20
+            if self.res in ['Transport','Chemistry'] : 
+                self.rgroup.addItems(['Concentration','Weighted concentration'])
             self.rgroup.setCurrentIndex(0)
             self.gl.addWidget(self.rgroup,0,1,1,1)
     ## Plot order combo box for chemistry
-        if res=='Chemistry' and typ=='B':
+        if self.res=='Chemistry' and self.typ=='B':
             self.label_1 = QtWidgets.QLabel(self.frame)
             #self.label_1.setMaximumSize(QtCore.QSize(40, 20))
             self.label_1.setText("Plot order")
@@ -79,7 +75,7 @@ class multiPlot(QDialog):
             self.gl.addWidget(self.plgroup,1,1,1,1)
             #!self.verticalLayout.addWidget(self.plgroup) 
     ## Time combo box for profile and calibration graph
-        if typ=='P' or typ=='X':
+        if self.typ=='P' or self.typ=='X':
             #!self.frame = QtWidgets.QFrame(self)
             #!self.frame.setMaximumSize(QtCore.QSize(120, 38))
             #!self.horizontalLayout2 = QHBoxLayout(self.frame)
@@ -90,7 +86,7 @@ class multiPlot(QDialog):
             self.label_2.setText("Time")
             self.gl.addWidget(self.label_2,1,0,1,1)
             #!self.horizontalLayout2.addWidget(self.label_2)
-            if typ=='X':
+            if self.typ=='X':
                 self.tlist=list(self.tlist)
                 self.tlist.insert(0, 'All')
             self.Tstep = QComboBox(self.frame)
@@ -101,12 +97,12 @@ class multiPlot(QDialog):
             #!self.verticalLayout.addWidget(self.frame) 
         self.verticalLayout.addWidget(self.frame) 
     ## choise plot obsData
-        if typ=='B': # only for time series graphs for now (or typ=='P') 
+        if self.typ=='B': # only for time series graphs for now (or typ=='P') 
             self.checkBox = QCheckBox(self)
             self.checkBox.setText("Observed Data")    
             self.verticalLayout.addWidget(self.checkBox)
     ## the options :need to go in the interface to search for zones and others
-        dic=self.getChoices(res,typ)
+        dic=self.getChoices(self.res,self.typ)
         self.nb = myNoteBookCheck(self.gui,"Options",dic)
         self.nb.layout.removeWidget(self.nb.buttonBox) #EV 06/12
         self.nb.buttonBox.deleteLater()
@@ -191,11 +187,12 @@ class multiPlot(QDialog):
         '''get the plot options from the window very simple now'''
         dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
-        #!rtyp = int(self.rgroup.currentIndex())
-        #!dicIn['ptyp']=str(ptyp+rtyp)
-        if ptyp=='B' : dicIn['ptyp']='B0'
-        if ptyp=='P' : dicIn['ptyp']='P0'
-        if ptyp=='X' : dicIn['ptyp']='XY'
+        rtyp = int(self.rgroup.currentIndex()) #EV 02/03/20
+        dicIn['ptyp']=ptyp+str(rtyp)
+        if self.rgroup.currentText()=='W content': dicIn['ptyp']=ptyp+'0'
+        #if ptyp=='B' : dicIn['ptyp']='B0'
+        #if ptyp=='P' : dicIn['ptyp']='P0'
+        #if ptyp=='X' : dicIn['ptyp']='XY'
         #dic=self.nb.getValues() 
         dic=self.getValues() #EV 14/08/19
         nblay=getNlayers(self.core) #EV 26/08/19
@@ -206,6 +203,7 @@ class multiPlot(QDialog):
             dicIn['lylist']=','.join(lylist)
         #dicIn['splist']=[self.res]
         dicIn['splist']=[self.rgroup.currentText()]
+        if self.res=='Transport' :dicIn['splist']=['Tracer']
         if self.res=='Chemistry' :
             if ptyp=='X' or ptyp=='P': dicIn['plotOrder']='Zones'
             else :
@@ -232,7 +230,7 @@ class multiPlot(QDialog):
         if not dicIn['splist'] : #EV 26/08/2019
             mess=onMessage(self.gui,'Choose specie(s) to plot the results.')
             return mess
-        if not dicIn['lylist'] and self.ptyp!='XY': #EV 26/08/2019
+        if not dicIn['lylist'] and self.ptyp[0]!='X': #EV 26/08/2019
             mess=onMessage(self.gui,'Choose layer(s) to plot the results.')
             return mess
     ## Calculates nb of plots, ncol and nrows for subplot
@@ -256,9 +254,8 @@ class multiPlot(QDialog):
     ## build the plots
         self.figure.clf()
     ## Calibration graph
-        if self.ptyp == 'XY':
-            
-            ptypXY='P0' ; self.llabel=['1:1'] ; time=[]
+        if self.ptyp[0] == 'X':
+            ptypXY='P0' ; self.llabel=[] ; time=[]
             self.yobs_all = [] ; self.ysim_all = [] ; self.obs_time = [] ; self.label_all=[] ## for export
             self._ax=self.figure.add_subplot(1,1,1)
             if int(self.Tstep.currentIndex())==0: curTime='All' ; time=self.tlist[1:] 
@@ -277,8 +274,9 @@ class multiPlot(QDialog):
                             self.yobs_all.append(yobs[0]) 
                             self.obs_time.append(time[t])
                             self.label_all.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))                             
-                    myplot=self._ax.scatter(yobs_array,ysim_array)
-                    self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs))  
+                    myplot=self._ax.plot(yobs_array,ysim_array,marker='x',linestyle = 'None')
+                    self.llabel.append(self.zolist[j]+'_'+self.splist[i]+'_lay'+str(lobs)) 
+            self.llabel.append('1:1')
             if not self.yobs_all : #EV 26/08/2019
                 mess=onMessage(self.gui,'There is no observation data for these zone(s).') 
                 return mess
@@ -301,14 +299,14 @@ class multiPlot(QDialog):
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
                     myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
-                    if self.ptyp=='B0': ## observed data for time series only
+                    if self.ptyp[0]=='B': ## observed data for time series only
                         if self.checkBox.isChecked():
                             for j in range(len(self.splist)):
                                 for l in range(len(layers)):
                                     xobs,yobs,lobs=self.getDataObs(self.splist[j],self.zolist[i],layers[l])
                                     if len(yobs)!=0 :
                                         color=j*len(layers)+layers.index(lobs) #EV 26/08/19
-                                        myplot2=self._ax.plot(xobs,yobs,c='C'+str(color)) #EV 26/08/19
+                                        myplot2=self._ax.plot(xobs,yobs,c='C'+str(color),marker='x',linestyle = 'None') #EV 26/08/19
                                         if group!='Chemistry':self.llabel.append('lay'+str(lobs)+'(obs)')
                                         else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
                     self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
@@ -328,7 +326,7 @@ class multiPlot(QDialog):
                         self.yyarray = np.append(self.yyarray,yy,axis=1)
                         label=[str(self.zolist[j]+'_lay'+lylist.split(',')[x]+'(sim)') for x in range(len(lylist.split(',')))]
                         self.llabel0.append(label)
-                        if self.ptyp=='B0': ## observed data for time series only
+                        if self.ptyp[0]=='B': ## observed data for time series only
                             if self.checkBox.isChecked():
                                 for l in range(len(layers)):
                                     xobs,yobs,lobs=self.getDataObs(self.splist[i],self.zolist[j],layers[l])
@@ -364,7 +362,7 @@ class multiPlot(QDialog):
             ispe = self.core.dicaddin[dicName]['cols'].index(splist)
         for i in range(len(dic)):
             if dic[i][0]==zname:
-                if self.ptyp=='B0':
+                if self.ptyp[0]=='B':
                     if int(dic[i][1])==int(opt):
                         if dic[i][ispe]!='': # EV 05/03/19
                             xobs.append(float(dic[i][2]))     
@@ -394,7 +392,7 @@ class multiPlot(QDialog):
                     f1.write(str(self.yobs_all[n])+' ')
                     f1.write(str(self.ysim_all[n])+'\n')
             f1.close()
-        elif self.ptyp=='B0':
+        elif self.ptyp[0]=='B':
             f1.write(self.axlabel.split(' ')[0])
             if self.pOrder=='Zones': zslist=self.zolist
             else : zslist= self.splist
@@ -412,7 +410,7 @@ class multiPlot(QDialog):
             arr[:,1:]=(self.arryy)
             savetxt(f1,arr)
             f1.close()
-        elif self.ptyp=='P0': 
+        elif self.ptyp[0]=='P': 
             for i in range(len(self.zolist)):
                 f1.write(self.axlabel.split(' ')[0])
                 for n in self.llabel: 

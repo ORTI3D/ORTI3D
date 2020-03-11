@@ -182,7 +182,7 @@ class BaseTop:
         else : #cancel
             curzones.delZone(line,iz)
             self.gui.visu.redraw()#line)
-        if line=='obs.1':
-            onames = self.core.diczone['Observation'].dic['obs.1']['name']
-            self.gui.guiShow.setNames('Observation_Zone_L',onames)
+        #if line=='obs.1': #EV 06/03/20
+            #onames = self.core.diczone['Observation'].dic['obs.1']['name']
+            #self.gui.guiShow.setNames('Observation_Zone_L',onames)
         #self.modifZones(line)# adding a zone changes the view of the current variable

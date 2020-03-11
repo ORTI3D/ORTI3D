@@ -213,7 +213,7 @@ class modflowWriter:
             s += '    0     0    0\n' # INSURF INEVTR INEXDP INIEVT not read
             for k in range(2,5):
                 #m = block(self.core,'Modflow',line[:4]+str(k),False,None,iper);#EV 04/02/20
-                m = self.core.getValueLong('Modflow','evt.'+str(k),0,iper) #EV 04/02/20 #EV 28/02/20
+                m = self.core.getValueLong('Modflow','evt.'+str(k),0,iper) #EV 04/02/20 #EV 28/02/20 line[:4]
                 s += self.writeMatModflow(m[0],'arrfloat')+'\n'
         exceptDict={'evt.2':s}
         self.writeOneFile('EVT',exceptDict)
@@ -386,13 +386,14 @@ class modflowWriter:
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
           
-        lpts, k, npts,zvar = [],[],0,[] # OA 25/4/19 added zlist
+        lpts, k, npts,zvar,lindx = [],[],0,[],[] # OA 3/3/20 added lindx
         for iz in range(nzones): #creates a list of points for each zone
             lpts.append([])
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
             zvar.append(zvect)
             if ilay == None: break
             npts += len(irow)
+            if core.addin.mesh != None : lindx.extend(list(irow))# OA 3/3/20                                                                           
             for i in range(len(irow)):
                 if core.addin.mesh == None: # regular grid # OA modif 4/2/19
                     lpts[iz].append(str(ilay[i]+1).rjust(9)+' '+str(irow[i]+1).rjust(9)+' '+\
@@ -406,7 +407,7 @@ class modflowWriter:
         buff = ' %9i' %npts;#print(line,zlist)
         #if ext == 'wel': buff += ' 31'#EV 25/02/20 it was 90
         buff += ' 31'
-        if self.trans: 
+        if ext in self.usgTrans.keys():  #OA 4/3/20
             nspec = len(self.usgTrans[ext][0,0].split())
             for i in range(nspec): buff += ' AUX C%02i' %(i+1)
             buff += '\n'
@@ -415,13 +416,13 @@ class modflowWriter:
         for ip in range(nper): # get each period
             if ext == 'wel': buff += '%9i  0  0\n' %npts
             else: buff +=  '%9i \n' %npts
-            flgTr = False
+            flgTr, buf1 = False,[]
             if len(unique(zlist[:,iz]))>1 : flagTr = True
             for iz in range(nzones): # and each zones
                 val = zlist[ip,iz] # the value of the variable for the period
                 if ext in self.usgTrans.keys(): 
-                    soption = self.usgTrans[ext][ip,iz] + '\n'
-                else : soption ='\n'
+                    soption = self.usgTrans[ext][ip,iz]
+                else : soption =''
                 a = core.diczone['Modflow'].getValue(line,'value',iz)
                 if '$' in a: vparms = a.split('$')[1]
                 vnext = zlist[min(ip+1,nper-1),iz] #OA 7/8/17 pb of Chd
@@ -432,39 +433,43 @@ class modflowWriter:
                     else : 
                         zbase = 0 # OA 25/4/19
                     if ext=='wel': 
-                        buff+= lpts[iz][pt]+' %9.3e '%(float(val)*k[iz][pt]) #EV 20/02/19
+                        s1=lpts[iz][pt]+' %9.3e '%(float(val)*k[iz][pt]) #EV 20/02/19
                     elif ext=='chd': 
-                        buff+=lpts[iz][pt]+' %9.3e %9.3e ' %(float(val)+zbase,float(vnext)+zbase)
+                        s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(val)+zbase,float(vnext)+zbase)
                     elif ext=='drn': # elevation adding zbase (polyV), then cond.
                         v1,v2 = val.split();#print(iz,pt,zbase,v1,v2)
-                        buff+=lpts[iz][pt]+' %9.3e %9.3e ' %(float(v1)+zbase,float(v2))
+                        s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(v1)+zbase,float(v2))
                     elif ext=='ghb':
                         a,cond = vparms.split(); #conductance steady (time & space)
                         if flgTr: hd = float(val)
                         else : hd = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %9.3e %9.3e '%(hd+zbase,float(cond))
+                        s1=lpts[iz][pt]+' %9.3e %9.3e '%(hd+zbase,float(cond))
                     elif ext=='riv':
                         a,cond,botm = vparms.split()
                         if flgTr: stage = float(val)
                         else : stage = float(val.split()[0])
-                        buff+=lpts[iz][pt]+' %9.3e %9.3e %9.3e ' %(stage,float(cond),float(botm)+zbase)
-                    buff += soption
+                        s1=lpts[iz][pt]+' %9.3e %9.3e %9.3e ' %(stage,float(cond),float(botm)+zbase)
+                    buf1.append(s1+soption)
+            if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
+            else : buff += '\n'.join(buf1) + '\n'
         f1.write(buff)
         f1.close()
         
     def xyzone2Mflow(self,core,line,iz):
         """returns a list of layers, rows and cols from zones that will fit to modflow
         standards"""
-        dicz = core.diczone['Modflow'].dic[line] #print zone['name'][iz]
+        if line == 'pcb.2':modName='MfUsgTrans' # OA 2/3/20
+        else : modName = 'Modflow'                                                                                            
+        dicz = core.diczone[modName].dic[line] # OA /3/20
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
         if xy == '': return None,None,None
         if len(xy[0])==2: x,y = list(zip(*xy));z=x*1 # OA 25/4/19 for 3 coords
         else : x,y,z = list(zip(*xy))
-        imed = core.diczone['Modflow'].getMediaList(line,iz)
+        imed = core.diczone[modName].getMediaList(line,iz) # OA 4/3/20
         ilay = media2layers(core,imed)
         dm = core.addin.getDim()
-        if core.addin.mesh == None: # regular grid
+        if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
             if isclosed(core,x,y) : 
@@ -478,11 +483,13 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            irow = where(zmesh(core,dicz,0,iz))[0] # OA 22/2/20
+            irow = where(zmesh(core,dicz,0,iz)==1)[0] # OA 22/2/20
             n0,irow1 = len(irow),[]
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
             ilay,icol = list(ilay)*n0,None
+        if core.addin.mesh !=None and core.getValueFromName('Modflow','MshType')<1:
+            irow1 = array(irow1)*nx+array(icol) # uses square grid ref to connect to unstrcut rect                                                                                  
         if len(xy[0]) ==2: zmat = 0 # OA 25/4/19 return 0 if not polyV
         return ilay,irow1,icol,zmat
 
@@ -567,7 +574,7 @@ class modflowWriter:
             for p in range(self.nper):
                 s += 'Period %5i Step %5i \n' %(p+1,nstp)
                 s += 'Save Head \n'
-                s += 'Save Budget \n'
+                s += 'Save Budget \n'  #EV 25/02/20
                 if len(self.usgTrans.items())>0: 
                     s += 'Save Conc \n'  # OA 30/7/19 conc
         else : s += 'Period 1 Step 1 \nSave Head\nSave Budget \n'
@@ -703,11 +710,11 @@ class modflowReader:
     def readHeadFile(self, core,iper=0):
         """ read .head file 
         in free flow Thksat from flo file must be added (not done)"""    
-        if core.mfUnstruct:
+        nlay,ncol,nrow = self.getGeom(core)       #OA 4/3/20                                     
+        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements')
             hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
-            nlay,ncol,nrow = self.getGeom(core)
             ncell = ncol*nrow
             hd=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
@@ -717,7 +724,7 @@ class modflowReader:
             f1.seek(iper*nlay*blok+blok*il+44) #vpmwin
             data = arr2('f')
             data.fromfile(f1,ncell)
-            if core.mfUnstruct: 
+            if core.mfUnstruct  and core.getValueFromName('Modflow','MshType')>0: 
                 hd[il] = data
             else : 
                 m = reshape(data,(nrow,ncol)) #
