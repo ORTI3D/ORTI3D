@@ -14,7 +14,7 @@ from .geometry import *
 from .core import *
 from .config import *
 from .guiShow import guiShow
-from .mybudget import mybudget
+from .myBudget import myBudget
         
 def selectComboValue(wdow,comboName,txt): #OA 6/9/19
     combo = wdow.findChild(QComboBox,comboName)
@@ -189,7 +189,7 @@ class Ui_Show(object):
         res = item2.currentText()
         if self.core.diczone['Observation'].dic: #EV 14/08/19
             if typ in ['M','Z']:
-                m = mybudget(self.gui,self.core,typ,res)
+                m = myBudget(self.gui,self.core,typ,res)
             else : 
                 m = multiPlot(self.gui,self.core,typ,res)
             m.show()

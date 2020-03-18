@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.ticker as ticker
 import csv
 
-class myBudget(QDialog):
+class mybudget(QDialog):
     '''This dialog provides plot for budget. There are 2 types of graphs:
     - Mass balance graphs: budgets through the various sources and sinks
     - Zone budget graphs: budgets for user-defined zones 
@@ -253,7 +253,7 @@ class myBudget(QDialog):
         if self.res=='Chemistry' :
             dicIn['splist']=[dic['Species'].index(dic['Species'][i]) 
             for i in range(len(dic['Species'])) if dic['Species'][i][1]==2] 
-        #print('splist',dicIn['splist'])
+        print('splist',dicIn['splist'])
         return dicIn
     
     def buildGraph(self):
@@ -508,7 +508,7 @@ class myBudget(QDialog):
     def readPHT3Dfile(self,graph,inlist,outlist,splist):
       ### read PHT3D file and put data in dict td
         td={'title':[],'data':[]}
-        sind=format((int(splist[0])+1),'03d');  #print('sind',sind)
+        sind=format((int(splist[0])+1),'03d');  print('sind',sind)
         fName=self.core.fileDir+os.sep+'PHT3D'+str(sind)+'.XMAS'
         file = np.loadtxt(fName,skiprows = 2)
         td['data']=file
@@ -536,7 +536,7 @@ class myBudget(QDialog):
                 pdisc=(float(vin)+float(vout))/(0.5*(float(vin)-float(vout)))*100
                 xy['y'].append(pdisc)
                 xy['x'].append(row[td['title'].index('TIME')])
-            #print('Pd',xy)
+            print('Pd',xy)
                 
         if graph == 'Time Series':
             xy={'lab':[],'x':[],'yin':[],'yout':[],'Cin':[],'Cout':[]}           
@@ -559,7 +559,7 @@ class myBudget(QDialog):
                             i+=1
                     else : i+=1
             xy['lab']=labin+labout            
-            #print('Tseries',xy)
+            print('Tseries',xy)
             
         if graph == 'Time Step':
             xy={'lab':[],'yin':[],'yout':[]} 

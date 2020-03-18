@@ -84,22 +84,27 @@ class impFile:
             self.gui.visu.addZone(med[i],name[i], val[i], coords[i])
         self.gui.visu.redraw()
 
-    def impTabFile(self,fullName,titleNbCol=1):
+    def impTabFile(self,fullName,titleNbCol=1,titleNbRow=1): # EV 03/20
         """ opens a file with 1st line titles and each line with a name in 1st
         column and send it backs as a dict with rows, cols, data
         titleNbCol indicates the number of columns that don't need to be read
         in each line, normally 1"""
         f1=open(fullName,'r'); #utils//
-        tiCol=f1.readline().split();
-        if titleNbCol>0: tiCol=tiCol[titleNbCol:];#print 'ticol',tiCol
+        if titleNbRow >1:
+            tiCol=[]
+            for i in range(titleNbRow):
+                tiCol.append(f1.readline().split())
+        else :tiCol=f1.readline().split()
+        if titleNbCol>0: tiCol=tiCol[titleNbCol:]#;print ('ticol',tiCol)
         nC=len(tiCol)
         dat0=[];tiL=[]
         for ll in f1:
             l1=ll.split();#l1[-1]=l1[-1][:-1]
+            #print('l1',l1)
             titl = ''
             if titleNbCol>0: titl = l1[0]
             tiL.append(titl);dat0.append(l1[titleNbCol:])
-        nl=len(tiL)
+        nl=len(tiL) #; print('nl',nl)
         data=zeros((nl,nC))*0.;#print 'in model',dat0
         for l in range(nl):
             for c in range(nC):

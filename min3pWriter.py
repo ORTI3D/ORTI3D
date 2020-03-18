@@ -161,7 +161,9 @@ class min3pWriter:
             zcoo = self.core.Zblock[-1::-1,0,0];nz = len(zcoo)
             sz = str(nz-1)+'\n'+'\n'.join(['1\n'+str(zcoo[i])+' '+str(zcoo[i+1]) for i in range(nz-1)])
         if self.xsect==False: s += s2 + sz
-        else : s += '\n1\n1\n0.0 1.0\n\n' + s2
+        else : 
+            ly = [str(a) for a in self.core.dicval['Min3pFlow']['spat.2']]
+            s += '\n'+ly[0]+'\n'+ly[1]+'\n'+ly[2]+' '+ly[3]+'\n\n' + s2
         if self.core.addin.getDim()=='Radial': # EV 06/01/20
             s += '\'radial coordinates\'\n' # EV 06/01/20
         if self.meshtype=='mesh': #unstructured
