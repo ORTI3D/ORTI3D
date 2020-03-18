@@ -154,7 +154,7 @@ class myBudget(QDialog):
         dicZin['Zones'] = list(zip(zIn,[False]*len(zIn)))
         zOut=[zone+' to '+zname[i] for i in range(len(zname))
             if zname[i] != zone]
-        zOut.append('Total Out')
+        zOut.append('Total OUT')
         dicZout['Zones'] = list(zip(zOut,[False]*len(zOut)))
         return dicZin, dicZout
     
@@ -171,6 +171,13 @@ class myBudget(QDialog):
                     nbound.append(boundTyp[i])
         dic['Bound'] = list(zip(nbound,[False]*len(nbound)))
         return dic
+    
+    def getMt3dBound(self):
+        dic={};
+        nbound=['TOTAL IN','TOTAL OUT','SOURCES IN','SINKS OUT',
+           'TOTAL MASS IN AQUIFER']
+        dic['Bound'] = list(zip(nbound,[False]*len(nbound)))
+        return dic
         
     def getSpecies(self):
     ## get the names of model chemical species
@@ -181,11 +188,17 @@ class myBudget(QDialog):
     
     def getChoices(self):
     ## return a dic in function of type of graph and result to plot
-        self.dicBound = self.getBoundaries()
-        dicIn={'In':[]}  ; dicOut={'Out':[]} 
+        dicIn={'In':[]}  ; dicOut={'Out':[]} ; dicIO={'In / Out':[]}
         if self.typ == 'M': 
-            dicIn['In']=self.dicBound['Bound']
-            dicOut['Out']=self.dicBound['Bound']
+            if self.res!='Transport':
+                self.dicBound = self.getBoundaries()
+                dicIn['In']=self.dicBound['Bound']+[('TOTAL IN',False)]
+                dicOut['Out']=self.dicBound['Bound']+[('TOTAL OUT',False)]
+            else:
+                self.dicBound = self.getMt3dBound()
+                dicIO['In / Out']=self.dicBound['Bound']
+                dic = {**dicIO,**dicIn,**dicOut}
+                return dic
         else :
             dicZin,dicZout=self.getObsZone()
             dicIn['In']=self.dicBound['Bound']+dicZin['Zones']
@@ -233,11 +246,12 @@ class myBudget(QDialog):
     def getOptions(self):
         '''Get the plot options from the dialog and put in in dicIn'''
         dicIn={'ptyp':[],'graph':[],'zone':[],'inlist':[],'outlist':[],
-               'splist':[]} # 'lylist':{}
+               'iolist':[],'splist':[]} # 'lylist':{}
         dicIn['ptyp']=self.typ
         dicIn['graph']=str(self.plgroup.currentText())
         if self.typ == 'Z' : dicIn['zone'] = self.zgroup.currentText()
         dic=self.getValues() 
+        print('dic',dic)
         for i in range(len(dic['In'])):
             if dic['In'][i][1]==2:
                 if len(dic['In'][i][0].split(' from '))==2:
@@ -248,6 +262,9 @@ class myBudget(QDialog):
                 if len(dic['Out'][i][0].split(' to '))==2:
                     dicIn['outlist'].append(dic['Out'][i][0].split(' to ')[1])
                 else: dicIn['outlist'].append(dic['Out'][i][0])
+        for i in range(len(dic['In / Out'])):
+            if dic['In / Out'][i][1]==2:
+                dicIn['iolist'].append(dic['In / Out'][i][0])
         #print('dicin',dicIn['inlist']); print('dicout',dicIn['outlist'])
         dicIn['splist']=[self.res]
         if self.res=='Chemistry' :
@@ -270,9 +287,12 @@ class myBudget(QDialog):
                           self.outlist)
             if self.res == 'Flow' : self.plotData(self.xy,self.graph)
         else :
-            self.xy=self.readPHT3Dfile(self.graph,self.inlist,
-                                       self.outlist,self.splist)
-            if self.res == 'Chemistry' : self.plotData(self.xy,self.graph)
+            if self.res == 'Chemistry' : 
+                self.xy=self.readPHT3Dfile(self.graph,self.inlist,
+                                           self.outlist,self.splist)
+            if self. == 'Transport' :
+                self.xy=self.readMT3Dfile(self.graph,self.iolist)
+            self.plotData(self.xy,self.graph)
     
     def plotData(self,xy,graph):
         '''Plot data as scatter plot or vertical barchart'''
@@ -463,9 +483,9 @@ class myBudget(QDialog):
         inout= list(set(inlist+outlist))
         dicb={}; inT,outT=False,False
         for i in inout :
-            if i in ['Total IN','Total Out']:
+            if i in ['Total IN','Total OUT']:
                 if i in ['Total IN']:inT=True
-                if i in ['Total Out']:outT=True
+                if i in ['Total OUT']:outT=True
                 dicb['Total']=[inT,outT]
             else :
                 if i in inlist :
@@ -502,11 +522,17 @@ class myBudget(QDialog):
                         ind[key].append(False)
                         lab[key].append(False)
         return ind, lab
+
+############################ Mass balance Mt3dms ##############################
+        
+    def readMT3Dfile(self,graph,inlist,outlist):
+      ### read PHT3D.XMAS file and put data in dict td   
+      tr=2
     
-################################ Mass balance #################################  
+############################# Mass balance Pht3d ##############################  
 
     def readPHT3Dfile(self,graph,inlist,outlist,splist):
-      ### read PHT3D file and put data in dict td
+      ### read PHT3D.XMAS file and put data in dict td
         td={'title':[],'data':[]}
         sind=format((int(splist[0])+1),'03d');  #print('sind',sind)
         fName=self.core.fileDir+os.sep+'PHT3D'+str(sind)+'.XMAS'
