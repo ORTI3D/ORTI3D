@@ -211,7 +211,8 @@ class multiPlot(QDialog):
                 if plotOrder==0 : dicIn['plotOrder']='Zones'
                 if plotOrder==1 : dicIn['plotOrder']='Species'
             dicIn['splist']=[dic['Species'][i][0] for i in range(len(dic['Species'])) if dic['Species'][i][1]==2]
-        else :dicIn['plotOrder']='Zones'  
+        else :dicIn['plotOrder']='Zones' 
+        #print('dicIn',dicIn)
         return dicIn
     
     def buildPlot(self): #,dicIn

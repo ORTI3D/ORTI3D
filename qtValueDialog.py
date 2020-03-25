@@ -8,6 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from .qtDialogs import * # OA 18/9/19
+from .geometry import * # OA 20/3/20
         
 class qtValueDialog(QDialog):
     def __init__(self, parent,gui,core,modName):

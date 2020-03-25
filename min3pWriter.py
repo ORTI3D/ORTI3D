@@ -871,7 +871,7 @@ class min3pReader:
                 cnc = self.readOutput('gs'+suff[i],iper,specname) # OA 24/5 name are now read directly
         return cnc
         
-    def getPtObs(self,core,irow,icol,ilay,iper,option,ispec=0,specname=''):
+    def getPtObs(self,core,irow,icol,ilay,iper,option,ispec=0,specname='',ss=''): #EV 23/03/20
         """get an observation point or a list of obs points for one period
         up to now, no different periods"""
         #print irow,icol,ilay,iper

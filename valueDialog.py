@@ -147,7 +147,7 @@ class valueDialog:
     def makeButton(self,name,value,detail,typ):
         #print('vdlg 145',name,typ)
         # find the dimension of the array
-        txt = name
+        txt = name;
         a=txt.split('(')
         if len(a)>1:
             txt=str(a[0])+'('
@@ -158,22 +158,24 @@ class valueDialog:
         #make the choice lists
         curVal = value
         bselect = None
-        #if detail not in [None,[]]:  # OA 21/11/19
+        det1 = '' # OA 20/3/20 this and 2 follow lines
+        if detail not in [None,[]]:  
+            if type(detail) != type([]) : det1 = detail
         if typ == 'choice' : 
             txt+=' : '+detail[0]
             bcontent = detail[1:] #1st item is title line
             bselect = curVal
         elif typ == 'textlong' :
-            if detail !=None: txt+=' : '+detail
+            txt+=' : '+det1 # OA 20/3/20 detail to det1
             bcontent = str(curVal)
-        else :
-            typ = 'text'
-            if detail !=None: txt+=' : '+detail
-            bcontent = str(curVal)
-        # else :  # OA 21/11/19
-        #     if typ[:3] != 'lay':
-        #         bcontent = str(curVal)
-        #         typ = 'text'
-        #     else :
-        #         bcontent = curVal
+#        else :
+#            typ = 'text'
+#            txt+=' : '+det1 # OA 20/3/20 detail to det1
+#            bcontent = str(curVal)
+        else :  # OA 20/03/20 readded
+            if typ[:3] != 'lay':
+                bcontent = str(curVal)
+                typ = 'text'
+            else :
+                bcontent = curVal
         return txt,bcontent,bselect,typ # OA 6/11/18 changed order

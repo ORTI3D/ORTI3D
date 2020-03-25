@@ -809,34 +809,45 @@ class modflowReader:
         if nlay>1 : return vx,vy,-vz
         else : return vx,vy,None
         
-    def getThickness(self,core,iper):
-        if type(iper)==type([5]): iper=iper[0] # takes the thick only for the 1st tstep
+    def getThickness(self,core,iper): 
+        #if type(iper)==type([5]): iper=iper[0] # takes the thick only for the 1st tstep  #EV 23/03/20 
         zb = core.Zblock
         thk = zb[:-1,:,:]-zb[1:,:,:]
+        thkMat=array([thk]*len(iper))
         dim = core.addin.getDim()
         if dim in ['Xsection','Radial']:
             grd = core.addin.getFullGrid()
             nx,ny,dy = grd['nx'],grd['ny'],grd['dy'];
             ep =float(core.getValueFromName('Modflow','TOP'))-float(core.getValueFromName('Modflow','BOTM'))
             thk=ones((ny,1,nx))*ep
-            return thk
-        if core.addin.getModelType()=='free': 
-            hd=self.readHeadFile(core,iper);#print hd
-            if dim =='3D': hd=hd[0]
-            thk[0,:,:]=hd-zb[1,:,:]
-        return thk
+            thkMat=array([thk]*len(iper))  #EV 23/03/20 
+            return thkMat
+        if core.addin.getModelType()=='Unconfined': 
+            #print('ok')
+            thkMat=[]
+            for i in range(len(iper)):  #EV 23/03/20 
+                hd=self.readHeadFile(core,iper[i])
+                if dim =='3D': hd=hd[0]
+                thk[0,:,:]=hd-zb[1,:,:]
+                thkMat.append(array(thk))
+        return thkMat
     
     def getThicknessZone(self,core,iper,layers,ix,iy):
+        #print('lay',layers)
         dim = core.addin.getDim()
         thm = self.getThickness(core,iper);#print 'mflread 474',shape(thm),thm # only 2D up to now
-        th =[]
-        if dim in ['Xsection','Radial']:
-            for i in range(len(ix)):
-                th.append(thm[iy[i],0,ix[i]]) # revert for different orientation of layers
-        else :
-            for i in range(len(ix)):
-                th.append(thm[layers[i],iy[i],ix[i]])
-        return th
+        thMat=zeros((len(iper),len(layers)))
+        for t in range(len(iper)):  #EV 23/03/20 
+            th =[] ; 
+            if dim in ['Xsection','Radial']:
+                for i in range(len(ix)):
+                    th.append(thm[t][iy[i],0,ix[i]]) # revert for different orientation of layers
+            else :
+                for i in range(len(ix)):
+                    th.append(thm[t][layers[i],iy[i],ix[i]])
+                thMat[t,:]=th
+        #print('thMat',thMat)
+        return thMat
 
     def getLocalTransientV(self,core,infos,thick,ilay,irow,icol,iper):
         """a method to get the darcy velocity at a given location and a given period from

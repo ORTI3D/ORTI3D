@@ -808,10 +808,14 @@ class mtphtReader:
         if dim in ['Xsection','Radial']: return m0 # [::-1,:,:] #OA 11/3/19 renversement, je sais pas bien
         else : return m0[:,::-1,:]
 
-    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname=''):
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
         """a function to values of one variable at given point or points.
         irow, icol and ilay must be lists of the same length. iper is also
-        a list containing the periods for which data are needed."""
+        a list containing the periods for which data are needed. opt is for 
+        Mt3dms or Pht3d, iesp is a list containing the indice of the species 
+        (for pht3d), specname is a list containing the name of the species 
+        (for min3p), ss is for solute ('') or sorbed ('S' ) species. 
+        """
         grd  = core.addin.getFullGrid()
         ncol, nrow = grd['nx'], grd['ny']
         nlay=getNlayers(core);
@@ -820,7 +824,8 @@ class mtphtReader:
         if iesp<9: suff2='00'
         else : suff2='0'
         tlist=core.getTlist2()
-        fname=self.fDir+os.sep+suff1+suff2+str(iesp+1)+'.UCN'
+        fname=self.fDir+os.sep+suff1+suff2+str(iesp+1)+ss+'.UCN' #EV 23/03/20
+        #print('fname',fname)
         try : f1 = open(fname,'rb')
         except IOError: return None
         if core.addin.getDim() in ['Xsection','Radial']:

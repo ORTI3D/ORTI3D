@@ -948,3 +948,26 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 12/03/20 - 17/03/20 EV (Budget development)
 - mybudget.py development of mass balance graphs for pht3d
 - importExport impTabFile l.87, 93-98 added option to select the number of row for title
+
+19/3/20  OA
+- core onPtObs modif for flux, changed name of layers to layers_in, l.629 and below
+- core onPtObs added line 661 663 to consider the case 'all'
+- core onPtObs l.676 added after building the list of cells coord, ix2 stores the cells but in layers=[-1] to make the average of layers
+- same modif l.717 (pb calc discharge)
+- same added line 720 to still get a flux for just one cell
+
+20/3/20  OA
+- qtValueDialog l.11 added to have geometry functions
+- valueDialog/makeButton l.161-163 added to consider the case of layint and the prensed of detail in mflowkeywords
+- valueDialog/makebutton removed 171-174 and set back the lines 175-180
+
+18/03/20 - 25/03/20 EV (Budget development)
+- mybudget.py development of zone budget graphs for pht3d and mt3dms
+- core.py onPtObs l.629, 705 & 718 added ss='' as fonction variable for get solute or sorbed transport species
+- min3pwriter.py getPtObs added ss='' as fonction variable
+- mtphWriter.py getPtObs l.811 added ss='' as fonction variable and l.827 added ss variable for the UCN file name
+- core.py onPtObs l.679 created llay variable for list of layers because iz2 is changed l.693&703 but we need it for discahrge and thick
+- core.py onPtObs l.724 & 727 replace iz2 by llay
+- core.py onPtObs l.736-744 get porosity and calculate volume of water in cell (vol) & 727
+- core.py onPtObs l.758 added option to get mass of tracer or chemical species
+- modflowWriter.py getThickness and getThicknessZone added iper to take into account transient thickness for unconfined model
