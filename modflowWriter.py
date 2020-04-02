@@ -837,6 +837,7 @@ class modflowReader:
         dim = core.addin.getDim()
         thm = self.getThickness(core,iper);#print 'mflread 474',shape(thm),thm # only 2D up to now
         thMat=zeros((len(iper),len(layers)))
+        ny=len(thm[0][0]) #EV 01/04/20
         for t in range(len(iper)):  #EV 23/03/20 
             th =[] ; 
             if dim in ['Xsection','Radial']:
@@ -844,7 +845,7 @@ class modflowReader:
                     th.append(thm[t][iy[i],0,ix[i]]) # revert for different orientation of layers
             else :
                 for i in range(len(ix)):
-                    th.append(thm[t][layers[i],iy[i],ix[i]])
+                    th.append(thm[t][layers[i],(ny-iy[i]-1),ix[i]])  #EV 01/04/20
                 thMat[t,:]=th
         #print('thMat',thMat)
         return thMat

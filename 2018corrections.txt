@@ -971,3 +971,15 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - core.py onPtObs l.736-744 get porosity and calculate volume of water in cell (vol) & 727
 - core.py onPtObs l.758 added option to get mass of tracer or chemical species
 - modflowWriter.py getThickness and getThicknessZone added iper to take into account transient thickness for unconfined model
+
+26/03/20 - 02/04/20 EV (import array, budget)
+- core.py importGridVar l. 475 function created to import array with irregular grid
+- core.py getPorosity l. 635 function created to get the porosity of an observation zone
+- core.py l.751-756 OnPtObs get porosity to calculate cells pore volume 
+- geometry getTopBotm l.238, 243 / blockRegular l.421, 425 & 450 removed error text message and add condition if array is empty
+- geometry zone2array added error text message when array file is not good and added import of .gvar file for irregular array file
+- importExport impGridVar function created to import .gvar file
+- modfloWriter getThicknessZone added the number of cell to get the right index of cell (modflow array are reversed)
+- myBudget a lot of modification for axis legend and to plot cumulative or not mass and volume (NOT FINISH)
+- myInterpol linIntpFromGrid OA added option for irregular grid
+- topbar l.129 added option to open .gvar file 

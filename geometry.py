@@ -235,19 +235,23 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
             if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
             else : z = zone2mesh(core,modName,line,im,loc='elements')
     elif intp==4 : # EV 11/02/20
-        try: z = zone2array(core,modName,line,im) # EV 20/02/20
-        except : 
-            file = core.dicarray[modName][line][im]
-            fNameExt = file.split('/')[-1]
-            cfg = Config(core)
-            dialogs = cfg.dialogs
-            txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
-                   'Default values or zones values will be used.'+'\n\n'
-                   +'Please select an other file to import an array for the parameter '+
-                   str(line)+' at media '+str(im)+'.')
-            dialogs.onMessage(core.gui,txt) 
+        #try: 
+        z = zone2array(core,modName,line,im) # EV 20/02/20
+        if z.size == 0 : #EV 01/04/20
             z = zone2grid(core,modName,line,im)
             core.dictype[modName][line][im]='one_value'
+        #except :  #EV 01/04/20
+            #file = core.dicarray[modName][line][im]
+            #fNameExt = file.split('/')[-1]
+            #cfg = Config(core)
+            #dialogs = cfg.dialogs
+           # txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
+             #      'Default values or zones values will be used.'+'\n\n'
+              #     +'Please select an other file to import an array for the parameter '+
+              #     str(line)+' at media '+str(im)+'.')
+            #dialogs.onMessage(core.gui,txt) 
+            #z = zone2grid(core,modName,line,im)
+            #core.dictype[modName][line][im]='one_value'
     return z
     
 def getXYvects(core):
@@ -413,19 +417,23 @@ def blockRegular(core,modName,line,intp,opt,iper):
             elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
-                try : a = zone2array(core,modName,line,im) # EV 20/02/20
-                except : 
-                    file = core.dicarray[modName][line][im]
-                    fNameExt = file.split('/')[-1]
-                    cfg = Config(core)
-                    dialogs = cfg.dialogs
-                    txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
-                           'Default values or zones values will be used.'+'\n\n'
-                           +'Please select an other file to import an array for the parameter '
-                           +str(line)+' at media '+str(im)+'.')
-                    dialogs.onMessage(core.gui,txt) 
+                #try : 
+                a = zone2array(core,modName,line,im) # EV 20/02/20
+                if a.size == 0 : #EV 01/04/20
                     a = zone2grid(core,modName,line,im,opt,iper)
                     core.dictype[modName][line][im]='one_value'
+                #except :  #EV 01/04/20
+                   # file = core.dicarray[modName][line][im]
+                   # fNameExt = file.split('/')[-1]
+                   # cfg = Config(core)
+                   # dialogs = cfg.dialogs
+                   # txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
+                    #       'Default values or zones values will be used.'+'\n\n'
+                    #       +'Please select an other file to import an array for the parameter '
+                    #       +str(line)+' at media '+str(im)+'.')
+                   # dialogs.onMessage(core.gui,txt) 
+                   # a = zone2grid(core,modName,line,im,opt,iper)
+                   # core.dictype[modName][line][im]='one_value'
             for il in range(int(lilay[im])): # several layers can exist in each media
                 m0[lay]=a
                 lay +=1
@@ -439,6 +447,9 @@ def blockRegular(core,modName,line,intp,opt,iper):
                 a = zone2grid(core,modName,line,im,opt,iper)
             elif intp[im]==4 :
                 a = zone2array()
+                if a.size == 0 : #EV 01/04/20
+                    a = zone2grid(core,modName,line,im,opt,iper)
+                    core.dictype[modName][line][im]='one_value'
         #a = zone2grid(core,modName,line,0,opt,iper)
         m0 = reshape(a,(ny,1,nx))
         m0 = m0[-1::-1]
@@ -1096,24 +1107,49 @@ def zone2array(core,modName,line,im):
     #fDir = file.replace(fNameExt,'')
     fDir = core.fileDir
     ext=fNameExt[-3:]
-    arr=None
+    arr=array([]) ; zdx,zdy=None,None
+    cfg = Config(core)
+    dialogs = cfg.dialogs
+    txt1 = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
+                   'Default values or zones values will be used.'+'\n\n'
+                   +'Please select an other file to import an array for the parameter '+
+                   str(line)+' at media '+str(im)+'.')
+    txt2 = ('The format of file '+'"'+core.fileDir+fNameExt+'"'+' is not suitable.'+'\n\n'+
+                   'Default values or zones values will be used.'+'\n\n'
+                   +'Please select an other file to import an array for the parameter '+
+                   str(line)+' at media '+str(im)+'.')
     if ext == 'asc':
-        arr=core.importAscii(fDir,fNameExt)
-        arr=arr.astype(np.float)
-    if ext == 'txt' or ext == 'dat' :
-        arr=loadtxt(file)
-        #print('arr',arr[0])
-    #if ext == 'vtk' :
-       # arr=vtk2numpy(file)
-    if arr.all():
+        print('ok0')
+        try : 
+            arr=core.importAscii(fDir,fNameExt)
+            arr=arr.astype(np.float)
+        except OSError : dialogs.onMessage(core.gui,txt1) 
+        except : dialogs.onMessage(core.gui,txt2) 
+    elif ext == 'var' :
+        print('ok1')
+        zdx,zdy,arr=core.importGridVar(fDir,fNameExt)
+        try : 
+            dzx,dzy,arr=core.importGridVar(fDir,fNameExt)
+            arr=arr.astype(np.float)
+        except OSError : dialogs.onMessage(core.gui,txt1) 
+        except : dialogs.onMessage(core.gui,txt2) 
+    else : #if ext == 'txt' or ext == 'dat' :
+        print('ok2')
+        try : arr=loadtxt(file)
+        except OSError :dialogs.onMessage(core.gui,txt1) 
+        except : dialogs.onMessage(core.gui,txt2) 
+    print(type(arr),shape(arr),arr[:1])
+    if arr.size != 0:
         shpArr=arr.shape
         grd = core.addin.getFullGrid()
-        shp = (grd['nx'],grd['ny'])
+        shp = (grd['ny'],grd['nx'])
+        print('shp',shpArr,shp)
         if shpArr != shp:
             arr2=zeros((grd['nx'], grd['ny']))
             xx,yy=getXYmeshCenters(core,'Z',0)
-            arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy)
+            arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy,zdx,zdy)
             return arr2
-        else : return arr[::-1]        
+        else : return arr[::-1]
+    else : return arr        
        
     

@@ -470,7 +470,13 @@ class Core:
         importer = impFile(self.gui,self)
         if fileName=='': return 
         m0=importer.impAsciiGrid(fileDir,fileName)
-        return m0      
+        return m0   
+    
+    def importGridVar(self,fileDir,fileName): #EV 02/04/20
+        importer = impFile(self.gui,self)
+        if fileName=='': return 
+        zdx,zdy,m0=importer.impGridVar(fileDir,fileName)
+        return zdx,zdy,m0 
             
 #********************* working with keywords and values***************            
     def createKwList(self):
@@ -619,12 +625,21 @@ class Core:
             llist = ['-','ft','m','cm']
             tunit = tlist[self.dicval['Modflow']['dis.2'][4]]
             lunit = llist[self.dicval['Modflow']['dis.2'][5]]
-            d0 = self.dickword[modName].lines[line];#print tunit,lunit
+            d0 = self.dickword[modName].lines[line]#;print ('d0',d0)
             if 'units' in d0: 
                 s = d0['units'][ik];#print s
                 s = s.replace('T',tunit)
                 s = s.replace('L',lunit)
         return s
+    
+    def getPorosity(self,modName,line,iy,ix,iz):
+        val=self.getValueLong(modName,line,ik=0,iper=0)
+        ny=len(val[0]) ; lpor=[]
+        for i, z in enumerate(iz):
+            y=iy[i] ; x=ix[i]
+            lpor.append(val[z][ny-y-1][x])
+        #print('lpor2',lpor)
+        return lpor    
             
     def onPtObs(self,typ,iper,group,zname,esp,layers_in=0,ss=''): #EV 23/03/20
         """ get the values at observation zones, esp can be a list of species names
@@ -733,14 +748,12 @@ class Core:
             flux = sqrt(f1**2+f2**2) ## flux shall be a vector
             flux[flux<1e-12]=1e-12
             #print('flux',flux)
-            por=self.dicval['Mt3dms']['btn.11'] ## Prosity not distributed #EV 23/03/20 
-            if len(por)<getNmedia(self):por=por*getNmedia(self)
-            ilay=getNlayersPerMedia(self) 
-            nx=len(list(set(ix2))) ; ny=len(list(set(iym)))
-            por = [[por[x]]*(ilay[x]*nx*ny) for x in range(len(ilay))]
-            por= [item for sublist in por for item in sublist]
-            lpor=[por[l] for l in range(len(llay))]
-           # print('lpor',lpor)
+         ## Por distributed
+            if mtype == 'Mod' : 
+                opt='Mt3dms' ; line='btn.11'
+            else : opt='Min3pFlow' ; line='poro.1'
+            lpor=self.getPorosity(opt,line,iym,ix2,llay)
+         ## Cells pore volume
             vol=thick*dx*dy*lpor #EV 23/03/20 
             #print('vol',vol)
     ### Transform values for different type of graph and return them

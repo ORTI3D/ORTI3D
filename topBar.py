@@ -125,7 +125,8 @@ class BaseTop:
         else :
             self.core.dicarray[model][ll] = ['']*nmedia
             f=''
-        data=[('Media '+str(media),'File',['Choose Array','*.asc;*.dat;*.txt',True,f])] #;*.vtk
+        data=[('Media '+str(media),'File',['Choose Array',
+               '*.asc;*.dat;*.txt;*.gvar',True,f])] #;*.vtk
         dialg = genericDialog(self.gui,'Choose Array',data)
         retour = dialg.getValues()
         if retour :

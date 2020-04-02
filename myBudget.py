@@ -54,22 +54,34 @@ class myBudget(QDialog):
         self.tlist = self.core.getTlist2()
     ## frame 1
         self.frame = QtWidgets.QFrame(self)
-        self.frame.setMaximumSize(QtCore.QSize(250, 35)) 
+        self.frame.setMaximumSize(QtCore.QSize(250, 60)) 
         self.gl = QGridLayout(self.frame)
     ## Different type of graph (frame 1)
         self.label_1 = QtWidgets.QLabel(self.frame)
         self.label_1.setText("Type of graph")
         self.gl.addWidget(self.label_1,0,0,1,1)
         self.plgroup = QComboBox(self)
-        tgraph=['Percent Discrepency','In-Out','Time Series','Time Step']
+        tgraph=['Percent Discrepancy','In-Out','Time Series','Time Step']
         if self.res != 'Flow' and self.typ=='M' : 
-            tgraph=['Percent Discrepency','Time Series','Time Step']
+            tgraph=['Percent Discrepancy','Time Series','Time Step']
         if self.res != 'Flow' and self.typ=='Z' : 
             tgraph=['Time Series','Time Step']
         self.plgroup.addItems(tgraph)
         self.plgroup.setCurrentIndex(0)
         self.plgroup.activated['QString'].connect(self.onTstep)
         self.gl.addWidget(self.plgroup,0,1,1,1)
+    ## Cumulative or not
+        self.label_12 = QtWidgets.QLabel(self.frame)
+        self.label_12.setText("View")
+        self.gl.addWidget(self.label_12,1,0,1,1)
+        self.vgroup = QComboBox(self)
+        if self.res != 'Flow' : view=['Cumulative mass','Rate']
+        else : view=['Cumulative volume','Rate']
+        self.vgroup.addItems(view)
+        if self.res != 'Flow' : self.vgroup.setCurrentIndex(0)
+        else : self.vgroup.setCurrentIndex(1)
+        self.vgroup.activated['QString'].connect(self.onView)
+        self.gl.addWidget(self.vgroup,1,1,1,1)
         self.verticalLayout.addWidget(self.frame)
         #if self.typ == 'Z' and self.res != 'Flow':
             #self.frame.hide()
@@ -149,6 +161,13 @@ class myBudget(QDialog):
         if self.plgroup.currentText()=='Time Step':
             self.frame2.show()
         else : self.frame2.hide()
+    
+    def onView(self):
+    ## Recalculate if self.xy exist (if "apply" has been already clicked)
+        try : 
+            self.xy != None
+            self.buildGraph()
+        except : pass
 
     def getObsZone(self):
     ## get the names of model observation zone
@@ -303,8 +322,6 @@ class myBudget(QDialog):
                               self.outlist)
             else : 
                 self.xy=self.getZoneMass(self.graph,self.zlist,self.splist)
-            
-            self.plotData(self.xy,self.graph)
         else :
             if self.res == 'Chemistry' : 
                 self.xy=self.readPHT3Dfile(self.graph,self.inlist,
@@ -318,8 +335,8 @@ class myBudget(QDialog):
                 self.core.runZonebud()
                 self.xy=self.readZBfile(self.graph,self.zone,self.inlist,
                           self.outlist)
-                print('xy',self.xy)
-            self.plotData(self.xy,self.graph)
+        print('xy',self.xy)
+        self.plotData(self.xy,self.graph)
     
     def plotData(self,xy,graph):
         '''Plot data as scatter plot or vertical barchart'''
@@ -327,26 +344,28 @@ class myBudget(QDialog):
         sns.set()
         self._ax=self.figure.add_subplot(1,1,1)
       ### Scatter plot
-        if graph not in ['Time Step','Time Series']: 
-            self._ax.plot(xy['x'],xy['y'])
-        if graph=='Time Series' :
-            if self.res=='Transport' and self.typ=='M':
-                for i, color in enumerate(xy['C']):
-                    self._ax.plot(xy['x'],xy['y'][i],c=color,marker=xy['m'][i])
-            else:
-                for i, color in enumerate(xy['Cin']):
-                    self._ax.plot(xy['x'],xy['yin'][i],c=color,marker='v')
-                for i, color in enumerate(xy['Cout']):
-                    self._ax.plot(xy['x'],xy['yout'][i],c=color,marker='^')
-        self._ax.legend(xy['lab'])
-        #self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
-        #self._ax.legend(self.llabel,fontsize = 8,loc='best')
-        #self._ax.set_ylabel(aylabel, fontsize = 8) 
-        #self._ax.set_xlabel(self.axlabel, fontsize = 8)
-        self._ax.ticklabel_format(useOffset=False, 
-                                  style='sci',scilimits=(-4,4),axis='both'
-                                  ,useMathText=True)
-        self._ax.tick_params(axis='both', labelsize=8)
+        if graph!='Time Step' :
+            if graph!='Time Series' :
+                self._ax.plot(xy['x'],xy['y'],c='red',marker='o')
+            else :
+                if self.res=='Transport' and self.typ=='M':
+                    for i, color in enumerate(xy['C']):
+                        self._ax.plot(xy['x'],xy['y'][i],c=color,
+                                      marker=xy['m'][i])
+                else:
+                    for i, color in enumerate(xy['Cin']):
+                        self._ax.plot(xy['x'],xy['yin'][i],c=color,marker='v')
+                    for i, color in enumerate(xy['Cout']):
+                        self._ax.plot(xy['x'],xy['yout'][i],c=color,marker='^')
+            self._ax.legend(xy['lab'])
+            #self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
+            #self._ax.legend(self.llabel,fontsize = 8,loc='best')
+            self._ax.set_ylabel(xy['ylab'], fontsize = 8) 
+            self._ax.set_xlabel(xy['xlab'], fontsize = 8)
+            self._ax.ticklabel_format(useOffset=False, 
+                                      style='sci',scilimits=(-4,4),axis='both'
+                                      ,useMathText=True)
+            self._ax.tick_params(axis='both', labelsize=8)
        ### Vertical barchart
         if graph=='Time Step' :
             x = np.arange(len(xy['lab']))  # the label locations
@@ -372,6 +391,7 @@ class myBudget(QDialog):
             #self._ax.set_title('')
             self._ax.set_xticks(x)
             self._ax.set_xticklabels(xy['lab'])
+            self._ax.set_ylabel(xy['ylab'], fontsize = 8) 
             self._ax.legend()
         self._ax.figure.canvas.draw()
                         
@@ -428,7 +448,7 @@ class myBudget(QDialog):
         
     def readZBfile(self,graph,zone,inlist,outlist):
         '''Read zonbud.csv2 file following the graph to plot :
-            Percent Discrepency: Percent error vs time
+            Percent Discrepancy: Percent error vs time
             In-Out: In - out vs time
             Time Series: In Zone or BC and Out Zone or BC vs time
             Time Step: In Zone or BC and Out Zone or BC for 1 time
@@ -447,18 +467,24 @@ class myBudget(QDialog):
         
       ### put data in dict xy following type of graph
         xy={'lab':[],'x':[],'y':[]}
-        #idz=self.zgroup.currentIndex()
         zname=self.lzname
         if self.typ=='M':idz=0
-        else : idz = zname.index(zone)
+        else : idz = zname.index(zone) ## index on selected zone for zone budget
+        utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
+        if utime == '': utime='T'
+        ulength=self.core.getUnits('Modflow','dis.4',0)
+        if ulength=='':ulength='L'
+        cview=self.vgroup.currentIndex()
         #print('idz+1',str(idz+1))
         
-        if graph == 'Percent Discrepency' :
+        if graph == 'Percent Discrepancy' :
             for row in td['data']:
                 if row[td['title'].index('ZONE')]==str(idz+1):
                     xy['x'].append(float(row[td['title'].index('TOTIM')]))
                     xy['y'].append(float(row[td['title'].index('Percent Error')]))
-            xy['lab'].append('Percent Discrepency')
+            xy['lab'].append('Percent Discrepancy')
+            xy['ylab']='Discrepancy (%)'
+            xy['xlab']='Time ('+utime+')'
             #print ('perc dis',xy)
         
         if graph == 'In-Out':
@@ -467,45 +493,87 @@ class myBudget(QDialog):
                     xy['x'].append(float(row[td['title'].index('TOTIM')]))
                     xy['y'].append(float(row[td['title'].index('IN-OUT')]))
             xy['lab'].append('In-Out')
+            xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
+            xy['xlab']='Time ('+utime+')'
             #print ('in-out',xy)
         
-        if graph == 'Time Series':
+        if graph in ['Time Series','Time Step']:
             ind,lab=self.getIndLab(td,inlist,outlist,zone)
             xy={'lab':[],'x':[],'yin':[],'yout':[],'Cin':[],'Cout':[]}
-            i,j,k=0,0,0; lin=[]; lout=[]
-            for key, value in ind.items(): 
-                yi=[];yo=[] 
-                if value[0]:
-                    for row in td['data']:
-                        if row[td['title'].index('ZONE')]==str(idz+1):
+            i,j,k=0,0,0; lin=[]; lout=[] ## i&j for color, k for xy['x'], lin&lout for legend
+            tlist=np.insert(self.tlist,0,0) ## Cumulative or not
+            tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)] ## Cumulative or not
+            for key, value in ind.items(): ## loop in user choices
+                yi=[];yo=[];y2=[]  ## y2 array for cumulative
+                if value[0]: ## for sources (in)
+                    for row in td['data']: ## loop in zone budget out file
+                        if row[td['title'].index('ZONE')]==str(idz+1): ## selected zone for zone budget
                             if k==0: xy['x'].append(float(
-                                    row[td['title'].index('TOTIM')]))
+                                    row[td['title'].index('TOTIM')])) ## get time
                             yi.append(float(row[int(value[0])]))
-                    xy['yin'].append(yi)
+                    if cview != 0 :xy['yin'].append(yi) ## not cumulative (default)
+                    else : ## cumulative
+                        for t in range(len(yi)):
+                            if t==0 : y0=yi[t]*tsteps[t]
+                            else:y0=y0+yi[t]*tsteps[t]
+                            y2.append(y0)
+                        xy['yin'].append(y2)
                     xy['Cin'].append('C'+str(i))
                     lin.append(lab[key][0])
                     k+=1
                 i+=1
-                if value[1]:
+                if value[1]: ## for sinks (out)
                     for row in td['data']:
                         if row[td['title'].index('ZONE')]==str(idz+1):
                             if k==0: xy['x'].append(float(
                                     row[td['title'].index('TOTIM')]))
                             yo.append(float(row[int(value[1])]))
-                    xy['yout'].append(yo)
+                    if cview != 0 :xy['yout'].append(yo)
+                    else :  
+                        for t in range(len(yi)):
+                            if t==0 : y0=yi[t]*tsteps[t]
+                            else:y0=y0+yi[t]*tsteps[t]
+                            y2.append(y0)
+                        xy['yin'].append(y2)
                     xy['Cout'].append('C'+str(j))
                     lout.append(lab[key][1])
                     k+=1
                 j+=1
             xy['lab']=lin+lout
+            if cview != 0 : xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
+            else :  xy['ylab']='Volume ('+ulength+'$^{3}$)'
+            xy['xlab']='Time ('+utime+')'
             #print ('TSeries',xy)
-        
+            
+            if graph == 'Time Step':
+                xy2={'lab':[],'yin':[],'yout':[]}
+                i,j,k=0,0,0
+                tind=self.Tstep.currentIndex()
+                for key, value in ind.items(): 
+                    if value[0]:
+                        xy2['yin'].append(xy['yin'][j][tind])
+                        j+=1
+                    else : xy2['yin'].append(np.nan)
+                    if value[1]:
+                        xy2['yout'].append(xy['yout'][k][tind])
+                        k+=1
+                    else: xy2['yout'].append(np.nan)
+                    if str(list(lab.keys())[i]).isdigit():
+                        xy2['lab'].append(zname[list(lab.keys())[i]-1])
+                    else:xy2['lab'].append(list(lab.keys())[i])
+                    i+=1
+                if cview != 0:xy2['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
+                else :  xy2['ylab']='Volume ('+ulength+'$^{3}$)'
+                return xy2
+        return xy
+        '''
         if graph == 'Time Step':
             ind,lab=self.getIndLab(td,inlist,outlist,zone)
             xy={'lab':[],'yin':[],'yout':[]};i=0
             t=self.Tstep.currentText()
             for row in td['data']:
                 if row[td['title'].index('ZONE')]==str(idz+1):
+                    
                     if float(row[td['title'].index('TOTIM')])==float(t):
                         for key, value in ind.items(): 
                             if value[0]:
@@ -518,11 +586,11 @@ class myBudget(QDialog):
                                 xy['lab'].append(zname[list(lab.keys())[i]-1])
                             else:xy['lab'].append(list(lab.keys())[i])
                             i+=1
-            #print ('TStep',xy)
-        return xy
+            xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
+            #print ('TStep',xy)'''
     
     def getIndLab(self,td,inlist,outlist,zone):
-        ''' Return the label and column index for each zone entry and exit 
+        ''' Return the label and column index for each user selected zone 
         and BC. Organized in pairs, 'in' and 'out' index or label are indicated 
         for each zone or BC. Takes the value False if only 'in' or only 'out' 
         is selected for a BC or a zone.
@@ -575,6 +643,11 @@ class myBudget(QDialog):
     def getZoneMass(self,graph,zlist,splist):
         group=self.res ; zlayers='all' ; iper = 0 ; sp=splist[0]
         lmod=self.core.getUsedModulesList('Mt3dms')
+        utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
+        if utime == '': utime='T'
+        if group == 'Chemistry' : umass ='mol'
+        else : umass='M'
+        cview=self.vgroup.currentIndex()
         
         if graph == 'Time Series':
             lin=[];lout=[]
@@ -583,17 +656,22 @@ class myBudget(QDialog):
                 #print('B4',iper,group,zname,[sp],zlayers)
                 x,ysol,label =  self.core.onPtObs('B4',iper,group,zname,
                                                   [sp],zlayers,ss='')
-                xy['yin'].append(cumsum(ysol[:,0]))
+                if cview==0 :xy['yin'].append(cumsum(ysol[:,0]))
+                else : xy['yin'].append(ysol[:,0])
                 lin.append(zname+' SOLUTE')
                 xy['Cin'].append('C'+str(i))
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
                                                       [sp],zlayers,ss='S')
-                    xy['yout'].append(cumsum(ysor[:,0]))
+                    if cview==0 :xy['yout'].append(cumsum(ysor[:,0]))
+                    else : xy['yout'].append(ysor[:,0])
                     lout.append(zname+' SORBED')
                     xy['Cout'].append('C'+str(i))
             xy['x']=x
             xy['lab']=lin+lout
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
+            xy['xlab']='Time ('+utime+')'
             #print('time series',xy)
         
         if graph == 'Time Step':
@@ -603,14 +681,18 @@ class myBudget(QDialog):
                 x,ysol,label =  self.core.onPtObs('B4',iper,group,zname,
                                             [sp],zlayers,ss='')
                 ind = list(x).index(float(t))
-                ycum=cumsum(ysol[:,0])
-                xy['ysol'].append(ycum[ind])
+                if cview==0 : y=cumsum(ysol[:,0])
+                else : y=ysol[:,0]
+                xy['ysol'].append(y[ind])
                 xy['lab'].append(zname)
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
                                                 [sp],zlayers,ss='S')
-                    ycum=cumsum(ysor[:,0])
-                    xy['ysorb'].append(ycum[ind])
+                    if cview==0 :y=cumsum(ysor[:,0])
+                    else : y=ysor[:,0]
+                    xy['ysorb'].append(y[ind])
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
             #print('t step',xy)
         
         return xy
@@ -621,17 +703,24 @@ class myBudget(QDialog):
       ### read MT3D.MAS file and put data in dict td   
         td={'title':[],'data':[]}
         td['title']=['TIME','TOTAL IN','TOTAL OUT','SOURCES IN','SINKS OUT',
-                   'TOTAL MASS IN AQUIFER','Percent discrepency']
+                   'TOTAL MASS IN AQUIFER','Percent Discrepancy']
         fName=self.core.fileDir+os.sep+'MT3D001.MAS'
         td['data'] = np.loadtxt(fName,skiprows = 2)
         td['data']=np.delete(td['data'], [5,8], 1) 
+        utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
+        if utime == '': utime='T'
+        umass='M'
+        cview=self.vgroup.currentIndex()
         
         ### put data in dict xy following type of graph
         
-        if graph == 'Percent Discrepency' :
+        if graph == 'Percent Discrepancy' :
             xy={'lab':[],'x':[],'y':[]}
             xy['y']=td['data'][:,6]
             xy['x']=td['data'][:,0]
+            xy['lab'].append('Percent Discrepancy')
+            xy['ylab']='Discrepancy (%)'
+            xy['xlab']='Time ('+utime+')'
             #print('pd',xy)
         
         if graph == 'Time Series':
@@ -642,10 +731,15 @@ class myBudget(QDialog):
             for l1 in iolist:
                 if l1 in td['title'] :
                     ind=td['title'].index(l1)
-                    xy['y'].append(abs(td['data'][:,ind]))
+                    y=abs(td['data'][:,ind])
+                    if cview!=0 : y[1:] -= y[:-1].copy()
+                    xy['y'].append(y)
                     xy['lab'].append(l1)
                     xy['C'].append(C[ind-1])
                     xy['m'].append(m[ind-1])
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
+            xy['xlab']='Time ('+utime+')'
             #print('tser',xy)
 
         if graph == 'Time Step':
@@ -657,8 +751,12 @@ class myBudget(QDialog):
             for l1 in iolist:
                 if l1 in td['title'] :
                     ind=td['title'].index(l1)
-                    xy['y'].append(abs(td['data'][tind,ind]))
+                    y=abs(td['data'][:,ind])
+                    if cview!=0 : y[1:] -= y[:-1].copy()
+                    xy['y'].append(y[tind])
                     xy['lab'].append(l1)
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
             #print('tstep',xy)
         
         return xy
@@ -687,10 +785,15 @@ class myBudget(QDialog):
         inlist=[i.replace('TOTAL IN', 'TOTAL') for i in inlist]
         outlist=[i.replace('TOTAL OUT', 'TOTAL') for i in outlist]
         inout=list(set(inlist+outlist))
+        
+        utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
+        if utime == '': utime='T'
+        umass ='mol'
+        cview=self.vgroup.currentIndex()
       
         ### put data in dict xy following type of graph
         
-        if graph == 'Percent Discrepency' :
+        if graph == 'Percent Discrepancy' :
             xy={'lab':[],'x':[],'y':[]}
             for row in td['data']:
                 vin=row[td['title'].index('TOTAL IN')]
@@ -698,59 +801,95 @@ class myBudget(QDialog):
                 pdisc=(float(vin)+float(vout))/(0.5*(float(vin)-float(vout)))*100
                 xy['y'].append(pdisc)
                 xy['x'].append(row[td['title'].index('TIME')])
-            print('Pd',xy)
+            xy['lab'].append('Percent Discrepancy')
+            xy['ylab']='Discrepancy (%)'
+            xy['xlab']='Time ('+utime+')'
+            #print('Pd',xy)
                 
         if graph == 'Time Series':
             xy={'lab':[],'x':[],'yin':[],'yout':[],'Cin':[],'Cout':[]}           
             xy['x']=td['data'][:,0]
-            i=0 ; labin,labout=[],[]
+            i,j=0,0 ; labin,labout=[],[]
+            tlist=np.insert(self.tlist,0,0)
+            tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)]
             for title in td['title']:
                 for l1 in inout:
                     if l1 in inlist:
                         if l1 in title and 'IN' in title :
                             ind=td['title'].index(title)
-                            xy['yin'].append(td['data'][:,ind])
+                            y=abs(td['data'][:,ind])
+                            if cview != 0 :
+                                y[1:] -= y[:-1].copy()
+                                y=y/tsteps
+                            xy['yin'].append(y)
                             labin.append(title)
                             xy['Cin'].append('C'+str(i))
+                            j=i ; i+=1
                     if l1 in outlist:
                         if l1 in title and 'OUT' in title :
                             ind2=td['title'].index(title)
-                            xy['yout'].append(td['data'][:,ind2])
+                            y=abs(td['data'][:,ind2])
+                            if cview != 0 :
+                                y[1:] -= y[:-1].copy()
+                                y=y/tsteps
+                            xy['yout'].append(y)
                             labout.append(title)
-                            xy['Cout'].append('C'+str(i))
-                            i+=1
-                    else : i+=1
-            xy['lab']=labin+labout            
-            print('Tseries',xy)
+                            xy['Cout'].append('C'+str(j))
+                            j+=1
+                            if j>i: i+=1
+            xy['lab']=labin+labout
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
+            xy['xlab']='Time ('+utime+')'            
+            #print('Tseries',xy)
             
         if graph == 'Time Step':
             xy={'lab':[],'yin':[],'yout':[]} 
-            t=self.Tstep.currentText()
-            for i,row in enumerate(td['data']):
-                if float(row[td['title'].index('TIME')])==float(t):
-                    tind=i
+            tind=self.Tstep.currentIndex()
+            t=self.tlist[tind] ; t0=self.tlist[tind-1]
+            if tind == 0 : t0=0
+            tstep=t-t0
             for title in td['title']:       
                 for l1 in inout: 
                     if l1 in inlist and l1 in outlist:
                         if l1 in title and 'IN' in title :
                             ind=td['title'].index(title)
-                            xy['yin'].append(td['data'][tind][ind])
+                            y=abs(td['data'][:,ind])
+                            if cview != 0 : 
+                                y[1:] -= y[:-1].copy()
+                                y=y/tstep
+                            xy['yin'].append(y[tind])
                         if l1 in title and 'OUT' in title :
                             ind=td['title'].index(title)
-                            xy['yout'].append(-td['data'][tind][ind])
+                            y=abs(td['data'][:,ind])
+                            if cview != 0 : 
+                                y[1:] -= y[:-1].copy()
+                                y=y/tstep
+                            xy['yout'].append(y[tind])
                             xy['lab'].append(title.replace(' (OUT)',''))
                     else :
                         if l1 in outlist:
                             if l1 in title and 'OUT' in title :
                                 ind=td['title'].index(title)
-                                xy['yout'].append(-td['data'][tind][ind])
+                                y=abs(td['data'][:,ind])
+                                if cview != 0 : 
+                                    y[1:] -= y[:-1].copy()
+                                    y=y/tstep
+                                xy['yout'].append(y[tind])
                                 xy['lab'].append(title.replace(' (OUT)',''))
                                 xy['yin'].append(np.nan)
                         if l1 in inlist:
                             if l1 in title and 'IN' in title :
                                 ind=td['title'].index(title)
-                                xy['yin'].append(td['data'][tind][ind])
+                                ind=td['title'].index(title)
+                                y=abs(td['data'][:,ind])
+                                if cview != 0 : 
+                                    y[1:] -= y[:-1].copy()
+                                    y=y/tstep
+                                xy['yin'].append(y[tind])
                                 xy['lab'].append(title.replace(' (IN)',''))
                                 xy['yout'].append(np.nan) 
-            print('Tstep',xy)
+            if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
+            else :  xy['ylab']='Mass ('+umass+')'
+            #print('Tstep',xy)
         return xy
