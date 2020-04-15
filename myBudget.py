@@ -14,7 +14,7 @@ from .geometry import *
 import numpy as np
 import matplotlib.ticker as ticker
 import csv
-import seaborn as sns
+#import seaborn as sns
 
 class myBudget(QDialog):
     '''This dialog provides plot for budget. There are 2 types of graphs:
@@ -341,7 +341,7 @@ class myBudget(QDialog):
     def plotData(self,xy,graph):
         '''Plot data as scatter plot or vertical barchart'''
         self.figure.clf()
-        sns.set()
+        #sns.set()
         self._ax=self.figure.add_subplot(1,1,1)
       ### Scatter plot
         if graph!='Time Step' :
