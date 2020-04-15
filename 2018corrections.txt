@@ -983,3 +983,31 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - myBudget a lot of modification for axis legend and to plot cumulative or not mass and volume (NOT FINISH)
 - myInterpol linIntpFromGrid OA added option for irregular grid
 - topbar l.129 added option to open .gvar file 
+
+3/4/20  OA
+- myInterpol linIntpFromGrid modif l.304,306 i and j were inverted
+- myInterpol linIntpFromGrid  added in l.303-310 to get correctly the sides
+- myInterpol linIntpFromGrid  added l.319 for BC: if intp=False (default) no interpolation
+- geometry l.1147 added to consider if grid from gvar need to be interpolate dor not (interpolate just for lpf.8 now, not very good)
+
+5/4/20  OA
+- in addin calcpartic line 692 iper -> [iper] and thick[0] because change in flowwriter/getThickness
+
+7/4/20 OA
+- in myInterpol/linIntp l.296 floor -> around
+
+9/4/20  OA
+- in geometry zone2array l.1138 added to revert the input zdy (in modflow order) to correspond toy coords
+- in geometry zone2array below 1148 removed the questions of shape, with bad luck we can have two arrays of the same 
+    size that have different irreuglar grids
+
+11/4/20  OA
+- in modfloWriter geththicknesZone l.850 TkMat desindented shall be used for xsection too, if not returns 0
+- in core/onPtObs added l.700 to be able to use ix2.. as test index
+- in core/onPtObs l.711 723 739 (new nb) added a clearer approach for 'all' layers (no -1 anymore)
+- in core/onPtObs l.761 and 5 below aded 'all' for flux (->flux1)
+- in core/onPtObs l.785-790 replaced disch and flux by disch1 and flux1 obtained previously
+
+15/4/20  OA
+- in mtphtWriter, writearray l.141 modif to have correct btn for mass balalnce calc
+- mphtWriter created function correctBtn l.147-153

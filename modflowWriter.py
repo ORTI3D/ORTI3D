@@ -306,7 +306,8 @@ class modflowWriter:
             for ik in range(len(kwlist)):
                 value=lval[ik]
                 if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
-                    value=self.core.getValueLong('Modflow',ll,ik);#print 'mfw 106',ll,shape(value)
+                    #print('mfw 106',ll,shape(value))
+                    value=self.core.getValueLong('Modflow',ll,ik);
                     s += self.writeBlockModflow(value,ktyp[ik]) # OA 1/8/17
                 elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
                     s += str(value).rjust(10)
@@ -846,7 +847,7 @@ class modflowReader:
             else :
                 for i in range(len(ix)):
                     th.append(thm[t][layers[i],(ny-iy[i]-1),ix[i]])  #EV 01/04/20
-                thMat[t,:]=th
+            thMat[t,:]=th  # OA 11/4/20 desindented
         #print('thMat',thMat)
         return thMat
 

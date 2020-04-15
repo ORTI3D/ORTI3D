@@ -128,7 +128,7 @@ class mtphtWriter:
                 tstep = int(a)
                 arr = self.core.transReader.readUCN(self.core,'MT3D',tstep,0)                    
             else : 
-                arr = self.core.getValueLong('Mt3dms',line,ik)
+                arr = self.correctBtn()  # OA 15/4/20
             arr[arr<0.] = mean(arr)
             s = self.formatBlockMt3d(arr,line)
         elif line in ['rct.3','rct.4','rct.5','rct.6']:
@@ -143,7 +143,15 @@ class mtphtWriter:
             arr = self.core.getValueLong('Mt3dms',line,ik);#print 'mtw',line,ik,value
             s = self.formatBlockMt3d(arr,line)
         f1.write(s)
-            
+        
+    def correctBtn(self): # OA added 15/4/20
+        '''this take conc to be written in btn only if there is a -1 in btn.12
+        (or in modflow bas.3 not sure)'''
+        arr = self.core.getValueLong('Mt3dms','btn.13',0)
+        mtbc = self.core.getValueLong('Mt3dms','btn.12',0)
+        #mfbc = self.core.getValueLong('Modflow','bas.3',0)
+        return arr*(mtbc==-1) #+(mfbc==-1))
+        
     def writeExceptions(self,line,kwlist,ktyp,f1,opt):
         """to write some things mt3d wants in a specific format"""
         nx,ny,a,b = getXYvects(self.core)

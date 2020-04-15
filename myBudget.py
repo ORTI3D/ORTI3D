@@ -335,7 +335,7 @@ class myBudget(QDialog):
                 self.core.runZonebud()
                 self.xy=self.readZBfile(self.graph,self.zone,self.inlist,
                           self.outlist)
-        print('xy',self.xy)
+        #print('xy',self.xy)
         self.plotData(self.xy,self.graph)
     
     def plotData(self,xy,graph):
@@ -452,7 +452,7 @@ class myBudget(QDialog):
             In-Out: In - out vs time
             Time Series: In Zone or BC and Out Zone or BC vs time
             Time Step: In Zone or BC and Out Zone or BC for 1 time
-            Return xy dictionnarie'''
+            Return xy dictionnary'''
       ### read file and put data in dict td
         td={'title':[],'data':[]}
         df = csv.reader(open(self.core.fileDir+os.sep+'zonbud.2.csv', mode='r')
@@ -522,6 +522,7 @@ class myBudget(QDialog):
                     lin.append(lab[key][0])
                     k+=1
                 i+=1
+                y2=[]  ## y2 array for cumulative
                 if value[1]: ## for sinks (out)
                     for row in td['data']:
                         if row[td['title'].index('ZONE')]==str(idz+1):
@@ -530,9 +531,9 @@ class myBudget(QDialog):
                             yo.append(float(row[int(value[1])]))
                     if cview != 0 :xy['yout'].append(yo)
                     else :  
-                        for t in range(len(yi)):
-                            if t==0 : y0=yi[t]*tsteps[t]
-                            else:y0=y0+yi[t]*tsteps[t]
+                        for t in range(len(yo)):
+                            if t==0 : y0=yo[t]*tsteps[t]
+                            else:y0=y0+yo[t]*tsteps[t]
                             y2.append(y0)
                         xy['yin'].append(y2)
                     xy['Cout'].append('C'+str(j))
@@ -648,6 +649,8 @@ class myBudget(QDialog):
         if group == 'Chemistry' : umass ='mol'
         else : umass='M'
         cview=self.vgroup.currentIndex()
+        tlist=np.insert(self.tlist,0,0) ## Cumulative or not
+        tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)] ## Cumulative or not
         
         if graph == 'Time Series':
             lin=[];lout=[]
@@ -656,14 +659,22 @@ class myBudget(QDialog):
                 #print('B4',iper,group,zname,[sp],zlayers)
                 x,ysol,label =  self.core.onPtObs('B4',iper,group,zname,
                                                   [sp],zlayers,ss='')
-                if cview==0 :xy['yin'].append(cumsum(ysol[:,0]))
+                if cview!=0 :
+                    ysol=ysol[:,0]
+                    ysol[1:] -= ysol[:-1].copy()
+                    ysol=ysol/tsteps
+                    xy['yin'].append(ysol)
                 else : xy['yin'].append(ysol[:,0])
                 lin.append(zname+' SOLUTE')
                 xy['Cin'].append('C'+str(i))
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
                                                       [sp],zlayers,ss='S')
-                    if cview==0 :xy['yout'].append(cumsum(ysor[:,0]))
+                    if cview!=0 :
+                        ysor=ysor[:,0]
+                        ysor[1:] -= ysor[:-1].copy()
+                        ysor=ysor/tsteps
+                        xy['yout'].append(ysor)
                     else : xy['yout'].append(ysor[:,0])
                     lout.append(zname+' SORBED')
                     xy['Cout'].append('C'+str(i))
@@ -675,20 +686,30 @@ class myBudget(QDialog):
             #print('time series',xy)
         
         if graph == 'Time Step':
-            t=self.Tstep.currentText()
+            #t=self.Tstep.currentText()
+            tind=self.Tstep.currentIndex()
+            t=self.tlist[tind] ; t0=self.tlist[tind-1]
+            if tind == 0 : t0=0
+            tstep=t-t0
             xy={'lab':[],'ysol':[],'ysorb':[]}
             for i, zname in enumerate(zlist):
                 x,ysol,label =  self.core.onPtObs('B4',iper,group,zname,
                                             [sp],zlayers,ss='')
                 ind = list(x).index(float(t))
-                if cview==0 : y=cumsum(ysol[:,0])
+                if cview!=0 : 
+                    y=ysol[:,0]
+                    y[1:] -= y[:-1].copy()
+                    y=y/tstep
                 else : y=ysol[:,0]
                 xy['ysol'].append(y[ind])
                 xy['lab'].append(zname)
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
                                                 [sp],zlayers,ss='S')
-                    if cview==0 :y=cumsum(ysor[:,0])
+                    if cview!=0 :
+                        y=ysor[:,0]
+                        y[1:] -= y[:-1].copy()
+                        y=y/tstep
                     else : y=ysor[:,0]
                     xy['ysorb'].append(y[ind])
             if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
@@ -728,11 +749,15 @@ class myBudget(QDialog):
             C=['C0','C0','C1','C1','C2']  
             m=['v','^','v','^','o']       
             xy['x']=td['data'][:,0]
+            tlist=np.insert(xy['x'],0,0)
+            tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)]
             for l1 in iolist:
                 if l1 in td['title'] :
                     ind=td['title'].index(l1)
                     y=abs(td['data'][:,ind])
-                    if cview!=0 : y[1:] -= y[:-1].copy()
+                    if cview!=0 : 
+                        y[1:] -= y[:-1].copy()
+                        y=y/tsteps
                     xy['y'].append(y)
                     xy['lab'].append(l1)
                     xy['C'].append(C[ind-1])
@@ -748,11 +773,14 @@ class myBudget(QDialog):
             for i,row in enumerate(td['data']):
                 if float(row[td['title'].index('TIME')])==float(t):
                     tind=i
+                    tstep=t-tind-float(td['data'][i-1,0])
             for l1 in iolist:
                 if l1 in td['title'] :
                     ind=td['title'].index(l1)
                     y=abs(td['data'][:,ind])
-                    if cview!=0 : y[1:] -= y[:-1].copy()
+                    if cview!=0 : 
+                        y[1:] -= y[:-1].copy()
+                        y=y/tsteps
                     xy['y'].append(y[tind])
                     xy['lab'].append(l1)
             if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'

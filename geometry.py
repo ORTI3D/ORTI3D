@@ -592,7 +592,8 @@ def zone2index(core,x,y,z,opt=None):
         sn0,cs0 = dy/sqrt(dx**2+dy**2),dx/sqrt(dx**2+dy**2)
         sn,cs = ones((ll+1))*sn0,ones((ll+1))*cs0
         nsn,ncs = concatenate([nsn,sn],axis=0),concatenate([ncs,cs],axis=0)                   
-    mix=nxp*1000+nyp;a,ind=unique(mix,return_index=True);ind=sort(ind)
+    mix=nxp*1000+nyp;
+    a,ind=unique(mix,return_index=True);ind=sort(ind)
     if len(nxp)<1:
         nxp,nyp,nzp=array([minDiff(x[0],xvect)]),array([minDiff(y[0],yvect)]),array(z)
         ind,nsn,ncs = 0,[0],[0] # OA added 11/6/19
@@ -1101,6 +1102,14 @@ def smoo2d(m):
 ###################### ARRAY ####################
 
 '''Import array from one media (im) EV 07/02/20'''
+def onMessage(core,txt):
+    cfg = Config(core)
+    try : 
+        dialogs = cfg.dialogs
+        dialogs.onMessage(core.gui,txt) 
+    except AttributeError: 
+        print(txt)
+
 def zone2array(core,modName,line,im):
     file = core.dicarray[modName][line][im]
     fNameExt = file.split('/')[-1]
@@ -1108,8 +1117,6 @@ def zone2array(core,modName,line,im):
     fDir = core.fileDir
     ext=fNameExt[-3:]
     arr=array([]) ; zdx,zdy=None,None
-    cfg = Config(core)
-    dialogs = cfg.dialogs
     txt1 = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
                    'Default values or zones values will be used.'+'\n\n'
                    +'Please select an other file to import an array for the parameter '+
@@ -1119,37 +1126,37 @@ def zone2array(core,modName,line,im):
                    +'Please select an other file to import an array for the parameter '+
                    str(line)+' at media '+str(im)+'.')
     if ext == 'asc':
-        print('ok0')
         try : 
             arr=core.importAscii(fDir,fNameExt)
             arr=arr.astype(np.float)
-        except OSError : dialogs.onMessage(core.gui,txt1) 
-        except : dialogs.onMessage(core.gui,txt2) 
+        except OSError : onMessage(core,txt1) 
+        except : onMessage(core,txt2) 
     elif ext == 'var' :
-        print('ok1')
-        zdx,zdy,arr=core.importGridVar(fDir,fNameExt)
         try : 
-            dzx,dzy,arr=core.importGridVar(fDir,fNameExt)
+            zdx,zdy,arr=core.importGridVar(fDir,fNameExt)
+            zdy = zdy[::-1] # OA added 9/4/20
             arr=arr.astype(np.float)
-        except OSError : dialogs.onMessage(core.gui,txt1) 
-        except : dialogs.onMessage(core.gui,txt2) 
+        except OSError : onMessage(core,txt1) 
+        except : onMessage(core,txt2) 
     else : #if ext == 'txt' or ext == 'dat' :
-        print('ok2')
         try : arr=loadtxt(file)
-        except OSError :dialogs.onMessage(core.gui,txt1) 
-        except : dialogs.onMessage(core.gui,txt2) 
-    print(type(arr),shape(arr),arr[:1])
+        except OSError :onMessage(core,txt1) 
+        except : onMessage(core,txt2) 
+    #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
-        shpArr=arr.shape
+        #shpArr=arr.shape
         grd = core.addin.getFullGrid()
-        shp = (grd['ny'],grd['nx'])
-        print('shp',shpArr,shp)
-        if shpArr != shp:
-            arr2=zeros((grd['nx'], grd['ny']))
-            xx,yy=getXYmeshCenters(core,'Z',0)
-            arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy,zdx,zdy)
-            return arr2
-        else : return arr[::-1]
-    else : return arr        
+        #shp = (grd['ny'],grd['nx'])
+        #print('shp',shpArr,shp)
+        intp = False # OA 3/4/20 this l an dl. below
+        if line=='lpf.8': intp=True
+        #if shpArr != shp:
+        #arr2=zeros((grd['nx'], grd['ny']))
+        xx,yy=getXYmeshCenters(core,'Z',0)
+        arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy,intp,zdx,zdy)
+        return arr2
+        #else : return arr[::-1]
+    else : 
+        return arr        
        
     

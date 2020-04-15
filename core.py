@@ -632,14 +632,16 @@ class Core:
                 s = s.replace('L',lunit)
         return s
     
-    def getPorosity(self,modName,line,iy,ix,iz):
+    def getPorosity(self,modName,line,iy,ix,iz): # OA 11/4/20 modified to consider Xsection
+        ''' to get teh porosity for a list of cell indices
+        getValueLong returns data oriented in the x,y way (not modflow y)
+        don't transform here'''
+        grd  = self.addin.getFullGrid()
+        #ncol, nrow = grd['nx'], grd['ny']
         val=self.getValueLong(modName,line,ik=0,iper=0)
-        ny=len(val[0]) ; lpor=[]
-        for i, z in enumerate(iz):
-            y=iy[i] ; x=ix[i]
-            lpor.append(val[z][ny-y-1][x])
-        #print('lpor2',lpor)
-        return lpor    
+        if self.addin.getDim() in ['Xsection','Radial']:
+            iz=iy*1;iy=[0]*len(iz)
+        return val[iz,iy,ix]   
             
     def onPtObs(self,typ,iper,group,zname,esp,layers_in=0,ss=''): #EV 23/03/20
         """ get the values at observation zones, esp can be a list of species names
@@ -675,7 +677,7 @@ class Core:
                 iy,ix = where(fillZone(nx,ny,ix,iy,a));
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
             zlayers = media2layers(self,zlist['media'][ind]) # OA 19/3/20 OA added
-    ### Get a list of layer
+    ### Get lists : ix2,iy2,iz2 are list of cell position in 3d
         if layers_in == 'all' : layers = zlayers #; print('lay_all :',layers) # OA 19/3/20 to build the cell list
         try: 
             layers=[int(layers_in)]
@@ -690,11 +692,12 @@ class Core:
             for il in layers: 
                 ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
                 asin2.extend(asin);acos2.extend(acos)
-        if layers_in == 'all': layers=[-1] # OA 19/3/20 to make later the avergae on layers
+        if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
         if mtype=='Mod': iym = [ny-y-1 for y in iy2] # transform to modflow coords
         else : iym =iy2
+        ix2,iym,iz2 = array(ix2),array(iym),array(iz2) # OA 11/4/20 added to index later
     ### Get list of time and period 
         t2 = self.getTlist2()
         if typ[0]=='B': iper=list(range(len(t2))) ## time-serie graph
@@ -702,23 +705,28 @@ class Core:
     ### Get the value
         pt=[] ## pt will be a list of tables (iper,irows) provided by the reader
         labels=[''] 
-       ## For Head and Wcontent
+       ## For Head and Wcontent (pt index is the layer)
         if esp[0] in ['Head','Wcontent']: 
-            for il in layers: # we may want data from several different layers
-                if il!= -1: iz2=[il]*len(ix2)
-                pt.append(self.flowReader.getPtObs(self,iym,ix2,iz2,iper,
-                                                   esp[0])); ## irow,icol,ilay
-                labels.append('lay'+str(il))
-            #print('pthead',pt)
+            m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])
+            if layers_in == 'all': # +below OA 11/4/2 to consider all
+                pt.append(m)
+                labels.append('all layers')
+            else :
+                for il in layers:
+                    pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
+                    labels.append('lay'+str(il))        
        ## For Tracer
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
             elif mtype in ['Sut','Min','Opg']: opt = 'Tracer' # OA 19/3/19
-            for il in layers:
-                if il!= -1: iz2=[il]*len(ix2)
-                pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt
-                                                    ,ss=ss)); ## irow,icol,ilay #EV 23/03/20 
-                labels.append('lay'+str(il))
+            m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,ss=ss)
+            if layers_in == 'all':  # +below OA 11/4/2 to consider all
+                pt.append(m)
+                labels.append('all layers')
+            else :
+                for il in layers:
+                    pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
+                    labels.append('lay'+str(il))
             #print('iz2 :',iz2)
        ## For chemistry
         elif group=='Chemistry': 
@@ -727,11 +735,14 @@ class Core:
             elif mtype in ['Min']: opt = 'Chemistry'
             for e in esp:
                 if e in lesp: iesp = lesp.index(e) 
-                for il in layers:
-                    if il!= -1: iz2=[il]*len(ix2)
-                    pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,
-                                                        opt,iesp,e,ss=ss)) #EV 23/03/20 
-                    labels.append(e+'_lay'+str(il))
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
+                if layers_in == 'all':  # +below OA 11/4/2 to consider all
+                    pt.append(m)
+                    labels.append('all layers')
+                else :
+                    for il in layers:
+                        pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
+                        labels.append(e+'lay'+str(il))
         else : pt=[1.] ## for flux
        ## For Darcy flux
         if typ[1]!='0' or esp[0]=='Flux': ## to get the flux, shall be a matrix (nper,nrow)
@@ -744,10 +755,11 @@ class Core:
             dx,dy = array(grd['dx'])[ix2],array(grd['dy'])[iy2]
             if len(ix)==1: asin2 = acos2 = 1 # OA 19/3/20 just one point
             #print('dy',dx,acos2)
-            f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
-            flux = sqrt(f1**2+f2**2) ## flux shall be a vector
-            flux[flux<1e-12]=1e-12
-            #print('flux',flux)
+            flux=1e-12
+            if typ[1]!='4' :
+                f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
+                flux = sqrt(f1**2+f2**2) ## flux shall be a vector
+                flux[flux<1e-12]=1e-12
          ## Por distributed
             if mtype == 'Mod' : 
                 opt='Mt3dms' ; line='btn.11'
@@ -756,6 +768,15 @@ class Core:
          ## Cells pore volume
             vol=thick*dx*dy*lpor #EV 23/03/20 
             #print('vol',vol)
+            if layers_in == 'all': # OA 11/4/20 added below to have flux for all
+                disch1,flux1,vol1 = [disch],[flux],[vol]
+            else :
+                disch1,flux1,vol1 = [],[],[]
+                for il in layers: 
+                    disch1.append(disch[:,iz2==il])
+                    flux1.append(flux[:,iz2==il])
+                    vol1.append(vol[:,iz2==il])
+            #print('vol1',vol1) ; print('disch1',disch1)
     ### Transform values for different type of graph and return them
         if esp[0] in ['Head','Wcontent']: typ=typ[0]+'0'
        ## Time-serie graph
@@ -763,12 +784,12 @@ class Core:
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
             #print('pt',pt)
-            for i in range(len(pt)):
+            for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
                 if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); ## conc, pt[i] is a table (nper,nrow) 
-                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux,axis=1)/sum(flux,axis=1) ## weighted conc
-                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch,axis=1); ## total discharge [mol.T-1]
-                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux,axis=1); ## average flux [mol.T-1.M-2]
-                elif typ[1]=='4': p1[:,i]=sum(pt[i]*vol[i],axis=1); ## mass [mol] #EV 23/03/20 
+                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
+                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch1[i],axis=1); ## total discharge [mol.T-1]
+                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux1[i],axis=1); ## average flux [mol.T-1.M-2]
+                elif typ[1]=='4': p1[:,i]=sum(pt[i]*vol1[i],axis=1); ## mass [mol] #EV 23/03/20 
             return t2,p1,labels
        ## Profile
         elif typ[0]=='P':  

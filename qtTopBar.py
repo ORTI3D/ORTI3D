@@ -259,7 +259,7 @@ class Ui_AddZone(object):
         obj = self.AddZone.sender()
         shap = str(obj.objectName());
         if (line == None) or (line not in self.gui.linesDic[self.gui.currentModel][self.gui.currentGroup]):
-            onMessage(self.gui,"choose one variable")
+            onMessage(self.gui,"Choose one variable")
             return
         self.gui.actions('zoneStart')
         exec('self.visu.setZoneReady(\"'+shap+'\",\"'+line+'\")')
@@ -314,7 +314,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 02/04/2020 ")
+        version = QLabel("       version 15/04/2020 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()
