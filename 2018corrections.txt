@@ -1011,3 +1011,26 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 15/4/20  OA
 - in mtphtWriter, writearray l.141 modif to have correct btn for mass balalnce calc
 - mphtWriter created function correctBtn l.147-153
+
+20/04/20 EV
+- core.py getPorosity l.644 added transformation to get y coodinates correctly
+- core.py getZcoord l.646 function created to return Z coordinates for vertical profile
+- core.py OnPtObs l.727, 742, 761 modifiction of plot label for vertical profile 
+- core.py OnPtObs l.791, 798-800 added *len(esp) to take into account the number of species for chemistry
+- core.py OnPtObs l.805 added to get result when flux is in species
+- core.py OnPtObs l.819 replaced ix2 and iy2 by ix and iy to avoid to duplicate coordinates with the number of layers
+- core.py OnPtObs l.826-827 replaced flux and disch by flux1 and disch1 and added incrementation 'i' in flux1 and disch1
+- core.py OnPtObs l.829-840 added to plot vertical profile
+- geometry.py onMessage2 l.1081 replace onMessage by onMessage2 to avoid confision with the function onMessage from qtDialogs
+- guishow.py init l.22 added vertical profile
+- qtDialogs.py onStateChange l.229 function added to change the state of a button in notebook Layers whithout doing any action (for multiplot only)
+- qtDialogs.py myNoteBookCheck l.210-212 added to take into account onStateChange in notebook Layers (for multiplot only)
+- qtShow.py onPlot l.187 added because profile graphs is changed in horizontal profile graphs
+- qtShow.py showBox l.283 added to enlarge the combobox view 
+- multiplot.py a lot of modification to integrate vertical profile and mass discharge, weighted concentration and mass flux
+
+27/04/20 EV
+- addin.py initAddin l.81, doaction l.210,216,236 added checkFlowMod variable to unable flow write model if the variable is check
+- addin.py doaction l.264 added onGridMesh function to change the button when an unstrutured grid is created
+- orti3dGui.py onWriteModflow function added to change flow write model button state 
+- budget.py a lot of modification to avoid error message, to add choise of chemical species in combobox and to fix some bugs 

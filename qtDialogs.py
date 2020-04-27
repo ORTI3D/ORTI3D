@@ -119,6 +119,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         self.gl2 = QGridLayout(self.glWidget2)
         self.gl2.setContentsMargins(0,0,0,0)
         self.gl2.addWidget(self.buttonBox) #,nb,1,2,1)
+        self.state = 'reject'
         self.buttonBox.accepted.connect(self.accept1)
         self.buttonBox.rejected.connect(self.reject1)
         QMetaObject.connectSlotsByName(self)
@@ -207,6 +208,9 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
                 ch.setText(str(dicIn[n][i][0])) # OA modif 2/4
                 s =(dicIn[n][i][1] == True) #EV 26/08/19 replaced "True" by True
                 ch.setChecked(s) # OA modif 2/4 , EV 26/08/19 
+                if n=='Layers': #EV 20/04/20
+                    if dicIn[n][nbChk-1][0] == 'All layers':
+                        ch.stateChanged.connect(self.onStateChange)
                 lay.addWidget(ch,il,ic)
             scroll = QScrollArea()
             scroll.setWidget(pg)
@@ -222,6 +226,17 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
         self.buttonBox.rejected.connect(self.reject1)
         self.layout.addWidget(self.buttonBox)
         QMetaObject.connectSlotsByName(self)
+    
+    def onStateChange(self, state): #EV 20/04/20
+        """ Only for multiplot to change the state of a button in notebook
+        Layers whithout doing any action"""
+        if state == Qt.Checked:
+            if self.sender() == self.dwidget['Layers'][-1]:
+                items = self.dwidget['Layers']
+                for i in range(len(items)-1):
+                    items[i].setChecked(False)
+            else : 
+                self.dwidget['Layers'][-1].setChecked(False)
         
     def sortList1(self,lst0): # OA added 2/4/19
         '''sort a list by the 1st item of each sublist'''
@@ -478,7 +493,13 @@ class zoneDialog(QDialog): # Dialog for zone
             if self.line not in ('obs.1','ghb.1','drn.1','riv.1'): #EV 29/10/19
                 try :float(v0)
                 except ValueError:
-                    onMessage(self,"Enter a number in zone data");return 
+                    onMessage(self,"Enter a number in Zone value");return 
+            if self.line == 'ph.4' : # EV 22/04/20
+                nbsol = self.core.dicval['Pht3d']['ph.6'][1]
+                if float(v0)>float(nbsol):
+                    onMessage(self,"In Zone value, enter a number equal to or " 
+                              +'\n'+ "less than the number of pht3d solutions")
+                    return
         self.state = 'accept'
         return 'ok'
         

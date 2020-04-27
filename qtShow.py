@@ -184,6 +184,7 @@ class Ui_Show(object):
         item = self.Show.findChild(QComboBox,'Observation_Type_L')
         typ = item.currentText()[0]
         if typ=='T' : typ = 'B' 
+        elif typ=='H' : typ='P' #EV 20/04/20
         elif typ=='C': typ ='X'
         item2 = self.Show.findChild(QComboBox,'Observation_Result_L')
         res = item2.currentText()
@@ -279,6 +280,8 @@ class showBox:
                 boxGrid.addWidget(text,i,0,1,1)
                 liste = n[1]
                 self.buts[i] = QComboBox(self.hlWidget)
+                view =  QListView() ; view.setMinimumWidth(150)  #EV 20/04/20
+                if n[0]=='Type' : self.buts[i].setView(view)
                 self.buts[i].setObjectName(gr+'_'+n[0]+'_L')
                 self.buts[i].addItems(liste)
                 boxGrid.addWidget(self.buts[i],i,1,1,1)

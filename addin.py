@@ -78,6 +78,7 @@ class addin:
         model = {'dimension':'2D horizontal','type':'Confined','group':'Modflow series'} #EV 22/07/2018 2D -> 2D horizontal
         self.core.dicaddin[name] = model
         self.structure['button']['1.Model'] = [{'name':name,'pos':0,'short':'M'}]
+        self.checkFlowMod=False # EV 27/04/20
         name = 'Grid'
         grid = {'x0':'0','y0':'0','x1':'100','y1':'50','dx':'5','dy':'2'} # default grid
         self.core.dicaddin[name] = grid
@@ -205,14 +206,14 @@ class addin:
                 m['type']='Confined'
             data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
                     ('Type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D model)'])),  #EV 22/07/2018 free -> Unconfined
-                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo']))#EV 18.10.18 removed 'Sutra'
-                    ]
+                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo'])),#EV 18.10.18 removed 'Sutra'
+                    ('Use other flow model?','Check',self.checkFlowMod)] # EV 27/04/20
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
             nmed=getNmedia(self.core) #EV 25/09/19
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
-                m['dimension'],m['type'],m['group'] = retour
+                m['dimension'],m['type'],m['group'],self.checkFlowMod = retour # EV 27/04/20
                 self.core.mfUnstruct = False;self.setMfUnstruct() # OA 1/3/20 added cond
                 if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
@@ -232,6 +233,7 @@ class addin:
                     self.core.setValueFromName('Modflow','DELC',1.)
                     self.core.setValueFromName('Modflow','NROW',1)
                     self.gui.on3D(False) #EV 26/09/19
+                self.gui.onWriteModflow(self.checkFlowMod) # EV 27/04/20
                 self.set3D()
                 self.setChemType()
                 
@@ -259,6 +261,7 @@ class addin:
             else : #mesh case no dialog
                 self.setGridInModel('new')
                 self.gui.visu.initDomain() 
+                self.gui.onGridMesh('Mesh') # to chang the button # EV 27/04/20
                 retour = None               
             if retour != None:
                 g['x0'],g['y0'],g['x1'],g['y1'],g['dx'],g['dy'] = retour;#print g

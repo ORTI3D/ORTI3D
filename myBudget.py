@@ -54,7 +54,7 @@ class myBudget(QDialog):
         self.tlist = self.core.getTlist2()
     ## frame 1
         self.frame = QtWidgets.QFrame(self)
-        self.frame.setMaximumSize(QtCore.QSize(250, 60)) 
+        self.frame.setMaximumSize(QtCore.QSize(250, 85)) 
         self.gl = QGridLayout(self.frame)
     ## Different type of graph (frame 1)
         self.label_1 = QtWidgets.QLabel(self.frame)
@@ -82,9 +82,19 @@ class myBudget(QDialog):
         else : self.vgroup.setCurrentIndex(1)
         self.vgroup.activated['QString'].connect(self.onView)
         self.gl.addWidget(self.vgroup,1,1,1,1)
-        self.verticalLayout.addWidget(self.frame)
+        #self.verticalLayout.addWidget(self.frame)
         #if self.typ == 'Z' and self.res != 'Flow':
             #self.frame.hide()
+    ## Species for chemistry 
+        if self.res == 'Chemistry':
+            self.label_13 = QtWidgets.QLabel(self.frame)
+            self.label_13.setText("Species")
+            self.gl.addWidget(self.label_13,2,0,1,1)
+            self.cgroup = QComboBox(self)
+            self.species=self.getSpecies()
+            self.cgroup.addItems(self.species)
+            self.gl.addWidget(self.cgroup,2,1,1,1)
+        self.verticalLayout.addWidget(self.frame)
     ## frame 2
         self.frame2 = QtWidgets.QFrame(self)
         self.frame2.setMaximumSize(QtCore.QSize(250,35)) 
@@ -149,7 +159,7 @@ class myBudget(QDialog):
         self.pushButton2.setText('Export')
         self.verticalLayout2.addWidget(self.pushButton2, 
                                        alignment=Qt.AlignHCenter)
-        #self.pushButton2.clicked.connect(self.onExport)
+        self.pushButton2.clicked.connect(self.onExport)
     ## add vertical layout 2
         self.horizontalLayout.addLayout(self.verticalLayout2)
         QMetaObject.connectSlotsByName(self)  #OA 1/6/19
@@ -189,12 +199,18 @@ class myBudget(QDialog):
     def getBoundaries(self):
     ## get the boundaries in the model (well, drn, storage, chd...)
         dic={'Bound':[]} ; nbound=['STORAGE','CONSTANT HEAD']
+        lmod=self.core.getUsedModulesList('Mt3dms')
+        if self.res == 'Chemistry':
+            rec=['REACTION (PHREEQC)','MASS STORAGE (SOLUTE)']
+            if 'RCT' in lmod:
+                rec.append('MASS STORAGE (SORBED)')
+            nbound=nbound + rec
         boundTyp=['WELLS','DRAINS','RIVER LEAKAGE','ET','HEAD DEP BOUNDS',
                   'RECHARGE']
         pack=['wel','drn','riv','evt','ghb','rch']
-        lmod=self.core.getUsedModulesList('Modflow')
+        lmodf=self.core.getUsedModulesList('Modflow')
         for i, n in enumerate (pack) :
-            if n.upper() in lmod:
+            if n.upper() in lmodf:
                 nbound.append(boundTyp[i])
         dic['Bound'] = list(zip(nbound,[False]*len(nbound)))
         return dic
@@ -208,10 +224,10 @@ class myBudget(QDialog):
         
     def getSpecies(self):
     ## get the names of model chemical species
-        dic={'Species':[]} 
+        #dic={'Species':[]} 
         species = self.core.addin.chem.getListSpecies() 
-        dic['Species']=list(zip(species,[False]*len(species)))
-        return dic
+        #dic['Species']=list(zip(species,[False]*len(species)))
+        return species[:-2]#dic
     
     def getChoices(self):
     ## return a dic in function of type of graph and result to plot
@@ -232,9 +248,9 @@ class myBudget(QDialog):
                 dic['Out']=self.dicBound['Bound']+dicZout['Zones']
             else : 
                 dic['Zones']=dicZin['Zones']
-        if self.res =='Chemistry': 
-            dicSpecies=self.getSpecies()
-            dic = {**dicSpecies,**dic} 
+        #if self.res =='Chemistry': 
+            #dicSpecies=self.getSpecies()
+            #dic = {**dicSpecies,**dic} 
         return dic
     
     def updateChoices(self):
@@ -301,8 +317,9 @@ class myBudget(QDialog):
                     dicIn['zlist'].append(dic['Zones'][i][0])
         if self.res =='Transport' :dicIn['splist']=['Tracer']
         if self.res=='Chemistry' :
-            dicIn['splist']=[dic['Species'].index(dic['Species'][i]) 
-            for i in range(len(dic['Species'])) if dic['Species'][i][1]==2] 
+            dicIn['splist']=self.cgroup.currentIndex()
+            #dicIn['splist']=[dic['Species'].index(dic['Species'][i]) 
+            #for i in range(len(dic['Species'])) if dic['Species'][i][1]==2] 
         #print('dicIn',dicIn)
         return dicIn
     
@@ -322,6 +339,7 @@ class myBudget(QDialog):
                               self.outlist)
             else : 
                 self.xy=self.getZoneMass(self.graph,self.zlist,self.splist)
+        ## Mass balance
         else :
             if self.res == 'Chemistry' : 
                 self.xy=self.readPHT3Dfile(self.graph,self.inlist,
@@ -335,7 +353,7 @@ class myBudget(QDialog):
                 self.core.runZonebud()
                 self.xy=self.readZBfile(self.graph,self.zone,self.inlist,
                           self.outlist)
-        #print('xy',self.xy)
+        print('xy',self.xy)
         self.plotData(self.xy,self.graph)
     
     def plotData(self,xy,graph):
@@ -345,14 +363,14 @@ class myBudget(QDialog):
         self._ax=self.figure.add_subplot(1,1,1)
       ### Scatter plot
         if graph!='Time Step' :
-            if graph!='Time Series' :
+            if graph!='Time Series' : ## % discrepency & in-out
                 self._ax.plot(xy['x'],xy['y'],c='red',marker='o')
             else :
-                if self.res=='Transport' and self.typ=='M':
+                if self.res=='Transport' and self.typ=='M': ## MB - transport
                     for i, color in enumerate(xy['C']):
                         self._ax.plot(xy['x'],xy['y'][i],c=color,
                                       marker=xy['m'][i])
-                else:
+                else: ## ZB - flow, trans, chem & MB - flow, chem
                     for i, color in enumerate(xy['Cin']):
                         self._ax.plot(xy['x'],xy['yin'][i],c=color,marker='v')
                     for i, color in enumerate(xy['Cout']):
@@ -370,37 +388,40 @@ class myBudget(QDialog):
         if graph=='Time Step' :
             x = np.arange(len(xy['lab']))  # the label locations
             width = 0.35  # the width of the bars
-            if self.res=='Transport' and self.typ=='M':
+            if self.res=='Transport' and self.typ=='M': ## MB - transport
                 bar = self._ax.bar(x,xy['y'],color=['C'+str(c) for c in x])
                 self.autolabel(bar)
-            if self.res in ['Transport','Chemistry'] and self.typ=='Z':
+            elif self.res in ['Transport','Chemistry'] and self.typ=='Z': ## ZB - chem & transport
                 if xy['ysorb'] :x2=x + width/2 ; x=x - width/2 
-                barsol = self._ax.bar(x, xy['ysol'], width, label='SOLUTE')
+                if xy['lab2'] : label = xy['lab2'][0] ; print('lab',label)
+                barsol = self._ax.bar(x, xy['ysol'], width)#, label=label)
                 self.autolabel(barsol)
                 if xy['ysorb'] :
-                    barsor = self._ax.bar(x2, xy['ysorb'], width, label='SORBED')
+                    if xy['lab2'] : label = xy['lab2'][1]
+                    barsor = self._ax.bar(x2, xy['ysorb'], width)#, label=label)
                     self.autolabel(barsor)
-            else :
+                if self.xy['lab']:self._ax.legend(label)
+            else : ## ZB - flow & MB - Flow, chem
                 barIn = self._ax.bar(x - width/2, xy['yin'], 
                                      width, label='IN')
                 barOut = self._ax.bar(x + width/2, xy['yout'], 
                                       width, label='OUT')
                 self.autolabel(barIn)
                 self.autolabel(barOut)
+                if self.xy['lab']:self._ax.legend()
             #self._ax.set_ylabel('')
             #self._ax.set_title('')
             self._ax.set_xticks(x)
             self._ax.set_xticklabels(xy['lab'])
             self._ax.set_ylabel(xy['ylab'], fontsize = 8) 
-            self._ax.legend()
         self._ax.figure.canvas.draw()
                         
     def autolabel(self,rects):
         '''Attach a text label above each bar in *rects*, 
         displaying its height'''
         for rect in rects:
-            height = round(rect.get_height(),1) # ;print(height)
-            self._ax.annotate('{}'.format(height),
+            height = rect.get_height()#round(rect.get_height(),1) # ;print(height)
+            self._ax.annotate('{0:.2g}'.format(height),
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 3),  # 3 points vertical offset
                         textcoords="offset points",
@@ -476,6 +497,8 @@ class myBudget(QDialog):
         if ulength=='':ulength='L'
         cview=self.vgroup.currentIndex()
         #print('idz+1',str(idz+1))
+        tlist=np.insert(self.tlist,0,0) ## Cumulative or not
+        tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)] ## Cumulative or not
         
         if graph == 'Percent Discrepancy' :
             for row in td['data']:
@@ -488,12 +511,21 @@ class myBudget(QDialog):
             #print ('perc dis',xy)
         
         if graph == 'In-Out':
+            y=[]
             for row in td['data']:
                 if row[td['title'].index('ZONE')]==str(idz+1):
                     xy['x'].append(float(row[td['title'].index('TOTIM')]))
-                    xy['y'].append(float(row[td['title'].index('IN-OUT')]))
+                    #xy['y'].append(float(row[td['title'].index('IN-OUT')]))
+                    y.append(float(row[td['title'].index('IN-OUT')]))
+            if cview != 0 : xy['y'] = y
+            else:
+                for t in range(len(y)):
+                    if t==0 : y0=y[t]*tsteps[t]
+                    else:y0=y0+y[t]*tsteps[t]
+                    xy['y'].append(y0)
             xy['lab'].append('In-Out')
-            xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
+            if cview != 0 : xy['ylab']='Rates ('+ulength+'\u00b3/'+utime+')' 
+            else : xy['ylab']='Volume ('+ulength+'\u00b3)'
             xy['xlab']='Time ('+utime+')'
             #print ('in-out',xy)
         
@@ -501,8 +533,6 @@ class myBudget(QDialog):
             ind,lab=self.getIndLab(td,inlist,outlist,zone)
             xy={'lab':[],'x':[],'yin':[],'yout':[],'Cin':[],'Cout':[]}
             i,j,k=0,0,0; lin=[]; lout=[] ## i&j for color, k for xy['x'], lin&lout for legend
-            tlist=np.insert(self.tlist,0,0) ## Cumulative or not
-            tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)] ## Cumulative or not
             for key, value in ind.items(): ## loop in user choices
                 yi=[];yo=[];y2=[]  ## y2 array for cumulative
                 if value[0]: ## for sources (in)
@@ -541,8 +571,8 @@ class myBudget(QDialog):
                     k+=1
                 j+=1
             xy['lab']=lin+lout
-            if cview != 0 : xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
-            else :  xy['ylab']='Volume ('+ulength+'$^{3}$)'
+            if cview != 0 : xy['ylab']='Rates ('+ulength+'\u00b3/'+utime+')'
+            else :  xy['ylab']='Volume ('+ulength+'\u00b3)'
             xy['xlab']='Time ('+utime+')'
             #print ('TSeries',xy)
             
@@ -563,8 +593,8 @@ class myBudget(QDialog):
                         xy2['lab'].append(zname[list(lab.keys())[i]-1])
                     else:xy2['lab'].append(list(lab.keys())[i])
                     i+=1
-                if cview != 0:xy2['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
-                else :  xy2['ylab']='Volume ('+ulength+'$^{3}$)'
+                if cview != 0:xy2['ylab']='Rates ('+ulength+'\u00b3/'+utime+')'
+                else :  xy2['ylab']='Volume ('+ulength+'\u00b3)'
                 return xy2
         return xy
         '''
@@ -642,18 +672,19 @@ class myBudget(QDialog):
 ######################### Zone budget Mt3dms & Pht3d ##########################
 
     def getZoneMass(self,graph,zlist,splist):
-        group=self.res ; zlayers='all' ; iper = 0 ; sp=splist[0]
+        group=self.res ; zlayers='all' ; iper = 0 ; 
         lmod=self.core.getUsedModulesList('Mt3dms')
         utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
         if utime == '': utime='T'
-        if group == 'Chemistry' : umass ='mol'
-        else : umass='M'
+        if group == 'Chemistry' : 
+            sp=self.species[splist] ; umass ='mol' 
+        else : sp=splist ; umass='M'
         cview=self.vgroup.currentIndex()
         tlist=np.insert(self.tlist,0,0) ## Cumulative or not
         tsteps=[tlist[i+1] - tlist[i] for i in range(len(tlist)-1)] ## Cumulative or not
         
         if graph == 'Time Series':
-            lin=[];lout=[]
+            lin=[];lout=[];x=''
             xy={'lab':[],'x':[],'yin':[],'yout':[],'Cin':[],'Cout':[]}
             for i, zname in enumerate(zlist):
                 #print('B4',iper,group,zname,[sp],zlayers)
@@ -665,7 +696,9 @@ class myBudget(QDialog):
                     ysol=ysol/tsteps
                     xy['yin'].append(ysol)
                 else : xy['yin'].append(ysol[:,0])
-                lin.append(zname+' SOLUTE')
+                if group == 'Chemistry' : 
+                    lin.append(zname+'_'+str(sp)+' (SOLUTE)')
+                else : lin.append(zname+'_Tracer (SOLUTE)')
                 xy['Cin'].append('C'+str(i))
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
@@ -676,7 +709,9 @@ class myBudget(QDialog):
                         ysor=ysor/tsteps
                         xy['yout'].append(ysor)
                     else : xy['yout'].append(ysor[:,0])
-                    lout.append(zname+' SORBED')
+                    if group == 'Chemistry' : 
+                        lin.append(zname+'_'+str(sp)+' (SORBED)')
+                    else : lin.append(zname+'_Tracer (SORBED)')
                     xy['Cout'].append('C'+str(i))
             xy['x']=x
             xy['lab']=lin+lout
@@ -691,7 +726,7 @@ class myBudget(QDialog):
             t=self.tlist[tind] ; t0=self.tlist[tind-1]
             if tind == 0 : t0=0
             tstep=t-t0
-            xy={'lab':[],'ysol':[],'ysorb':[]}
+            xy={'lab':[],'lab2':[],'ysol':[],'ysorb':[]}
             for i, zname in enumerate(zlist):
                 x,ysol,label =  self.core.onPtObs('B4',iper,group,zname,
                                             [sp],zlayers,ss='')
@@ -703,6 +738,9 @@ class myBudget(QDialog):
                 else : y=ysol[:,0]
                 xy['ysol'].append(y[ind])
                 xy['lab'].append(zname)
+                if group == 'Chemistry' : 
+                    xy['lab2'].append([str(sp)+' (SOLUTE)'])
+                else : xy['lab2'].append(['Tracer (SOLUTE)'])
                 if 'RCT' in lmod:
                     x,ysor,label =  self.core.onPtObs('B4',iper,group,zname,
                                                 [sp],zlayers,ss='S')
@@ -712,6 +750,9 @@ class myBudget(QDialog):
                         y=y/tstep
                     else : y=ysor[:,0]
                     xy['ysorb'].append(y[ind])
+                    if group == 'Chemistry' : 
+                        xy['lab2'].append([str(sp)+' (SORBED)'])
+                    else :xy['lab2'].append(['Tracer (SORBED)'])
             if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
             else :  xy['ylab']='Mass ('+umass+')'
             #print('t step',xy)
@@ -773,14 +814,16 @@ class myBudget(QDialog):
             for i,row in enumerate(td['data']):
                 if float(row[td['title'].index('TIME')])==float(t):
                     tind=i
-                    tstep=t-tind-float(td['data'][i-1,0])
+                    if tind == 0 : t0=0
+                    else : t0 = float(td['data'][i-1,0])
+                    tstep=float(t)-t0
             for l1 in iolist:
                 if l1 in td['title'] :
                     ind=td['title'].index(l1)
                     y=abs(td['data'][:,ind])
                     if cview!=0 : 
                         y[1:] -= y[:-1].copy()
-                        y=y/tsteps
+                        y=y/tstep
                     xy['y'].append(y[tind])
                     xy['lab'].append(l1)
             if cview != 0 : xy['ylab']='Rates ('+umass+'/'+utime+')'
@@ -794,7 +837,7 @@ class myBudget(QDialog):
     def readPHT3Dfile(self,graph,inlist,outlist,splist):
       ### read PHT3D.XMAS file and put data in dict td
         td={'title':[],'data':[]}
-        sind=format((int(splist[0])+1),'03d');  #print('sind',sind)
+        sind=format((int(splist)+1),'03d');  #print('sind',sind)
         fName=self.core.fileDir+os.sep+'PHT3D'+str(sind)+'.XMAS'
         file = np.loadtxt(fName,skiprows = 2)
         td['data']=file
@@ -921,3 +964,142 @@ class myBudget(QDialog):
             else :  xy['ylab']='Mass ('+umass+')'
             #print('Tstep',xy)
         return xy
+
+############################### Export feature ################################  
+
+    def onExport(self):
+        dlg = myFileDialog('Save')
+        fDir,fName = dlg.getsetFile(self.gui,'Save','*.txt')
+        if fDir == None: return
+        f1 = open(fDir+os.sep+fName+'.txt','w', encoding="utf-8")
+        if self.ptyp  == 'Z':
+            if self.res == 'Flow':
+                f1.write('Zone budget zone: '+self.zone+'\n')
+        if self.graph!='Time Step' :
+            print(self.xy['lab'])
+            lab = '\t'.join(self.xy['lab'])
+            if self.graph!='Time Series' : ## % discrepency & in-out
+                f1.write('Time\t'+lab+'\n') ##lab
+                f1.write(self.xy['xlab'].split()[1]+'\t'+
+                         str(self.xy['ylab'])+'\n') ## unit
+                arr=self.xy['x']+self.xy['y']
+                arr=np.array(arr).reshape(2,len(self.xy['x']))
+                savetxt(f1,arr.T)
+            else :
+                if self.res=='Transport' and self.typ=='M': ## MB - transport
+                    f1.write('Time\t'+lab+'\n') ##lab
+                    ylab='\t'.join([str(self.xy['ylab'])]*len(self.xy['lab']))
+                    f1.write(self.xy['xlab'].split()[1]+'\t'+str(ylab)+'\n') ## unit
+                    arr=[self.xy['x']]+self.xy['y']
+                    arr=np.array(arr).reshape(
+                            len(self.xy['lab'])+1,len(self.xy['x']))
+                    savetxt(f1,arr.T)
+                else :  ## ZB - flow, trans, chem & MB - flow, chem
+                    f1.write('Time\t'+lab+'\n') ##lab
+                    ylab='\t'.join([str(self.xy['ylab'])]*len(self.xy['lab']))
+                    f1.write(self.xy['xlab'].split()[1]+'\t'+str(ylab)+'\n') ## unit
+                    arr=[self.xy['x']]+self.xy['yin']+self.xy['yout']
+                    arr=np.array(arr).reshape(
+                            len(self.xy['lab'])+1,len(self.xy['x']))
+                    savetxt(f1,arr.T)
+        else : ## Time Step
+            print('lab',self.xy['lab'])
+            lab = '\t'.join(self.xy['lab'])
+            f1.write('Time: '+self.Tstep.currentText()+'\n')
+            if self.res=='Transport' and self.typ=='M': ## MB - transport
+                ylab='\t'.join([str(self.xy['ylab'])]*len(self.xy['lab']))
+                f1.write(lab+'\n')
+                f1.write(ylab+'\n')
+                savetxt(f1,[self.xy['y']])
+            elif self.res in ['Transport','Chemistry'] and self.typ=='Z': ## ZB - chem & transport
+                if self.xy['ysorb'] : 
+                    a=list(zip(self.xy['ysol'],self.xy['ysorb']))
+                    a1= [y for x in a for y in x]
+                    i=2 ; form=['solute','sorbed']
+                else : a1=self.xy['ysol'] ; i=1 ; form=['solute']
+                f1.write(lab+'\n')
+                ylab='\t'.join([str(self.xy['ylab'])]*len(self.xy['lab'])*i)
+                out='\t'.join(form*len(self.xy['lab']))
+                f1.write(out+'\n')
+                f1.write(ylab+'\n')
+                np.savetxt(f1,[a1])
+            else : ## ZB - flow & MB - Flow, chem
+                llab,ly=[],[]
+                for i in range (len(self.xy['lab'])):
+                    if str(self.xy['yin'][i]) != 'nan' :
+                        llab.append(self.xy['lab'][i]+'(in)')
+                        ly.append(self.xy['yin'][i])
+                    if str(self.xy['yout'][i])!= 'nan' :
+                        llab.append(self.xy['lab'][i]+'(out)')
+                        ly.append(self.xy['yout'][i])
+                lab = '\t'.join(llab)
+                f1.write(lab+'\n') 
+                ylab='\t'.join([str(self.xy['ylab'])]*len(llab))
+                f1.write(ylab+'\n')  
+                np.savetxt(f1,[ly])
+        f1.close()
+            
+ 
+
+"""  
+            if self.res=='Transport' and self.typ=='M': ## MB - transport
+                bar = self._ax.bar(x,xy['y'],color=['C'+str(c) for c in x])
+                self.autolabel(bar)
+            elif self.res in ['Transport','Chemistry'] and self.typ=='Z': ## ZB - chem & transport
+                if xy['ysorb'] :x2=x + width/2 ; x=x - width/2 
+                barsol = self._ax.bar(x, xy['ysol'], width, label='SOLUTE')
+                self.autolabel(barsol)
+                if xy['ysorb'] :
+                    barsor = self._ax.bar(x2, xy['ysorb'], width, label='SORBED')
+                    self.autolabel(barsor)
+                self._ax.legend()
+            else : ## ZB - flow & MB - Flow, chem
+                barIn = self._ax.bar(x - width/2, xy['yin'], 
+                                     width, label='IN')
+                barOut = self._ax.bar(x + width/2, xy['yout'], 
+                                      width, label='OUT')
+                
+                
+        if self.ptyp == 'XY':
+            f1.write('Well '+'Type '+'Layer '+'Time '+'Observed '+'Simulated'+'\n')
+            for n in range(len(self.label_all)): 
+                    f1.write(self.label_all[n].split('_')[0]+' ')
+                    f1.write(self.label_all[n].split('_')[1]+' ')
+                    f1.write(self.label_all[n].split('_')[2][3:]+' ')
+                    f1.write(str(self.obs_time[n])+' ')
+                    f1.write(str(self.yobs_all[n])+' ')
+                    f1.write(str(self.ysim_all[n])+'\n')
+            f1.close()
+        elif self.ptyp[0]=='B':
+            f1.write(self.axlabel.split(' ')[0])
+            if self.pOrder=='Zones': zslist=self.zolist
+            else : zslist= self.splist
+            for i in zslist:
+                for n in self.llabel: 
+                    if n.split('(')[1]!='obs)':f1.write(' '+i+'_'+n)
+            f1.write('\n')
+            nt,ny,nz = np.shape(self.arryy)
+            if nt!=1 : 
+                self.arryy=array(self.arryy).transpose(1,0,2).reshape(ny,-1) #EV 14/02/19
+            else : 
+                self.arryy=array(self.arryy).reshape(ny,-1) #EV 27/02/2019
+            arr = zeros((ny,nt*nz+1,))
+            arr[:,0]=self.x ; 
+            arr[:,1:]=(self.arryy)
+            savetxt(f1,arr)
+            f1.close()
+        elif self.ptyp[0] in ['P','V']: 
+            for i in range(len(self.zolist)):
+                if self.ptyp[0]=='P':f1.write(self.axlabel.split(' ')[0])
+                else : f1.write(self.aylabel.split(' ')[0])
+                for n in self.llabel: 
+                    if n.split('(')[1]!='obs)':f1.write(' '+self.zolist[i]+'_'+n) 
+                f1.write('\n')
+                for j in range(len(self.arrx[i])):
+                    arr=np.insert(self.arryy[i][j],0,self.arrx[i][j])
+                    np.savetxt(f1,arr, newline=" ")
+                    f1.write('\n')
+                f1.write('\n')
+                f1.write('\n')
+            f1.close()
+"""

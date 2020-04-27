@@ -240,18 +240,6 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         if z.size == 0 : #EV 01/04/20
             z = zone2grid(core,modName,line,im)
             core.dictype[modName][line][im]='one_value'
-        #except :  #EV 01/04/20
-            #file = core.dicarray[modName][line][im]
-            #fNameExt = file.split('/')[-1]
-            #cfg = Config(core)
-            #dialogs = cfg.dialogs
-           # txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
-             #      'Default values or zones values will be used.'+'\n\n'
-              #     +'Please select an other file to import an array for the parameter '+
-              #     str(line)+' at media '+str(im)+'.')
-            #dialogs.onMessage(core.gui,txt) 
-            #z = zone2grid(core,modName,line,im)
-            #core.dictype[modName][line][im]='one_value'
     return z
     
 def getXYvects(core):
@@ -422,18 +410,6 @@ def blockRegular(core,modName,line,intp,opt,iper):
                 if a.size == 0 : #EV 01/04/20
                     a = zone2grid(core,modName,line,im,opt,iper)
                     core.dictype[modName][line][im]='one_value'
-                #except :  #EV 01/04/20
-                   # file = core.dicarray[modName][line][im]
-                   # fNameExt = file.split('/')[-1]
-                   # cfg = Config(core)
-                   # dialogs = cfg.dialogs
-                   # txt = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
-                    #       'Default values or zones values will be used.'+'\n\n'
-                    #       +'Please select an other file to import an array for the parameter '
-                    #       +str(line)+' at media '+str(im)+'.')
-                   # dialogs.onMessage(core.gui,txt) 
-                   # a = zone2grid(core,modName,line,im,opt,iper)
-                   # core.dictype[modName][line][im]='one_value'
             for il in range(int(lilay[im])): # several layers can exist in each media
                 m0[lay]=a
                 lay +=1
@@ -1102,7 +1078,7 @@ def smoo2d(m):
 ###################### ARRAY ####################
 
 '''Import array from one media (im) EV 07/02/20'''
-def onMessage(core,txt):
+def onMessage2(core,txt): #EV 20/04/20
     cfg = Config(core)
     try : 
         dialogs = cfg.dialogs
@@ -1129,7 +1105,7 @@ def zone2array(core,modName,line,im):
         try : 
             arr=core.importAscii(fDir,fNameExt)
             arr=arr.astype(np.float)
-        except OSError : onMessage(core,txt1) 
+        except OSError : onMessage2(core,txt1) 
         except : onMessage(core,txt2) 
     elif ext == 'var' :
         try : 
@@ -1140,7 +1116,7 @@ def zone2array(core,modName,line,im):
         except : onMessage(core,txt2) 
     else : #if ext == 'txt' or ext == 'dat' :
         try : arr=loadtxt(file)
-        except OSError :onMessage(core,txt1) 
+        except OSError :onMessage2(core,txt1) 
         except : onMessage(core,txt2) 
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:

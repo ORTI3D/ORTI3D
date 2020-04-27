@@ -14,8 +14,8 @@ class multiPlot(QDialog):
     - Horizontal profiles
     - Calibration graph
     The result that can be represented are flow (head, Wcontent, Darcy flux), 
-    Transport (Tracer concentration, flux and mass), Chemistry (chemical species 
-    concentrations, flux and mass).
+    Transport (Tracer concentration, flux and mass), Chemistry (chemical 
+    species concentrations, flux and mass).
     They can also be compared to data.
     '''
     def __init__(self,gui,core,typ,res):
@@ -25,16 +25,18 @@ class multiPlot(QDialog):
         self.setModal(False)
         self.setWindowTitle('Plot of results')
         screenShape = QtWidgets.QDesktopWidget().screenGeometry()
-        self.setGeometry(QRect(5, 5, screenShape.width()*.75, screenShape.height()*.7))
+        self.setGeometry(QRect(5, 5, screenShape.width()*.75, 
+                               screenShape.height()*.7))
     ## main horizontal layout
         self.horizontalLayout = QHBoxLayout(self)
         self.horizontalLayout.setContentsMargins(10, 20, 10, 10)
     ## the left panel vertical layout  
         self.verticalLayout = QVBoxLayout()
-        #self.verticalLayout.setGeometry(QRect(5, 5, 250, screenShape.height()*.68))
+        #self.verticalLayout.setGeometry(QRect(5,5,250,screenShape.height()*.68))
     ## title
         if self.typ == 'B' : title = 'Time-series graph'
-        if self.typ == 'P' : title = 'Profile graph'
+        if self.typ == 'P' : title = 'Horizontal profile graph'
+        if self.typ == 'V' : title = 'Vertical profile graph'
         if self.typ == 'X' : title = 'Calibration graph'
         label = str(title +' - '+self.res)
         self.label = QtWidgets.QLabel(self)
@@ -58,9 +60,12 @@ class multiPlot(QDialog):
             self.label_0.setText("Type of result")
             self.gl.addWidget(self.label_0,0,0,1,1)
             self.rgroup = QComboBox(self)
-            if self.res == 'Flow' : self.rgroup.addItems(['Head','W content']) #EV 02/03/20
+            if self.res == 'Flow' : self.rgroup.addItems(
+                    ['Head','W content'])#,'Flux']) #EV 02/03/20
             if self.res in ['Transport','Chemistry'] : 
-                self.rgroup.addItems(['Concentration','Weighted concentration'])
+                self.rgroup.addItems(
+                        ['Concentration','Weighted concentration',
+                         'Mass discharge','Mass Flux'])
             self.rgroup.setCurrentIndex(0)
             self.gl.addWidget(self.rgroup,0,1,1,1)
     ## Plot order combo box for chemistry
@@ -75,7 +80,7 @@ class multiPlot(QDialog):
             self.gl.addWidget(self.plgroup,1,1,1,1)
             #!self.verticalLayout.addWidget(self.plgroup) 
     ## Time combo box for profile and calibration graph
-        if self.typ=='P' or self.typ=='X':
+        if self.typ in ['P','V','X']:#=='P' or self.typ=='X':
             #!self.frame = QtWidgets.QFrame(self)
             #!self.frame.setMaximumSize(QtCore.QSize(120, 38))
             #!self.horizontalLayout2 = QHBoxLayout(self.frame)
@@ -113,7 +118,8 @@ class multiPlot(QDialog):
     ## Apply button
         self.pushButton = QPushButton(self)
         self.pushButton.setText('Apply')
-        self.verticalLayout.addWidget(self.pushButton, alignment=Qt.AlignHCenter)
+        self.verticalLayout.addWidget(self.pushButton, 
+                                      alignment=Qt.AlignHCenter)
         self.pushButton.clicked.connect(self.buildPlot)
      ## add vertical layout   
         self.horizontalLayout.addLayout(self.verticalLayout)
@@ -131,7 +137,8 @@ class multiPlot(QDialog):
     ## Export button
         self.pushButton2 = QPushButton(self)
         self.pushButton2.setText('Export')
-        self.verticalLayout2.addWidget(self.pushButton2, alignment=Qt.AlignHCenter)
+        self.verticalLayout2.addWidget(self.pushButton2, 
+                                       alignment=Qt.AlignHCenter)
         self.pushButton2.clicked.connect(self.onExport)
     ## add vertical layout 2
         self.horizontalLayout.addLayout(self.verticalLayout2)
@@ -149,7 +156,8 @@ class multiPlot(QDialog):
         dic={'Layers':{}}
         nblay=getNlayers(self.core)
         lnblay =  [str(x) for x in range(nblay)]
-        dic['Layers'] = list(zip(lnblay,[False]*nblay))
+        if self.typ != 'V' :lnblay.append('All layers')
+        dic['Layers'] = list(zip(lnblay,[False]*len(lnblay)))
         return dic
         
     def getSpecies(self):
@@ -165,10 +173,12 @@ class multiPlot(QDialog):
         dicLayers=self.getLayers()
         if res =='Chemistry': 
             dicSpecies=self.getSpecies()
-            if typ=='X' or len(dicLayers['Layers'])==1: dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
+            if typ=='X' or len(dicLayers['Layers'])==1: 
+                dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
             else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
         else : 
-            if typ=='X' or len(dicLayers['Layers'])==1: dic = dicObsZone #EV 26/08/19
+            if typ=='X' or len(dicLayers['Layers'])==1: 
+                dic = dicObsZone #EV 26/08/19
             else : dic = {**dicObsZone,**dicLayers}
         return dic
     
@@ -184,12 +194,22 @@ class multiPlot(QDialog):
         return self.nb.dicOut
         
     def getOptions(self):
-        '''get the plot options from the window very simple now'''
+        '''get the plot options from the window and put it in dicIn:
+        ptyp: for OnPtObs B, P or X - 0, 1, 2 or 3
+        plotOrder: for chemistry multiplot by zone or by species
+        zolist: list with model observation zone
+        splist: list of species for chem, 'tracer' for transport and 'Head' and 
+            'W content' ('Flux' for flow is in ZB)
+        lylist: list with model layers'''
         dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
         rtyp = int(self.rgroup.currentIndex()) #EV 02/03/20
         dicIn['ptyp']=ptyp+str(rtyp)
-        if self.rgroup.currentText()=='W content': dicIn['ptyp']=ptyp+'0'
+        if self.rgroup.currentText() in ['W content']:#,'Flux']: 
+            dicIn['ptyp']=ptyp+'0'
+            dicIn['splist']=['Wcontent']
+        elif self.res=='Transport' :dicIn['splist']=['Tracer']
+        else:dicIn['splist']=[self.rgroup.currentText()]
         #if ptyp=='B' : dicIn['ptyp']='B0'
         #if ptyp=='P' : dicIn['ptyp']='P0'
         #if ptyp=='X' : dicIn['ptyp']='XY'
@@ -197,22 +217,22 @@ class multiPlot(QDialog):
         dic=self.getValues() #EV 14/08/19
         nblay=getNlayers(self.core) #EV 26/08/19
         if nblay==1 : dic['Layers']= [('0', int(2))] #EV 26/08/19
-        dicIn['zolist']=[dic['Zones'][i][0] for i in range(len(dic['Zones'])) if dic['Zones'][i][1]==2]
+        dicIn['zolist']=[dic['Zones'][i][0] for i in range(
+                len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
-            lylist=[dic['Layers'][i][0] for i in range(len(dic['Layers'])) if dic['Layers'][i][1]==2]
+            lylist=[dic['Layers'][i][0] for i in range(
+                    len(dic['Layers'])) if dic['Layers'][i][1]==2]
             dicIn['lylist']=','.join(lylist)
-        #dicIn['splist']=[self.res]
-        dicIn['splist']=[self.rgroup.currentText()]
-        if self.res=='Transport' :dicIn['splist']=['Tracer']
         if self.res=='Chemistry' :
-            if ptyp=='X' or ptyp=='P': dicIn['plotOrder']='Zones'
+            if ptyp in ['X','P','V']: dicIn['plotOrder']='Zones'
             else :
                 plotOrder=int(self.plgroup.currentIndex())
                 if plotOrder==0 : dicIn['plotOrder']='Zones'
                 if plotOrder==1 : dicIn['plotOrder']='Species'
-            dicIn['splist']=[dic['Species'][i][0] for i in range(len(dic['Species'])) if dic['Species'][i][1]==2]
+            dicIn['splist']=[dic['Species'][i][0] for i in range(
+                    len(dic['Species'])) if dic['Species'][i][1]==2]
         else :dicIn['plotOrder']='Zones' 
-        #print('dicIn',dicIn)
+        print('dicIn',dicIn)
         return dicIn
     
     def buildPlot(self): #,dicIn
@@ -239,19 +259,9 @@ class multiPlot(QDialog):
         if self.pOrder=='Species': nplots = len(self.splist)
         ncols = int(ceil(sqrt(nplots)))
         nrows = int(ceil(nplots/ncols))
-    ## sets some plot type parameters
-        #!if self.ptyp=='B0': ##time series
-        if self.ptyp[0]=='B': ##time series
-            iper = self.tlist ; self.axlabel='Time [T]' 
-        #!if self.ptyp=='P0': ##Profile
-        if self.ptyp[0]=='P': ##Profile
-            curTime = int(self.Tstep.currentIndex())
-            iper = curTime ; self.axlabel='Distance [L]' 
-    ## sets some plot result parameters
-        if 'Head' in self.splist : group = 'Flow' ; aylabel = 'Head [L]'
-        elif 'Wcontent' in self.splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
-        elif 'Tracer' in self.splist : group = 'Transport' ; aylabel = 'Concentration [NL$^{-3}$]'
-        else : group = 'Chemistry' ; aylabel = 'Concentration [NL$^{-3}$]'
+    ## get iper, plot x and y label, group
+        iper, self.axlabel, self.aylabel, group= self.getUnitLab(
+                self.ptyp,self.splist)
     ## build the plots
         self.figure.clf()
     ## Calibration graph
@@ -284,23 +294,27 @@ class multiPlot(QDialog):
             myplot2=self._ax.plot([min(self.yobs_all),max(self.yobs_all)],[min(self.yobs_all),max(self.yobs_all)],'k')
             self._ax.set_title('Simulated vs Observed Data: Time = '+str(curTime)+' [T]',fontweight="bold", size=9)
             self._ax.legend(self.llabel,fontsize = 8,loc='upper center', bbox_to_anchor=(0.5, -0.1),ncol=4)
-            self._ax.set_ylabel('Simulated '+aylabel, fontsize = 8) 
-            self._ax.set_xlabel('Observed '+aylabel, fontsize = 8)
+            self._ax.set_ylabel('Simulated '+self.aylabel, fontsize = 8) 
+            self._ax.set_xlabel('Observed '+self.aylabel, fontsize = 8)
             self._ax.ticklabel_format(useOffset=False, style='sci',scilimits=(-4,4),axis='both',useMathText=True)
             self._ax.tick_params(axis='both', labelsize=8)
             self._ax.figure.canvas.draw()
     ## Time series and profile graph
         else :
-            a = lylist.split(',');layers = [int(x) for x in a] #EV 26/08/19
+            if 'All layers' in lylist : lylist='all'
+            else : a = lylist.split(','); layers = [int(x) for x in a] #EV 26/08/19
             if self.pOrder=='Zones': ## for Flow, transport and chemistry
                 self.arryy=[] ; self.arrx=[] ## for export
                 for i in range(nplots):
                     self._ax=self.figure.add_subplot(nrows,ncols,i+1)
                     self.x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[i],self.splist,lylist) 
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
-                    myplot=self._ax.plot(self.x,yy)
+                    if self.ptyp[0] == 'V' :myplot=self._ax.plot(yy,self.x,marker='o')
+                    elif self.ptyp[0] == 'P' :myplot=self._ax.plot(self.x,yy,marker='o')
+                    else:myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
                     if self.ptyp[0]=='B': ## observed data for time series only
+                        if lylist=='all' : layers=['all']
                         if self.checkBox.isChecked():
                             for j in range(len(self.splist)):
                                 for l in range(len(layers)):
@@ -312,7 +326,7 @@ class multiPlot(QDialog):
                                         else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
                     self._ax.set_title(self.zolist[i],fontweight="bold", size=9)
                     self._ax.legend(self.llabel,fontsize = 8,loc='best')
-                    self._ax.set_ylabel(aylabel, fontsize = 8) 
+                    self._ax.set_ylabel(self.aylabel, fontsize = 8) 
                     self._ax.set_xlabel(self.axlabel, fontsize = 8)
                     self._ax.ticklabel_format(useOffset=False, style='sci',scilimits=(-4,4),axis='both',useMathText=True)
                     self._ax.tick_params(axis='both', labelsize=8)
@@ -341,17 +355,50 @@ class multiPlot(QDialog):
                     myplot=self._ax.plot(self.x,self.yyarray)
                     self._ax.set_title(self.splist[i],fontweight="bold", size=9)
                     self._ax.legend(self.llabel,fontsize = 8,loc='best')
-                    self._ax.set_ylabel(aylabel, fontsize = 8)
+                    self._ax.set_ylabel(self.aylabel, fontsize = 8)
                     self._ax.set_xlabel(self.axlabel, fontsize = 8)
                     self._ax.ticklabel_format(useOffset=False, style='plain',axis='both')
                     self._ax.tick_params(axis='both', labelsize=8)
                     self._ax.figure.canvas.draw()
-            
+                    
+    def getUnitLab(self,ptyp, splist):
+        '''return: 
+            iper: list of time for time-series, 1 value for profile
+            axlabel and aylabel of the different type of graph
+            the group for onPtObs for '''
+        utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
+        if utime == '': utime='T'
+        ulength=self.core.getUnits('Modflow','dis.4',0)
+        if ulength=='':ulength='L'
+        if ptyp[0]=='B': ##time series
+            iper = self.tlist ; axlabel='Time '+'('+utime+')' 
+        if ptyp[0] in ['P','V']: ##Profile
+            curTime = int(self.Tstep.currentIndex())
+            iper = curTime ; axlabel='Distance '+'('+ulength+')' 
+        if 'Head' in splist: group='Flow'; aylabel='Head '+'('+ulength+')'
+        elif 'W content' in splist : group = 'Flow' ; aylabel = 'W content' # OA 21/2/2019
+        elif 'Tracer' in splist : 
+            group = 'Transport' 
+            print('ptyp[1]',ptyp[1],len(ptyp[1]))
+            if ptyp[1]=='2': aylabel = 'Mass discharge (kg/'+utime+')'
+            elif ptyp[1]=='3': 
+                aylabel = 'Mass flux (kg/'+utime+'/'+ulength+'\u00b2)' 
+            else: aylabel= 'Concentration (kg/'+ulength+'\u00b3)'
+        else : 
+            group = 'Chemistry'
+            if ptyp[1]=='2': aylabel = 'Mass discharge (mol/'+utime+')'
+            elif ptyp[1]=='3': 
+                aylabel = 'Mass flux (mol/'+utime+'/'+ulength+'\u00b2)' 
+            else: aylabel = 'Concentration (mol/'+ulength+'\u00b3)'
+        if ptyp[0]=='V':
+            axlabel, aylabel = aylabel,axlabel
+        return iper, axlabel, aylabel, group
+    
     def getDataObs(self,splist,zname,opt):
-        '''read the data file and returns it
+        '''read observed values and returns it
         splist: head, tracer or chemical species
         zname: name of the zone
-        opt: time for '''
+        opt: time for 'X', layer for 'B' '''
         xobs=[];yobs=[];lobs=0 
         if splist in ('Head','Tracer'):
             dicName=str('obs'+splist)
@@ -364,11 +411,11 @@ class multiPlot(QDialog):
         for i in range(len(dic)):
             if dic[i][0]==zname:
                 if self.ptyp[0]=='B':
-                    if int(dic[i][1])==int(opt):
+                    if str(dic[i][1])==str(opt):
                         if dic[i][ispe]!='': # EV 05/03/19
                             xobs.append(float(dic[i][2]))     
                             yobs.append(float(dic[i][ispe]))
-                            lobs=int(dic[i][1])
+                            lobs=str(dic[i][1])
                 else :
                     if float(dic[i][2])==float(opt):
                         if dic[i][ispe]!='': # EV 05/03/19
@@ -382,7 +429,7 @@ class multiPlot(QDialog):
         dlg = myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save','*.txt')
         if fDir == None: return
-        f1 = open(fDir+os.sep+fName+'.txt','w')
+        f1 = open(fDir+os.sep+fName+'.txt','w', encoding="utf-8")
         if self.ptyp == 'XY':
             f1.write('Well '+'Type '+'Layer '+'Time '+'Observed '+'Simulated'+'\n')
             for n in range(len(self.label_all)): 
@@ -411,9 +458,10 @@ class multiPlot(QDialog):
             arr[:,1:]=(self.arryy)
             savetxt(f1,arr)
             f1.close()
-        elif self.ptyp[0]=='P': 
+        elif self.ptyp[0] in ['P','V']: 
             for i in range(len(self.zolist)):
-                f1.write(self.axlabel.split(' ')[0])
+                if self.ptyp[0]=='P':f1.write(self.axlabel.split(' ')[0])
+                else : f1.write(self.aylabel.split(' ')[0])
                 for n in self.llabel: 
                     if n.split('(')[1]!='obs)':f1.write(' '+self.zolist[i]+'_'+n) 
                 f1.write('\n')

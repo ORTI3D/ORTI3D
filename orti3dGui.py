@@ -88,6 +88,11 @@ class orti3dGui(QMainWindow):
         
     def onGridMesh(self,gridtyp):  # OA 22/8/19
         boutonIcon(self,'Ad_Grid','Ad_'+gridtyp+'.png')
+        
+    def onWriteModflow(self,check): #EV 24/04/20
+        if check == 2 : check = False
+        else : check = True
+        boutonVisible(self,'Fl_Write',check) 
 
     ####################################################
     #                   make menus

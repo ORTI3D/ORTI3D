@@ -633,23 +633,33 @@ class Core:
         return s
     
     def getPorosity(self,modName,line,iy,ix,iz): # OA 11/4/20 modified to consider Xsection
-        ''' to get teh porosity for a list of cell indices
+        ''' to get the porosity for a list of cell indices
         getValueLong returns data oriented in the x,y way (not modflow y)
-        don't transform here'''
+        don't transform here -> NOT TRUE, transformation is needed here'''
         grd  = self.addin.getFullGrid()
-        #ncol, nrow = grd['nx'], grd['ny']
+        ncol, nrow = grd['nx'], grd['ny']
         val=self.getValueLong(modName,line,ik=0,iper=0)
         if self.addin.getDim() in ['Xsection','Radial']:
             iz=iy*1;iy=[0]*len(iz)
-        return val[iz,iy,ix]   
+        return val[iz,nrow-iy-1,ix] #EV 20/04/20
+    
+    def getZcoord(self,iy,ix,iz): #EV 20/04/20
+        ''' returns Z coordinates of the cell centers in 3D for a list of cell 
+        indices  '''
+        x2,y2,z2=getMesh3Dcenters(self)
+        grd  = self.addin.getFullGrid()
+        nrow = grd['ny']
+        if self.addin.getDim() in ['Xsection','Radial']:
+            iz=iy*1;iy=[0]*len(iz)
+        return z2[iz,nrow-iy-1,ix]  
             
     def onPtObs(self,typ,iper,group,zname,esp,layers_in=0,ss=''): #EV 23/03/20
         """ get the values at observation zones, esp can be a list of species names
-        typ[0]: B: breakthrough, P: profile, X : XYplot 
+        typ[0]: B: breakthrough, P: profile, X : XYplot, V: vertical profile
         typ[1]: 0:head/conc, 1:weighted conc, 2:total discharge, 3:average flux
         group : Flow, Transport, Chemistry
         zname : zone name
-        esp : list of species (F:Head,Wcontent; T:Tracer, C:species)
+        esp : list of species (F:Head,Wcontent,Flux; T:Tracer, C:species)
         layers_in : list of layer or 'all' for all layers of one zone
         ss : solute ss='' or sorbed species ss='S'
         """
@@ -714,7 +724,10 @@ class Core:
             else :
                 for il in layers:
                     pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
-                    labels.append('lay'+str(il))        
+                    if typ[0]!='V':labels.append('lay'+str(il)) #EV 20/04/20
+                if typ[0]=='V':
+                    str1 = ','.join(str(l) for l in layers)
+                    labels.append('lay'+str1)
        ## For Tracer
         elif group=='Transport':
             if mtype == 'Mod': opt ='Mt3dms'
@@ -726,7 +739,10 @@ class Core:
             else :
                 for il in layers:
                     pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
-                    labels.append('lay'+str(il))
+                    if typ[0]!='V':labels.append('lay'+str(il)) #EV 20/04/20
+                if typ[0]=='V':
+                    str1 = ','.join(str(l) for l in layers)
+                    labels.append('lay'+str1)
             #print('iz2 :',iz2)
        ## For chemistry
         elif group=='Chemistry': 
@@ -738,11 +754,14 @@ class Core:
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)
-                    labels.append('all layers')
+                    labels.append(str(e)+'_all layers')
                 else :
                     for il in layers:
-                        pt.append(m[:,iz2==il]); ## irow,icol,ilay #EV 23/03/20 
-                        labels.append(e+'lay'+str(il))
+                        pt.append(m[:,iz2==il]) 
+                        if typ[0]!='V':labels.append(e+'_lay'+str(il)) #EV 20/04/20
+                    if typ[0]=='V':
+                        str1 = ','.join(str(l) for l in layers)
+                        labels.append(str(e)+'_lay'+str1)
         else : pt=[1.] ## for flux
        ## For Darcy flux
         if typ[1]!='0' or esp[0]=='Flux': ## to get the flux, shall be a matrix (nper,nrow)
@@ -764,26 +783,30 @@ class Core:
             if mtype == 'Mod' : 
                 opt='Mt3dms' ; line='btn.11'
             else : opt='Min3pFlow' ; line='poro.1'
-            lpor=self.getPorosity(opt,line,iym,ix2,llay)
+            lpor=self.getPorosity(opt,line,iym,ix2,llay) #print('por',lpor)
          ## Cells pore volume
             vol=thick*dx*dy*lpor #EV 23/03/20 
             #print('vol',vol)
             if layers_in == 'all': # OA 11/4/20 added below to have flux for all
-                disch1,flux1,vol1 = [disch],[flux],[vol]
+                disch1,flux1,vol1 = [disch]*len(esp),[flux]*len(esp),[vol]*len(esp) #EV 20/04/20
             else :
                 disch1,flux1,vol1 = [],[],[]
                 for il in layers: 
                     disch1.append(disch[:,iz2==il])
                     flux1.append(flux[:,iz2==il])
                     vol1.append(vol[:,iz2==il])
-            #print('vol1',vol1) ; print('disch1',disch1)
+                disch1=disch1*len(esp) #EV 20/04/20
+                flux1=flux1*len(esp)
+                vol1=vol1*len(esp)
+            #print('vol1',vol1,'\n') ; print('disch1',disch1,'\n') ; print('flux1 1',(flux1),'\n')
+        #print('pt',pt,'\n')
     ### Transform values for different type of graph and return them
         if esp[0] in ['Head','Wcontent']: typ=typ[0]+'0'
+        if esp[0] == 'Flux': pt=flux1 #EV 20/04/20
        ## Time-serie graph
         if typ[0]=='B': 
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
-            #print('pt',pt)
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
                 if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); ## conc, pt[i] is a table (nper,nrow) 
                 elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
@@ -793,16 +816,28 @@ class Core:
             return t2,p1,labels
        ## Profile
         elif typ[0]=='P':  
-            xzon=xvect[ix2];yzon=yvect[iy2];
+            xzon=xvect[ix];yzon=yvect[iy];#print(xzon,yzon) #EV 20/04/20 ix2 -> ix & iy2 -> iy
             d0=sqrt((xzon[1:]-xzon[:-1])**2.+(yzon[1:]-yzon[:-1])**2.)
             dist = concatenate((array(0.,ndmin=1),cumsum(d0)))
             p1=zeros((len(dist),len(pt)))
             labels[0]='distance'
             for i in range(len(pt)):
                 if typ[1]=='0': p1[:,i]=pt[i]
-                elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux ## weigthed conc= darcy flux
-                elif typ[1]=='2': p1[:,i]=pt[i]*disch ## discharge or mass discharge
+                elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux1[i] ## weigthed conc= darcy flux #EV 20/04/20
+                elif typ[1]=='2': p1[:,i]=pt[i]*disch1[i] ## discharge or mass discharge #EV 20/04/20
             return dist,p1,labels
+        elif typ[0]=='V': #EV 20/04/20
+            labels[0]='distance'
+            distz=self.getZcoord(iym,ix2,llay) #print('distz',distz)
+            distz=list(dict.fromkeys(distz))
+            p1=zeros(len(distz)*len(esp))
+            for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
+                if typ[1]=='0': p1[i]=mean(pt[i],axis=1)
+                elif typ[1]=='1': p1[i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) 
+                elif typ[1]=='2': p1[i]=sum(pt[i]*disch1[i],axis=1)
+                elif typ[1]=='3': p1[i]=mean(pt[i]*flux1[i],axis=1)
+            p1=(p1.reshape(len(esp),len(distz))).T
+            return distz,p1,labels
        ## XY plot
         elif typ[0]=='X': 
             indCol = self.data['cols'].index(esp[0])
