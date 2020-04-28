@@ -80,8 +80,8 @@ class mtUsgWriter:
             else : # classical keywords
                 for ik in range(len(kwlist)):
                     if ik<len(lval): 
-                        if type(lval[ik])==type(5):s += ' %3i' %lval[ik]
-                        elif type(lval[ik])==type(5.0):s += ' %9.3e' %lval[ik]
+                        if type(lval[ik])==type(5):s += ' %3i ' %lval[ik] # OA 25/4/20
+                        elif type(lval[ik])==type(5.0):s += ' %9.3e ' %lval[ik]
                         else :s +=  lval[ik]
                     else : s += '0'.rjust(10)
                 s += '\n'
@@ -298,13 +298,8 @@ class mtUsgWriter:
         nbe = core.addin.mesh.getNumber('elements');
         pindx,nbelts = zeros(nbe),0 # this will be the index, 0 for the background, then poly number
         for iz in range(nzones):
-            #media = dicz['media'][iz]
-            ilay,idx,icol,zmat=self.mfloW.xyzone2Mflow(core,line,iz)
-#
-#            if core.getValueFromName('Modflow','MshType')<1:
-#                idx = 
-#            else :
-#                idx = zmesh(core,dicz,media,iz)
+            media = dicz['media'][iz]
+            idx = zmesh(core,dicz,media,iz)
             try : len(idx) 
             except TypeError : continue # the zone media is not the right one
             pindx[idx] = iz+1
@@ -321,31 +316,6 @@ class mtUsgWriter:
         f1=open(self.fullPath+'.pcb','w')            
         f1.write(s1);f1.close()
         
-#    #************************ samebut for a regular grid ******************
-#    def writePcbRegFile(self,core):
-#        # finds if the zones are transient and their values
-#        nzones,line = 0,'pcb.2'
-#        dicz = core.diczone['MfUsgTrans'].dic[line]
-#        if line in self.ttable:
-#            clist = self.ttable[line];
-#            nzones = len(dicz['name'])
-#        # find the nodes of the zones
-#        intp = 0
-#        znum = blockRegular('MfUsgTrans',line,intp,'zon',0)
-#        nbcell = sum(znum>0)
-#        #write the values for every period
-#        s1 = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB
-#        for ip in range(self.nper):
-#            s1 += str(nbcell).rjust(10)+'  0\n' # ITMP MP
-#            for iz in range(nzones):
-#                il,iy,ix = where(znum==iz+1)[0]
-#                for i in range(len(il)) : 
-#                    s1 += str(il+1).rjust(10)+ str(iy+1).rjust(10)+ str(ix+1).rjust(10)
-#                    s1 +='        1 ' # iSpecies_No
-#                    s1 += str(clist[ip,iz]).rjust(10)+'\n' # Conc
-#        f1=open(self.fullPath+'.pcb','w')            
-#        f1.write(s1);f1.close()
-
     #********************************* write Pht3d file ********************
     def writePhFile(self,core,listE,parmk):
         # order of species 'k','i','kim','g','p','e','s','kp'
@@ -531,8 +501,8 @@ class mtUsgReader:
             if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0: 
                 cnc[il] = data
             else : 
-                m = reshape(data,(nrow,ncol)) #
-                cnc[il] = m[::-1] #=1::=1
+                cnc[il] = reshape(data,(nrow,ncol)) #
+                if core.mfUnstruct == False : cnc[il] = cnc[il][::-1] #OA 23/4/2
         f1.close()  
         return cnc
     

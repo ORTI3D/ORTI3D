@@ -1012,6 +1012,15 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in mtphtWriter, writearray l.141 modif to have correct btn for mass balalnce calc
 - mphtWriter created function correctBtn l.147-153
 
+19/4/20  OA
+- geometry block l.317 removed condition on rect usg grid
+- geometry commented line 915-925 in ZptsIndices, and added l.940 942
+- geometry lcoefsfrompoly adde l.844 845 for vertical or horiz lines
+- modflowWriter xyzone2Mflow commented line 493-494 (useless here)
+- modflowWriter writeTRansientZone l.407 adde to get the indx to write ordered nodes
+- geometry zmesh l. 391 changed for one point
+- in mtUsgWriter modified pcb writer
+
 20/04/20 EV
 - core.py getPorosity l.644 added transformation to get y coodinates correctly
 - core.py getZcoord l.646 function created to return Z coordinates for vertical profile
@@ -1028,6 +1037,26 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - qtShow.py onPlot l.187 added because profile graphs is changed in horizontal profile graphs
 - qtShow.py showBox l.283 added to enlarge the combobox view 
 - multiplot.py a lot of modification to integrate vertical profile and mass discharge, weighted concentration and mass flux
+
+23/4/20 OA
+- mtUsgWrite/readUCN l.506 modfied because only the structured grid needs to be reversed (unstructured after reshape is already
+- geometry/zmesh l.391 removed *1 to get booleans and not 0,1 (consistent with other zone types)
+
+24/4/20  OA
+- mtphtWriter in writePhfile l.691 add aa blank line if no surface option
+- several change sin modflowUsg : face length where not good on corners
+
+25/4/20 OA
+- work on modfowUsg, aded a funciton to set back pints into domain
+- mtUsgWriter, l.83 84 a print pb in bct, aded a blank
+
+26/4/20
+- in geometry l.646 added [0] select points as one coord and not list
+- in geometry l.659 added the condition of point (do'nt add points again)
+- geometry gmeshstring l.643 661 687 adde nli
+
+27/4/20 OA
+- several modifications in modflowUsg to account for ^pints and lines in domain (but a lot of bakc and forth, no details sorry)
 
 27/04/20 EV
 - addin.py initAddin l.81, doaction l.210,216,236 added checkFlowMod variable to unable flow write model if the variable is check

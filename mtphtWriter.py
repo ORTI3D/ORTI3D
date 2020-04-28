@@ -511,7 +511,7 @@ class mtphtWriter:
                     if GHB[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 5 #added OA 6/5/19
                 #print iz,i,typ,ilay[i],irow[i],icol[i],BC[ilay[i],irow[i],icol[i]],wells[ilay[i],irow[i],icol[i]]
                 if opt=='Pht3d' and typ[iz]==-1: continue
-                if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]!=-1: continue
+                if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]==-1: continue
                 s= str(ilay[i]+1).rjust(9)+' '+str(ir2[i]+1).rjust(9)+' '+str(icol[i]+1).rjust(9)
                 lpts[iz].append(s)
             #print mxpts,self.nper
@@ -688,6 +688,7 @@ class mtphtWriter:
                 su_opt = self.core.getValueFromName('Pht3d','SU_OPT')
                 if su_opt in ['no_edl','diffuse_layer','Donnan','cd_music']:
                     s+= '-'+su_opt+'\n'
+                else : s+= '   \n' # OA 24/4/20
         if 'Kinetic_Minerals' in Chem:
             kp=Chem['Kinetic_Minerals']
             for nom in listE['kp']:

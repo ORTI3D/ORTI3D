@@ -775,7 +775,7 @@ class Core:
             if len(ix)==1: asin2 = acos2 = 1 # OA 19/3/20 just one point
             #print('dy',dx,acos2)
             flux=1e-12
-            if typ[1]!='4' :
+            if typ[1] in ['1','3'] :
                 f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
                 flux = sqrt(f1**2+f2**2) ## flux shall be a vector
                 flux[flux<1e-12]=1e-12

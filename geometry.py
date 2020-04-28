@@ -230,7 +230,8 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         parms = core.dicinterp[modName][line][im] # EV 19/02/20
         z, mess = zone2interp(core,modName,line,im,parms,refer,iper=0) # EV 19/02/20
     elif intp==3 :# EV 11/02/20
-        if  core.addin.mesh==None: z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
+        if  core.addin.mesh==None: # OA 19/4/20
+            z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
             if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
             else : z = zone2mesh(core,modName,line,im,loc='elements')
@@ -301,7 +302,7 @@ def getMesh3Dcenters(core):
     
 def block(core,modName,line,intp=False,opt=None,iper=0):
     #print("block",core.addin.mesh)
-    if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 29/2/20 added mstType rect
+    if core.addin.mesh == None: # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
         return blockUnstruct(core,modName,line,intp,opt,iper)
@@ -375,7 +376,7 @@ def zmesh(core,dicz,media,i):
     if media not in zmedia: return None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
-        idx = where(amin(dst)==dst)[0]
+        idx = amin(dst)==dst #where(amin(dst)==dst)[0] # OA 19/4/20
     elif (abs(x[0]-x[-1])<d/20) & (abs(y[0]-y[-1])<d/20): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs))
     else : # a line
@@ -602,7 +603,7 @@ def gmeshString(core,dicD,dicM):
     dicM is the media zones dict, they will be used to build the grid"""
     s,p_list,p_link = '',[],[]
     i_domn = dicD['name'].index('domain') # search for the line called domain
-    dcoords = dicD['coords'][i_domn]
+    dcoords = dicD['coords'][i_domn][:-1]
     ddens = float(dicD['value'][i_domn])
     ddens = corrMeshDens(dcoords,ddens)
     if isPolyTrigo(dcoords) : dcoords = dcoords[-1::-1] # poly mus tbe clockwise
@@ -613,12 +614,12 @@ def gmeshString(core,dicD,dicM):
     for i,pt in enumerate(dcoords):
         s+='Point('+str(i+1)+')={'+str(pt[0])+','+str(pt[1])+',0,'+str(ddens[i])+'}; \n'
         p_list.append(pt)
-    npt = i+1
+    npt = i+1;lli = list(range(i+1)) # OA 26/4
     # domain lines
     s+= stringLine(p_link,list(range(ldom)),1,opt='close')
     #other points: present in domain, name shall start by point
     indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='point']
-    p_coord = [dicD['coords'][iz] for iz in indx] # a list of all coords in zone points...
+    p_coord = [dicD['coords'][iz][0] for iz in indx] # a list of all coords in zone points... aded [0]
     p_dens = [dicD['value'][iz] for iz in indx] # same for densities
     #p_dens = corrMeshDens(p_coord,p_dens)
     if len(p_coord)>0:
@@ -628,7 +629,7 @@ def gmeshString(core,dicD,dicM):
     # other lines present in the domain
     s1 = ''
     for iz,n in enumerate(dicD['name']):
-        if n!='domain':
+        if n!='domain' and n[:5] != 'point': # OA 26/4/20 added point
             p_coord = dicD['coords'][iz]
             p_dens = dicD['value'][iz]
             p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
@@ -636,6 +637,7 @@ def gmeshString(core,dicD,dicM):
             p_range = list(range(npt,npt+len(p_coord)))
             s1+= stringLine(p_link,p_range,npt)
             npt += len(p_coord)
+            lli.extend(p_range) # OA 26/4 npt->nli
     # add the material zones (opgeo), but don't add points twice!!
     isurf,s2 = 2,''
     for iz in range(len(dicM['name'])):
@@ -659,7 +661,7 @@ def gmeshString(core,dicD,dicM):
     #s+='Physical Surface(1)={1}; \n';
     for ip in range(npt):
         s+='Point{'+str(ip+1)+'} In Surface{1}; \n'
-    for il in range(npt-1):
+    for il in lli: # OA 26/4
         s+='Line{'+str(il+1)+'} In Surface{1}; \n'
     return s#+'Recombine Surface{1}; \n'
     
@@ -757,7 +759,7 @@ def readGmshOut(s,outline=False):
     elements = elements[:,[0,3,4,5,6,7]] # 2nd column is useless
     if outline: 
         c3 = [x.split() for x in c1[2:] if len(x.split())==7]
-        line = array(c3,dtype='int')[:,-1]-1 # pt nb in python = gmsh-1
+        line = array(c3,dtype='int')[:,-2:]-1 # pt nb in python = gmsh-1
         #line = r_[line,line[0]]
         return nodes,elements,line
     else : return nodes,elements
@@ -816,8 +818,11 @@ def lcoefsFromPoly(poly):
     lcoefs,a=zeros((2,n-1)),zeros((2,2))
     for i in range(n-1): # lcoefs are the coefficient of the lines ax+by=1
         if x[i+1]==x[i]  and y[i+1]==y[i]: continue
-        a[:,0]=x[i:i+2];a[:,1]=y[i:i+2];#print i,a
-        lcoefs[:,i] = solve(a,ones((2,1))[:,0])
+        elif y[i+1]==y[i]: lcoefs[:,i]= [0,1/(y[i]+1e-18)] # 1e-18 not to have 0
+        elif x[i+1]==x[i]: lcoefs[:,i]= [1/(x[i]+1e-18),0] # 1e-18 not to have 0
+        else :
+            a[:,0]=x[i:i+2];a[:,1]=y[i:i+2];#print i,a
+            lcoefs[:,i] = solve(a,ones((2,1))[:,0])
     return lcoefs
 
 def pointsInPoly(ptx,pty,poly,lcoefs): # ray algorithm
@@ -847,8 +852,8 @@ def dstPointPoly(lpts,poly):
         dpoly = sqrt((x-array(xpo))**2+(y-array(ypo))**2);#print i
         idx = where(dpoly==amin(dpoly))[0][0]
         xym = array([[xpo[idx-1],ypo[idx-1]],[xpo[idx],ypo[idx]]])
-        if sum(abs(xym[:,0]))<1e-9: a,b,c = 1,0,0
-        elif sum(abs(xym[:,1]))<1e-9: a,b,c = 0,1,0
+        if abs(xym[0,0]-xym[1,0])<1e-9: a,b,c = 1,0,xym[0,0] # vert line
+        elif abs(xym[0,1]-xym[1,1])<1e-9: a,b,c = 0,1,xym[0,1] # hor line
         else : a,b = solve(xym,ones((2,1))[:,0])
         yp = (b+a*(-b*x+a*y))/(a**2+b**2);xp=(1-b*yp)/a
         if ((xp>min(xym[:,0]))&(xp<max(xym[:,0]))&(yp>min(xym[:,1]))&(yp<max(xym[:,1])))|(idx==len(xpo)-1):
@@ -887,31 +892,33 @@ def cellsUnderPoly(core,dicz,media,iz):
 def zptsIndices(core,dicz):
     '''finds the indices of the zones'''
     mgroup = core.dicaddin['Model']['group']
-    if core.getValueFromName('Modflow','MshType')<1: 
-        nx,ny,xv,yv=getXYvects(core)
-        lindx = []
-        for iz in range(len(dicz['name'])):
-            l0 = []
-            for coo in dicz['coords'][iz]:
-                ix = where(argsort(r_[xv,coo[0]])==nx+1)[0][0]-1
-                iy = where(argsort(r_[yv,coo[1]])==ny+1)[0][0]-1
-                l0.append((ix,iy))
-            lindx.append(l0)
-    else : # fully unstruct
-        mesh = core.addin.mesh
-        xc,yc = mesh.getCenters()
-        lindx = []
-        for iz in range(len(dicz['name'])):
-            l0 = []
-            for coo in dicz['coords'][iz]:
-                dst=sqrt((coo[0]-xc)**2+(coo[1]-yc)**2)
-                iclosept = argsort(dst)[:3]
-                for ip in iclosept:
-                    poly=list(zip(mesh.elx[ip],mesh.ely[ip]))
-                    lcoefs=lcoefsFromPoly(poly)
-                    if pointsInPoly(coo[0],coo[1],poly,lcoefs)[0]:
-                        l0.append(ip)
-            lindx.append(l0)
+#    if core.getValueFromName('Modflow','MshType')<1: 
+#        nx,ny,xv,yv=getXYvects(core)
+#        lindx = []
+#        for iz in range(len(dicz['name'])):
+#            l0 = []
+#            for coo in dicz['coords'][iz]:
+#                ix = where(argsort(r_[xv,coo[0]])==nx+1)[0][0]-1
+#                iy = where(argsort(r_[yv,coo[1]])==ny+1)[0][0]-1
+#                l0.append((ix,iy))
+#            lindx.append(l0)
+#    else : # fully unstruct
+    mesh = core.addin.mesh
+    xc,yc = mesh.getCenters()
+    lindx = []
+    for iz in range(len(dicz['name'])):
+        l0 = []
+        for coo in dicz['coords'][iz]:
+            dst=sqrt((coo[0]-xc)**2+(coo[1]-yc)**2)
+            iclosept = argsort(dst)[:3]
+            for ip in iclosept:
+                xp,yp = mesh.elx[ip],mesh.ely[ip] # OA 19/4/20 modif
+                poly=list(zip(xp,yp))
+                if isclosed(core,xp,yp)==False: poly.append(poly[0]) #OA 19/4/20 added
+                lcoefs=lcoefsFromPoly(poly)
+                if pointsInPoly(coo[0],coo[1],poly,lcoefs)[0]:
+                    l0.append(ip)
+        lindx.append(l0)
     return lindx
     
 def findSideNodes(core,nodes):
@@ -1078,7 +1085,7 @@ def smoo2d(m):
 ###################### ARRAY ####################
 
 '''Import array from one media (im) EV 07/02/20'''
-def onMessage2(core,txt): #EV 20/04/20
+def onMessage1(core,txt):
     cfg = Config(core)
     try : 
         dialogs = cfg.dialogs
@@ -1105,19 +1112,19 @@ def zone2array(core,modName,line,im):
         try : 
             arr=core.importAscii(fDir,fNameExt)
             arr=arr.astype(np.float)
-        except OSError : onMessage2(core,txt1) 
-        except : onMessage(core,txt2) 
+        except OSError : onMessage1(core,txt1) 
+        except : onMessage1(core,txt2) 
     elif ext == 'var' :
         try : 
             zdx,zdy,arr=core.importGridVar(fDir,fNameExt)
             zdy = zdy[::-1] # OA added 9/4/20
             arr=arr.astype(np.float)
-        except OSError : onMessage(core,txt1) 
-        except : onMessage(core,txt2) 
+        except OSError : onMessage1(core,txt1) 
+        except : onMessage1(core,txt2) 
     else : #if ext == 'txt' or ext == 'dat' :
         try : arr=loadtxt(file)
-        except OSError :onMessage2(core,txt1) 
-        except : onMessage(core,txt2) 
+        except OSError :onMessage(core,txt1) 
+        except : onMessage1(core,txt2) 
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
         #shpArr=arr.shape

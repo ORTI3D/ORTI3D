@@ -29,7 +29,7 @@ class modflowUsg:
             dicD = dct['disu.3'] # where the domain boundaries are 
             idom = dicD['name'].index('domain')
             dcoo = dicD['coords'][idom]
-            dcoo = self.verifyDomain(dcoo)
+            dcoo1 = self.verifyDomain(dcoo)
             # if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
             # else : 
             dicK = {'name':[]}
@@ -42,10 +42,13 @@ class modflowUsg:
                 #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -o '+fmsh)
                 os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
             f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
-            nodes,elements,line_dom = readGmshOut(s,outline=True);
+            nodes,elements,lines = readGmshOut(s,outline=True);
             points,elts = nodes[:,1:3],elements[:,-3:]
-            points,elts,line_dom = self.verifyMesh(points,elts,line_dom)
+            points,elts,lines = self.verifyMesh(points,elts,lines)
             npts = len(points)
+            ndom = where(array(lines,ndmin=2)[:,1]==0)[0][0] # this is the place where we get back to pt 0
+            line_dom = unique(lines[:ndom])
+            #line_dom = self.getBoundaries(dcoo,nodes,lines)
             #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
             dns = float(dicD['value'][dicD['name'].index('domain')])
         if mshType == 0: # regular cells
@@ -62,7 +65,7 @@ class modflowUsg:
             self.trg = mptri.Triangulation(xe,ye) #
         if mshType == 3: # voronoi
             msh = myVor(self)
-            msh.transformVor(points,elts,dcoo,line_dom)
+            msh.transformVor(points,elts,dcoo1,line_dom)
             xn,yn = self.nodes[:,0],self.nodes[:,1]
             self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
         self.addMeshVects()
@@ -84,9 +87,20 @@ class modflowUsg:
         
     def verifyDomain(self,dcoo):
         dcout = [dcoo[0]]
-        for i in range(1,len(dcoo)):
+        #xd,yd = zip(*dcoo);eps = (max(xd)-min(xd)+max(yd)-min(yd))/100
+        for i in range(1,len(dcoo)-1):
             if dcoo[i]!=dcoo[i-1]: dcout.append(dcoo[i])
         return dcout
+    
+#    def getBoundaries(self,dcoo,nodes,lines):
+#        poly=dcoo*1; poly.append(poly[0])
+#        lcpoly = lcoefsFromPoly(poly)
+#        line_dom = []
+#        for i in range(len(lines)):
+#            p0 = [(nodes[lines[i,0],1],nodes[lines[i,0],2]),(nodes[lines[i,1],1],nodes[lines[i,1],2])]
+#            lc = lcoefsFromPoly(p0)
+#            if any(sum(lc-lcpoly,axis=0)==0): line_dom.append(i)
+#        return line_dom
         
     def verifyMesh(self,pts,elts,line_dom):
         '''try to eliminate double points'''
@@ -291,6 +305,7 @@ class myVor:
         the domain an thus contain elements
         dcoo: coordinates of the domain
         '''
+        #line_dom = self.getLineDomains(dcoo,lines)
         p = self.parent
         npts,a = shape(points);nelts,a = shape(elts)
         l0 = []
@@ -343,13 +358,15 @@ class myVor:
         indsplit = where(ip1[1:]-ip1[:-1]==1)[0]+1 # this is the nb of points for each elt
         p.nconnect = shape(M)[0]
         p.cneighb = split(M[:,2].astype('int'),indsplit);nc=len(p.cneighb)
+        M[:,3],M[:,4] = self.putInDomain(dcoo,M[:,3],M[:,4]) # OA adede 25/4/20
         lvx = split(M[:,3],indsplit);p.elx = [r_[v,v[0]] for v in lvx]
         lvy = split(M[:,4],indsplit);p.ely = [r_[v,v[0]] for v in lvy]
         p.cdist = split(M[:,5],indsplit)
         xmd1,ymd1 = split(M[:,6],indsplit),split(M[:,7],indsplit)
         # redo differently elx,ely and length for the poly at the boundaries (the rest is ok)
-        indx = [] # to remove the face that are not connected
-        for ip1 in range(line_dom[0]): # points on angles
+        indx = [0]*(max(line_dom)+1) # to remove the face that are not connected
+        ncorn = len(dcoo)
+        for ip1 in range(ncorn): # points on angles
             ip2 = p.cneighb[ip1]
             if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
@@ -358,13 +375,14 @@ class myVor:
                 p.ely[ip1][-1] = ymd1[ip1][-1] 
                 p.elx[ip1] = r_[p.elx[ip1],points[ip1,0],p.elx[ip1][0]]
                 p.ely[ip1] = r_[p.ely[ip1],points[ip1,1],p.ely[ip1][0]]
-                indx.append([len(ip2)-1,len(ip2)]) # different from line
+                indx[ip1] = [len(ip2),len(ip2)+1] # OA 24/4/20
             else : # the 2 pts in line_dom are in the middle of the poly
                 ia=where(ip2<=ndom)[0]
                 p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia[0]],points[ip1,0],xmd1[ip1][ia[1]],p.elx[ip1][ia[-1]+1:]]
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia[0]],points[ip1,1],ymd1[ip1][ia[1]],p.ely[ip1][ia[-1]+1:]]
-                indx.append(ia) # different from line
-        for ip1 in range(line_dom[0],ndom+1): # points on lines
+                indx[ip1] = ia+1 # OA 24/4/20
+        line_dom1 = list(set(line_dom)-set(range(ncorn)))
+        for ip1 in line_dom1: #range(line_dom[0],ndom+1): # points on lines
             ip2 = p.cneighb[ip1]
             if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
@@ -373,26 +391,41 @@ class myVor:
                 p.ely[ip1][-1] = ymd1[ip1][-1] 
                 p.elx[ip1] = r_[p.elx[ip1],p.elx[ip1][0]]
                 p.ely[ip1] = r_[p.ely[ip1],p.ely[ip1][0]]
-                indx.append(-1)
+                indx[ip1] = -1 #len(ip2))
             else : # the 2 pts in line_dom are in the middle of the poly
                 ia=where(ip2<=ndom)[0]
                 p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia],p.elx[ip1][ia[-1]+1:]]
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia],p.ely[ip1][ia[-1]+1:]]
-                indx.append(ia[-1])
+                indx[ip1] = ia[-1]
         p.fahl = [sqrt((p.elx[i][1:]-p.elx[i][:-1])**2+(p.ely[i][1:]-p.ely[i][:-1])**2) for i in range(nc)]
-        for ip1 in range(ndom):
+        for ip1 in range(ncorn): # OA 26/4/20 changed to indx
+            p.fahl[ip1] = delete(p.fahl[ip1],indx[ip1])
+        for ip1 in line_dom1: # OA 26/4/20 changed to indx
             p.fahl[ip1] = delete(p.fahl[ip1],indx[ip1])
         la = [abs(sum(p.elx[i][:-1]*p.ely[i][1:]-p.elx[i][1:]*p.ely[i][:-1]))/2 for i in range(nc)]
         p.carea = array(la)
         p.nodes = array(points,ndmin=2)
         p.elcenters = p.nodes
-               
-    def verifyDomain(self,line_dom,points):
-        lout=[line_dom[0]]
-        for i in range(1,len(line_dom)):
-            if sum(abs(points[line_dom[i]]-points[line_dom[i-1]]))!=0:
-                lout.append(line_dom[i])
-        return lout
+
+    def putInDomain(self,dcoo,ptx,pty):  # added 25/4/20 some poits can be outside domain
+        poly=dcoo*1;poly.append(dcoo[0]);np=len(poly)
+        lcoefs=lcoefsFromPoly(poly)
+        iIn=array(pointsInPoly(ptx,pty,poly,lcoefs))
+        lout = where(iIn==0)[0];nl=len(lout)
+        lc1 = zeros((nl,2));poly=array(poly,ndmin=2)
+        for ip in range(np-1): #determine the line of interest and get lcoefs
+            x0,x1 = min(poly[ip:ip+2,0]),max(poly[ip:ip+2,0])
+            y0,y1 = min(poly[ip:ip+2,1]),max(poly[ip:ip+2,1])
+            a=((ptx[lout]>x0)&(ptx[lout]<x1)&(pty[lout]>y0)&(pty[lout]<y1))*1;#print(a)
+            if sum(a)>0: lc1[a==1,:] = lcoefs[:,ip]
+        # set the point symetric to the line (ax+by+c=0) ici ax+by=1
+        # y’=(-2abx-y(b^2-a^2)-2bc)/(b^2+a^2) et x’=x-a(y-y’)/b
+        ptx1,pty1 = ptx*1,pty*1
+        for i in range(nl):
+            a,b = lc1[i,:];c=-1;i1 = lout[i]; x,y = ptx[i1],pty[i1]
+            pty1[i1] = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
+            ptx1[i1] = x-a/b*(y-pty1[i1])
+        return ptx1,pty1
         
     def calcCentre(self,points,elts,eps):
         ''' at https://cral.univ-lyon1.fr/labo/fc/Ateliers_archives/ateliers_2005-06/cercle_3pts.pdf

@@ -306,7 +306,7 @@ class modflowWriter:
             for ik in range(len(kwlist)):
                 value=lval[ik]
                 if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
-                    #print('mfw 106',ll,shape(value))
+                    print('mfw 106',ll,shape(value))
                     value=self.core.getValueLong('Modflow',ll,ik);
                     s += self.writeBlockModflow(value,ktyp[ik]) # OA 1/8/17
                 elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
@@ -396,7 +396,7 @@ class modflowWriter:
             npts += len(irow)
             if core.addin.mesh != None : lindx.extend(list(irow))# OA 3/3/20                                                                           
             for i in range(len(irow)):
-                if core.addin.mesh == None: # regular grid # OA modif 4/2/19
+                if core.addin.mesh == None: ## regular grid # OA modif 4/2/19
                     lpts[iz].append(str(ilay[i]+1).rjust(9)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
                 else : #unstruct grid irow is the node number
@@ -404,10 +404,10 @@ class modflowWriter:
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
-            
+        indx = argsort(lindx)    # OA added 19/4/20        
         buff = ' %9i' %npts;#print(line,zlist)
-        #if ext == 'wel': buff += ' 31'#EV 25/02/20 it was 90
-        buff += ' 31'
+        if ext == 'wel': buff += ' 31'#EV 25/02/20 it was 90
+        #buff += ' 31'
         if ext in self.usgTrans.keys():  #OA 4/3/20
             nspec = len(self.usgTrans[ext][0,0].split())
             for i in range(nspec): buff += ' AUX C%02i' %(i+1)
@@ -470,7 +470,7 @@ class modflowWriter:
         imed = core.diczone[modName].getMediaList(line,iz) # OA 4/3/20
         ilay = media2layers(core,imed)
         dm = core.addin.getDim()
-        if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 4/3/20
+        if core.addin.mesh == None: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
             if isclosed(core,x,y) : 
@@ -489,8 +489,8 @@ class modflowWriter:
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
             ilay,icol = list(ilay)*n0,None
-        if core.addin.mesh !=None and core.getValueFromName('Modflow','MshType')<1:
-            irow1 = array(irow1)*nx+array(icol) # uses square grid ref to connect to unstrcut rect                                                                                  
+#        if core.addin.mesh !=None and core.getValueFromName('Modflow','MshType')<1:
+#            irow1 = array(irow1)*nx+array(icol) # uses square grid ref to connect to unstrcut rect                                                                                  
         if len(xy[0]) ==2: zmat = 0 # OA 25/4/19 return 0 if not polyV
         return ilay,irow1,icol,zmat
 
@@ -510,7 +510,7 @@ class modflowWriter:
                 vol=dx[icol[i]]*dy[ny-ilay[i]-1]
                 ka[i]=K[ilay[i],irow[i],icol[i]]*vol
             else : 
-                if mh == None: # struct grid
+                if mh == None: # OA 19/4/20
                     vol=dx[icol[i]]*dy[irow[i]]*thick[ilay[i],irow[i],icol[i]]
                     ka[i]=K[ilay[i],irow[i],icol[i]]*vol
                 else : 
