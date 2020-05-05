@@ -160,16 +160,16 @@ class impFile:
             l0.append(s1[i+j].split())
         return array(l0)
     
-    def impGridVar(self,fileDir,fileName): #EV 02/04/20
+    def impGridVar(self,fileDir,fileName): #EV 02/04/20 #EV 28/04/20
         f1 = open(fileDir+os.sep+fileName,'r')
-        s = f1.read();f1.close()
-        s1 = s.split('\n')
-        zdx=[float(s1[0].split()[i]) for i in range(len(s1[0].split()))]
-        zdy=[float(s1[1].split()[i]) for i in range(len(s1[1].split()))]
-        l0=[]
-        for i in range(len(zdy)):
-            l0.append(s1[i+2].split())
-        return zdx,zdy,array(l0)
+        s = f1.readlines()
+        cols = [float(val) for val in s[0].split()]
+        rows=[float(val) for val in s[1].split()]
+        nc,nr=len(cols),len(rows)
+        lval = [[float(x) for x in line.split()] for line in s[2:]]
+        val = np.hstack(lval)
+        arr=val.reshape(nr,nc)
+        return cols,rows,arr
                     
 class impObsData(QDialog) :
     def __init__(self,gui,core,option):

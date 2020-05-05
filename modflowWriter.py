@@ -181,7 +181,7 @@ class modflowWriter:
         for l in range(self.nlay):
             for i in range(len(value)):
                 if i==3 and lval[l]==0 : continue # specif writing for storage
-                s += self.writeMatModflow(value[i][l],'arrfloat')+'\n'
+                s += self.writeBlockModflow(value[i][l],'arrfloat') # OA 1/5/20
         exceptDict['lpf.8'] = s
         self.writeOneFile('LPF',exceptDict)
         
@@ -306,7 +306,7 @@ class modflowWriter:
             for ik in range(len(kwlist)):
                 value=lval[ik]
                 if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
-                    print('mfw 106',ll,shape(value))
+                    #print('mfw 106',ll,shape(value))
                     value=self.core.getValueLong('Modflow',ll,ik);
                     s += self.writeBlockModflow(value,ktyp[ik]) # OA 1/8/17
                 elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
@@ -406,7 +406,7 @@ class modflowWriter:
                 k.append(self.getPermScaled(ilay,irow,icol))
         indx = argsort(lindx)    # OA added 19/4/20        
         buff = ' %9i' %npts;#print(line,zlist)
-        if ext == 'wel': buff += ' 31'#EV 25/02/20 it was 90
+        if ext == 'wel': buff += ' 31'#OA 3/5/20 added mesh condtion
         #buff += ' 31'
         if ext in self.usgTrans.keys():  #OA 4/3/20
             nspec = len(self.usgTrans[ext][0,0].split())
@@ -484,7 +484,8 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            irow = where(zmesh(core,dicz,0,iz)==1)[0] # OA 22/2/20
+            idx,zval =zmesh(core,dicz,0,iz) # OA 3/5/20
+            irow = where(idx==1)[0] # OA 22/2/20
             n0,irow1 = len(irow),[]
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: irow1.extend(list(irow+il*ncell_lay))
@@ -637,10 +638,13 @@ class modflowWriter:
                 s += self.writeMatModflow(m[l],ktyp)
                 if l<nlay-1: s += '\n'
         elif self.core.addin.mesh != None: # unstructured case write nlay vectors
-            nlay,a=shape(m);
-            for l in range(nlay):
-                s += self.writeVecModflow(m[l],ktyp)
-                if l<nlay-1: s += '\n'       
+            if len(shape(m))==2: # OA 1/5/20 added for lpf layer
+                nlay,a=shape(m);
+                for l in range(nlay):
+                    s += self.writeVecModflow(m[l],ktyp)
+                    if l<nlay-1: s += '\n'   
+            else : # # OA 1/5/20 added for lpf layer
+                s += self.writeVecModflow(m,ktyp)+'\n'
         else : 
             s = self.writeMatModflow(m,ktyp)
         return s

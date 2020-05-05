@@ -173,7 +173,8 @@ class mtUsgWriter:
             return self.getTransTable(opt,'bct.20','bas.5')
                
     def getTransTable(self,opt,tline,mfline):
-        '''returns a transient table containing the species'''
+        '''returns a transient table containing the species, it is ordered
+        in the same way as modflow (thanks to connectZones)'''
         #if tline not in self.core.ttable.keys(): return None
         ttable = self.core.ttable[tline];nt,nzo = shape(ttable)
         lsolu = unique(ttable) 
@@ -218,7 +219,7 @@ class mtUsgWriter:
             dicz = self.core.diczone['Pht3d'].dic['ph.4']
             litrans = zptsIndices(self.core,dicz)
         else : 
-            dicz = self.core.diczone['MfUsgTrans'].dic['bct.20']
+            dicz = self.core.diczone['MfUsgTrans'].dic[tline] # OA 3/5/20
             litrans = zptsIndices(self.core,dicz)
         dicz = self.core.diczone['Modflow'].dic[mfline]
         limod = zptsIndices(self.core,dicz)

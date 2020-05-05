@@ -611,11 +611,13 @@ class Core:
         return value,mess,extent
     
     def save2array(self,model,line,media): # function added EV 19/02/20
+        cols=self.dicval['Modflow']['dis.4'] # EV 30/04/20
+        rows=self.dicval['Modflow']['dis.5']
         if line in 'dis.6': value=makeZblock(self)[:-1][media]
         elif line in 'dis.7': value=makeZblock(self)[-1:]
         else : value= self.getValueLong(model,line,media,iper=0)[media]
         value=value[::-1] ;#print('val1',value[0])
-        return value
+        return cols,rows,value
         
     def getUnits(self,modName,line,ik):   
         '''returns the units for a given line and keyword index'''
@@ -808,7 +810,7 @@ class Core:
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
-                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1); ## conc, pt[i] is a table (nper,nrow) 
+                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1);## conc, pt[i] is a table (nper,nrow) 
                 elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
                 elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch1[i],axis=1); ## total discharge [mol.T-1]
                 elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux1[i],axis=1); ## average flux [mol.T-1.M-2]
@@ -822,6 +824,9 @@ class Core:
             p1=zeros((len(dist),len(pt)))
             labels[0]='distance'
             for i in range(len(pt)):
+                if layers_in == 'all': # EV 30/04/20 
+                    pt[i]=pt[i].reshape(len(layers),len(dist)).T
+                    pt[i]=np.mean(pt[i],axis=1)
                 if typ[1]=='0': p1[:,i]=pt[i]
                 elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux1[i] ## weigthed conc= darcy flux #EV 20/04/20
                 elif typ[1]=='2': p1[:,i]=pt[i]*disch1[i] ## discharge or mass discharge #EV 20/04/20

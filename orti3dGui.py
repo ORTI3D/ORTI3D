@@ -65,7 +65,7 @@ class orti3dGui(QMainWindow):
 
         self.setCentralWidget(self.widget)
         self.setWindowTitle(title)
-        #sys.excepthook = self.myExceptionHandler
+        sys.excepthook = self.myExceptionHandler
         #sys.stdout=sendMessage(self) # OA added 13/12/19
 
     def myExceptionHandler(self, type, value, trace_b): # OA added 25/9/18

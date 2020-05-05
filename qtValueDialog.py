@@ -15,21 +15,21 @@ class qtValueDialog(QDialog):
         QDialog.__init__(self)
         self.parent = parent
         self.setWindowTitle(modName+' parameters')
-        layoutWidget = QWidget(self)
+        self.layoutWidget = QWidget(self)
         screenShape = QDesktopWidget().screenGeometry()
-        layoutWidget.setGeometry(QRect(5, 5, screenShape.width()*.2,400))
-        self.vbox = QVBoxLayout(layoutWidget)
-        self.vbox.setGeometry(QRect(0, 0, 80,60))
+        self.layoutWidget.setGeometry(QRect(5, 5, screenShape.width()*.2,screenShape.height()*.5))
+        self.vbox = QVBoxLayout(self.layoutWidget)
+        #self.vbox.setGeometry(QRect(0, 0, 80,60))
 
         grpList = core.getUsedModulesList(modName)
-        self.chgroups = QComboBox(layoutWidget)
+        self.chgroups = QComboBox(self.layoutWidget)
         for i,n in enumerate(grpList):
             self.chgroups.addItem("")
             self.chgroups.setItemText(i, n)
         self.chgroups.activated['QString'].connect(self.onChoiceGroup)
         self.vbox.addWidget(self.chgroups)
         
-        self.chlines = QComboBox(layoutWidget)
+        self.chlines = QComboBox(self.layoutWidget)
         self.chlines.activated['QString'].connect(self.onChoiceLine)
         self.vbox.addWidget(self.chlines)
         
@@ -98,6 +98,9 @@ class qtBoxKeys:
             self.gridLayout.addWidget(txt,i,0,1,1)
             self.lValBut.append(but)
             self.gridLayout.addWidget(but,i,1,1,1)
+        screenShape = QDesktopWidget().screenGeometry() # OA 2/5/20, this and two lines below fro long list of buttons
+        w,h = screenShape.width()*.2,screenShape.height()*(.2+.025*self.nb)
+        self.Main.layoutWidget.setGeometry(QRect(5, 5,w,h))
             
     def onOpenVectDialog(self): # OA 17/9/19
         ''' creates a vector dialog in case of layint type '''

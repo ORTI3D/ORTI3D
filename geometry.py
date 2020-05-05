@@ -312,6 +312,9 @@ def blockUnstruct(core,modName,line,intp,opt,iper):
     if 1 in intp : # OA 17/2/20
         parms = core.dicinterp[modName][line][0]
         m, mess = zone2interp(core,modName,line,0,parms,iper=iper);#print 'geom 282',amax(m) # EV 19/02/20
+        m = array(m,ndmin=2) # OA 1/5/20 this and three below added
+        for im in range(1,getNmedia(core)):
+            m = r_[m,array(zone2interp(core,modName,line,0,parms,iper=iper),ndmin=2)]
         return m
     else: # changed from 0 to []
         m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
@@ -338,17 +341,9 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     else: # OA 4/8/19
         if len(dicz[line]['name'])==0: return value
     dicz = dicz[line]
-    pindx = zeros(nbc) # this will be the index, 0 for the background, then poly number
-    for i in range(len(dicz['name'])):
-        if (dicz['name'][i]=='domain'): continue
-        idx = zmesh(core,dicz,media,i)
-        try : len(idx) 
-        except TypeError : continue # the zone media is not the right one
-        pindx[idx] = i+1
-    if val == 'nb': return pindx
-    zval,onev = [],True # zval contains all the values in the zone list
+    zval,onev = [],True # zval will contain all the values in the zone list
     for iz,v in enumerate(dicz['value']): # OA 20/2/20
-        if '$' in v: 
+        if '$' in v: # here we take only the 3 value (for riv drn, ghb)
             onev = False # OA 20/2/20
             v1 = v.split('$')[2]
             try : zval.append(int(v1))
@@ -357,17 +352,27 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
             zval.append(float(core.ttable[line][iper,iz]))
         else : 
             zval.append(float(v))
-    if onev: zval.insert(0,vbase) # not for multiple value where the domain is a zone
-    zval = array(zval)
-    value = zval[list(pindx.astype('int'))] # value sets the value of each zone to the points
-    return value
+    #if onev: zval.insert(0,vbase) # not for multiple value where the domain is a zone
+    pindx = zeros(nbc) # this will be the index, 0 for the background, then poly number
+    for i in range(len(dicz['name'])):
+        if (dicz['name'][i]=='domain'): continue
+        idx,zv0 = zmesh(core,dicz,media,i)
+        if type(zv0) != type(0) : value[idx]=zv0[idx]
+        else : value[idx]=zval[i]
+        try : len(idx) 
+        except TypeError : continue # the zone media is not the right one
+        pindx[idx] = i+1
+    if val == 'nb': return pindx
+    else : return value
     
 def zmesh(core,dicz,media,i):
-    '''returns the index of the cells that are under (line) or in (poly) a zone'''
+    '''returns the index of the cells that are under (line) or in (poly) a zone
+    it can also provide the z value if the zone is the variable polygon'''
     mesh = core.addin.mesh
     xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
     poly = dicz['coords'][i];#print poly
-    x,y = list(zip(*poly))
+    if len(poly[0])==3 : x,y,z = list(zip(*poly)) # OA 2/5/20
+    else : x,y = list(zip(*poly))
     if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
     llcoefs = lcoefsFromPoly(poly)
     zmedia = dicz['media'][i] # a media or a list of media for the zone
@@ -376,12 +381,15 @@ def zmesh(core,dicz,media,i):
     if media not in zmedia: return None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
-        idx = amin(dst)==dst #where(amin(dst)==dst)[0] # OA 19/4/20
+        idx = amin(dst)==dst;#where(amin(dst)==dst)[0] # OA 19/4/20
+        zval = 0
     elif (abs(x[0]-x[-1])<d/20) & (abs(y[0]-y[-1])<d/20): #a closed polygon
-        idx = where(pointsInPoly(xc,yc,poly,llcoefs))
+        idx = where(pointsInPoly(xc,yc,poly,llcoefs));
+        zval = 0 #OA 2/5/20 add zval
     else : # a line
-        idx = cellsUnderPoly(core,dicz,media,i)>0 # OA added core
-    return idx
+        id0,zval = cellsUnderPoly(core,dicz,media,i) # OA 2/5/20 added zval
+        idx = id0>0
+    return idx,zval
         
 def blockRegular(core,modName,line,intp,opt,iper):
     """creates a block for one variable which has a size given by the x,y,z 
@@ -392,7 +400,7 @@ def blockRegular(core,modName,line,intp,opt,iper):
     nlayers = getNlayers(core)
     lilay = getNlayersPerMedia(core)
     g = core.addin.getFullGrid()
-    #if type(intp)==type(False): intp=[intp] #OA 16/02/20
+    if type(intp)==type(0): intp=[intp] #OA 16/02/20 # EV 05/05/20
     if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
     #### interpolation and array option for 2D and 3D model #EV 07/02/20
     if core.addin.getDim() in ['2D','3D']:
@@ -813,7 +821,8 @@ def isPolyTrigo(lpoints):
 def lcoefsFromPoly(poly):
     '''finds the list of coefficients for the equation of each line 
     segment in a polygon'''
-    x,y = list(zip(*poly))
+    if len(poly[0])==3 : x,y,z = list(zip(*poly)) # OA 2/5/20
+    else : x,y = list(zip(*poly))
     n = len(x)
     lcoefs,a=zeros((2,n-1)),zeros((2,2))
     for i in range(n-1): # lcoefs are the coefficient of the lines ax+by=1
@@ -878,16 +887,22 @@ def cellsUnderPoly(core,dicz,media,iz):
     poly = dicz['coords'][iz]
     lcoefs=lcoefsFromPoly(poly)
     l0 = zptsIndices(core,dicz)[iz]
-    indx = zeros(len(idcell))
+    indx,zval = zeros(len(idcell)),zeros(len(idcell))
     for i in range(len(poly)-1):
-        x,y = list(zip(*poly[i:i+2]))
+        if len(poly[0])==3 : x,y,z = list(zip(*poly[i:i+2])) # OA 2/5/20
+        else : x,y = list(zip(*poly[i:i+2]));z=0
         pos = sign(lcoefs[0,i]*elxa+lcoefs[1,i]*elya-1) # posit. vs the line
         dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
         dpos = array(dpos)
         x0,x1 = min(xc[l0[i:i+2]]),max(xc[l0[i:i+2]])
         y0,y1 = min(yc[l0[i:i+2]]),max(yc[l0[i:i+2]])
-        indx += (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
-    return indx
+        idx = (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
+        ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
+        indx += idx
+        dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)/sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
+        if z == 0 : zval = 0
+        else : zval[ipts] = z[0]+(z[1]-z[0])*dst
+    return clip(indx,0,1),zval
 
 def zptsIndices(core,dicz):
     '''finds the indices of the zones'''
@@ -975,8 +990,8 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     
     #### create the vector of points on which interpolation will be done
     mess = None
-    if modName[:5] == 'Opgeo':
-        mesh = core.addin.opgeo  # OA 3/10/18
+    if modName[:5] == 'Opgeo' or core.addin.mesh != None: # OA 1/5/20
+        mesh = core.addin.mesh  # OA 1/5/20
         xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
     else :
         nx,ny,xv,yv = getXYvects(core);nz=0
@@ -1068,7 +1083,7 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m2, ind==1, [zpt[i]]);#print 'geom 611',xpt[i],ypt[i],zpt[i],poly
 
-    if modName[:5] != 'Opgeo':
+    if modName[:5] != 'Opgeo' and core.addin.mesh == None: # OA 1/5/20
         m2 = reshape(m2,(ny,nx))
         if intpMtd ==2:   #smoothing of thiessen polys  # OA 17/3/19 added int()   
             for n in range(int(vrange)): m2 = smoo2d(m2)

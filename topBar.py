@@ -96,15 +96,20 @@ class BaseTop:
             if parms[-1]== 1 :
                 self.core.dictype[model][ll][media]='interpolate'
             else :
-                value = self.core.save2array(model,ll,media)
+                cols,rows,value = self.core.save2array(model,ll,media)
                 dlg = myFileDialog('Save')
-                fDir,fName = dlg.getsetFile(self.gui,'Save to array','*.dat')
+                fDir,fName = dlg.getsetFile(self.gui,'Save to array','*.gvar') # EV 30/04/20
                 if fName == '': file=None
                 else :
                     file = str(fDir+fName)
-                    savetxt(file+'.dat',value)  
+                    f=open(file+'.gvar','w')
+                    lcols=' '.join(map(str,cols));lrows=' '.join(map(str,rows))
+                    f.write(lcols+'\n')
+                    f.write(lrows+'\n')
+                    savetxt(f,value)
+                    f.close()
                 if file :
-                    self.core.dicarray[model][ll][media]=file+'.dat'
+                    self.core.dicarray[model][ll][media]=file+'.gvar'
                     self.core.dictype[model][ll][media]='importArray'
     
     def onImportArray(self):

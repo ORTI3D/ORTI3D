@@ -353,7 +353,7 @@ class myBudget(QDialog):
                 self.core.runZonebud()
                 self.xy=self.readZBfile(self.graph,self.zone,self.inlist,
                           self.outlist)
-        print('xy',self.xy)
+        #print('xy',self.xy)
         self.plotData(self.xy,self.graph)
     
     def plotData(self,xy,graph):
@@ -393,7 +393,7 @@ class myBudget(QDialog):
                 self.autolabel(bar)
             elif self.res in ['Transport','Chemistry'] and self.typ=='Z': ## ZB - chem & transport
                 if xy['ysorb'] :x2=x + width/2 ; x=x - width/2 
-                if xy['lab2'] : label = xy['lab2'][0] ; print('lab',label)
+                if xy['lab2'] : label = xy['lab2'][0] #; print('lab',label)
                 barsol = self._ax.bar(x, xy['ysol'], width)#, label=label)
                 self.autolabel(barsol)
                 if xy['ysorb'] :
@@ -976,7 +976,7 @@ class myBudget(QDialog):
             if self.res == 'Flow':
                 f1.write('Zone budget zone: '+self.zone+'\n')
         if self.graph!='Time Step' :
-            print(self.xy['lab'])
+            #print(self.xy['lab'])
             lab = '\t'.join(self.xy['lab'])
             if self.graph!='Time Series' : ## % discrepency & in-out
                 f1.write('Time\t'+lab+'\n') ##lab
@@ -1003,7 +1003,7 @@ class myBudget(QDialog):
                             len(self.xy['lab'])+1,len(self.xy['x']))
                     savetxt(f1,arr.T)
         else : ## Time Step
-            print('lab',self.xy['lab'])
+            #print('lab',self.xy['lab'])
             lab = '\t'.join(self.xy['lab'])
             f1.write('Time: '+self.Tstep.currentText()+'\n')
             if self.res=='Transport' and self.typ=='M': ## MB - transport

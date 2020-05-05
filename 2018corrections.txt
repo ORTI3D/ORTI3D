@@ -1063,3 +1063,38 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - addin.py doaction l.264 added onGridMesh function to change the button when an unstrutured grid is created
 - orti3dGui.py onWriteModflow function added to change flow write model button state 
 - budget.py a lot of modification to avoid error message, to add choise of chemical species in combobox and to fix some bugs 
+
+28/04/20 EV
+- importexport.py impGridVar modified to import file with 1 row print on several row
+
+30/04/20 EV
+- core.py onPtObs l.827-829 added to change the format of the array when layer is set to 'all'
+- core.py save2array l.614-615 added to save the array with .gvar format (nb of row and col)
+- topbar.py onInterpolate l.99, 101, 105-112 added to save the array with .gvar format (nb of row and col)
+
+30/4/20 OA
+- min3pwriter writeDatabases l.756 removed .gui to work witohout gui
+
+1/5/20  OA
+- geometry zone2interp l.978 979 1071 added option for usg
+- modflowwrtier writeLpf l.384 chaned mat to blockwrtier
+- modflowWriter wirtBlock l.645 et 647-648
+- geometry blockunstruct adde l 315-317
+
+2/5/20
+- geometry zmesh l.372 consider that a line can have 3 coors (varpoly)
+- geometry lcoefs from poly l.820 same, also in cells underpoly l.888
+- geometry cellsunderpoly l.898 added two lines (+line 890) to get hte z value of a variable polygon
+- geometry zmesh added l.385 388 the zvalue
+
+3/5/20  OA
+- modfloWriter xyzone2Mflow adde l.487 to be consistent with new output of zmesh
+- mtusgwriter connectZones l.222 to connect not only bct.20
+- gmetry several modif sin zoen2mesh
+
+4/5/20 OA
+- qTValueDialogs addButtons, l.101-103 added to reshape the dialog for long lists of buttons
+
+5/5/20 EV
+- geometry.py blockRegular added line l.403 for case of intp is not a list
+- modflowKeywards lpf.1 l.109 changed default value for ILPFCB from 0 to 31 to write budget
