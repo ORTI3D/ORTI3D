@@ -181,7 +181,7 @@ class modflowWriter:
         for l in range(self.nlay):
             for i in range(len(value)):
                 if i==3 and lval[l]==0 : continue # specif writing for storage
-                s += self.writeBlockModflow(value[i][l],'arrfloat') # OA 1/5/20
+                s += self.writeBlockModflow(value[i][l],'arrfloat')+'\n' # OA 1/5/20
         exceptDict['lpf.8'] = s
         self.writeOneFile('LPF',exceptDict)
         
@@ -644,7 +644,7 @@ class modflowWriter:
                     s += self.writeVecModflow(m[l],ktyp)
                     if l<nlay-1: s += '\n'   
             else : # # OA 1/5/20 added for lpf layer
-                s += self.writeVecModflow(m,ktyp)+'\n'
+                s += self.writeVecModflow(m,ktyp) #+'\n'
         else : 
             s = self.writeMatModflow(m,ktyp)
         return s
