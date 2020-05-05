@@ -1098,3 +1098,5 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 5/5/20 EV
 - geometry.py blockRegular added line l.403 for case of intp is not a list
 - modflowKeywards lpf.1 l.109 changed default value for ILPFCB from 0 to 31 to write budget
+- topbar.py l.112,137,139 modified to save only file name 
+- geometry.py zone2array l.1112 modified to get only file name

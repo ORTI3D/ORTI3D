@@ -109,7 +109,7 @@ class BaseTop:
                     savetxt(f,value)
                     f.close()
                 if file :
-                    self.core.dicarray[model][ll][media]=file+'.gvar'
+                    self.core.dicarray[model][ll][media]=fName+'.gvar' #EV 05/05/20
                     self.core.dictype[model][ll][media]='importArray'
     
     def onImportArray(self):
@@ -134,8 +134,9 @@ class BaseTop:
                '*.asc;*.dat;*.txt;*.gvar',True,f])] #;*.vtk
         dialg = genericDialog(self.gui,'Choose Array',data)
         retour = dialg.getValues()
+        fDir,fName=os.path.split(retour[0]) #print('ret',fName) #EV 05/05/20
         if retour :
-            self.core.dicarray[model][ll][media]=retour[0]
+            self.core.dicarray[model][ll][media]=fName #EV 05/05/20
         if retour == [''] : 
             self.core.dictype[model][ll][media]='one_value'
         

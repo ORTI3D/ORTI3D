@@ -565,7 +565,7 @@ class myBudget(QDialog):
                             if t==0 : y0=yo[t]*tsteps[t]
                             else:y0=y0+yo[t]*tsteps[t]
                             y2.append(y0)
-                        xy['yin'].append(y2)
+                        xy['yout'].append(y2)
                     xy['Cout'].append('C'+str(j))
                     lout.append(lab[key][1])
                     k+=1

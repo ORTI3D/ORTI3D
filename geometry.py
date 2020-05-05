@@ -1109,8 +1109,8 @@ def onMessage1(core,txt):
         print(txt)
 
 def zone2array(core,modName,line,im):
-    file = core.dicarray[modName][line][im]
-    fNameExt = file.split('/')[-1]
+    fNameExt = core.dicarray[modName][line][im] #EV 05/05/20
+    #fNameExt = file.split('/')[-1] 
     #fDir = file.replace(fNameExt,'')
     fDir = core.fileDir
     ext=fNameExt[-3:]
