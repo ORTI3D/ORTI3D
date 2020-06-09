@@ -13,6 +13,7 @@ class mtUsgWriter:
         self.fDir,self.fName = fDir,fName
         self.fullPath = fDir+os.sep+fName;#print self.fullPath
         self.mfloW = modflowWriter(core,fDir,fName) # OA 6/5/19
+        self.mesh = self.core.addin.mesh # OA 5/5/20
 
     def writeMtphtFiles(self,listEsp,opt,parmk=None):
         self.mgroup = self.core.dicaddin['Model']['group']
@@ -94,8 +95,12 @@ class mtUsgWriter:
         
     def writeExceptions(self,line):
         if line == 'bct.5': 
-            if self.mgroup == 'Modflow USG_rect': s=''
-            else : s = 'CONSTANT    '+str(self.core.dicval['MfUsgTrans'][line][0])+'\n'
+            angl = self.mesh.angl;na = len(angl)
+            #for a in angl: la.extend(a)
+            s = 'INTERNAL 1.0 (FREE)  0  \n'
+            s += '\n'.join(['0 '+' '.join(['%9.4e '%x for x in angl[i]]) for i in range(na)])
+            s += '\n'
+            #s = self.formatBlockMt(array(la,ndmin=2),'arrfloat')+'\n'
             return s
         
     def writeArray(self,opt,line,ktyp):
@@ -412,22 +417,24 @@ class mtUsgWriter:
     #------------------------- fonction  writevect, writemat -------------------
     def formatVecMt(self, v,ktyp):
         #print shape(v),amin(v),amax(v)
-        l=len(v);ln=3;s=''
+        l=len(v);ln=3;s='';nlines=int(ceil(l/50))
         if ktyp[3:]=='int': typ='I' #OA 1/8/17
         else : typ='G'
         if amin(v)==amax(v):
             if typ=='I': s += 'CONSTANT     %9i  ' %amin(v)
             else : s += 'CONSTANT     %9.5e  ' %amin(v)
             return s
-        if typ=='I': fmt='1    ('+str(l)+'I'+str(ln)
-        else : fmt='0    ('+str(l)+'G12.4'           
+        # fromat
+        if typ=='I': fmt='1    ('+str(50)+'I'+str(ln)
+        else : fmt='0    ('+str(50)+'G12.4'           
         s += 'INTERNAL     '+fmt+')     3 \n'
-        
         if typ=='I': fmt='%'+str(ln)+'i'
         else : fmt='%+11.4e '            
 
-        for i in range(l):
-            s += fmt %v[i]
+        for i in range(nlines-1):
+            for j in range(50): s += fmt %v[i*50+j]
+            s += '\n'
+        for v0 in v[(nlines-1)*50:]: s+= fmt %v0
         return s
 
     def formatMatMt(self, m, ktyp):

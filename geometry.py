@@ -584,7 +584,8 @@ def zone2index(core,x,y,z,opt=None):
         ind,nsn,ncs = 0,[0],[0] # OA added 11/6/19
     #print 'geom zoneind',nxp,nyp,nzp
     if opt==None:
-        return nxp[ind].astype(int),nyp[ind].astype(int),nzp[ind]
+        if type(ind)==type(5): return [int(nxp[ind])],[int(nyp[ind])],[nzp[ind]] # OA added 7/6/20
+        else : return nxp[ind].astype(int),nyp[ind].astype(int),nzp[ind]
     elif opt=='angle':
         return nxp[ind].astype(int),nyp[ind].astype(int),nzp[ind],nsn[ind],ncs[ind]
 
@@ -767,7 +768,7 @@ def readGmshOut(s,outline=False):
     elements = elements[:,[0,3,4,5,6,7]] # 2nd column is useless
     if outline: 
         c3 = [x.split() for x in c1[2:] if len(x.split())==7]
-        line = array(c3,dtype='int')[:,-2:]-1 # pt nb in python = gmsh-1
+        line = array(c3,dtype='int')[:,-3:]-1 # pt nb in python = gmsh-1#♥OA 21/5/20 modfi to get bdy
         #line = r_[line,line[0]]
         return nodes,elements,line
     else : return nodes,elements
@@ -1137,7 +1138,8 @@ def zone2array(core,modName,line,im):
         except OSError : onMessage1(core,txt1) 
         except : onMessage1(core,txt2) 
     else : #if ext == 'txt' or ext == 'dat' :
-        try : arr=loadtxt(file)
+        print(fDir+os.sep+fNameExt)
+        try : arr=loadtxt(fDir+os.sep+fNameExt)  # OA 6/6/20 changed file did not exist
         except OSError :onMessage(core,txt1) 
         except : onMessage1(core,txt2) 
     #print(type(arr),shape(arr),arr[:1])

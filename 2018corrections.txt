@@ -1081,7 +1081,7 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modflowWriter wirtBlock l.645 et 647-648
 - geometry blockunstruct adde l 315-317
 
-2/5/20
+2/5/20 OA
 - geometry zmesh l.372 consider that a line can have 3 coors (varpoly)
 - geometry lcoefs from poly l.820 same, also in cells underpoly l.888
 - geometry cellsunderpoly l.898 added two lines (+line 890) to get hte z value of a variable polygon
@@ -1100,3 +1100,39 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modflowKeywards lpf.1 l.109 changed default value for ILPFCB from 0 to 31 to write budget
 - topbar.py l.112,137,139 modified to save only file name 
 - geometry.py zone2array l.1112 modified to get only file name
+
+5/5/20 OA
+- mflowUsg added lines to get angles of the elements boundaries
+- in mtUsgWriter writeexceptions modified to write angles for dispersion
+- in mtUsgWriter formatVeMt changed ot write by 50 values blocks
+
+6/5/20  OA
+- modflowUsg modif for angle in rectangular grid
+
+11/5/20  OA
+- modflowKeywords lpf.5 type cahnged to layint (laychoice does not seem to work)
+- mtphtwriter writeexceptions l.252 added to have lines shorter= than 40 values (2 lines before also modified)
+
+13/5/20  OA
+- in core/getPorosity l.645 return directly the correct list instead of calcualtions
+- in core/getOsbPt l.704 layers->layers_in already a list + adde line 705
+- in core/getOsbPt l.781 removed condition : flux is calcualted for every situation (used for darcy flow)
+- in core/getOsbPt l.809 removed, p1 is one for water fluw or discharge, it is multiplied later byt the flux
+
+21/5/20 OA
+- in modflowUsg added l.46 to store the bdies and p.indx, p.ncorn (in voroinoi) + modif l.50 (1->2 lines has changed)
+- in geometry modif readGmshOut l.770 to read the bdy
+
+6/6/20  OA
+- in geometry zone2array l.1141 changed file to correct file name
+- mflowwriter transientzone l.441 replaced val by vparms in drn (like ghb) to have double values
+- importexport l.37 added a replace to remove potential \\n
+
+7/6/20  OA
+- qtVisualisation l.656 662, removed the value of the zone( too long for some zones)
+- importExport impZones l.56 set visible to false to have a much more rapid import for zones
+- modflowwriter/writetransizentZone replaced val by vparms[0] l456 461
+- geometry l.587 aded for zones that result from several points but have a one cellsize
+
+8/6/20 OA
+- modflowwriter l. l.176 writeLpf store Ktemp l.502 in getpermscaled reuse Ktemp (when interpol it was recalc for each well)

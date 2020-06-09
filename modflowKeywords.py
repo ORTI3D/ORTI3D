@@ -113,7 +113,7 @@ class Mf:
         'lpf.4':{'comm':'Horizontal anisotropy','cond':'','kw':['CHANI(NLAY)'],'detail':[],
                     'type':['layfloat'],'default':[' 1']},
         'lpf.5':{'comm':'flag for vertical cond','cond':'','kw':['LAYVKA(NLAY)'],
-                'detail':[['what is Vka','vertical K','ratio Kh/Kv']],'type':['laychoice']},
+                'detail':[['what is Vka','vertical K','ratio Kh/Kv']],'type':['layint']},
         'lpf.6':{'comm':'wetting active or inactive','cond':'','kw':['LAYWET(NLAY)'],
                 'detail':[['wetting','inactive','active']],'type':['laychoice']},
         'lpf.7':{'comm':'calculation of wetting','cond':'LAYWET>0','kw':['WETFCT','IWETIT','IHDWET'],'detail':[],

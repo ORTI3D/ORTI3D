@@ -34,7 +34,7 @@ class impFile:
         for ll in f1:
             l1=ll.split('\t');
             name.append(l1[1]) 
-            val.append(l1[3])
+            val.append(l1[3].replace('\\n','\n'))
             if len(l1[5])==1 :
                 med.append(int(l1[5])) #EV 19/02/20
             else : 
@@ -53,7 +53,7 @@ class impFile:
             dicz.dic[line]['value'][iz] = val[i]
             dicz.dic[line]['media'][iz] = med[i]
             dicz.dic[line]['coords'][iz] = coords[i]
-            self.gui.visu.addZone(med[i],name[i], val[i], coords[i])
+            self.gui.visu.addZone(med[i],name[i], val[i], coords[i],False)
         self.gui.visu.redraw()
 
     def impZones_old(self,fileDir,fileName,modName,line):

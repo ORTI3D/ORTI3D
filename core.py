@@ -642,8 +642,9 @@ class Core:
         ncol, nrow = grd['nx'], grd['ny']
         val=self.getValueLong(modName,line,ik=0,iper=0)
         if self.addin.getDim() in ['Xsection','Radial']:
-            iz=iy*1;iy=[0]*len(iz)
-        return val[iz,nrow-iy-1,ix] #EV 20/04/20
+            return val[iy,0,ix] # OA 13/5/20 to get correct list directly
+        else :
+            return val[iz,nrow-iy-1,ix] #EV 20/04/20
     
     def getZcoord(self,iy,ix,iz): #EV 20/04/20
         ''' returns Z coordinates of the cell centers in 3D for a list of cell 
@@ -690,7 +691,6 @@ class Core:
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
             zlayers = media2layers(self,zlist['media'][ind]) # OA 19/3/20 OA added
     ### Get lists : ix2,iy2,iz2 are list of cell position in 3d
-        if layers_in == 'all' : layers = zlayers #; print('lay_all :',layers) # OA 19/3/20 to build the cell list
         try: 
             layers=[int(layers_in)]
             ix2,iy2,iz2,asin2,acos2=ix*1,iy*1,layers*len(ix),asin,acos
@@ -701,10 +701,12 @@ class Core:
             elif ',' in layers_in:
                 a = layers_in.split(',');layers = [int(x) for x in a]
                 #print('lay :',layers)
+            elif  layers_in == 'all' : layers = zlayers
+            else : layers = layers_in # OA 13/5/20 layers->layers_in already a list
             for il in layers: 
                 ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
                 asin2.extend(asin);acos2.extend(acos)
-        if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
+        #if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
         if mtype=='Mod': iym = [ny-y-1 for y in iy2] # transform to modflow coords
@@ -776,11 +778,11 @@ class Core:
             dx,dy = array(grd['dx'])[ix2],array(grd['dy'])[iy2]
             if len(ix)==1: asin2 = acos2 = 1 # OA 19/3/20 just one point
             #print('dy',dx,acos2)
-            flux=1e-12
-            if typ[1] in ['1','3'] :
-                f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
-                flux = sqrt(f1**2+f2**2) ## flux shall be a vector
-                flux[flux<1e-12]=1e-12
+            #flux=1e-12
+            #if typ[1] in ['1','3'] : OA 13/5/20 removed condition
+            f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
+            flux = sqrt(f1**2+f2**2) ## flux shall be a vector
+            flux[flux<1e-12]=1e-12
          ## Por distributed
             if mtype == 'Mod' : 
                 opt='Mt3dms' ; line='btn.11'
@@ -804,7 +806,7 @@ class Core:
         #print('pt',pt,'\n')
     ### Transform values for different type of graph and return them
         if esp[0] in ['Head','Wcontent']: typ=typ[0]+'0'
-        if esp[0] == 'Flux': pt=flux1 #EV 20/04/20
+        #if esp[0] == 'Flux': pt=flux1 #EV 20/04/20 # OA 13/5/20 no it is 1 mutliplied later by flux or discharge
        ## Time-serie graph
         if typ[0]=='B': 
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)

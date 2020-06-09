@@ -43,10 +43,11 @@ class modflowUsg:
                 os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
             f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
             nodes,elements,lines = readGmshOut(s,outline=True);
+            self.lbdy = lines
             points,elts = nodes[:,1:3],elements[:,-3:]
             points,elts,lines = self.verifyMesh(points,elts,lines)
             npts = len(points)
-            ndom = where(array(lines,ndmin=2)[:,1]==0)[0][0] # this is the place where we get back to pt 0
+            ndom = where(array(lines,ndmin=2)[:,2]==0)[0][0] # this is the place where we get back to pt 0
             line_dom = unique(lines[:ndom])
             #line_dom = self.getBoundaries(dcoo,nodes,lines)
             #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
@@ -211,19 +212,19 @@ class myRect:
         ncell = nx*ny;p.ncell = ncell
         p.carea = zeros(ncell)
         p.nconnect = (nx-2)*(ny-2)*4+(nx-2)*3*2+(ny-2)*3*2+4*2
-        cn,fa,ds,ex,ey=[],[],[],[],[]
+        cn,fa,ds,agl,ex,ey=[],[],[],[],[],[]
         for j in range(ny):
             for i in range(nx):
-                a,b,c = [],[],[]
-                if i>0: a.append(j*nx+i-1);b.append(dy[j]);c.append(dx[i]/2) # left
-                if j>0: a.append((j-1)*nx+i);b.append(dx[i]);c.append(dy[j]/2) # top
-                if i<nx-1: a.append(j*nx+i+1);b.append(dy[j]);c.append(dx[i]/2) # right
-                if j<ny-1: a.append((j+1)*nx+i);b.append(dx[i]);c.append(dy[j]/2) # bottom
-                cn.append(a);fa.append(b);ds.append(c)
+                a,b,c,d = [],[],[],[]
+                if i>0: a.append(j*nx+i-1);b.append(dy[j]);c.append(dx[i]/2);d.append(pi/2) # left
+                if j>0: a.append((j-1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(0) # top
+                if i<nx-1: a.append(j*nx+i+1);b.append(dy[j]);c.append(dx[i]/2);d.append(pi/2) # right
+                if j<ny-1: a.append((j+1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(0) # bottom
+                cn.append(a);fa.append(b);ds.append(c);agl.append(d)
                 ex.append(array([xv[i],xv[i+1],xv[i+1],xv[i]]))
                 ey.append(array([yv[j],yv[j],yv[j+1],yv[j+1]]))
                 p.carea[j*nx+i] = dy[j]*dx[i]
-        p.cneighb, p.fahl,p.cdist,p.elx,p.ely = cn,fa,ds,ex,ey             
+        p.cneighb, p.fahl,p.cdist,p.angl,p.elx,p.ely = cn,fa,ds,agl,ex,ey   
         xc,yc = array([mean(a) for a in p.elx]),array([mean(a) for a in p.ely])
         p.elcenters = c_[xc,yc]
         p.nodes = p.elcenters
@@ -309,7 +310,7 @@ class myVor:
         p = self.parent
         npts,a = shape(points);nelts,a = shape(elts)
         l0 = []
-        p.carea,p.fahl,p.cneighb,p.cdist,p.elx,p.ely=l0*1,l0*1,l0*1,l0*1,l0*1,l0*1
+        p.carea,p.cneighb,p.cdist,p.elx,p.ely=l0*1,l0*1,l0*1,l0*1,l0*1
         p.nconnect,p.nodes = 0,[]
         line_dom = list(line_dom);nd=len(line_dom)
         xdom,ydom = zip(*dcoo)
@@ -356,17 +357,17 @@ class myVor:
         # store the data as list where the list index is the cell nb
         ip1 = M[:,1].astype('int')
         indsplit = where(ip1[1:]-ip1[:-1]==1)[0]+1 # this is the nb of points for each elt
+        M[:,3],M[:,4] = self.putInDomain(dcoo,M[:,3],M[:,4]) # OA adede 25/4/20
         p.nconnect = shape(M)[0]
         p.cneighb = split(M[:,2].astype('int'),indsplit);nc=len(p.cneighb)
-        M[:,3],M[:,4] = self.putInDomain(dcoo,M[:,3],M[:,4]) # OA adede 25/4/20
         lvx = split(M[:,3],indsplit);p.elx = [r_[v,v[0]] for v in lvx]
         lvy = split(M[:,4],indsplit);p.ely = [r_[v,v[0]] for v in lvy]
         p.cdist = split(M[:,5],indsplit)
         xmd1,ymd1 = split(M[:,6],indsplit),split(M[:,7],indsplit)
         # redo differently elx,ely and length for the poly at the boundaries (the rest is ok)
         indx = [0]*(max(line_dom)+1) # to remove the face that are not connected
-        ncorn = len(dcoo)
-        for ip1 in range(ncorn): # points on angles
+        p.ncorn = len(dcoo)
+        for ip1 in range(p.ncorn): # points on angles
             ip2 = p.cneighb[ip1]
             if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
@@ -381,7 +382,7 @@ class myVor:
                 p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia[0]],points[ip1,0],xmd1[ip1][ia[1]],p.elx[ip1][ia[-1]+1:]]
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia[0]],points[ip1,1],ymd1[ip1][ia[1]],p.ely[ip1][ia[-1]+1:]]
                 indx[ip1] = ia+1 # OA 24/4/20
-        line_dom1 = list(set(line_dom)-set(range(ncorn)))
+        line_dom1 = list(set(line_dom)-set(range(p.ncorn)))
         for ip1 in line_dom1: #range(line_dom[0],ndom+1): # points on lines
             ip2 = p.cneighb[ip1]
             if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
@@ -398,12 +399,20 @@ class myVor:
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia],p.ely[ip1][ia[-1]+1:]]
                 indx[ip1] = ia[-1]
         p.fahl = [sqrt((p.elx[i][1:]-p.elx[i][:-1])**2+(p.ely[i][1:]-p.ely[i][:-1])**2) for i in range(nc)]
-        for ip1 in range(ncorn): # OA 26/4/20 changed to indx
+        p.angl = []
+        for i in range(nc) :
+            angl = arctan((p.ely[i][1:]-p.ely[i][:-1])/(p.elx[i][1:]-p.elx[i][:-1]))
+            angl[p.elx[i][1:] < p.elx[i][:-1]] += pi
+            angl[angl<0]=2*pi+angl[angl<0]
+            p.angl.append(angl)
+        for ip1 in range(p.ncorn): # OA 26/4/20 changed to indx
             p.fahl[ip1] = delete(p.fahl[ip1],indx[ip1])
+            p.angl[ip1] = delete(p.angl[ip1],indx[ip1])
         for ip1 in line_dom1: # OA 26/4/20 changed to indx
             p.fahl[ip1] = delete(p.fahl[ip1],indx[ip1])
+            p.angl[ip1] = delete(p.angl[ip1],indx[ip1])
         la = [abs(sum(p.elx[i][:-1]*p.ely[i][1:]-p.elx[i][1:]*p.ely[i][:-1]))/2 for i in range(nc)]
-        p.carea = array(la)
+        p.carea = array(la);p.indx = indx;
         p.nodes = array(points,ndmin=2)
         p.elcenters = p.nodes
 

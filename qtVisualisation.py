@@ -653,13 +653,13 @@ class qtVisualisation(FigureCanvasQTAgg):
         #self.curMedia = media
         self.cnv.add_line(zone)
         if self.typeZone == "POLYV" or len(coords[0])==3:
-            txt = [pl.text(mean(x)*.1+x[0]*.9,mean(y)*.1+y[0]*.9,name+'\n'+str(val)[:16])]
+            txt = [pl.text(mean(x)*.1+x[0]*.9,mean(y)*.1+y[0]*.9,name+'\n')] #+str(val)[:16])]
             for i in range(len(x)):
                 t=pl.text(x[i],y[i],str(z[i]))
                 t.set_visible(visible)
                 txt.append(t)
         else :
-            txt = pl.text(mean(x)*.1+x[0]*.9,mean(y)*.1+y[0]*.9,name+'\n'+str(val)[:16])
+            txt = pl.text(mean(x)*.1+x[0]*.9,mean(y)*.1+y[0]*.9,name) #+'\n'+str(val)[:16])
             txt.set_visible(visible)
         self.listeZone[self.curVar].append(zone)
         self.listeZmedia[self.curVar].append(media)

@@ -249,12 +249,13 @@ class mtphtWriter:
                 if len(lval)==len(ilay):
                     lval1 = [[lval[x]]*ilay[x] for x in range(len(ilay))]
                     lval= [item for sublist in lval1 for item in sublist]
-                    s=''
-                    for i in range(len(lval)):
+                    s=' '+str(lval[0]).rjust(2) # OA 11/5/2
+                    for i in range(1,len(lval)): # OA 11/5/2
+                        if mod(i,40)==0: s+='\n' # OA 11/5/20 added no more than 40 values
                         s+=' '+str(int(lval[i])).rjust(2)
                 else : 
                     s=' '+str(lval[0]).rjust(2)
-                    for i in range(1,self.nlay):
+                    for i in range(1,nlay): # OA 11/5/20
                         if mod(i,40)==0: s+='\n'
                         s+=' '+str(lval[0]).rjust(2)
             else : # radial and xsection

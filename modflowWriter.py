@@ -172,7 +172,8 @@ class modflowWriter:
         for l2 in llist:
             cond = self.Fkey.lines[l2]['cond'];
             if self.testCondition(cond) == False : continue
-            v0 = self.core.getValueLong('Modflow',l2,0);#print 'mfw 173', l2,v0
+            v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
+            if l2=='lpf.8': self.Ktemp = v0 # OA 8/6/20 store K for futher use
             value.append(v0)
         val,s = self.core.dicval['Modflow']['lpf.2'],'' # EV 23/11/2018
         ilay=getNlayersPerMedia(self.core) 
@@ -438,17 +439,17 @@ class modflowWriter:
                     elif ext=='chd': 
                         s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(val)+zbase,float(vnext)+zbase)
                     elif ext=='drn': # elevation adding zbase (polyV), then cond.
-                        v1,v2 = val.split();#print(iz,pt,zbase,v1,v2)
+                        v1,v2 = vparms.split();#OA 6/6/20
                         s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(v1)+zbase,float(v2))
                     elif ext=='ghb':
                         a,cond = vparms.split(); #conductance steady (time & space)
                         if flgTr: hd = float(val)
-                        else : hd = float(val.split()[0])
+                        else : hd = float(vparms.split()[0]) # OA 7/6/20 val-> vaprms
                         s1=lpts[iz][pt]+' %9.3e %9.3e '%(hd+zbase,float(cond))
                     elif ext=='riv':
                         a,cond,botm = vparms.split()
                         if flgTr: stage = float(val)
-                        else : stage = float(val.split()[0])
+                        else : stage = float(vparms.split()[0]) # OA 7/6/20
                         s1=lpts[iz][pt]+' %9.3e %9.3e %9.3e ' %(stage,float(cond),float(botm)+zbase)
                     buf1.append(s1+soption)
             if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
@@ -498,7 +499,7 @@ class modflowWriter:
     def getPermScaled(self,ilay,irow,icol):
         """return the permeability for a list of layer, col rows scaled by the
         sum of permeability for this list"""
-        K = self.core.getValueLong('Modflow','lpf.8',0)
+        K = self.Ktemp; #OA 8/6/20 remov:core.getValueLong('Modflow','lpf.8',0)
         #print('mfw l400',shape(K),ilay,irow,icol)
         grd = self.core.addin.getFullGrid()
         dx=grd['dx'];dy=grd['dy'];ny=grd['ny']
