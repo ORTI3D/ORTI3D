@@ -206,15 +206,15 @@ def makeZblock(core):
             ## creates the sublayers
             if lilay[im]==1: ## just one sublayer
                 dff = top-botm;
-                limit = amax(amax(dff))/25 ## limit the thick not to be 0
-                if type(dzL[im])==type([5]): dzL[im]=dzL[im][0] ## don't understand why i need that
-                Zblock[i+1] = top - maximum(dff,limit)*dzL[im]
+                limit = mean(dff)/500 ## limit the thick not to be 0
+                #if type(dzL[im])==type([5]): dzL[im]=dzL[im][0] ## don't understand why i need that
+                Zblock[i+1] = top - maximum(dff,limit) #*dzL[im]
                 i+=1
             else: ## dzL[im] is a list
                 dz = array(dzL[im]);
                 for il in range(lilay[im]):
                     dff = top-botm
-                    limit = amax(amax(dff))/100
+                    limit = mean(dff)/500
                     Zblock[i+1] = top - maximum(dff,limit)*sum(dz[:il+1])
                     i += 1
             top = botm
@@ -241,7 +241,8 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         if z.size == 0 : #EV 01/04/20
             z = zone2grid(core,modName,line,im)
             core.dictype[modName][line][im]='one_value'
-    return z
+    if shape(refer)==shape(z) : return minimum(z,refer-1)
+    else : return z
     
 def getXYvects(core):
     g = core.addin.getFullGrid()
@@ -1115,7 +1116,7 @@ def zone2array(core,modName,line,im):
     #fDir = file.replace(fNameExt,'')
     fDir = core.fileDir
     ext=fNameExt[-3:]
-    arr=array([]) ; zdx,zdy=None,None
+    arr=array([]) ; zdx,zdy,ysign=None,None,1
     txt1 = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
                    'Default values or zones values will be used.'+'\n\n'
                    +'Please select an other file to import an array for the parameter '+
@@ -1132,8 +1133,8 @@ def zone2array(core,modName,line,im):
         except : onMessage1(core,txt2) 
     elif ext == 'var' :
         try : 
-            zdx,zdy,arr=core.importGridVar(fDir,fNameExt)
-            zdy = zdy[::-1] # OA added 9/4/20
+            ysign,zdx,zdy,arr=core.importGridVar(fDir,fNameExt) # OA 13/6/20 add ysign
+            #zdy = zdy[::-1] # OA added 9/4/20
             arr=arr.astype(np.float)
         except OSError : onMessage1(core,txt1) 
         except : onMessage1(core,txt2) 
@@ -1149,11 +1150,13 @@ def zone2array(core,modName,line,im):
         #shp = (grd['ny'],grd['nx'])
         #print('shp',shpArr,shp)
         intp = False # OA 3/4/20 this l an dl. below
-        if line=='lpf.8': intp=True
+        if line in ['lpf.8']: intp=True #'dis.6','dis.7',
         #if shpArr != shp:
         #arr2=zeros((grd['nx'], grd['ny']))
         xx,yy=getXYmeshCenters(core,'Z',0)
-        arr2 = linIntpFromGrid(grd,arr[::-1],xx,yy,intp,zdx,zdy)
+        if ysign==-1: # OA 13/6/20 added this and below
+            zdy,arr = zdy[-1::-1]*1,arr[-1::-1,:]*1
+        arr2 = linIntpFromGrid(grd,arr,xx,yy,intp,zdx,zdy) # removed [::-1]
         return arr2
         #else : return arr[::-1]
     else : 

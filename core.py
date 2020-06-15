@@ -475,8 +475,8 @@ class Core:
     def importGridVar(self,fileDir,fileName): #EV 02/04/20
         importer = impFile(self.gui,self)
         if fileName=='': return 
-        zdx,zdy,m0=importer.impGridVar(fileDir,fileName)
-        return zdx,zdy,m0 
+        ysign,zdx,zdy,m0=importer.impGridVar(fileDir,fileName)
+        return ysign,zdx,zdy,m0 
             
 #********************* working with keywords and values***************            
     def createKwList(self):

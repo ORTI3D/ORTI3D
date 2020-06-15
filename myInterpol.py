@@ -285,7 +285,6 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added
     xx,yy are the position of the point where the z value is searched for
     x0,y0 are the origin of the domain
     dx,dy are the cell width of the grid'''
-    intp=False
     x0,x1,y0,y1 = core_grd['x0'],core_grd['x1'],core_grd['y0'],core_grd['y1']
     eps = min(x1-x0,y1-y0)/1e5
     nr,nc = shape(z_grid);z_grid=z_grid.astype('float')
@@ -304,13 +303,13 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added
         if abs(vx[-1]-x1)>eps or abs(vy[-1]-y1)>eps: return 'wrong grid size'
         vi,vj,dyy,dxx = yy*0,xx*0,yy*0,xx*0 # OA 3/4/20 dxx,dyy added
         for n in range(len(vy)-1): 
-            cnd = (yy>vy[n])&(yy<vy[n+1])
+            cnd = (yy>=vy[n])&(yy<vy[n+1]) #OA 10/6/20 added =
             vi[cnd] = n # OA 3/4/20 i,j inverted
-            dyy[cnd] = yy[cnd]-yc[n] # OA 3/4/20 added
+            dyy[cnd] = (yy[cnd]-yc[n])/(vy[n+1]-vy[n]) # OA 3/4/20 added
         for n in range(len(vx)-1): 
-            cnd = (xx>vx[n])&(xx<vx[n+1])
+            cnd = (xx>=vx[n])&(xx<vx[n+1]) #OA 10/6/20 added =
             vj[cnd] = n
-            dxx[cnd] = xx[cnd]-xc[n] # OA 3/4/20 added
+            dxx[cnd] = (xx[cnd]-xc[n])/(vx[n+1]-vx[n]) # OA 3/4/20 added
     # OA 14/2/19 line below changed, 2nd below added
     vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
     vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')

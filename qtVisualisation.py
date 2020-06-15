@@ -10,7 +10,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Subplot
 from matplotlib import rcParams,cm
 import matplotlib.pylab as pl
-from matplotlib.mlab import dist_point_to_segment
+#from matplotlib.mlab import dist_point_to_segment
 from matplotlib.patches import RegularPolygon,Polygon
 from matplotlib.lines import Line2D
 from matplotlib.collections import PolyCollection,LineCollection

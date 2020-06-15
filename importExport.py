@@ -161,15 +161,19 @@ class impFile:
         return array(l0)
     
     def impGridVar(self,fileDir,fileName): #EV 02/04/20 #EV 28/04/20
+        '''this imports a var file, 1st line 1 for a matrix oriented along increasing y
+        and -1 for a modflow oriented grid (inverse to y), then spacing in x direction
+        spacing in y direction and then the matrix of values'''
         f1 = open(fileDir+os.sep+fileName,'r')
         s = f1.readlines()
-        cols = [float(val) for val in s[0].split()]
-        rows=[float(val) for val in s[1].split()]
+        ysign = int(s[0])  # OA added 13/6/20
+        cols = [float(val) for val in s[1].split()]
+        rows=[float(val) for val in s[2].split()]
         nc,nr=len(cols),len(rows)
-        lval = [[float(x) for x in line.split()] for line in s[2:]]
+        lval = [[float(x) for x in line.split()] for line in s[3:]]
         val = np.hstack(lval)
         arr=val.reshape(nr,nc)
-        return cols,rows,arr
+        return ysign,cols,rows,arr # OA added 13/6/20
                     
 class impObsData(QDialog) :
     def __init__(self,gui,core,option):

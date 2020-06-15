@@ -1136,3 +1136,16 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 8/6/20 OA
 - modflowwriter l. l.176 writeLpf store Ktemp l.502 in getpermscaled reuse Ktemp (when interpol it was recalc for each well)
+
+9/6/20 OA
+- myInterpol linterp l.309 313 added a division y the cell dimension for interpolation in non lin grids (forgotten before)
+
+10/6/20 OA
+- myInterpol linIntp removed l.288, (intp=False in any case)
+- myInterpol linIntp l.306,310 added = to >
+
+13/6/20
+- importExport impGridVar l.166 added and below modif ref in s to add a firs tline to get ysign (orientation of the matrix)
+- geometry zone2array l.1135 and 1156 to add ysign to know the orientaiton of the matrix
+- core importGridVar l.478 479 to include ysign
+- in geomtry Zblock l.209 217, changed the mimit, it was too high
