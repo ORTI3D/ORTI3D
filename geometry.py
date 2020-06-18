@@ -73,7 +73,7 @@ def calcGriVar(x0,x1,dx0,dx1):
     if n<=1:
         return [x1-x0]
     else :
-        dxv=logspace(log10(dx0),log10(dx1),n);#print x0,x1,dx0,dx1,dxv
+        dxv=logspace(log10(dx0),log10(dx1),int(n));#print x0,x1,dx0,dx1,dxv
         if abs((dxv[0]-(x1-x0))) < dxv[0]/1000: return dxv[:1] # added 28/3/17 oa for fixed grids
         dxv[dxv==max(dxv)]+=x1-x0-sum(dxv) # to fit the total
         return dxv
