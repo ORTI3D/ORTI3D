@@ -250,33 +250,6 @@ class IntpDialog(QDialog):
         self.close(); self.state = 'reject'
         
 ######################   BI LINEAR INTERPOLATION  ############################ 
-"""
-def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
-    '''linear interpolation from a regular grid
-    that has exactly the same size as the current domain
-    xx,yy are the position of the point where the z vlaue is searched for
-    x0,y0 are the origin of the domain
-    dx,dy are the cell width of the regular grid'''
-    x0,x1,y0,y1 = core_grd['x0'],core_grd['x1'],core_grd['y0'],core_grd['y1']
-    nr,nc = shape(z_grid)
-    dx,dy = (x1-x0)/nc,(y1-y0)/nr
-    nr_out =0
-    if len(shape(xx))> 1 : 
-        nr_out,nc_out = shape(xx)
-        xx,yy = ravel(xx),ravel(yy)
-    vi,vj = floor((yy-(y0+dy/2))/dy),floor((xx-(x0+dx/2))/dx)
-    vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
-    dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
-    # OA 14/2/19 line below changed, 2nd below added
-    vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
-    vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')
-    dzx = z_grid[vi,vj1]-z_grid[vi,vj]
-    dzy = z_grid[vi1,vj]-z_grid[vi,vj]
-    dzxy = z_grid[vi,vj]+z_grid[vi1,vj1]-z_grid[vi,vj1]-z_grid[vi1,vj]
-    zz = z_grid[vi,vj] + dzx*dxx + dzy*dyy + dzxy*dxx*dyy
-    if nr_out>0: zz=reshape(zz,((nr_out,nc_out)))
-    return clip(zz,amin(z_grid),amax(z_grid))
-"""
 
 def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added OA 22/5/17
     '''linear interpolation from a regular grid (zdx=None) or irregular (zdx!=None)

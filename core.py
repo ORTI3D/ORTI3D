@@ -501,19 +501,21 @@ class Core:
         if line in ['dis.6','dis.7'] : 
             self.Zblock = makeZblock(self);#print self.Zblock #top and bottom
 
-    def getValueFromName(self,modName,vName):
+    def getValueFromName(self,modName,vName,option=-1):
         """returns a value from the name of the keyword"""
         #print modName,vName,self.KwList[modName]
         if (vName =='NLAY') and (self.addin.getDim() in ['Radial','Xsection']):
             return getNlayers(self)
         if vName in list(self.KwList[modName].keys()): 
-            line,ik = self.KwList[modName][vName]
-            val = self.dicval[modName][line][ik];#print 'in getval',line,ik,val,type(val)
+            line,ik = self.KwList[modName][vName]  # OA 23/7/20 3 lines below modified
+            if len(self.dickword[modName].lines[line]['kw'])==1 and option !=-1 : # case where we want a va lue for a given layer
+                val = self.dicval[modName][line][option]
+            else: val = self.dicval[modName][line][ik];#classical case get the true keyword value
             return val
             
-    def getSingleValueFromName(self,modName,vName):
-        val = self.getValueFromName(modName,vName)
-        if type(val)==type([]): return float(val[0])
+    def getSingleValueFromName(self,modName,vName,nb): # OA 22/7/20 added nb
+        val = self.getValueFromName(modName,vName,nb)
+        #if type(val)==type([]): return float(val)
         try : return float(val)
         except ValueError : return val
         
@@ -531,22 +533,25 @@ class Core:
                     self.dicval[modName][line][ik] = value
         #print 'core setvn',vName,type(value),value,self.dicval[modName][line]
 
-    def testCondition(self,modName,cond):
+    def testCondition(self,modName,cond0,option=0): # OA 22/7/20 adde any option
         """tests if a condition from the dictionnary is validated; 
-        it allows to use several conditions in the same line"""
-        a=True
+        it allows to use several conditions in the same line
+        option can be set to the layer nb or 'any' """
+        a=True;
+        if option == 'any' : llay = range(getNlayers(self))
+        else: llay=[option]
         kwl=self.KwList[modName];#print kwl
         s1='self.getSingleValueFromName(modName,';
-        if cond!='':
+        if cond0=='': return True
+        for ilay in llay :
+            cond = cond0*1
             cond=cond.replace(' and ',') and (')
             cond=cond.replace(' or ',') or (')
             for k in kwl:
-                lk = len(k)
-                if (cond[:lk]==k) or ('('+k in cond):
-                    cond=cond.replace(k,s1+'\''+k+'\')')
+                if k in cond:
+                    cond=cond.replace(k,s1+'\''+k+'\','+str(ilay)+')')
             a=eval('('+cond+')');# OA 1/8/17 for python 3 print(kwl,a)
-            #print 'core 415 cond',cond,a
-        if a or cond=='': return True
+            if a : return True
         return False  
 
     def getSizeKw(self,modName,kw):
@@ -568,15 +573,16 @@ class Core:
         kw = self.dickword[modName].lines[line]['kw'][ik]
         #print('vtype', vtype, 'valIn', valIn, 'kw', kw)
         cond = self.dickword[modName].lines[line]['cond']
-        if self.testCondition(modName,cond)==False: return None
+        if self.testCondition(modName,cond,'any')==False: return None # OA 22/7/20 added any
         size = self.getSizeKw(modName,kw)
         kw = kw.split('(')[0]
         #print('size',size, 'kw', kw)
         numtype = self.dickword[modName].lines[line]['type'][ik];#int, float or lay
         #print('numtype', numtype)
-        if line =='dis.6' : return self.Zblock[:-1] # several top
+        if line in ['dis.6','disu.7'] : return self.Zblock[:-1] # several top, OA 25/7/20 added disu
         if line =='btn.9' : return self.Zblock[0] # only the top        
-        if line == 'dis.7': return self.Zblock[-1:] # one bottom
+        if line == 'dis.7': return self.Zblock[-1:] # one bottom for mflow 2000
+        if line == 'disu.8': return self.Zblock[1:] # all bottom for usg added OA 25/7/20
         if line == 'btn.10': return abs(self.Zblock[1:]-self.Zblock[:-1]) #[-1::-1]
         ### generic writing
         vtype = self.dictype[modName][line]

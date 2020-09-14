@@ -236,7 +236,6 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
             if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
             else : z = zone2mesh(core,modName,line,im,loc='elements')
     elif intp==4 : # EV 11/02/20
-        #try: 
         z = zone2array(core,modName,line,im) # EV 20/02/20
         if z.size == 0 : #EV 01/04/20
             z = zone2grid(core,modName,line,im)
@@ -310,18 +309,39 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
         
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''
-    if 1 in intp : # OA 17/2/20
-        parms = core.dicinterp[modName][line][0]
-        m, mess = zone2interp(core,modName,line,0,parms,iper=iper);#print 'geom 282',amax(m) # EV 19/02/20
-        m = array(m,ndmin=2) # OA 1/5/20 this and three below added
-        for im in range(1,getNmedia(core)):
-            m = r_[m,array(zone2interp(core,modName,line,0,parms,iper=iper),ndmin=2)]
-        return m
-    else: # changed from 0 to []
-        m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
-        for im in range(1,getNmedia(core)):
-            m = r_[m,array(zone2mesh(core,modName,line,im),ndmin=2)]
-        return m
+#    if 1 in intp : # OA 17/2/20
+#        parms = core.dicinterp[modName][line][0]
+#        m, mess = zone2interp(core,modName,line,0,parms,iper=iper);#print 'geom 282',amax(m) # EV 19/02/20
+#        m = array(m,ndmin=2) # OA 1/5/20 this and three below added
+#        for im in range(1,getNmedia(core)):
+#            m = r_[m,array(zone2interp(core,modName,line,0,parms,iper=iper),ndmin=2)]
+#        return m
+#    else: # changed from 0 to []
+#        m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
+#        for im in range(1,getNmedia(core)):
+#            m = r_[m,array(zone2mesh(core,modName,line,im),ndmin=2)]
+#        return m
+
+    m0 = ones((getNlayers(core),core.addin.mesh.getNumber('elements')))
+    nmedia = getNmedia(core)
+    lilay = getNlayersPerMedia(core)
+    lay = 0
+    for im in range(nmedia): # 3D case, includes 2D
+        if intp[im]==1 :
+            parms = core.dicinterp[modName][line][im] # EV 19/02/20
+            a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
+        elif intp[im]==3 :
+            a = zone2mesh(core,modName,line,im)
+        elif intp[im]==4 :
+            #try : 
+            a = zone2array(core,modName,line,im) 
+            if a.size == 0 : 
+                a = zone2mesh(core,modName,line,im)
+                core.dictype[modName][line][im]='one_value'
+        for il in range(int(lilay[im])): # several layers can exist in each media
+            m0[lay]=a
+            lay +=1
+    return m0
         
 def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     """return a vector of values for one property over a mesh, values are given
@@ -366,20 +386,20 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     if val == 'nb': return pindx
     else : return value
     
-def zmesh(core,dicz,media,i):
+def zmesh(core,dicz,media,iz):
     '''returns the index of the cells that are under (line) or in (poly) a zone
     it can also provide the z value if the zone is the variable polygon'''
     mesh = core.addin.mesh
     xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
-    poly = dicz['coords'][i];#print poly
+    poly = dicz['coords'][iz];#print poly
     if len(poly[0])==3 : x,y,z = list(zip(*poly)) # OA 2/5/20
     else : x,y = list(zip(*poly))
     if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
     llcoefs = lcoefsFromPoly(poly)
-    zmedia = dicz['media'][i] # a media or a list of media for the zone
-    if type(zmedia)!=type([5]): zmedia=[zmedia]
-    zmedia = [int(a) for a in zmedia]
-    if media not in zmedia: return None # the zone is not in the correct media
+#    zmedia = dicz['media'][i] # a media or a list of media for the zone OA removed 24/7/20
+#    if type(zmedia)!=type([5]): zmedia=[zmedia]
+#    zmedia = [int(a) for a in zmedia]
+#    if media not in zmedia: return None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
         idx = amin(dst)==dst;#where(amin(dst)==dst)[0] # OA 19/4/20
@@ -388,7 +408,7 @@ def zmesh(core,dicz,media,i):
         idx = where(pointsInPoly(xc,yc,poly,llcoefs));
         zval = 0 #OA 2/5/20 add zval
     else : # a line
-        id0,zval = cellsUnderPoly(core,dicz,media,i) # OA 2/5/20 added zval
+        id0,zval = cellsUnderPoly(core,dicz,media,iz) # OA 2/5/20 added zval
         idx = id0>0
     return idx,zval
         
@@ -888,7 +908,7 @@ def cellsUnderPoly(core,dicz,media,iz):
     elxa, elya = array(mesh.elxa),array(mesh.elya)
     poly = dicz['coords'][iz]
     lcoefs=lcoefsFromPoly(poly)
-    l0 = zptsIndices(core,dicz)[iz]
+    #l0 = zptsIndices(core,dicz)[iz] # OA 24/7/20
     indx,zval = zeros(len(idcell)),zeros(len(idcell))
     for i in range(len(poly)-1):
         if len(poly[0])==3 : x,y,z = list(zip(*poly[i:i+2])) # OA 2/5/20
@@ -896,8 +916,10 @@ def cellsUnderPoly(core,dicz,media,iz):
         pos = sign(lcoefs[0,i]*elxa+lcoefs[1,i]*elya-1) # posit. vs the line
         dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
         dpos = array(dpos)
-        x0,x1 = min(xc[l0[i:i+2]]),max(xc[l0[i:i+2]])
-        y0,y1 = min(yc[l0[i:i+2]]),max(yc[l0[i:i+2]])
+        dst0,dst1 = sqrt((x[0]-xc)**2+(y[0]-yc)**2),sqrt((x[1]-xc)**2+(y[1]-yc)**2) # OA 24/7/20
+        idx0 = amin(dst0)==dst0;idx1 = amin(dst1)==dst1; # OA 24/7/20
+        x0,x1 = min(xc[idx0]),max(xc[idx1])
+        y0,y1 = min(yc[idx0]),max(yc[idx1])
         idx = (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
         ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
         indx += idx
@@ -907,7 +929,7 @@ def cellsUnderPoly(core,dicz,media,iz):
     return clip(indx,0,1),zval
 
 def zptsIndices(core,dicz):
-    '''finds the indices of the zones'''
+    '''finds the indices of the points in the zones'''
     mgroup = core.dicaddin['Model']['group']
 #    if core.getValueFromName('Modflow','MshType')<1: 
 #        nx,ny,xv,yv=getXYvects(core)
@@ -1116,7 +1138,7 @@ def zone2array(core,modName,line,im):
     #fDir = file.replace(fNameExt,'')
     fDir = core.fileDir
     ext=fNameExt[-3:]
-    arr=array([]) ; zdx,zdy,ysign=None,None,1
+    arr=array([]) ; zdx,zdy,ysign=None,None,-1 # OA 26/7/20 set ysign default to -1 (modflow)
     txt1 = ('The file '+'"'+core.fileDir+fNameExt+'"'+' does not exist.'+'\n\n'+
                    'Default values or zones values will be used.'+'\n\n'
                    +'Please select an other file to import an array for the parameter '+
@@ -1145,17 +1167,14 @@ def zone2array(core,modName,line,im):
         except : onMessage1(core,txt2) 
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
-        #shpArr=arr.shape
         grd = core.addin.getFullGrid()
-        #shp = (grd['ny'],grd['nx'])
-        #print('shp',shpArr,shp)
         intp = False # OA 3/4/20 this l an dl. below
         if line in ['lpf.8']: intp=True #'dis.6','dis.7',
-        #if shpArr != shp:
-        #arr2=zeros((grd['nx'], grd['ny']))
-        xx,yy=getXYmeshCenters(core,'Z',0)
+        if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
+        else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20
         if ysign==-1: # OA 13/6/20 added this and below
-            zdy,arr = zdy[-1::-1]*1,arr[-1::-1,:]*1
+            arr = arr[-1::-1,:]*1
+            if zdy != None: zdy = zdy[-1::-1]*1 #OA 26/7/20 added condition
         arr2 = linIntpFromGrid(grd,arr,xx,yy,intp,zdx,zdy) # removed [::-1]
         return arr2
         #else : return arr[::-1]

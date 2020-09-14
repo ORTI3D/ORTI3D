@@ -32,13 +32,14 @@ class modflowWriter:
         if self.core.addin.getDim() in ['Radial','Xsection']: self.setRadial()
         lexceptions=['dis.1','dis.4','dis.5','dis.8','rch.2','uzf.9','uzf.10','lpf.2']#EV 06/11 added 'dis.1'
         lexceptions.extend(['disu.2','disu.3','disu.6','disu.9']) 
+        lexceptions.extend(['bcf.'+str(a) for a in range(2,10)]) # OA 22/7/20
         lexceptions.extend(['lpf.'+str(a) for a in range(8,14)]) # when wirting by layers
         lexceptions.extend(['upw.'+str(a) for a in range(7,13)])
         lexceptions.extend(['uzf.'+str(a) for a in range(2,8)])
         lexceptions.extend(['evt.'+str(a) for a in range(2,5)])
         lexceptions.extend(['sms.1a','hfb.3'])
         self.lexceptions = lexceptions
-        lgex = ['DIS','DISU','LPF','RCH','EVT','UPW','UZF','SMS','HFB6']
+        lgex = ['DIS','DISU','BCF6','LPF','RCH','EVT','UPW','UZF','SMS','HFB6'] # oa 22/7/20 added bcf
         lnorm = ['BAS6','SIP','PCG','SOR','DE4','NWT','GMG'] 
         self.writeNamFile()
         #self.writeFiles() #OA 13/8/19 for loop below is new
@@ -156,15 +157,42 @@ class modflowWriter:
         exceptDict['disu.9'] = s1
         self.writeOneFile('DISU',exceptDict)
         
+    def writeBCF6(self): # OA added 22/7/20
+        #bcf.2 and bcf3
+        ilay=getNlayersPerMedia(self.core);exceptDict=dict()
+        for n in ['bcf.3','bcf.2']:
+            val = self.core.dicval['Modflow'][n];s=''
+            if n=='bcf.3': s='INTERNAL     0    (13G2.0) 3 \n'
+            lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
+            lval2 = [item for sublist in lval1 for item in sublist]
+            for i in range(len(lval2)): s+=' '+str(int(lval2[i])).rjust(1) 
+            exceptDict[n]=s+'\n'
+        #!bcf.4' writes several lines per layer
+        llist = ['bcf.'+str(a) for a in range(4,10)];
+        vinit = self.core.dicval['Modflow']['bcf.2'][0]*1
+        value = [];
+        for l2 in llist:
+            v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
+            if l2=='bcf.6': self.Ktemp = v0 # OA 8/6/20 store K for futher use
+            value.append(v0)
+        s = '' 
+        for l in range(self.nlay):
+            for i in range(len(value)):
+                cond = self.Fkey.lines[llist[i]]['cond'];
+                if self.testCondition(cond,l) == False : continue
+                s += self.writeBlockModflow(value[i][l],'arrfloat')+'\n' # OA 1/5/20
+        exceptDict['bcf.4'] = s
+        self.writeOneFile('BCF6',exceptDict)
+
     def writeLPF(self):
         #lpf.2
         ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
         val = self.core.dicval['Modflow']['lpf.2']
         lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
-        lval= [item for sublist in lval1 for item in sublist]
+        lval2 = [item for sublist in lval1 for item in sublist]
         s=''
-        for i in range(len(lval)):
-            s+=' '+str(int(lval[i])).rjust(2) 
+        for i in range(len(lval2)):
+            s+=' '+str(int(lval2[i])).rjust(2) 
         exceptDict={'lpf.2':s+'\n'}
         #lpf.8' writes several lines per layer
         llist = ['lpf.'+str(a) for a in range(8,14)];#take four lines
@@ -175,13 +203,10 @@ class modflowWriter:
             v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
             if l2=='lpf.8': self.Ktemp = v0 # OA 8/6/20 store K for futher use
             value.append(v0)
-        val,s = self.core.dicval['Modflow']['lpf.2'],'' # EV 23/11/2018
-        ilay=getNlayersPerMedia(self.core) 
-        lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
-        lval= [item for sublist in lval1 for item in sublist]
+        s = '' # OA 22/7/20 lines removed because they are already above
         for l in range(self.nlay):
             for i in range(len(value)):
-                if i==3 and lval[l]==0 : continue # specif writing for storage
+                if i==3 and lval2[l]==0 : continue # specif writing for storage
                 s += self.writeBlockModflow(value[i][l],'arrfloat')+'\n' # OA 1/5/20
         exceptDict['lpf.8'] = s
         self.writeOneFile('LPF',exceptDict)
@@ -347,9 +372,9 @@ class modflowWriter:
                 s+=' '+str(lval[0]).rjust(2) 
         return s+'\n' 
 
-    def testCondition(self,cond):
+    def testCondition(self,cond,option=0):
         """ test if the condition is satisfied"""
-        return self.core.testCondition('Modflow',cond)
+        return self.core.testCondition('Modflow',cond,option)
         
     #************************ file for transient data *************************************
     def writeTransientFile(self,core,line,ext):
@@ -485,7 +510,7 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            idx,zval =zmesh(core,dicz,0,iz) # OA 3/5/20
+            idx,zval =zmesh(core,dicz,imed,iz) # OA corrected 24/7/20
             irow = where(idx==1)[0] # OA 22/2/20
             n0,irow1 = len(irow),[]
             ncell_lay = core.addin.mfU.getNumber('elements')

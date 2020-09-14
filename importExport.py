@@ -32,19 +32,38 @@ class impFile:
         f1=open(fullName,'r');
         name,val,med,coords=[],[],[],[]
         for ll in f1:
-            l1=ll.split('\t');
-            name.append(l1[1]) 
-            val.append(l1[3].replace('\\n','\n'))
-            if len(l1[5])==1 :
-                med.append(int(l1[5])) #EV 19/02/20
+            n=ll[ll.find('Name')+len('Name'):ll.rfind('Value')]
+            v=ll[ll.find('Value')+len('Value'):ll.rfind('Media')]
+            m=ll[ll.find('Media')+len('Media'):ll.rfind('Coord')]
+            c=ll[ll.find('Coord')+len('Coord'):len(ll)]
+            name.append(n.strip()) 
+            val.append(v.strip())
+            if not ',' in m :
+                med.append(int(m.strip())) #EV 19/02/20
             else : 
-                m=l1[5].split(',')
+                m=m.strip()
+                m=m.split(',')
                 m = [int(i) for i in m]
                 med.append(m)
-            c0=l1[7:];a=[] 
+            c0=c.strip();a=[] 
+            c0=c0.split()
             for j in range(0,len(c0),2):
                 a.append((float(c0[j]),float(c0[j+1])))
             coords.append(a)
+            #l1=ll.split('\t');
+            #name.append(l1[1]) 
+            #val.append(l1[3].replace('\\n','\n'))
+            #if len(l1[5])==1 : #EV 08/20
+            #if not ',' in l1[5] :
+                #med.append(int(l1[5])) #EV 19/02/20
+            #else : 
+                #m=l1[5].split(',')
+                #m = [int(i) for i in m]
+                #med.append(m)
+            #c0=l1[7:];a=[] 
+            #for j in range(0,len(c0),2):
+                #a.append((float(c0[j]),float(c0[j+1])))
+            #coords.append(a)
         for i in range(len(name)):
             dicz = self.core.diczone[modName]
             dicz.addZone(line)

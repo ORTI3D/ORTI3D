@@ -1,12 +1,12 @@
 class Mf:
     def __init__(self):
-        self.grpList=['DIS','DISU','BAS6','LPF','WEL','RCH','EVT','DRN','RIV','GHB','SIP','PCG','SOR','DE4',\
+        self.grpList=['DIS','DISU','BAS6','BCF6','LPF','WEL','RCH','EVT','DRN','RIV','GHB','SIP','PCG','SOR','DE4',\
         'UPW','NWT','UZF','MNWT','SMS','GMG','HFB6'] # CHD written in auto mode
         self.groups={
         'DIS':['dis.'+str(i) for i in range(1,9)],
         'DISU':['disu.'+str(i) for i in range(1,10)],
         'BAS6':['bas.1','bas.2','bas.3','bas.4','bas.5'],
-        #'BCF':['bcf.1','bcf.2','bcf.3','bcf.4','bcf.5','bcf.6','bcf.7','bcf.8','bcf.9'],
+        'BCF6':['bcf.1','bcf.2','bcf.3','bcf.4','bcf.5','bcf.6','bcf.7','bcf.8','bcf.9'],
         'LPF':['lpf.'+str(i) for i in range(1,14)],
         'WEL':['wel.1'],
         'RCH':['rch.1','rch.2'],
@@ -93,9 +93,10 @@ class Mf:
         #BCF
         'bcf.1':{'comm':'General flags','cond':'','kw':['IBCFCB','HDRY','IWDFLG','WETFCT','IWETIT','IHDWET'],
                'detail':[['write budget','no','yes'],'head for dry cells',['wetting','inactive','active'],
-                         'factor to wet','iteration interval for wetting',['wetting equation','eq1','eq2']],'type':['']},
-        'bcf.2':{'comm':'Type of layer (average/confinement)','cond':'','kw':['LAYCON(NLAY)'],'detail':[],'type':['string']},
-        'bcf.3':{'comm':'anisotropy factor','cond':'','kw':['TRPY(NLAY)'],'detail':[],'type':['vecfloat']},
+                         'factor to wet','iteration interval for wetting',['wetting equation','eq1','eq2']],
+                'type':['int','float','int','float','int','int']},
+        'bcf.2':{'comm':'Type of layer (average/confinement)','cond':'','kw':['LAYCON(NLAY)'],'detail':[],'type':['layint']},
+        'bcf.3':{'comm':'anisotropy factor','cond':'','kw':['TRPY(NLAY)'],'detail':[],'type':['vecint']},
         'bcf.4':{'comm':'First storage coeff','cond':'NPER>1','kw':['Sf1(NCOL,NROW)'],'detail':[],'type':['arrfloat']},
         'bcf.5':{'comm':'Transmissivity','cond':'LAYCON in [0,2]','kw':['Tran(NCOL,NROW)'],'detail':[],'type':['arrfloat']},
         'bcf.6':{'comm':'Hydraulic conductivity','cond':'LAYCON in [1,3]','kw':['HY(NCOL,NROW)'],'detail':[],'type':['arrfloat']},
@@ -197,20 +198,20 @@ class Mf:
                'detail':['options','No opt','SIMPLE','MODERATE','COMPLEX'],
                'type':['choice'],'default':[0]},
         'sms.1b':{'comm':'SMS globals','cond':'',
-                'kw':['sHCLOSE','sHICLOSE','sMXITER','sITER1','sIPRSMS','sNONLINMETH','sLINMETH'],
+                'kw':['sHCLOSE','sHICLOSE','sMXITER','sITER1','sIPRSMS','sNONLINMTH','sLINMTH'],
                'detail':['H convergence (inner)','Hconvergence(outer)','Max. iterations (outer)','Max. iterations (inner)',
                     'Print converg.','Nonlinear method',['Non lin solver','-','xMD','PCGU']],
                'type':['float','float','int','int','int','int','choice'],
                'default':[1e-6,1e-15,10,10000,1,0,1]},
-        #If NONLINMETH != 0 and OPTIONS is not specified then read item 2
-        'sms.2':{'comm':'SMS globals','cond':'sNONLINMETH!=0 and SMS_opt==0',
+        #If NONLINMTH != 0 and OPTIONS is not specified then read item 2
+        'sms.2':{'comm':'SMS globals','cond':'sNONLINMTH!=0 and SMS_opt==0',
                 'kw':['sTHETA','sAKAPPA','sGAMMA','sAMOMENTUM','sNUMTRACK','sBTOL','sBREDUC','sRESLIM'],
                 'detail':['Reduc fact DbD','Increment DbD','Memory term','Fraction of memory','Max bactracking',
                           'Residual reduction tol','Reuction step size','limit for resid backtrack'],
                'type':['float','float','float','float','int','float','float','int'],
                'default':[0.7,0.1,0.2,0.001,10,1e4,0.2,100]},
-        #If LINMETH = 1 and OPTIONS is not specified then read item 3 for the XMD solver
-        'sms.3':{'comm':'XMD solver','cond':'sLINMETH==1 and SMS_opt==0',
+        #If LINMTH = 1 and OPTIONS is not specified then read item 3 for the XMD solver
+        'sms.3':{'comm':'XMD solver','cond':'sLINMTH==1 and SMS_opt==0',
                  'kw':['sIACL','sNORDER','sLEVEL','sNORTH','sIREDSYS','sRRCTOL','sIDROPTOL','sEPSRN'],
                 'detail':[['Accel method','Conjug grad','Orthomin','BicGstab'],['ordering','original','reverse','min degree'],
                           'level of fill','Nb accel for orthomin',['reduc system','no','red_black'],

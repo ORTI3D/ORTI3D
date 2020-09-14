@@ -1144,8 +1144,36 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - myInterpol linIntp removed l.288, (intp=False in any case)
 - myInterpol linIntp l.306,310 added = to >
 
-13/6/20
+13/6/20 OA
 - importExport impGridVar l.166 added and below modif ref in s to add a firs tline to get ysign (orientation of the matrix)
 - geometry zone2array l.1135 and 1156 to add ysign to know the orientaiton of the matrix
 - core importGridVar l.478 479 to include ysign
 - in geomtry Zblock l.209 217, changed the mimit, it was too high
+
+21/7/20  OA
+- put back the BCF module in modflowKeywords (needed for Prams model)
+- modflowKeywords l.97 in bcf put laycon to layint type
+
+22/7/20 OA
+- modflowWriter, adding back the bcf, l.35, 41 + l.160-184
+- core l.571 added option any to condition,l. 514 added nb to getsinglevalue testCondition modified to allw the any option
+
+23/7/20  OA
+- core/testCondition modified to be able to consider both ik the index of the keyword and ilay
+
+24/7/20  OA
+- in mfkeywords modified sLINMETH to sLINMTH (same for NONLIN..) because the LINMETH kw was existing in nwt and -> pb in test conditions
+- geometry : modified blockunstruct (very similar to blocregular) to use the intp option correctly
+- geometry zone2array adde lin 1172 and modif 1171 to be able to use USG mesh during import
+- geometry commented l.911 added l.919-920 to be much faster for lineunderpoly 
+- modfloWriter/xyzone2Mflow usg part l.513 changed media from 0 to imed
+- modfloWriter/zmesh l 399-402 removed, verificaiton of media is useless here
+
+25/7/20 OA
+- core l.782 and 785 in getValueLong, added top and botm for usg (better to use zblock than direct writing to be sure botm=top above)
+
+26/7/20 OA
+- geometry zone2array 1141 set ysign to -1 by default (modflow orientation) and added ocndition on l.1177
+
+14/09/20 EV
+- importExport l.35-52 modified to read 
