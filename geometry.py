@@ -306,6 +306,15 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
         return blockUnstruct(core,modName,line,intp,opt,iper)
+    
+def block1(core,modName,line,intp=False,opt=None,nvar=2):
+    #a special block for n variables (2 for drn,ghb or chd, 3 for riv)
+    iper=0
+    if core.addin.mesh == None: # OA 29/2/20 added mstType rect
+        return blockRegular(core,modName,line,intp,opt,iper)
+    else : #mfUnstruct or modName[:5]=='Opgeo':
+        blk = ones(nvar,(getNlayers(core),core.addin.mesh.getNumber('elements')))
+        return blockUnstruct(core,modName,line,intp,opt,iper)
         
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''
@@ -651,7 +660,13 @@ def gmeshString(core,dicD,dicM):
     indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='point']
     p_coord = [dicD['coords'][iz][0] for iz in indx] # a list of all coords in zone points... aded [0]
     p_dens = [dicD['value'][iz] for iz in indx] # same for densities
-    #p_dens = corrMeshDens(p_coord,p_dens)
+    #add the fault points OA 16/8/20
+#    indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='fault']
+#    if len(indx)>0:
+#        for iz in indx:
+#            pts1,pts2 = ptForFaults(dicD['coords'][iz],float(dicD['value'][iz]))
+#            p_coord.extend(pts1);p_coord.extend(pts2)
+#            p_dens.extend([dicD['value'][iz]]*len(pts1)*2)
     if len(p_coord)>0:
         p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
         s+=sa
@@ -659,7 +674,7 @@ def gmeshString(core,dicD,dicM):
     # other lines present in the domain
     s1 = ''
     for iz,n in enumerate(dicD['name']):
-        if n!='domain' and n[:5] != 'point': # OA 26/4/20 added point
+        if n[:4] in ['line','faul']: # OA 16/8/20 correct for line
             p_coord = dicD['coords'][iz]
             p_dens = dicD['value'][iz]
             p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
@@ -767,8 +782,36 @@ def ptreplace(pold,pnew,i,j):
     b = j+1
     if j in pnew: b = pold[pnew.index(j)]+1
     return a,b
-    
-def readGmshOut(s,outline=False):
+
+def ptForFaults(poly,dns): # !!! not used finally
+    '''create new points around a fault to build the fault later. form a poly
+    we create points in the perpendicular direction at a dens distance. In the middle
+    of the poly the points are at a dens distance of the two line. Then the interval
+    is divided on both sides to have the same nb of points
+    '''
+    x,y = zip(*poly)
+    lc0 = lcoefsFromPoly(poly);c=-1
+    a,b = lc0[:1,:],lc0[1:,:]
+    A = sqrt(dns**2/(1+a**2/b**2))
+    yn1 = y[:-1]-A;xn1=x[:-1]-a/b*A # starting point
+    yn1 = r_[yn1,y[:-1]+A];xn1=r_[xn1,x[:-1]+a/b*A]
+    yn2 = y[1:]-A;xn2=x[1:]-a/b*A # ending point
+    yn2 = r_[yn2,y[1:]+A];xn2=r_[xn2,x[1:]+a/b*A]
+    xn1 = c_[xn1,xn2[:,-1]];xn2=c_[xn1[:,0],xn2];xn=(xn1+xn2)/2 # mke the average
+    yn1 = c_[yn1,yn2[:,-1]];yn2=c_[yn1[:,0],yn2];yn=(yn1+yn2)/2
+    d1 = sqrt((x-xn)**2+(y-yn)**2) # correct for distance for pt sin the middle
+    xn=x+(xn-x)*dns/d1;yn=y+(yn-y)*dns/d1
+    pts0,pts1=[(xn[0,0],yn[0,0])],[(xn[1,0],yn[1,0])]
+    for i in range(len(x)-1):
+        d=sqrt((xn[:,i+1]-xn[:,i])**2+(yn[:,i+1]-yn[:,i])**2) # dst from 1 pt to the next
+        dv = int(around(mean(d)/dns))
+        lx,ly = linspace(xn[0,i],xn[0,i+1],dv),linspace(yn[0,i],yn[0,i+1],dv)
+        pts0.extend(zip(lx[1:],ly[1:]))
+        lx,ly = linspace(xn[1,i],xn[1,i+1],dv),linspace(yn[1,i],yn[1,i+1],dv)
+        pts1.extend(zip(lx[1:],ly[1:]))
+    return pts0,pts1
+        
+def readGmshOut(s,outline=False,nbdy=0,npts=0,liNames=[]): # OA 28/7/20 added nbdy
     '''reads the inside of a gmesh mesh file from the string s
     and returns nnod : nb of nodes, nodes : nodes coordinates, 
     nel : nb of elements, el
@@ -783,16 +826,30 @@ def readGmshOut(s,outline=False):
     b = s.split('$Elements')[1];#print len(b)
     c = b.split('$EndElements')[0];#print len(c)
     c1 = c.split('\n')
-    c2 = [x.split() for x in c1[2:] if len(x.split())==8];#print len(c2)
+    c2 = [x.split() for x in c1[2:] if len(x.split())==8];#elements have a length 8
     elements = array(c2,dtype='int');#print 'ogModel 48',arr
     elements = elements-1
     elements = elements[:,[0,3,4,5,6,7]] # 2nd column is useless
     if outline: 
-        c3 = [x.split() for x in c1[2:] if len(x.split())==7]
-        line = array(c3,dtype='int')[:,-3:]-1 # pt nb in python = gmsh-1#♥OA 21/5/20 modfi to get bdy
-        #line = r_[line,line[0]]
-        return nodes,elements,line
-    else : return nodes,elements
+        dcout = {} # OA 15/8/20 modif to dict
+        c3 = array([x.split() for x in c1[2:] if len(x.split())==7],dtype='int') # OA 28/7/20
+        lines = unique(c3[:,4]); count=0;liout = []
+        for l in lines: 
+            if l<=nbdy: dcout['bc'+str(l-1)] = c3[c3[:,4]==l,-2:]-1
+            else : 
+                arr = c3[c3[:,4]==l,-2:]-1
+                if len(liout)==0: liout.append(arr)
+                else :
+                    if liout[-1][-1,1] == arr[0,0]: # this is the same poly
+                        liout[-1] = r_[liout[-1],arr]
+                    else :
+                        liout.append(arr)
+                        count += 1
+        for i in range(len(liout)):
+            dcout[liNames[i]] = liout[i]
+        return nodes,elements,dcout
+    else :
+        return nodes,elements
 
 def createTriangul(obj):
     '''get the triangulation for matplotlib representation'''
@@ -1022,7 +1079,7 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
         xv,yv = (xv[1:]+xv[:-1])/2.,(yv[1:]+yv[:-1])/2.;#print 'xv',xv,yv
         xm,ym = meshgrid(xv,yv)
         xc, yc = ravel(xm),ravel(ym)
-        if refer != None : refer = ravel(refer)
+        if type(refer) == type(zeros(5)) : refer = ravel(refer) # OA 21/8/20 
     m = zeros(len(xc)) + float(vbase)
     if line in list(core.diczone[modName].dic.keys()):
         diczone = core.diczone[modName].dic[line]
@@ -1059,7 +1116,7 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     
     #### makes the difference if refer is not none to avoid negative thickness (dis.6, dis.7)
     #print shape(xc),shape(yc)
-    if refer != None:
+    if type(refer) == type(zeros(5)): # OA 21/8/20
         for i in range(len(xpt)):
             d = sqrt((xpt[i]-xc)**2+(ypt[i]-yc)**2)
             ix = where(d==amin(d))[0];#print ix
@@ -1169,7 +1226,7 @@ def zone2array(core,modName,line,im):
     if arr.size != 0:
         grd = core.addin.getFullGrid()
         intp = False # OA 3/4/20 this l an dl. below
-        if line in ['lpf.8']: intp=True #'dis.6','dis.7',
+        #if line in ['lpf.8']: intp=True #'dis.6','dis.7',
         if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
         else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20
         if ysign==-1: # OA 13/6/20 added this and below

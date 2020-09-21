@@ -12,6 +12,7 @@ from .config import *
 from .geometry import *
 from .myInterpol import *
 import matplotlib.tri as mptri
+from numpy import in1d,nonzero,insert # OA 15/8/20
 
 class modflowUsg:
     def __init__(self,core):
@@ -30,6 +31,8 @@ class modflowUsg:
             idom = dicD['name'].index('domain')
             dcoo = dicD['coords'][idom]
             dcoo1 = self.verifyDomain(dcoo)
+            npts = len([b for b in dicD['name'] if b[:5]=='point']) # OA 15/8/20
+            liNames = [b for b in dicD['name'] if b[:4] in ['line','faul']]
             # if 'lpf.8' in dct: dicK = dct['lpf.8'] # K hydraul
             # else : 
             dicK = {'name':[]}
@@ -42,16 +45,15 @@ class modflowUsg:
                 #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -o '+fmsh)
                 os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
             f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
-            nodes,elements,lines = readGmshOut(s,outline=True);
-            self.lbdy = lines
+            nbdy = len(dcoo1) # 15/8/20
+            nodes,elements,self.dicFeats = readGmshOut(s,outline=True,nbdy=nbdy,liNames=liNames); # OA 15/8/20
+            self.dicFeats['points']=list(range(nbdy,nbdy+npts)) # OA 15/8/20
             points,elts = nodes[:,1:3],elements[:,-3:]
-            points,elts,lines = self.verifyMesh(points,elts,lines)
-            npts = len(points)
-            ndom = where(array(lines,ndmin=2)[:,2]==0)[0][0] # this is the place where we get back to pt 0
-            line_dom = unique(lines[:ndom])
-            #line_dom = self.getBoundaries(dcoo,nodes,lines)
-            #bbox = [amin(points[:,0]),amax(points[:,0]),amin(points[:,1]),amax(points[:,1])]
-            dns = float(dicD['value'][dicD['name'].index('domain')])
+            #points,elts,lines = self.verifyMesh(points,elts,lines)
+            #npts = len(points)
+            #ndom = where(array(lines,ndmin=2)[:,2]==0)[0][0] # this is the place where we get back to pt 0
+            #line_dom = unique(lines[:ndom])
+            #dns = float(dicD['value'][dicD['name'].index('domain')])
         if mshType == 0: # regular cells
             msh = myRect(self)
             msh.calc()
@@ -66,7 +68,7 @@ class modflowUsg:
             self.trg = mptri.Triangulation(xe,ye) #
         if mshType == 3: # voronoi
             msh = myVor(self)
-            msh.transformVor(points,elts,dcoo1,line_dom)
+            msh.transformVor(points,elts,dcoo1,dicD,self.dicFeats) # OA 15/8/20
             xn,yn = self.nodes[:,0],self.nodes[:,1]
             self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
         self.addMeshVects()
@@ -292,7 +294,7 @@ class myVor:
     def __init__(self,parent):
         self.parent = parent
         
-    def transformVor(self,points,elts,dcoo,line_dom):
+    def transformVor(self,points,elts,dcoo,dicD,dicFeats): # OA 15/8/20 dicFeats
         '''reads the voronoi to create several objects:
         cells ordered as the initial points, removing the ones that contain -1
         - nodes : the inital points (on the triangular gmesh grid)
@@ -312,7 +314,9 @@ class myVor:
         l0 = []
         p.carea,p.cneighb,p.cdist,p.elx,p.ely=l0*1,l0*1,l0*1,l0*1,l0*1
         p.nconnect,p.nodes = 0,[]
-        line_dom = list(line_dom);nd=len(line_dom)
+        line_dom = dicFeats['bc0'] # OA 15/8/20 + 2 lines bleow 
+        for i in range(1,len(dcoo)): line_dom = r_[line_dom,dicFeats['bc'+str(i)]]# 15/8/20
+        line_dom = unique(line_dom) 
         xdom,ydom = zip(*dcoo)
         dmax = (max(xdom)-min(xdom)+max(ydom)-min(ydom))/40;eps=dmax/1e6
         # new method with arrays
@@ -344,8 +348,8 @@ class myVor:
         indx = argsort(M4[:,1]*10+M4[:,-1])
         M = M4[indx,:] # order by pt1 and angle
         # add the 2nd segments when they are at the boundary (there is only one in M now)
-        ndom = max(line_dom) # the boundary segments are the first one
-        M0 = M[(M[:,1]<=ndom)&(M[:,2]<=ndom),:] # where the segments are both in bdy
+        indx = nonzero(in1d(M[:,1],line_dom)&in1d(M[:,2],line_dom))[0] # OA 15/8/20
+        M0 = M[indx,:] # where the segments are both in bdy
         M1 = M0*1
         M1[:,1],M1[:,2] = M0[:,2],M0[:,1] # invert the points
         M1[:,-1] = mod(M1[:,-1]+pi,2*pi) # add pi to the angle
@@ -355,9 +359,9 @@ class myVor:
         indx = argsort(M[:,1]*10+M[:,-1]) # sort again
         M = M[indx,:]
         # store the data as list where the list index is the cell nb
+        M = self.putInDomain(elts,dcoo,M,dicFeats) # OA adede 25/4/20
         ip1 = M[:,1].astype('int')
         indsplit = where(ip1[1:]-ip1[:-1]==1)[0]+1 # this is the nb of points for each elt
-        M[:,3],M[:,4] = self.putInDomain(dcoo,M[:,3],M[:,4]) # OA adede 25/4/20
         p.nconnect = shape(M)[0]
         p.cneighb = split(M[:,2].astype('int'),indsplit);nc=len(p.cneighb)
         lvx = split(M[:,3],indsplit);p.elx = [r_[v,v[0]] for v in lvx]
@@ -369,7 +373,7 @@ class myVor:
         p.ncorn = len(dcoo)
         for ip1 in range(p.ncorn): # points on angles
             ip2 = p.cneighb[ip1]
-            if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
+            if (ip2[0] in line_dom)&(ip2[-1] in line_dom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
                 p.ely[ip1][0] = ymd1[ip1][0]
                 p.elx[ip1][-1] = xmd1[ip1][-1]
@@ -378,14 +382,14 @@ class myVor:
                 p.ely[ip1] = r_[p.ely[ip1],points[ip1,1],p.ely[ip1][0]]
                 indx[ip1] = [len(ip2),len(ip2)+1] # OA 24/4/20
             else : # the 2 pts in line_dom are in the middle of the poly
-                ia=where(ip2<=ndom)[0]
+                ia = nonzero(in1d(ip2,line_dom))[0]
                 p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia[0]],points[ip1,0],xmd1[ip1][ia[1]],p.elx[ip1][ia[-1]+1:]]
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia[0]],points[ip1,1],ymd1[ip1][ia[1]],p.ely[ip1][ia[-1]+1:]]
                 indx[ip1] = ia+1 # OA 24/4/20
-        line_dom1 = list(set(line_dom)-set(range(p.ncorn)))
+        line_dom1 = line_dom[p.ncorn:]
         for ip1 in line_dom1: #range(line_dom[0],ndom+1): # points on lines
             ip2 = p.cneighb[ip1]
-            if (ip2[0]<=ndom)&(ip2[-1]<=ndom):# the 2 pts at the end of the poly are in line_dom
+            if (ip2[0] in line_dom)&(ip2[-1] in line_dom):# the 2 pts at the end of the poly are in line_dom
                 p.elx[ip1][0] = xmd1[ip1][0]
                 p.ely[ip1][0] = ymd1[ip1][0]
                 p.elx[ip1][-1] = xmd1[ip1][-1]
@@ -394,10 +398,21 @@ class myVor:
                 p.ely[ip1] = r_[p.ely[ip1],p.ely[ip1][0]]
                 indx[ip1] = -1 #len(ip2))
             else : # the 2 pts in line_dom are in the middle of the poly
-                ia=where(ip2<=ndom)[0]
+                ia = nonzero(in1d(ip2,line_dom))[0]
                 p.elx[ip1] = r_[p.elx[ip1][:ia[0]+1],xmd1[ip1][ia],p.elx[ip1][ia[-1]+1:]]
                 p.ely[ip1] = r_[p.ely[ip1][:ia[0]+1],ymd1[ip1][ia],p.ely[ip1][ia[-1]+1:]]
                 indx[ip1] = ia[-1]
+        # make the faults
+        p.nodes = array(points,ndmin=2)
+        lfaults = [b for b in dicFeats if b[:5]=='fault']
+        for fau in lfaults:
+            lcell = unique(dicFeats[fau])
+            iz = dicD['name'].index(fau) # index of fault zone
+            lcell,ilines = self.sortFaultCells(p,lcell,len(dicD['coords'][iz])-1)
+            lcoefs = lcoefsFromPoly(dicD['coords'][iz]);
+            for ic in range(len(lcell)):
+                p = self.splitCell(p,ic,lcell,lcoefs,ilines)
+        nc= len(p.elx) # nb of cells has changed
         p.fahl = [sqrt((p.elx[i][1:]-p.elx[i][:-1])**2+(p.ely[i][1:]-p.ely[i][:-1])**2) for i in range(nc)]
         p.angl = []
         for i in range(nc) :
@@ -413,29 +428,105 @@ class myVor:
             p.angl[ip1] = delete(p.angl[ip1],indx[ip1])
         la = [abs(sum(p.elx[i][:-1]*p.ely[i][1:]-p.elx[i][1:]*p.ely[i][:-1]))/2 for i in range(nc)]
         p.carea = array(la);p.indx = indx;
-        p.nodes = array(points,ndmin=2)
         p.elcenters = p.nodes
+        l = []
+        for k in p.dicFeats.keys():
+            if k[:2]=='bc': l.append(unique(p.dicFeats[k]))
+        for i in range(p.ncorn): p.dicFeats['bc_cell'+str(i)]=l[i]
 
-    def putInDomain(self,dcoo,ptx,pty):  # added 25/4/20 some poits can be outside domain
+    def putInDomain(self,elts,dcoo,M,dicFeats):  # added 25/4/20 some poits can be outside domain
         poly=dcoo*1;poly.append(dcoo[0]);np=len(poly)
         lcoefs=lcoefsFromPoly(poly)
-        iIn=array(pointsInPoly(ptx,pty,poly,lcoefs))
+        iIn=array(pointsInPoly(M[:,3],M[:,4],poly,lcoefs))
         lout = where(iIn==0)[0];nl=len(lout)
-        lc1 = zeros((nl,2));poly=array(poly,ndmin=2)
-        for ip in range(np-1): #determine the line of interest and get lcoefs
-            x0,x1 = min(poly[ip:ip+2,0]),max(poly[ip:ip+2,0])
-            y0,y1 = min(poly[ip:ip+2,1]),max(poly[ip:ip+2,1])
-            a=((ptx[lout]>x0)&(ptx[lout]<x1)&(pty[lout]>y0)&(pty[lout]<y1))*1;#print(a)
-            if sum(a)>0: lc1[a==1,:] = lcoefs[:,ip]
+        lc1 = [];poly=array(poly,ndmin=2)
+        # determine the line of interest
+        lines = [unique(dicFeats[a]) for a in dicFeats.keys() if a[:2]=='bc']
+        it0 = unique(M[lout,0]).astype('int') # index of the triangle on which is the outlier
+        # on whcich bdy is the triangle
+        for i in it0:
+            for p in range(np-1):
+                if sum(in1d(lines[p],elts[i]))==2: 
+                    lc1.append(lcoefs[:,p])
         # set the point symetric to the line (ax+by+c=0) ici ax+by=1
         # y’=(-2abx-y(b^2-a^2)-2bc)/(b^2+a^2) et x’=x-a(y-y’)/b
-        ptx1,pty1 = ptx*1,pty*1
-        for i in range(nl):
-            a,b = lc1[i,:];c=-1;i1 = lout[i]; x,y = ptx[i1],pty[i1]
-            pty1[i1] = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
-            ptx1[i1] = x-a/b*(y-pty1[i1])
-        return ptx1,pty1
+        for i,it in enumerate(it0):
+            a,b = lc1[i];c=-1
+            x,y = M[M[:,0]==it,3],M[M[:,0]==it,4]
+            yn = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
+            M[M[:,0]==it,4] = yn
+            M[M[:,0]==it,3] = x-a/b*(y-yn)
+#        for i in range(nl):
+#            a,b = lc1[i,:];c=-1;i1 = lout[i]; x,y = ptx[i1],pty[i1]
+#            pty1[i1] = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
+#            ptx1[i1] = x-a/b*(y-pty1[i1])
+        return M
+    
+    def sortFaultCells(self,p,lcell,nlines): # OA added 17/8/20
+        nc = len(lcell);lcold=list(lcell);cnew = lcold[0];lcnew = [cnew]
+        ilines = [];count=1
+        for i in range(nc-1):
+            cnew = lcold[nonzero(in1d(lcold,p.cneighb[cnew]))[0][0]]
+            lcold.remove(lcnew[-1])
+            lcnew.append(cnew)
+            ilines.append(count-1)
+            if cnew==lcell[count]: count +=1
+        ilines.append(ilines[-1])
+        return lcnew,ilines
         
+    def splitCell(self,p,ic,lcell,lcoefs,ilines) : # OA added 16/8/20...
+        '''
+        split the cells in the middle where the fault line passes (not at the position of the fault)
+        the cell that has a -1 sign is kept at cll position, the sgn=1 is added
+        at the end of p
+        '''
+        nctot = len(p.elx);cll=lcell[ic];il0=ilines[max(0,ic-1)];il1=ilines[ic]
+        sgn0 = sign(p.elx[cll]*lcoefs[0,il0]+p.ely[cll]*lcoefs[1,il0]-1) # this sign gives nfo about the side of the fualt ine
+        sgn = sign(p.elx[cll]*lcoefs[0,il1]+p.ely[cll]*lcoefs[1,il1]-1) # this sign gives nfo about the side of the fualt ine
+        imod0 = where(abs(sgn0[1:]-sgn0[:-1])!=0)[0] # where change ccur
+        imod = where(abs(sgn[1:]-sgn[:-1])!=0)[0] # where change ccur
+        if il1 != il0: imod[1] = imod0[1]
+        xn = (p.elx[cll][imod]+p.elx[cll][imod+1])/2
+        yn = (p.ely[cll][imod]+p.ely[cll][imod+1])/2
+        elx1 = r_[p.elx[cll][:imod[0]+1],xn,p.elx[cll][imod[1]+1:]]
+        ely1 = r_[p.ely[cll][:imod[0]+1],yn,p.ely[cll][imod[1]+1:]]
+        elx2 = r_[xn[-1::-1],p.elx[cll][imod[0]+1:imod[1]+1],xn[1]]
+        ely2 = r_[yn[-1::-1],p.ely[cll][imod[0]+1:imod[1]+1],yn[1]]
+        cdm = mean(p.cdist[cll])
+        if sgn[0]==-1: nb1,nb2=nctot,cll
+        else : nb1,nb2=cll,nctot
+        cn1 = r_[p.cneighb[cll][:imod[0]+1],nb1,p.cneighb[cll][imod[1]:]]
+        cd1 = r_[p.cdist[cll][:imod[0]+1],cdm,p.cdist[cll][imod[1]:]]
+        cn2 = r_[nb2,p.cneighb[cll][imod[0]:imod[1]+1]]
+        cd2 = r_[cdm,p.cdist[cll][imod[0]:imod[1]+1]]
+        # change the elx,ely and neighbors for the neighb of the current cell
+        cngh = p.cneighb[cll]
+        if (ic>0)&(ic<len(lcell)-1):
+            cn2[where(cn2==lcell[ic-1])[0]]=nctot-1 # the previous valeu was not corected
+        else : # first and last cell
+            i0 = 1- nonzero(in1d(cngh[imod],lcell))[0][0] # indx of the neighb not in lcell
+            ic0 = cngh[imod[i0]];ic1 = list(p.cneighb[ic0]).index(cll)
+            p.cneighb[ic0] = insert(p.cneighb[ic0],ic1+1,nctot)
+            p.cdist[ic0] = insert(p.cdist[ic0],ic1+1,p.cdist[ic0][ic1])
+            p.elx[ic0] = insert(p.elx[ic0],ic1+1,xn[i0])
+            p.ely[ic0] = insert(p.ely[ic0],ic1+1,yn[i0])
+        # save to p
+        if sgn[0]==-1:
+            p.elx[cll]=elx1;p.ely[cll]=ely1;p.elx.append(elx2);p.ely.append(ely2)
+            p.cneighb[cll]=cn1;p.cneighb.append(cn2)
+            p.cdist[cll]=cd1;p.cdist.append(cd2)
+            for c in cn2 : 
+                if c not in lcell : p.cneighb[c][p.cneighb[c]==cll]=nctot
+        else :
+            p.elx[cll]=elx2;p.ely[cll]=ely2;p.elx.append(elx1);p.ely.append(ely1)
+            p.cneighb[cll]=cn2;p.cneighb.append(cn1)
+            p.cdist[cll]=cd2;p.cdist.append(cd1)
+            for c in cn1 : 
+                if c not in lcell : p.cneighb[c][p.cneighb[c]==cll]=nctot
+        # area will be calc later 
+        p.nodes = r_[p.nodes,p.nodes[cll:cll+1]]
+        return p
+       
     def calcCentre(self,points,elts,eps):
         ''' at https://cral.univ-lyon1.fr/labo/fc/Ateliers_archives/ateliers_2005-06/cercle_3pts.pdf
         (one sign was wrong)'''

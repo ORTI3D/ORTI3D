@@ -692,7 +692,7 @@ class addin:
         poro = self.core.getValueFromName('Mt3dms','PRSTY')
         tlist = self.core.getTlist2()
         #print startTime, iper, ilay
-        thick = self.core.flowReader.getThickness(self.core,iper);# can be 3D
+        thick = self.core.flowReader.getThickness(self.core,[iper])[0];# can be 3D
         x0,y0,xp0,yp0 = datain;
         #ny,a=shape(vxi);nx=a-1;
         nx,ny = len(dxi),len(dyi)

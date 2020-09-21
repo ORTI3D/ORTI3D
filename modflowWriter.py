@@ -180,7 +180,7 @@ class modflowWriter:
             for i in range(len(value)):
                 cond = self.Fkey.lines[llist[i]]['cond'];
                 if self.testCondition(cond,l) == False : continue
-                s += self.writeBlockModflow(value[i][l],'arrfloat')+'\n' # OA 1/5/20
+                s += self.writeBlockModflow(value[i][l],'arrfloat',opt=llist[i]+' layer '+str(l))+'\n' # OA 1/5/20
         exceptDict['bcf.4'] = s
         self.writeOneFile('BCF6',exceptDict)
 
@@ -629,7 +629,7 @@ class modflowWriter:
             s += fmt %v[i]
         return s
 
-    def writeMatModflow(self, m, ktyp):
+    def writeMatModflow(self, m, ktyp,opt=''):
         #print 'mfw',shape(m),m
         if len(shape(m))==1: return self.writeVecModflow(m,ktyp)
         [l,c] = shape(m);ln=3
@@ -644,7 +644,7 @@ class modflowWriter:
             fmt='1    ('+str(c)+'I'+str(ln)
         else :
             fmt='0    ('+str(c)+'G12.4' #+str(ln)            
-        s += 'INTERNAL     '+fmt+')     3  \n'      
+        s += 'INTERNAL     '+fmt+')     3           '+opt+'\n'  #OA 10/8/20 added opt    
         if typ=='I':
             fmt='%'+str(ln)+'i'
         else :
@@ -655,13 +655,13 @@ class modflowWriter:
             s+='\n'
         return s[:-1]
 
-    def writeBlockModflow(self,m,ktyp):
+    def writeBlockModflow(self,m,ktyp,opt=''):# OA 10/8/20 add opt
         #print shape(m),m
         s = ''
         if len(shape(m))==3:
             nlay,a,b=shape(m);
             for l in range(nlay):
-                s += self.writeMatModflow(m[l],ktyp)
+                s += self.writeMatModflow(m[l],ktyp,opt) # OA 10/8/20 add opt
                 if l<nlay-1: s += '\n'
         elif self.core.addin.mesh != None: # unstructured case write nlay vectors
             if len(shape(m))==2: # OA 1/5/20 added for lpf layer
@@ -672,7 +672,7 @@ class modflowWriter:
             else : # # OA 1/5/20 added for lpf layer
                 s += self.writeVecModflow(m,ktyp) #+'\n'
         else : 
-            s = self.writeMatModflow(m,ktyp)
+            s = self.writeMatModflow(m,ktyp,opt) # OA 10/8/20 add opt
         return s
         
     #------------------------- fonction  write HBF -------------------

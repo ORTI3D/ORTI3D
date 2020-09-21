@@ -1177,3 +1177,13 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 14/09/20 EV
 - importExport l.35-52 modified to read 
+
+21/09/20  OA
+- modflowWriter l.183 added option (created 1/5/20) +l.632,647,658,664,675 for a word in usg
+- addin, l.695 iper modif as a list for particles to consider modifs in thickness
+- geometry l.310 adde block1 for several variables (drn..)
+- geometry l.663-669 in gmeshstring added fault points
+- geometry ptsForFaults l.786-812 + l.814 readGmeshout added option keywords+ modif l.834-852
+- geometry l.1082 modfi for refer (there was an error when refer was None, same l.1119
+- geometry l.1229 modfi : no interp for K, t can create pb (but this may not be a good solution for every model!!!)
+- several modif in modflowUsg (still under work)
