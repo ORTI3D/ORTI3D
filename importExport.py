@@ -37,7 +37,7 @@ class impFile:
             m=ll[ll.find('Media')+len('Media'):ll.rfind('Coord')]
             c=ll[ll.find('Coord')+len('Coord'):len(ll)]
             name.append(n.strip()) 
-            val.append(v.strip())
+            val.append(v.strip().replace('\\n','\n')) # OA 23/9/20 added \\n
             if not ',' in m :
                 med.append(int(m.strip())) #EV 19/02/20
             else : 
