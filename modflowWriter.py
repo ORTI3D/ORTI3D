@@ -54,7 +54,7 @@ class modflowWriter:
             if self.ttable['Transient']['bas.5']:
                 self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
-            if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or self.core.dictype['Modflow'][n+'.1'][0]=='array':
+            if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
                 self.writeTransientFile(core,n+'.1',n)
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             self.writeMNwtFile(core)
@@ -85,13 +85,13 @@ class modflowWriter:
         f1.write('DATA(BINARY)     31        ' + self.fName + '.budget\n')
         if 'USG' not in self.core.dicaddin['Model']['group']:
             f1.write('LMT6     28    '+ self.fName + '.lmt\n')
-        r0=self.core.getValueFromName('Modflow','RECH')
+        r0=self.core.getValueLong('Modflow','rch.2',0)
         if 'RCH' in lmod:
-            if r0>0 or self.core.diczone['Modflow'].getNbZones('rch.2')>0:
+            if amax(r0)!=0 or self.core.diczone['Modflow'].getNbZones('rch.2')>0:
                 f1.write('RCH     34     ' + self.fName + '.rch\n')
-        e0=self.core.getValueFromName('Modflow','EVT')
-        if 'EVTR' in lmod: #EV 28/02/20
-            if e0>0 or self.core.diczone['Modflow'].getNbZones('evt.2')>0:
+        e0=self.core.getValueLong('Modflow','evt.2',0)
+        if 'EVT' in lmod: #EV 28/02/20
+            if amax(e0)!=0 or self.core.diczone['Modflow'].getNbZones('evt.2')>0:
                 f1.write('EVT     35     ' + self.fName + '.evt\n')
         if 'WEL' in lmod:# EV 28/08/19
             if self.core.diczone['Modflow'].getNbZones('wel.1')>0:
@@ -318,7 +318,7 @@ class modflowWriter:
         f1=open(self.fullPath +'.'+ ext.lower(),'w')
         llist=self.Fkey.groups[grp];
         for ll in llist:
-            cond=self.Fkey.lines[ll]['cond']#;print('mfw 96',ll)
+            cond=self.Fkey.lines[ll]['cond'];print('writing ',ll)
             if self.testCondition(cond)==False : continue
             kwlist=self.Fkey.lines[ll]['kw']
             ktyp=self.Fkey.lines[ll]['type'];#print 'mfw',ktyp
@@ -380,40 +380,71 @@ class modflowWriter:
     def writeTransientFile(self,core,line,ext):
         """this method write files that have point location (wells, variable head)
         which are transient but can be permanent for wells"""
-        if core.dictype['Modflow'][line][0]=='array':
-            self.writeTransientArray(core,line,ext)
-        else :
-            self.writeTransientZones(core,line,ext)
-            
-    def writeTransientArray(self,core,line,ext):
-        f1=open(self.fullPath +'.'+ ext,'w')
-        larr = core.dicarray['Modflow'][line];#print 'mfw215',line,len(shape(larr))
-        nvar = 1
-        if len(shape(larr))==4: # several variables
-            nvar = len(larr)
-            llay,lrow,lcol = where(larr[0]!=0);#print llay,lrow,lcol
-        elif len(shape(larr))==3:
-            llay,lrow,lcol = where(mat!=0);#print llay,lrow,lcol
-        else :
-            lrow,lcol = where(mat!=0);llay=[0]*len(lrow)
-        larr = array(larr,ndmin=4)
-        s = str(len(lrow)) +'\n' # we suppose here just one period
-        for ip in range(self.nper):
-            s += str(len(lcol)) +'\n'
-            for i in range(len(lrow)):
-                lay,r,c = llay[i],lrow[i],lcol[i];#print lay,r,c
-                s += ' %9i %9i %9i '%(lay+1,r+1,c+1)
-                for iv in range(nvar): s += ' %9.2e'%larr[iv,lay,r,c]
-                s += '\n'
-        f1.write(s);f1.close()
+        ltyp=core.dictype['Modflow'][line];print('w transient ',line)
+        npts,lpts,lindx,zvar,k = self.writeTransientZones1(core,line,ext)
+        s,sA,nA = '','',0
+        if 'importArray' in ltyp: # OA 17/10/20
+            for im in range(self.nlay):
+                if ltyp[im]=='importArray':
+                    sA += self.writeTransientArray(core,line,ext,im)
+            nA = len(sA.split('\n'))-1;sA+='\n'
+        #1st line
+        s = ' %9i'%(npts+nA)
+        if ext == 'wel': s += ' 31'#OA 3/5/20 added mesh condtion
+        if ext in self.usgTrans.keys():  #OA 4/3/20
+            nspec = len(self.usgTrans[ext][0,0].split())
+            for i in range(nspec): s += ' AUX C%02i' %(i+1)
+        s += '\n'
+        for iper in range(self.nper):
+            s += str(npts+nA)
+            if ext == 'wel': s +='  0  0'
+            s += '\n'+sA
+            if npts>0 : s += self.writeTransientZones2(core,line,ext,lindx,lpts,zvar,k,iper)
+        f1=open(self.fullPath +'.'+ ext,'w');f1.write(s);f1.close()
 
-    def writeTransientZones(self,core,line,ext):
-        f1=open(self.fullPath +'.'+ ext,'w')
-        zlist = self.ttable[line]
+            
+    def writeTransientArray(self,core,line,ext,im): # OA all modified 17/10/20
+        '''when an import array, write the transient info to the file'''
+        if ext=='drn': nvar = 2;indx=1 # indx is the position of the var =0 -> no write
+        if ext=='riv': nvar = 3;indx=1 # indx is the position of the var =0 -> no write
+        if ext=='ghb': nvar = 2;indx=0 # 
+        llay = media2layers(core,im)
+        flgU = False # flgU unstructured
+        if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
+        else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1];flgU=True # OA 24/7/20
+        ncell_lay = len(xx)
+        ysign,gdx,gdy,arr = core.importGridVar(self.fDir,ext+str(im)+'.gvar')
+        if ysign==-1:
+            if gdy != None: gdy = gdy[-1::-1]*1
+            for iv in range(nvar): arr[iv] = arr[iv,-1::-1,:]*1
+        intp = False;arr2 = [];grd = core.addin.getFullGrid()
+        for iv in range(nvar): 
+            arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
+
+        s = ''
+        for il in llay: #these are the layer sin the present media
+            if flgU : 
+                lc = where(arr2[indx]!=0)[0]
+                for i in range(len(lc)):
+                    s += ' %9i '%(il*ncell_lay+lc[i]+1)
+                    for iv in range(nvar): s += ' %9.4e'%arr2[iv][lc[i]]
+                    s += '\n'
+            else : 
+                lrow,lcol = where(arr2[indx]!=0)[0]
+                for i in range(len(lrow)):
+                    s += ' %9i %9i %9i '%(il+1,lrow[i]+1,lcol[i]+1)
+                    for iv in range(nvar): s += ' %9.4e'%arr2[iv][lrow[i],lcol[i]]
+                    s += '\n'
+        return s
+
+    def writeTransientZones1(self,core,line,ext):
+        #f1=open(self.fullPath +'.'+ ext,'w') OA 18/10/20
+        lpts, k, npts,zvar,lindx = [],[],0,[],[] # OA 3/3/20 added lindx
+        if line in self.ttable.keys(): zlist = self.ttable[line]
+        else : return npts,lpts,lindx,zvar,k # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
           
-        lpts, k, npts,zvar,lindx = [],[],0,[],[] # OA 3/3/20 added lindx
         for iz in range(nzones): #creates a list of points for each zone
             lpts.append([])
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
@@ -430,57 +461,52 @@ class modflowWriter:
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
-        indx = argsort(lindx)    # OA added 19/4/20        
-        buff = ' %9i' %npts;#print(line,zlist)
-        if ext == 'wel': buff += ' 31'#OA 3/5/20 added mesh condtion
-        #buff += ' 31'
-        if ext in self.usgTrans.keys():  #OA 4/3/20
-            nspec = len(self.usgTrans[ext][0,0].split())
-            for i in range(nspec): buff += ' AUX C%02i' %(i+1)
-            buff += '\n'
-        else : buff += '\n'
-        #print 'mfw transient',nper
-        for ip in range(nper): # get each period
-            if ext == 'wel': buff += '%9i  0  0\n' %npts
-            else: buff +=  '%9i \n' %npts
-            flgTr, buf1 = False,[]
-            if len(unique(zlist[:,iz]))>1 : flagTr = True
-            for iz in range(nzones): # and each zones
-                val = zlist[ip,iz] # the value of the variable for the period
-                if ext in self.usgTrans.keys(): 
-                    soption = self.usgTrans[ext][ip,iz]
-                else : soption =''
-                a = core.diczone['Modflow'].getValue(line,'value',iz)
-                if '$' in a: vparms = a.split('$')[1]
-                vnext = zlist[min(ip+1,nper-1),iz] #OA 7/8/17 pb of Chd
-                npz = len(lpts[iz])
-                for pt in range(npz): # for each zone the list of points
-                    if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
-                        zbase = float(zvar[iz][pt])
-                    else : 
-                        zbase = 0 # OA 25/4/19
-                    if ext=='wel': 
-                        s1=lpts[iz][pt]+' %9.3e '%(float(val)*k[iz][pt]) #EV 20/02/19
-                    elif ext=='chd': 
-                        s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(val)+zbase,float(vnext)+zbase)
-                    elif ext=='drn': # elevation adding zbase (polyV), then cond.
-                        v1,v2 = vparms.split();#OA 6/6/20
-                        s1=lpts[iz][pt]+' %9.3e %9.3e ' %(float(v1)+zbase,float(v2))
-                    elif ext=='ghb':
-                        a,cond = vparms.split(); #conductance steady (time & space)
-                        if flgTr: hd = float(val)
-                        else : hd = float(vparms.split()[0]) # OA 7/6/20 val-> vaprms
-                        s1=lpts[iz][pt]+' %9.3e %9.3e '%(hd+zbase,float(cond))
-                    elif ext=='riv':
-                        a,cond,botm = vparms.split()
-                        if flgTr: stage = float(val)
-                        else : stage = float(vparms.split()[0]) # OA 7/6/20
-                        s1=lpts[iz][pt]+' %9.3e %9.3e %9.3e ' %(stage,float(cond),float(botm)+zbase)
-                    buf1.append(s1+soption)
-            if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
-            else : buff += '\n'.join(buf1) + '\n'
-        f1.write(buff)
-        f1.close()
+        return npts,lpts,lindx,zvar,k # added 18/10/20
+        
+    def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper):
+        zlist = self.ttable[line] # OA 18/10/20
+        nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
+        indx = argsort(lindx)    # OA moved 18/10/20        
+        #for ip in range(nper): # OA removed 18/10/20
+        buff, buf1 = '',[]
+        #if len(unique(zlist[:,iz]))>1 : flagTr = True # OA removed 18/10/20
+        for iz in range(nzones): # and each zones
+            val = zlist[iper,iz] # the value of the variable for the period
+            if ext in self.usgTrans.keys(): 
+                soption = self.usgTrans[ext][iper,iz]
+            else : soption =''
+            a = core.diczone['Modflow'].getValue(line,'value',iz)
+            if '$' in a: vparms = a.split('$')[1]
+            vnext = zlist[min(iper+1,self.nper-1),iz] #OA 7/8/17 pb of Chd
+            npz = len(lpts[iz])
+            for pt in range(npz): # for each zone the list of points
+                if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
+                    zbase = float(zvar[iz][pt])
+                else : 
+                    zbase = 0 # OA 25/4/19
+                if ext=='wel': 
+                    s1=lpts[iz][pt]+' %9.4e '%(float(val)*k[iz][pt]) #EV 20/02/19
+                elif ext=='chd': 
+                    s1=lpts[iz][pt]+' %9.4e %9.4e ' %(float(val)+zbase,float(vnext)+zbase)
+                elif ext=='drn': # elevation adding zbase (polyV), then cond.
+                    v1,v2 = vparms.split();#OA 6/6/20
+                    s1=lpts[iz][pt]+' %9.4e %9.4e ' %(float(v1)+zbase,float(v2))
+                elif ext=='ghb':
+                    a,cond = vparms.split(); #conductance steady (time & space)
+                    if flgTr: hd = float(val)
+                    else : hd = float(vparms.split()[0]) # OA 7/6/20 val-> vaprms
+                    s1=lpts[iz][pt]+' %9.4e %9.4e '%(hd+zbase,float(cond))
+                elif ext=='riv':
+                    a,cond,botm = vparms.split()
+                    if flgTr: stage = float(val)
+                    else : stage = float(vparms.split()[0]) # OA 7/6/20
+                    s1=lpts[iz][pt]+' %9.4e %9.4e %9.4e ' %(stage,float(cond),float(botm)+zbase)
+                buf1.append(s1+soption)
+        if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
+        else : buff += '\n'.join(buf1) + '\n'
+        #f1.write(buff) OA removed 18/10/20
+        #f1.close()  OA removed 18/10/20
+        return buff # OA 18/10/20
         
     def xyzone2Mflow(self,core,line,iz):
         """returns a list of layers, rows and cols from zones that will fit to modflow

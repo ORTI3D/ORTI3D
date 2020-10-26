@@ -55,10 +55,10 @@ class guiShow:
         self.visu.Glist = self.Glist
         self.curVar, self.curVarView = {},None
         modgroup = self.core.addin.getModelGroup()
-        self.mesh = False
-        if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
-        if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
-        if modgroup=='Modflow USG': self.mesh=True # OA 24/2/20
+#        self.mesh = False
+#        if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
+#        if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
+#        if modgroup=='Modflow USG': self.mesh=True # OA 24/2/20
         
     def openModel(self):
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
@@ -218,8 +218,8 @@ class guiShow:
         if self.swiImg =='Contour' and modgroup[:4] != 'Opge': # opgeo value at nodes
             X=(X[:,:-1]+X[:,1:])/2;X=X[1:,:]
             Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
-        #print 'guish 196',shape(arr3)
-        if self.mesh and self.core.getValueFromName('Modflow','MshType')>0: # OA 29/2/20
+        #print('guish 196',shape(arr3),self.mesh,self.core.getValueFromName('Modflow','MshType'))
+        if self.core.mfUnstruct and self.core.getValueFromName('Modflow','MshType')>0: # OA 24/10/20 mfUnstruct
             return None,None,arr3[section,:]
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:
@@ -240,7 +240,7 @@ class guiShow:
         """using a coordinate get the value of the current variable at
         this coordinates, using self.data which is a 2D array
         or """
-        if self.data == None or x==None or y==None or self.mesh: 
+        if self.data == None or x==None or y==None or self.core.mfUnstruct: #OA 24/10/20 removed mesh
             return ' '
         x0,y0 = self.data[0][0,:],self.data [1][:,0]
         d=x-x0; d1=d[d>0.]

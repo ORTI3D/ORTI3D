@@ -586,7 +586,8 @@ class Core:
         if line == 'btn.10': return abs(self.Zblock[1:]-self.Zblock[:-1]) #[-1::-1]
         ### generic writing
         vtype = self.dictype[modName][line]
-        nmedia = len(vtype)
+        nmedia = getNmedia(self) #OA 21/10/20
+        if len(vtype)<nmedia: vtype=[vtype[0]]*nmedia #OA 21/10/20
         intp=[]
         for i in range(nmedia):
             if vtype[i]=='importArray': intp.append(4) 

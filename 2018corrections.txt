@@ -1191,3 +1191,35 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 23/09/20 OA
 - importExport impZones l.40 replace \\n by \ (\\ added automatically by python reader)
 
+26/9/20  OA
+- geometry cellsunderpoly l.977-79 modified to get cells under a vertical or horizontal line
+- mtUsgKeywd transformed Iadsorb to Iadsrb (was taking Adsorb inside)
+
+27/9/20  OA
+- topbar l.154,155 modif to view curvariable for voronoi
+- qtVisualization l.326,327 modif for usg visualization of polygons (was linked to very old version of usg)
+
+28/9/20  OA
+- mfUsgWriter writePcbFile l.320 added a for zmesh return
+
+3/10  OA
+- modflowUsg l. 399 in transformVor replaced -1 by len(ip2)
+
+17/10  OA
+- in importExport modif impGridVar added the possibility to have several variables in gvar files
+- in modflowWriter writeTransientFile l.384 389 modif to write by array
+- modflowWriter writeTransientArray fully modified
+
+18/10 OA
+- modflowWriter writeTransient and writeTransientArray fully rewritten
+- modflowWriter write transientzones splitted in two (to be able to consider arrays) lot of transformations here
+- modflowWriter l.90 to 106 removed the condiitons to write the name of the file to .nam because we would have to add a condition on arrays, this the user is responsible when chosinf group in lmod
+
+21/10  OA
+- core l.588-589 added in getValueLong for cases wehre the type is too short for nb of media
+
+23/10  OA
+- modflowwriter again changes in writeTransientArray
+- in guishow commented l.58-61 in init : it was trying to find the type of model but before loading it, too early
+- guishow in getarray2d l.222 replacer slef.mesh by core.mfUnstrcut
+- same in guishow l.243 getpointvalue replace mesh

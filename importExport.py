@@ -179,19 +179,25 @@ class impFile:
             l0.append(s1[i+j].split())
         return array(l0)
     
-    def impGridVar(self,fileDir,fileName): #EV 02/04/20 #EV 28/04/20
+    def impGridVar(self,fileDir,fileName): #EV 02/04/20 #EV 28/04/20 #OA 17/10/20
         '''this imports a var file, 1st line 1 for a matrix oriented along increasing y
         and -1 for a modflow oriented grid (inverse to y), then spacing in x direction
-        spacing in y direction and then the matrix of values'''
+        spacing in y direction and then the matrix of values
+        if there are several variables, the number of variables is wrtten after ysign'''
         f1 = open(fileDir+os.sep+fileName,'r')
         s = f1.readlines()
-        ysign = int(s[0])  # OA added 13/6/20
         cols = [float(val) for val in s[1].split()]
-        rows=[float(val) for val in s[2].split()]
-        nc,nr=len(cols),len(rows)
-        lval = [[float(x) for x in line.split()] for line in s[3:]]
-        val = np.hstack(lval)
-        arr=val.reshape(nr,nc)
+        rows = [float(val) for val in s[2].split()]
+        nc,nr = len(cols),len(rows)
+        if len(s[0].split())==1: # OA modified 17/10/20
+            ysign = int(s[0]);nvar = 1
+        else :
+            ysign, nvar = [int(a) for a in s[0].split()]
+        arr = zeros((nvar,nr,nc))
+        for iv in range(nvar): # OA modified 17/10/20
+            for ir in range(nr):
+                arr[iv,ir,:] = [float(x) for x in s[iv*nr+ir+3].split()]
+        if nvar==1: arr=arr[0]
         return ysign,cols,rows,arr # OA added 13/6/20
                     
 class impObsData(QDialog) :
