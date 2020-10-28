@@ -1223,3 +1223,6 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - in guishow commented l.58-61 in init : it was trying to find the type of model but before loading it, too early
 - guishow in getarray2d l.222 replacer slef.mesh by core.mfUnstrcut
 - same in guishow l.243 getpointvalue replace mesh
+
+28/10 EV
+- core.py l 320 change modflow usg exe name

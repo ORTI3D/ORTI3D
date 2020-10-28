@@ -317,7 +317,7 @@ class Core:
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName in ['Modflow','Modflow_USG']:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
-            if 'USG' in modName: mod,lastline = 'mfUSGs_1_3',7 # OA 9/2/20
+            if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
