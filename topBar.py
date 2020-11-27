@@ -140,19 +140,30 @@ class BaseTop:
         if retour == [''] : 
             self.core.dictype[model][ll][media]='one_value'
         
-    def getCurVariable(self):
+    def getCurVariable(self,var): #EV 26.11.20
         """used to see the current variable for current medium"""
         mod = self.gui.currentModel
         line = self.gui.currentLine
         opt, iper, plane, section = None,0, 'Z',self.gui.currentMedia; #print 'guisho 275',line,self.curVar
 #        if self.curVar.has_key(line): 
 #            mat = self.curVar[line]*1
-#        else:
-        mat = self.core.getValueLong(mod,line,0)*1;#print 'topb 210',shape(mat)
+        if line in ['drn.1','riv.1','ghb.1']:
+            if self.core.dictype[mod][line][section]=='importArray':
+             #EV 26.11.20
+                mat =  self.getTransientArray(line,var)
+                mat = np.array(mat)
+                section=0
+            else: 
+                mat=zone2grid(self.core,mod,line,section,opt=var,iper=0)
+                mat=np.array([mat]) ; section=0
+                #mat = self.core.getValueLong(mod,line,0)*1
+                #print('1',mat)
+        else:
+            mat = self.core.getValueLong(mod,line,0)*1;#print 'topb 210',shape(mat)
         #self.curVar[line] = mat*1;
         X,Y = getXYmeshSides(self.core,plane,section)
-        if self.core.addin.getModelGroup()=='Opgeo':
-            return None,None,mat[0][0]
+        if 'USG' in self.core.addin.getModelGroup(): # OA 20/11/20
+            return None,None,mat[0]
         if self.core.addin.getDim() in ['Radial','Xsection']:
             m2 = mat[-1::-1,0,:]
         else :
@@ -160,7 +171,26 @@ class BaseTop:
             elif plane=='Y': m2 = mat[:,section,:]
             elif plane=='X': m2 = mat[:,:,section]
         return X,Y,m2
-            
+    
+    def getTransientArray(self,line,var): #EV 26.11.20
+        line=line.split('.')[0]
+        if line=='drn': nvar = 2
+        if line=='riv': nvar = 3 
+        if line=='ghb': nvar = 2
+        im=self.gui.currentMedia
+        flgU = False # flgU unstructured
+        if self.core.addin.mesh == None: xx,yy=getXYmeshCenters(self.core,'Z',0)
+        else : m = self.core.addin.mesh.getCenters();xx,yy = m[0],m[1];flgU=True
+        ncell_lay = len(xx)
+        ysign,gdx,gdy,arr = self.core.importGridVar(self.core.fileDir,line+str(im)+'.gvar')
+        if ysign==-1:
+            if gdy != None: gdy = gdy[-1::-1]*1
+        intp = False;arr2 = [];grd = self.core.addin.getFullGrid()
+        for iv in range(nvar): 
+            arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
+        arr3=[arr2[var]]
+        return arr3
+        
     def onZoneCreate(self, typeZone, xy):
         """ zone drawn in visu, we get coords
         and open the dialog to fill it

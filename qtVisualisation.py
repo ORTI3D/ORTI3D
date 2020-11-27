@@ -14,6 +14,7 @@ import matplotlib.pylab as pl
 from matplotlib.patches import RegularPolygon,Polygon
 from matplotlib.lines import Line2D
 from matplotlib.collections import PolyCollection,LineCollection
+from mpl_toolkits.axes_grid1 import make_axes_locatable #EV 26.11.20
 
 #pour l'affichage d'une carte de fond
 import matplotlib.image as Im
@@ -99,7 +100,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.toolbar = Toolbar(self,gui)
         self.toolbar.setFixedWidth(350)
         # ajout du subplot a la figure
-        self.cnv = self.fig.add_axes([.05,.05,.9,.9]) #left,bottom, wide,height     
+        self.cnv = self.fig.add_axes([.1,.05,.8,.9]) #left,bottom, wide,height     
         #self.toolbar.update()    
         self.pos = self.mpl_connect('motion_notify_event', self.onPosition)
         
@@ -173,7 +174,9 @@ class qtVisualisation(FigureCanvasQTAgg):
         #print('qtVis',self.gui.guiShow.swiImg,dataM)
         if dataM == None : self.drawContour(False)
         else : # modifs below 22/8/19
+            self.cbar=None #EV 26.11.20
             if self.gui.guiShow.swiImg == 'Contour':
+                #if self.cbar : self.cbar.remove()
                 self.createContour(dataM,value,color)
             elif self.gui.guiShow.swiImg == 'Image':
                 self.createImage(dataM)
@@ -185,6 +188,9 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.createVector(dataV)
         
     def drawObject(self,typObj,bool):
+        try : self.cbar.remove() #EV 26.11.20
+        except : 
+            self.cbar = None
         if typObj == 'Map' and self.Map == None and bool == False : return
         exec('self.draw'+typObj+'('+str(bool)+')')
         
@@ -319,33 +325,36 @@ class qtVisualisation(FigureCanvasQTAgg):
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
         if self.mesh==None: # classical square grid
             image=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
-            self.cnv.images=[image]
-        elif modgroup[:5] == 'Modfl' :
-            data = data[-1][0]# first values are coordinates, and its 3D
-            data_sc = (data-amin(data))/(amax(data)-amin(data));#print data
-            vts=self.mesh.myv.cverts # for mfU
-            xyv=self.mesh.myv.xyverts
-            nnod,a = shape(self.mesh.myv.nodes)
-            pc=[list(zip(xyv[vts[i],0],xyv[vts[i],1])) for i in range(nnod)]
-            self.polyC = PolyCollection(pc,facecolors=cm.jet(data_sc))
-            if len(self.cnv.collections)==3:
-                self.cnv.collections.append(self.polyC) #self.polyC
-            else :
-                self.cnv.collections[3] = self.polyC
-            self.polyC.set_visible(True)
-            self.polyC.set_transform(self.transform)
-        elif modgroup[:5] == 'Opgeo' :
-            opgeo = self.core.addin.opgeo
-            image=plt.tripcolor(self.Triangles,Z1[0],shading='gouraud')#PolyCollection(polys) #plt.tripcolor(triang, z, shading='gouraud', cmap=plt.cm.rainbow)
+#        elif modgroup[:5] == 'Modfl' : ## lines commented by OA 20/11/20
+#            data = data[-1][0]# first values are coordinates, and its 3D
+#            data_sc = (data-amin(data))/(amax(data)-amin(data));#print data
+#            elx=self.mesh.elx
+#            ely=self.mesh.ely
+#            nnod,a = shape(self.mesh.myv.nodes)
+#            pc=[list(zip(xyv[vts[i],0],xyv[vts[i],1])) for i in range(nnod)]
+#            self.polyC = PolyCollection(pc,facecolors=cm.jet(data_sc))
+#            if len(self.cnv.collections)==3:
+#                self.cnv.collections.append(self.polyC) #self.polyC
+#            else :
+#                self.cnv.collections[3] = self.polyC
+#            self.polyC.set_visible(True)
+#            self.polyC.set_transform(self.transform)
+        elif 'USG' in modgroup:
+            image=plt.tripcolor(self.Triangles,Z1)#
             #image.set_transform(self.transform)
             #image.set_edgecolor('none')
         #print 'qtVis 336',self.cnv.collections,self.fig.dpi             
+        self.cnv.images=[image] # OA 20/11/20 removed from frist condition, put here
+        divider = make_axes_locatable(self.cnv) #EV 26.11.20
+        caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
+        self.cbar=self.fig.colorbar(image,cax=caxis) #EV 26.11.20
         self.redraw()
         
     def drawImage(self,bool):
         if len(self.cnv.images)>0:
             self.cnv.images[0].set_visible(bool)
             self.redraw()
+            if self.cbar : self.cbar.remove() #EV 26.11.20
 
     #####################################################################
     #             Gestion de l'affichage des contours

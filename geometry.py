@@ -330,9 +330,9 @@ def blockUnstruct(core,modName,line,intp,opt,iper):
 #        for im in range(1,getNmedia(core)):
 #            m = r_[m,array(zone2mesh(core,modName,line,im),ndmin=2)]
 #        return m
-
     m0 = ones((getNlayers(core),core.addin.mesh.getNumber('elements')))
     nmedia = getNmedia(core)
+    if type(intp) != type([5,6]) : intp=[0]*nmedia # OA added 28/10/20
     lilay = getNlayersPerMedia(core)
     lay = 0
     for im in range(nmedia): # 3D case, includes 2D
@@ -347,6 +347,8 @@ def blockUnstruct(core,modName,line,intp,opt,iper):
             if a.size == 0 : 
                 a = zone2mesh(core,modName,line,im)
                 core.dictype[modName][line][im]='one_value'
+        else : # OA added 28/10/20
+            a = zone2mesh(core,modName,line,im)            
         for il in range(int(lilay[im])): # several layers can exist in each media
             m0[lay]=a
             lay +=1
@@ -517,7 +519,10 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
                 if diczone['name'][i] in opt: 
                     zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
                 else : continue
-            else : zv0=float(core.ttable[line][iper,i])
+            else :
+                if line in ['drn.1','riv.1','ghb.1']: #EV 26/11/20
+                    zv0=float(core.ttable[line][iper,i].split()[opt])
+                else : zv0=float(core.ttable[line][iper,i])
         if line != 'obs.1' and opt=='zon': zv0=i+1 # OA added 8/5/19 #EV 26/02/20
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
@@ -537,6 +542,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
             if ndim==3: continue # a zone with z value is not filled!!
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m0, ind==1, [zv0])
+    #if line =='drn.1':print('m0',m0)
     return array(m0)
 
 def fillZone(nx,ny,nxp,nyp,nzp):
@@ -974,9 +980,9 @@ def cellsUnderPoly(core,dicz,media,iz):
         dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
         dpos = array(dpos)
         dst0,dst1 = sqrt((x[0]-xc)**2+(y[0]-yc)**2),sqrt((x[1]-xc)**2+(y[1]-yc)**2) # OA 24/7/20
-        idx0 = amin(dst0)==dst0;idx1 = amin(dst1)==dst1; # OA 24/7/20
-        x0,x1 = min(xc[idx0]),max(xc[idx1])
-        y0,y1 = min(yc[idx0]),max(yc[idx1])
+        idx0 = amin(dst0)==dst0;idx1 = amin(dst1)==dst1; # index of ends of line OA 24/7/20
+        x0,x1 = min(xc[idx0],xc[idx1]),max(xc[idx0],xc[idx1])  # OA 28/10/20
+        y0,y1 = min(yc[idx0],yc[idx1]),max(yc[idx0],yc[idx1])  # OA 28/10/20
         idx = (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
         ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
         indx += idx

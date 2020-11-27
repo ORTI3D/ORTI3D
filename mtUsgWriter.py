@@ -26,11 +26,13 @@ class mtUsgWriter:
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)#;print('writempht l.26',self.nper)
         usgTrans['nam'] = self.writeNamString(opt)
-        if amax(self.core.getValueLong('MfUsgTrans','crch.1',0))>0: 
-            usgTrans['rch'] = self.writeRchString()
+        rc1 = self.core.getValueLong('MfUsgTrans','crch.1',0) # OA 28/10/20
+        rc2 = self.core.getValueLong('Pht3d','ph.5',0)
+        if (amax(rc1)>0) or (amax(rc2)>0): 
+            usgTrans['rch'] = self.writeRchString(opt)
         if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
             usgTrans['wel'] = self.writeWelValues(opt)            
-        if 'bct.20' in self.core.diczone['MfUsgTrans'].dic.keys():
+        if 'cchd.1' in self.core.diczone['MfUsgTrans'].dic.keys(): # OA 28/10/20 modifs
             usgTrans['chd'] = self.writeChdValues(opt)            
         self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         self.writeBCT(opt)
@@ -126,9 +128,9 @@ class mtUsgWriter:
         dictE = self.core.addin.pht3d.getDictSpecies()
         Chem = self.core.addin.pht3d.Base['Chemistry']
         pht = self.core.getValueLong('Pht3d',line,0)
-        dim = self.core.addin.getDim()
-        grd = self.core.addin.getFullGrid()
-        dx,ny = array(grd['dx']),int(grd['ny'])
+        #dim = self.core.addin.getDim()
+        #grd = self.core.addin.getFullGrid()
+        # dx,ny = array(grd['dx']),int(grd['ny']) # OA 28/10/20 useless line
         if typ=='rech': pht=pht[0] # only the 1st layer for recharge
         dInd={'Solutions':pht/1000.,
               'Phases':mod(pht,1000)/100,'Gases':mod(pht,1000)/100,
@@ -241,21 +243,30 @@ class mtUsgWriter:
     def writeRchString(self,opt=None):
         '''this list of strings will be used by modflow, one string for each
         stress period'''
-        ls = []
+        ls = [] # OA 28/10/20 added trch, prch lines below and conditions for each perdio or same recharge
+        trch,prch = ones(self.nper),ones(self.nper); zrch = False # a constant value over the domain
+        if 'ph.5' in self.ttable:
+            prch = self.ttable['ph.5']; zrch = True
+        if 'crch.1' in self.ttable:
+            trch = self.ttable['crch.1']; zrch = True
         for iper in range(self.nper): 
             if (opt=='Pht3d'):
-                s = ''
-                self.Conc, self.Names = self.getConcRch('ph.3',iper=0);
-                nspec = len(self.Names)
-                for i in range(nspec):
-                    s += self.formatBlockMusg(self.Conc[i],self.Names[i])
-                ls.append(s)
+                if (iper==0) or (prod(prch[iper]==prch[iper-1])==0): #values diff than previous
+                    s = 'CONSTANT     0.00 \n'*3
+                    self.Conc, self.Names = self.getConcRch('ph.5',iper=0);  # OA 28/10/20
+                    nspec = len(self.Names)
+                    for i in range(nspec-2): # don't write pH and pE
+                        s += self.formatMatMt(self.Conc[i][0],self.Names[i])+'\n'  # OA 28/10/20
+                    ls.append(s)
+                else : ls.append('    -1  \n')
             else :
-                m = block(self.core,'MfUsgTrans','crch.1',False,None,iper);
-                ls.append(self.writeVecModflow(m[0],'arrfloat'))
+                if (iper==0) or (prod(trch[iper]==trch[iper-1])==0): #values diff than previous
+                    m = block(self.core,'MfUsgTrans','crch.1',False,None,iper);
+                    ls.append(self.writeVecModflow(m[0],'arrfloat'))
+                else : ls.append('    -1  \n')
         return ls
 
-    def getConcRch(self,typ,line,iper=0):
+    def getConcRch(self,line,iper=0):
         """returns the concentrations arrays to be printed for recharge
         order : 'k','i','kim','g',
         """

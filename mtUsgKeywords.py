@@ -16,12 +16,14 @@ class  Mtu:
         self.longNames={'BCT':'major transport parameters',
         'PCB': 'prescribed concentrations at boundaries',
         'CRCH':' Conc. in recharge',
+        'CRIV':' Conc. in rivers',
+        'CCHD':' Conc. at transient head BC',
         'CWELL': 'Conc at inj. wells'}
         
         self.lines={
             #BCT
         'bct.1a': {'comm':'Main flags','cond':'',
-        'kw': ['ITRNSP','IBCTCB','MCOMP','ICBNDFLG','ITVD','IADSORB','ICT','CINACT','CICLOSE',\
+        'kw': ['ITRNSP','IBCTCB','MCOMP','ICBNDFLG','ITVD','IADSRB','ICT','CINACT','CICLOSE',\
         'IDISP','IXDISP','DIFFNC','IZOD','IFOD','IFMBC','IHEAT','NIMCOMP','IDISPCLN','NSEQITR',\
         'ITRNSP'],
         'detail' : [
@@ -65,7 +67,7 @@ class  Mtu:
         'kw': ['PRSITY'],'detail': ['Porosity'],
         'type':['arrfloat'],'default':[0.25]},
         # bulk density
-        'bct.4': {'comm':'Bulk density','cond':'IADSORB>0',
+        'bct.4': {'comm':'Bulk density','cond':'IADSRB>0',
         'kw': ['BULKD'],'detail': ['Bulk density'],
         'type':['arrfloat'],'default':[1.8]},
         # angle dispersivity
@@ -81,11 +83,11 @@ class  Mtu:
         'kw': ['DT'],'detail': ['transv Disp.'],
         'type':['arrfloat'],'default':[0.1]},
         # linear sorption
-        'bct.14': {'comm':'Sorption', 'cond':'IADSORB!=0',
+        'bct.14': {'comm':'Sorption', 'cond':'IADSRB!=0',
         'kw': ['ADSORB'],'detail': ['Kd'],
         'type':['arrfloat'],'default':[0.]},
         # freundlich
-        'bct.15': {'comm':'Sorption 2nd', 'cond':'IADSORB==2',
+        'bct.15': {'comm':'Sorption 2nd', 'cond':'IADSRB==2',
         'kw': ['FLICH'],'detail': ['Freundlich'],
         'type':['arrfloat'],'default':[0.]},
         # zero order decay water
@@ -93,7 +95,7 @@ class  Mtu:
         'kw': ['ZODRW'],'detail': ['Oth coeff'],
         'type':['arrfloat'],'default':[0.]},
         # zero order decay soil
-        'bct.17': {'comm':'zero order decay (S)', 'cond':'(IADSORB!=0) and (IZOD in [2,3])',
+        'bct.17': {'comm':'zero order decay (S)', 'cond':'(IADSRB!=0) and (IZOD in [2,3])',
         'kw': ['ZODRS'],'detail': ['Oth coeff'],
         'type':['arrfloat'],'default':[0.]},
         # first order decay water
@@ -101,7 +103,7 @@ class  Mtu:
         'kw': ['FODRW'],'detail': ['1sto coeff'],
         'type':['arrfloat'],'default':[0.]},
         # first order decay soil
-        'bct.19': {'comm':'1st order decay (S)', 'cond':'(IADSORB!=0) and (IFOD in [2,3])',
+        'bct.19': {'comm':'1st order decay (S)', 'cond':'(IADSRB!=0) and (IFOD in [2,3])',
         'kw': ['FODRS'],'detail': ['1sto coeff'],
         'type':['arrfloat'],'default':[0.]},
         # initial concentrations (including T and immobile species
@@ -124,13 +126,16 @@ class  Mtu:
         'type':['arrfloat'],'default':[0.]},
         ## CWELL
         'cwell.1': {'comm':'Well concentrations', 'cond':'',
-        'kw': ['RCHCONC'],'detail': [''],
+        'kw': ['WELLCONC'],'detail': [''],
+        'type':['arrfloat'],'default':[0.]},
+        ## CRIV
+        'criv.1': {'comm':'River concentrations', 'cond':'',
+        'kw': ['RIVCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
         ## CGHB
-        'cghb.1': {'comm':'GHB concentrations', 'cond':'',
-        'kw': ['RCHCONC'],'detail': [''],
+        'cghb.1': {'comm':'Well concentrations', 'cond':'',
+        'kw': ['GHBCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
-
         ## DPT
         'dpt.1': {'comm':'dummy', 'cond':'',
         'kw': ['dummy1'],'detail': [''],

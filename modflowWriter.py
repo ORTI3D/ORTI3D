@@ -318,7 +318,7 @@ class modflowWriter:
         f1=open(self.fullPath +'.'+ ext.lower(),'w')
         llist=self.Fkey.groups[grp];
         for ll in llist:
-            cond=self.Fkey.lines[ll]['cond'];print('writing ',ll)
+            cond=self.Fkey.lines[ll]['cond']#;print('writing ',ll)
             if self.testCondition(cond)==False : continue
             kwlist=self.Fkey.lines[ll]['kw']
             ktyp=self.Fkey.lines[ll]['type'];#print 'mfw',ktyp
@@ -380,8 +380,14 @@ class modflowWriter:
     def writeTransientFile(self,core,line,ext):
         """this method write files that have point location (wells, variable head)
         which are transient but can be permanent for wells"""
-        ltyp=core.dictype['Modflow'][line];print('w transient ',line)
+        ltyp=core.dictype['Modflow'][line]#;print('w transient ',line)
         npts,lpts,lindx,zvar,k = self.writeTransientZones1(core,line,ext)
+        if line == 'drn.1' : 
+            print(npts)
+            print(lpts)
+            print(lindx)
+            print(zvar)
+            print(k)
         s,sA,nA = '','',0
         if 'importArray' in ltyp: # OA 17/10/20
             for im in range(self.nlay):
@@ -397,7 +403,7 @@ class modflowWriter:
         s += '\n'
         for iper in range(self.nper):
             s += str(npts+nA)
-            if ext == 'wel': s +='  0  0'
+            #if ext == 'wel': s +='  0  0'
             s += '\n'+sA
             if npts>0 : s += self.writeTransientZones2(core,line,ext,lindx,lpts,zvar,k,iper)
         f1=open(self.fullPath +'.'+ ext,'w');f1.write(s);f1.close()
@@ -416,7 +422,7 @@ class modflowWriter:
         ysign,gdx,gdy,arr = core.importGridVar(self.fDir,ext+str(im)+'.gvar')
         if ysign==-1:
             if gdy != None: gdy = gdy[-1::-1]*1
-            for iv in range(nvar): arr[iv] = arr[iv,-1::-1,:]*1
+#            for iv in range(nvar): arr[iv] = arr[iv,-1::-1,:]*1
         intp = False;arr2 = [];grd = core.addin.getFullGrid()
         for iv in range(nvar): 
             arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
@@ -424,13 +430,13 @@ class modflowWriter:
         s = ''
         for il in llay: #these are the layer sin the present media
             if flgU : 
-                lc = where(arr2[indx]!=0)[0]
+                lc = where(arr2[indx]!=0)
                 for i in range(len(lc)):
                     s += ' %9i '%(il*ncell_lay+lc[i]+1)
                     for iv in range(nvar): s += ' %9.4e'%arr2[iv][lc[i]]
                     s += '\n'
             else : 
-                lrow,lcol = where(arr2[indx]!=0)[0]
+                lrow,lcol = where(arr2[indx]!=0)
                 for i in range(len(lrow)):
                     s += ' %9i %9i %9i '%(il+1,lrow[i]+1,lcol[i]+1)
                     for iv in range(nvar): s += ' %9.4e'%arr2[iv][lrow[i],lcol[i]]
@@ -479,6 +485,7 @@ class modflowWriter:
             if '$' in a: vparms = a.split('$')[1]
             vnext = zlist[min(iper+1,self.nper-1),iz] #OA 7/8/17 pb of Chd
             npz = len(lpts[iz])
+            flgTr=None
             for pt in range(npz): # for each zone the list of points
                 if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
                     zbase = float(zvar[iz][pt])

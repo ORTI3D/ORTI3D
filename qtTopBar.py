@@ -35,75 +35,84 @@ class Ui_Var(object):
         self.hlWidget = QWidget(Var) #(self.group)
         self.hlWidget.setGeometry(QRect(5, 20,(width*0.55), 25))
         self.gridLayout = QHBoxLayout(self.hlWidget)
-        self.gridLayout.setContentsMargins(1,1,1,1)
+        self.gridLayout.setContentsMargins(1,1,10,1)
         self.gridLayout.setSpacing(2)
 
         #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.choiceM = QComboBox(self.hlWidget)
         #self.choiceM.setSizePolicy(policy)
         self.choiceM.setMaximumWidth(100);#setGeometry(QRect(0, 0, 45, 18))
+        view =  QListView() ; view.setMinimumWidth(150) # creat and set the width ListView
+        self.choiceM.setView(view)
         self.choiceM.activated['QString'].connect(self.onChoiceModel)
-        self.gridLayout.addWidget(self.choiceM)#, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.choiceM, 0)
 
         self.choiceG = QComboBox(self.hlWidget)
         #self.choiceG.setSizePolicy(policy)
         self.choiceG.setMaximumWidth(65);
         self.choiceG.activated['QString'].connect(self.onChoiceGroup)
-        self.gridLayout.addWidget(self.choiceG)#, 0, 1, 1, 1)
+        self.gridLayout.addWidget(self.choiceG, 1)
 
         self.choiceL = QComboBox(self.hlWidget)
-        view =  QListView() ; view.setMinimumWidth(300) # creat and set the width ListView
-        self.choiceL.setView(view)
+        #self.choiceL.setMaximumWidth(300);
+        view2 =  QListView(self.choiceL) ; view2.setMinimumWidth(300) # creat and set the width ListView
+        self.choiceL.setView(view2)
         #self.choiceL.setSizePolicy(policy)
-        self.choiceL.setMaximumWidth(300);
         self.choiceL.activated['QString'].connect(self.onChoiceLine)
-        self.gridLayout.addWidget(self.choiceL)#, 0, 2, 1, 1)
+        self.gridLayout.addWidget(self.choiceL,2)
 
         label = QLabel(self.hlWidget)
-        label.setText(" Media")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
-        label.setFixedWidth(55)
+        label.setText("     Media")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
+        #label.setFixedWidth(55)
         self.gridLayout.addWidget(label)
         self.choice3D = QComboBox(self.hlWidget)
         #self.choice3D.setSizePolicy(policy)
         self.choice3D.setMaximumWidth(55);
         self.choice3D.activated['QString'].connect(self.onChoiceMedia)
-        self.gridLayout.addWidget(self.choice3D)#, 0, 4, 1, 1)
+        self.choice3D.activated['QString'].connect(self.onViewVariable)
+        self.gridLayout.addWidget(self.choice3D, 3)
 
         label = QLabel(self.hlWidget)
-        label.setText(" Backg.")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
-        label.setFixedWidth(55)
+        label.setText("     Backg.")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
+        #label.setFixedWidth(55)
         self.gridLayout.addWidget(label)
         self.backg = QLineEdit(self.hlWidget)
         #self.backg.setSizePolicy(policy)
-        self.backg.setMaximumWidth(40);
+        self.backg.setMaximumWidth(55);
         #self.backg.returnPressed.connect(self.onBackOk) # OA removed 25/9/18
         self.gridLayout.addWidget(self.backg)
         
         self.butOK = QPushButton(self.hlWidget) # OA added 25/9/18
-        self.butOK.setMaximumWidth(25)    # OA added 25/9/18         
+        self.butOK.setMaximumWidth(30)    # OA added 25/9/18         
         self.butOK.setText('Ok')    # OA added 25/9/18         
         self.butOK.clicked.connect(self.onBackOk)  # OA added 25/9/18
         self.gridLayout.addWidget(self.butOK)  # OA added 25/9/18
 
         label = QLabel(self.hlWidget)
-        label.setText(" Type")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
-        label.setFixedWidth(45)
+        label.setText("     Type")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
+        #label.setFixedWidth(45)
+        view =  QListView() ; view.setMinimumWidth(100) # creat and set the width ListView
+        self.choiceL.setView(view)
         self.gridLayout.addWidget(label)
         self.choiceT = QComboBox(self.hlWidget)
         #self.choiceT.setSizePolicy(policy)
-        self.choiceT.setMaximumWidth(120);
+        #self.choiceT.setMaximumWidth(120);
         self.typeList = ['one_value','zone','formula','interpolate','importArray','importZones'] # EV 04/02/20
         self.choiceT.addItems(self.typeList)
         self.choiceT.activated['QString'].connect(self.onChoiceType)
         self.gridLayout.addWidget(self.choiceT)#, 0, 8, 1, 1)
 
         label = QLabel(self.hlWidget)
-        label.setText(" View")#;label.setSizePolicy(policy);label.setMaximumWidth(25)
-        label.setMaximumWidth(45)
+        label.setText("     View")#;label.setSizePolicy(policy);label.setMaximumWidth(25)
+        #label.setMaximumWidth(45)
         self.gridLayout.addWidget(label)
+        self.choiceV = QComboBox(self.hlWidget) #EV 26.11.20
+        self.choiceV.setMaximumWidth(55);
         self.chkView = QCheckBox(self.hlWidget)  
-        self.chkView.stateChanged.connect(self.onViewVariable)       
-        self.gridLayout.addWidget(self.chkView)#, 0, 8, 1, 1)
+        self.choiceV.activated['QString'].connect(self.onViewVariable)
+        self.chkView.stateChanged.connect(self.onViewVariable)
+        self.gridLayout.addWidget(self.chkView)
+        self.gridLayout.addWidget(self.choiceV)
         
         self.retranslateUi(Var)
         QMetaObject.connectSlotsByName(Var)
@@ -175,6 +184,7 @@ class Ui_Var(object):
         self.choiceT.setCurrentIndex(i)
         self.gui.modifBox.updateChoiceZone(line)
         self.base.changeVisu()
+        self.onSetVariable() #EV 26.11.20
             
     def onChoiceMedia(self,evt):
         """changes the media in visualization and stores the current media"""
@@ -211,11 +221,21 @@ class Ui_Var(object):
     def onEdit(self):
         pass
     
+    def onSetVariable(self): #EV 26.11.20
+        line = str(self.choiceL.currentText()).split()[0]
+        if line in ['drn.1','ghb.1']: lvar =['1','2']
+        elif line=='riv.1': lvar = ['1','2','3']
+        else :lvar = ['1']
+        self.setChoiceList(self.choiceV,lvar)
+        #self.onViewVariable()
+    
     def onViewVariable(self):
         """used to see the current variable for current medium"""
+        var = self.choiceV.currentIndex() #EV 26.11.20
         if self.chkView.isChecked(): 
-            X,Y,mat = self.base.getCurVariable()
+            X,Y,mat = self.base.getCurVariable(var)
             self.gui.visu.createImage([X,Y,mat])
+            self.gui.visu.drawImage(True)
         else :
             self.gui.visu.drawImage(False)
             
@@ -314,7 +334,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 28/10/2020 ")
+        version = QLabel("       version 27/11/2020 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

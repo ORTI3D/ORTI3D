@@ -71,7 +71,7 @@ class orti3dGui(QMainWindow):
     def myExceptionHandler(self, type, value, trace_b): # OA added 25/9/18
         """Catch exceptions and show error dialog"""
         f = traceback.format_tb(trace_b, limit=10) # OA modif 1/10
-        onMessage(self,'\n'.join(f[-5:])+'\n'+str(value))
+        onMessage(self,'\n'.join(f[-10:])+'\n'+str(value))
         
     def on3D(self,bool):
         boutonVisible(self,'Ad_3D',bool) #EV 05/08/19

@@ -172,24 +172,26 @@ class modflowUsg:
         the length and distances are the same for each layer, except the one added for 3d
         carea1 is calculated for consistency in searching area'''
         ncell2d = self.ncell*1
-        # 1st layer
-        cneighb0, cdist0, carea0, fahl0 = self.cneighb, self.cdist, self.carea,self.fahl
-        cneighb1, cdist1, carea1, fahl1 = [],[],[],[]
+        cneighb0,cdist0,carea0,fahl0,angl0 = self.cneighb,self.cdist,self.carea,self.fahl,self.angl
+        cneighb1, cdist1, carea1, fahl1, angl1 = [],[],[],[],[]
         for il in range(nlay):
             if il==0: # add the cell below
                 cneighb1.extend([r_[array(cn),i+ncell2d] for i,cn in enumerate(cneighb0)])
                 cdist1.extend([r_[array(cd), thk[0,i]/2] for i,cd in enumerate(cdist0)])
                 fahl1.extend([r_[array(fl)*thk[0,i],carea0[i]] for i,fl in enumerate(fahl0)]) 
+                angl1.extend([r_[array(ag),0] for i,ag in enumerate(angl0)]) 
             elif il==nlay-1: # add the cell on top
                 cneighb1.extend([r_[array(cn)+il*ncell2d,i+(il-1)*ncell2d] for i,cn in enumerate(cneighb0)])
                 cdist1.extend([r_[array(cd), thk[-1,i]/2] for i,cd in enumerate(cdist0)])
                 fahl1.extend([r_[array(fl)*thk[-1,i],carea0[i]] for i,fl in enumerate(fahl0)]) 
+                angl1.extend([r_[array(ag),0] for i,ag in enumerate(angl0)]) 
             else : # add both cell on top and blow
                 cneighb1.extend([r_[array(cn)+il*ncell2d,i+(il-1)*ncell2d,i+(il+1)*ncell2d] for i,cn in enumerate(cneighb0)])
                 cdist1.extend([r_[array(cd), thk[il-1,i]/2, thk[il+1,i]/2] for i,cd in enumerate(cdist0)])
                 fahl1.extend([r_[array(fl)*thk[il,i],carea0[i],carea0[i]] for i,fl in enumerate(fahl0)]) 
+                angl1.extend([r_[array(ag),0,0] for i,ag in enumerate(angl0)]) 
             carea1.extend(carea0)
-        self.cneighb, self.cdist, self.fahl,self.carea1 = cneighb1, cdist1, fahl1,carea1
+        self.cneighb,self.cdist,self.fahl,self.carea1,self.angl = cneighb1,cdist1,fahl1,carea1,angl1
         self.ncell =  ncell2d*nlay
         self.ncell_lay =  ncell2d
         self.nconnect = self.nconnect*nlay+ncell2d*2*(nlay-1)

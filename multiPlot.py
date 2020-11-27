@@ -320,7 +320,7 @@ class multiPlot(QDialog):
                                 for l in range(len(layers)):
                                     xobs,yobs,lobs=self.getDataObs(self.splist[j],self.zolist[i],layers[l])
                                     if len(yobs)!=0 :
-                                        color=j*len(layers)+layers.index(lobs) #EV 26/08/19
+                                        color=j*len(layers)+layers.index(int(lobs)) #EV 26/08/19 #EV 26.11.20
                                         myplot2=self._ax.plot(xobs,yobs,c='C'+str(color),marker='x',linestyle = 'None') #EV 26/08/19
                                         if group!='Chemistry':self.llabel.append('lay'+str(lobs)+'(obs)')
                                         else : self.llabel.append(str(self.splist[j])+'_lay'+str(lobs)+'(obs)')
