@@ -366,6 +366,7 @@ class multiPlot(QDialog):
             iper: list of time for time-series, 1 value for profile
             axlabel and aylabel of the different type of graph
             the group for onPtObs for '''
+        iper = 0 ; axlabel=None
         utime=self.core.getUnits('Modflow','dis.8',0)[:-1]
         if utime == '': utime='T'
         ulength=self.core.getUnits('Modflow','dis.4',0)

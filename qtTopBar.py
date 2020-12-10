@@ -54,8 +54,8 @@ class Ui_Var(object):
         self.gridLayout.addWidget(self.choiceG, 1)
 
         self.choiceL = QComboBox(self.hlWidget)
-        #self.choiceL.setMaximumWidth(300);
-        view2 =  QListView(self.choiceL) ; view2.setMinimumWidth(300) # creat and set the width ListView
+        self.choiceL.setMaximumWidth(100);
+        view2 =  QListView(self.choiceL) ; view2.setMinimumWidth(250) # creat and set the width ListView
         self.choiceL.setView(view2)
         #self.choiceL.setSizePolicy(policy)
         self.choiceL.activated['QString'].connect(self.onChoiceLine)
@@ -91,10 +91,10 @@ class Ui_Var(object):
         label = QLabel(self.hlWidget)
         label.setText("     Type")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
         #label.setFixedWidth(45)
-        view =  QListView() ; view.setMinimumWidth(100) # creat and set the width ListView
-        self.choiceL.setView(view)
         self.gridLayout.addWidget(label)
         self.choiceT = QComboBox(self.hlWidget)
+        view3 =  QListView() ; view3.setMinimumWidth(100) # creat and set the width ListView
+        self.choiceT.setView(view3)
         #self.choiceT.setSizePolicy(policy)
         #self.choiceT.setMaximumWidth(120);
         self.typeList = ['one_value','zone','formula','interpolate','importArray','importZones'] # EV 04/02/20
@@ -334,7 +334,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 27/11/2020 ")
+        version = QLabel("       version 10/12/2020 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

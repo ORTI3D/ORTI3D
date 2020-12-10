@@ -283,6 +283,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         for i in [0,1]: 
             self.Grid[i].set_transform(self.transform)
             self.Grid[i].set_color(col);
+            self.Grid[i].set_linewidth(0.5) #EV 10/12/2020
         self.redraw()
         
     def drawGrid(self, bool):

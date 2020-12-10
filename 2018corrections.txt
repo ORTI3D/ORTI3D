@@ -1257,3 +1257,10 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modfloWriter writeTransientZones2 line 496, 501 what is flgTr ? Error : name 'flgTr' is not defined line 482 flgTr=None added 
 - modfloWriter writeTransientFile line 400 why "if ext == 'wel': s +='  0  0'" ? Error when run modflow model with mf2k_PMwin.exe, line commented
 - geometry zone2grid lines 522-524 added to choose the variable to view for multivariable parameters drn, riv, ghb
+
+09/12/20 EV
+- qtvisualization line 286 add line_width option to get thinner grid line (asked by dimitri)
+
+10/12/20  OA
+- modflowWriter l.428 readded [0] to have a list 
+- modflowriter l.401 re-added the 0 0 but only for usg models

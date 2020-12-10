@@ -55,7 +55,7 @@ class modflowWriter:
                 self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
             if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
-                self.writeTransientFile(core,n+'.1',n)
+                self.writeTransientFile(self.core,n+'.1',n)
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             self.writeMNwtFile(core)
         if self.core.diczone['Modflow'].getNbZones('hbf.3')>0: # EV 28/08/19
@@ -382,12 +382,6 @@ class modflowWriter:
         which are transient but can be permanent for wells"""
         ltyp=core.dictype['Modflow'][line]#;print('w transient ',line)
         npts,lpts,lindx,zvar,k = self.writeTransientZones1(core,line,ext)
-        if line == 'drn.1' : 
-            print(npts)
-            print(lpts)
-            print(lindx)
-            print(zvar)
-            print(k)
         s,sA,nA = '','',0
         if 'importArray' in ltyp: # OA 17/10/20
             for im in range(self.nlay):
@@ -403,7 +397,7 @@ class modflowWriter:
         s += '\n'
         for iper in range(self.nper):
             s += str(npts+nA)
-            #if ext == 'wel': s +='  0  0'
+            if ext == 'wel'and self.core.addin.mesh!=None: s +='  0  0' # OA 10/12/20
             s += '\n'+sA
             if npts>0 : s += self.writeTransientZones2(core,line,ext,lindx,lpts,zvar,k,iper)
         f1=open(self.fullPath +'.'+ ext,'w');f1.write(s);f1.close()
@@ -428,9 +422,9 @@ class modflowWriter:
             arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
 
         s = ''
-        for il in llay: #these are the layer sin the present media
+        for il in llay: #these are the layers in the present media
             if flgU : 
-                lc = where(arr2[indx]!=0)
+                lc = where(arr2[indx]!=0)[0]  # OA 10/12 re-added [0]
                 for i in range(len(lc)):
                     s += ' %9i '%(il*ncell_lay+lc[i]+1)
                     for iv in range(nvar): s += ' %9.4e'%arr2[iv][lc[i]]

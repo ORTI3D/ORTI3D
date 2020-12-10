@@ -133,7 +133,6 @@ class mtphtWriter:
             s = self.formatBlockMt3d(arr,line)
         elif line in ['rct.3','rct.4','rct.5','rct.6']:
             arr,p = self.getRctParms(opt,line)
-            #print 'mtphtw',arr,p
             if self.dim =='Radial' and line=='rct.4': # for the transfer coefficient in dual poro medium
                 for l in range(ny): 
                     arr[l] = arr[l]*(cumsum(dx)-dx/2.)*6.28
