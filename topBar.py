@@ -181,17 +181,16 @@ class BaseTop:
         flgU = False # flgU unstructured
         if self.core.addin.mesh == None: xx,yy=getXYmeshCenters(self.core,'Z',0)
         else : m = self.core.addin.mesh.getCenters();xx,yy = m[0],m[1];flgU=True
-        ncell_lay = len(xx)
         ysign,gdx,gdy,arr = self.core.importGridVar(self.core.fileDir,line+str(im)+'.gvar')
         if ysign==-1:
             if gdy != None: gdy = gdy[-1::-1]*1
         intp = False;arr2 = [];grd = self.core.addin.getFullGrid()
         for iv in range(nvar): 
             arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
-        if ysign==-1: #EV 11/12/20
+        if ysign==-1 and flgU==False: #EV 11/12/20
             arr3=arr2[var]
             arr3=[arr3[::-1]]
-        else:arr3=[arr2[var]]
+        else: arr3=[arr2[var]]
         return arr3
         
     def onZoneCreate(self, typeZone, xy):
