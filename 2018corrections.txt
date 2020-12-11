@@ -1264,3 +1264,6 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 10/12/20  OA
 - modflowWriter l.428 readded [0] to have a list 
 - modflowriter l.401 re-added the 0 0 but only for usg models
+
+11/12/20 EV
+- topbar getTransientArray lines 191-193 reverse array for correct visualisation

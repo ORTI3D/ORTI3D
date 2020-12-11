@@ -188,7 +188,10 @@ class BaseTop:
         intp = False;arr2 = [];grd = self.core.addin.getFullGrid()
         for iv in range(nvar): 
             arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
-        arr3=[arr2[var]]
+        if ysign==-1: #EV 11/12/20
+            arr3=arr2[var]
+            arr3=[arr3[::-1]]
+        else:arr3=[arr2[var]]
         return arr3
         
     def onZoneCreate(self, typeZone, xy):
