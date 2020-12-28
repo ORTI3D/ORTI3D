@@ -197,11 +197,14 @@ class Core:
         #self.addin.initAddin() seems to make trouble
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
+        self.flgMesh = 0 #18/12/20                      
         mtype = self.dicaddin['Model']['group']
         if mtype == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
+            if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
+                self.flgMesh = 1 #18/12/20                      
             #self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
         if mtype[:5] == 'Modfl': #OA 02/20
             self.flowReader = modflowReader(fDir,fName)
@@ -269,6 +272,9 @@ class Core:
             self.mfWriter = modflowWriter(self,self.fileDir,self.fileName)
             self.mfWriter.writeModflowFiles(self)
             self.flowReader = modflowReader(self.fileDir,self.fileName)
+            self.flgMesh = 0 #18/12/20                      
+            if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
+                self.flgMesh = 1 #18/12/20                      
         if modName in ['Mt3dms','MfUsgTrans','Pht3d']: # OA 28/7/19
             if 'USG' in mtype: #28/7/19 this and 2 below # oa modif 10/2/20
                 self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
@@ -677,26 +683,34 @@ class Core:
         zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
         nx,ny,xvect,yvect = getXYvects(self) 
         grd = self.addin.getFullGrid()
-        mtype = self.dicaddin['Model']['group'][:3] ## model type, modflow or other
-    ### Get a list of icol, irow, ilay
+        mtype = self.dicaddin['Model']['group'][:3];flgMesh = 0 ## model type, modflow or other
+        if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0: flgMesh = 1 # OA 18/12/20
+        ### Get a list of icol, irow, ilay
         if typ[0]=='X': ## XYplot
             ix=[];iy=[];typ='X0'
             #for i in zname: # zname is a list
                # ind = zlist['name'].index(zname)
                # x,y = list(zip(*zlist['coords'][ind]))
-            for xy in zlist['coords']:
+            for izon,xy in enumerate(zlist['coords']): # OA 18/12/20
                 x,y = list(zip(*xy))
-                a,b,c = zone2index(self,x,y,x*1)
-                ix.append(a[0]);iy.append(b[0])
+                if flgMesh==0: # OA 18/12/20
+                    a,b,c = zone2index(self,x,y,x*1)
+                    ix.append(a[0]);iy.append(b[0])
+                else : # OA 18/12/20 fror Usg
+                    ix,val = cellsUnderPoly(self,zlist,0,izon);iy=[0] 
             ix2=array(ix);iy2=array(iy);iz2=ix2*0.
         else:    ## TimeSerie & Profile
-            ind = zlist['name'].index(zname)
-            x,y = list(zip(*zlist['coords'][ind]))
-            ix,iy,a,asin,acos = zone2index(self,x,y,x*1,'angle') ## ix,iy are orti indices (not modflow)
-            if isclosed(self,x,y): # polygon
-                iy,ix = where(fillZone(nx,ny,ix,iy,a));
+            izon = zlist['name'].index(zname)
+            x,y = list(zip(*zlist['coords'][izon]))
+            if flgMesh==0: # OA 18/12/20
+                ix,iy,a,asin,acos = zone2index(self,x,y,x*1,'angle') ## ix,iy are orti indices (not modflow)
+                if isclosed(self,x,y): # polygon
+                    iy,ix = where(fillZone(nx,ny,ix,iy,a));
+            else : # OA 18/12/20
+                ix,val = cellsUnderPoly(self,zlist,0,izon);ix=list(ix);iy=[0];asin=[0];acos=[0]  
+                # should we add closed
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
-            zlayers = media2layers(self,zlist['media'][ind]) # OA 19/3/20 OA added
+            zlayers = media2layers(self,zlist['media'][izon]) # OA 19/3/20 OA added
     ### Get lists : ix2,iy2,iz2 are list of cell position in 3d
         try: 
             layers=[int(layers_in)]
@@ -716,7 +730,7 @@ class Core:
         #if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
-        if mtype=='Mod': iym = [ny-y-1 for y in iy2] # transform to modflow coords
+        if mtype=='Mod' and flgMesh==0: iym = [ny-y-1 for y in iy2] # transform to modflow coords #OA 18/12/20
         else : iym =iy2
         ix2,iym,iz2 = array(ix2),array(iym),array(iz2) # OA 11/4/20 added to index later
     ### Get list of time and period 

@@ -1267,3 +1267,18 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 11/12/20 EV
 - topbar getTransientArray lines 191-193 reverse array for correct visualisation
+
+17/12/20 OA
+- qtVisualisation changed large part of drawImage l.330-337 to represent paramter array in usg
+- qtVisualisation modified drawImge 340-346
+- qtVisualisation createGrid 268-272 the grid[0] for usg is now a polycollection
+
+17/12/20 EV
+- myInterpol/linIntp line 274 add x0 and y0 + cumsum(...) for when x0 and y0 are different from 0
+- modflowKeywords add variable explanation line 116
+
+17-18/12/20 OA
+- core.py lines 200, 206-207, 275-277, 686-688, 694, 703-711, 713, 733 
+- geometry.py lines 973-976
+- modfloWriter lines 771-772, 969-971, 998-1002, 1006, 1008, 1012
+- qtvisualization lines 112, 262, 265, 267-272, 284, 293-303, 335-345, 349-352, 411

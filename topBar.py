@@ -202,7 +202,7 @@ class BaseTop:
         curzones.addZone(line)
         iz = curzones.getNbZones(line)-1;
         #xy = [(nice(a),nice(b)) for a,b in xy] # OA 26/8/19 to have short numbers
-        xy = [tuple([nice(x) for x in xy[i]]) for i in range(len(xy))]
+        #xy = [tuple([nice(x) for x in xy[i]]) for i in range(len(xy))]
         curzones.setValue(line,'coords',iz,xy)
         curzones.setValue(line,'value',iz,' ')
         curzones.setValue(line,'media',iz,self.gui.currentMedia)

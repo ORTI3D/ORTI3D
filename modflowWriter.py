@@ -768,8 +768,8 @@ class modflowReader:
     def readHeadFile(self, core,iper=0):
         """ read .head file 
         in free flow Thksat from flo file must be added (not done)"""    
-        nlay,ncol,nrow = self.getGeom(core)       #OA 4/3/20                                     
-        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
+        nlay,ncol,nrow = self.getGeom(core)       #OA 4/3/20  
+        if core.flgMesh ==1 : #OA modif 18/12/20   
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements')
             hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
@@ -966,8 +966,9 @@ class modflowReader:
         """for typ=flux return fluxes for a series of obs cell
         for typ=head return the heads
         iper is a list of periods indices"""
-        try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
-        except IOError : return None
+        if core.flgMesh==0: # OA 18/12/20
+            try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
+            except IOError : return None
         nper=len(iper);
         if core.addin.getDim() in ['Xsection','Radial']:
             ilay=irow*1;irow=[0]*len(ilay) #[-1::-1]
@@ -994,19 +995,21 @@ class modflowReader:
     def getHeadPtObs(self,core,irow,icol,ilay,iper):
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
-        grd = core.addin.getFullGrid()
-        ncol, nrow = grd['nx'], grd['ny']
-        nlay = getNlayers(core);
+        nlay,ncol,nrow = self.getGeom(core)       #OA 18/12/20  + if below                                    
+        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
+            ncell = core.addin.mfU.getNumber('elements');ncol=ncell*1
+        else :
+            ncell = ncol*nrow
         if core.addin.getDim() in ['Xsection','Radial']:
             nlay=nrow*1;nrow=1;# already done above ilay=irow*1;irow=[0]*len(ilay)
         nper=len(iper)
-        hd=zeros((nper,len(irow)))
+        hd = zeros((nper,len(irow)))
         f1.seek(32);data=arr2('i');
-        blok=44+nrow*ncol*4;#print 'mfw gethedpt ilay,icol,row',ilay,icol,irow
+        blok=44+ncell*4;#OA 18/12/20
         for ip in range(nper):
             for i in range(len(irow)):
                 pos=44+iper[ip]*nlay*blok+ilay[i]*blok+irow[i]*ncol*4+icol[i]*4;
-                f1.seek(pos)
+                f1.seek(pos) #OA 18/12/20
                 data = arr2('f');data.fromfile(f1,1);#print iper[ip],irow[i],icol[i],data
                 hd[ip,i]=float(data[0])
         f1.close()

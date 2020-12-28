@@ -113,7 +113,7 @@ class Mf:
         'lpf.3':{'comm':'Type of averaging','cond':'','kw':['LAYAVG(NLAY)'],'detail':[['type of average','harmonic','logarithmic','harm/log']],'type':['layint']},
         'lpf.4':{'comm':'Horizontal anisotropy','cond':'','kw':['CHANI(NLAY)'],'detail':[],
                     'type':['layfloat'],'default':[' 1']},
-        'lpf.5':{'comm':'flag for vertical cond','cond':'','kw':['LAYVKA(NLAY)'],
+        'lpf.5':{'comm':'flag for vertical cond: VKA(0) or ratio(1)','cond':'','kw':['LAYVKA(NLAY)'],
                 'detail':[['what is Vka','vertical K','ratio Kh/Kv']],'type':['layint']},
         'lpf.6':{'comm':'wetting active or inactive','cond':'','kw':['LAYWET(NLAY)'],
                 'detail':[['wetting','inactive','active']],'type':['laychoice']},

@@ -109,7 +109,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Grid, self.Image, self.Map = None, None, None
         self.Particles = {'line':[],'txt':[],'data':[],'color':(255,0,0)}
         self.curOri,self.curLayer = 'Z',0
-        self.mesh,self.triangles = None,None
+        self.mesh,self.triangles,self.caxis = None,None,None #OA 17/12/20
         
     #####################################################################
     #                     Divers accesseur/mutateurs
@@ -259,16 +259,19 @@ class qtVisualisation(FigureCanvasQTAgg):
             for i in range(2): self.Grid[i].set_visible(False)
         if col == None: col=self.Grid[2]
         else : self.Grid[2]=col
-        if len(self.cnv.collections)<2: self.cnv.collections=[0,0]
+        self.cnv.collections=[];self.mUnstruct = 0 #OA 17/12/20
 
         if self.mesh != None and self.core.getValueFromName('Modflow','MshType')>0:# case irregular mesh (from matplotlib2dviewer)
+            self.mUnstruct = 1 #OA 17/12/20
             xcoo = self.mesh.elx
-            ycoo = self.mesh.ely
-            lines = [list(zip(x,y)) for x,y in list(zip(xcoo,ycoo))]
-            self.Grid[0] = LineCollection(lines)
-            self.Grid[1] = LineCollection(lines[:2])
+            ycoo = self.mesh.ely;ncell=len(ycoo)
+            pol = [list(zip(xcoo[i],ycoo[i])) for i in range(ncell)]
+            self.Grid[0] = PolyCollection(pol); # OA 17/12/20
+            self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+            self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
+            self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
             self.Triangles = self.mesh.trg
-
+                 
         else: #rectangular cases
             xl,yl = getXYmeshSides(self.core,self.curOri,self.curLayer)
             dep=list(zip(ravel(xl[:-1,:]),ravel(yl[:-1,:])))
@@ -277,12 +280,9 @@ class qtVisualisation(FigureCanvasQTAgg):
             dep=list(zip(ravel(xl[:,:-1]),ravel(yl[:,:-1])))
             arr=list(zip(ravel(xl[:,1:]),ravel(yl[:,1:])))
             self.Grid[1] = LineCollection(list(zip(dep,arr)))
-          
-        self.cnv.collections[0]= self.Grid[0]
-        self.cnv.collections[1]= self.Grid[1]
         for i in [0,1]: 
+            self.cnv.add_collection(self.Grid[i]) # OA 17/12/20 collec[0]= replaced by add
             self.Grid[i].set_transform(self.transform)
-            self.Grid[i].set_color(col);
             self.Grid[i].set_linewidth(0.5) #EV 10/12/2020
         self.redraw()
         
@@ -290,9 +290,17 @@ class qtVisualisation(FigureCanvasQTAgg):
         col = self.Grid[2]
         if self.curOri != 'Z':
             self.createGrid(col=col,ori=self.curOri,layer=self.curLayer)
-        for i in [0,1]: 
-            self.Grid[i].set_visible(bool)
-            self.Grid[i].set_color(col)
+        if self.mUnstruct:
+            if bool:
+                self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+                self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
+            else:
+                self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+                self.Grid[0].set_edgecolor((1,1,1))  # OA 17/12/20                
+        else :
+            for i in [0,1]: 
+                self.cnv.collections[i].set_visible(bool)
+                self.cnv.collections[i].set_color(col)
         self.redraw()
         
     def changeGrid(self,color):
@@ -324,38 +332,30 @@ class qtVisualisation(FigureCanvasQTAgg):
         #print 'vis img',len(xt),len(yt),shape(mat)
         X,Y,Z = data;Z1 = array(Z);#print shape(Z1)
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
-        if self.mesh==None: # classical square grid
-            image=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
-#        elif modgroup[:5] == 'Modfl' : ## lines commented by OA 20/11/20
-#            data = data[-1][0]# first values are coordinates, and its 3D
-#            data_sc = (data-amin(data))/(amax(data)-amin(data));#print data
-#            elx=self.mesh.elx
-#            ely=self.mesh.ely
-#            nnod,a = shape(self.mesh.myv.nodes)
-#            pc=[list(zip(xyv[vts[i],0],xyv[vts[i],1])) for i in range(nnod)]
-#            self.polyC = PolyCollection(pc,facecolors=cm.jet(data_sc))
-#            if len(self.cnv.collections)==3:
-#                self.cnv.collections.append(self.polyC) #self.polyC
-#            else :
-#                self.cnv.collections[3] = self.polyC
-#            self.polyC.set_visible(True)
-#            self.polyC.set_transform(self.transform)
-        elif 'USG' in modgroup:
-            image=plt.tripcolor(self.Triangles,Z1)#
-            #image.set_transform(self.transform)
-            #image.set_edgecolor('none')
-        #print 'qtVis 336',self.cnv.collections,self.fig.dpi             
-        self.cnv.images=[image] # OA 20/11/20 removed from frist condition, put here
-        divider = make_axes_locatable(self.cnv) #EV 26.11.20
-        caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
-        self.cbar=self.fig.colorbar(image,cax=caxis) #EV 26.11.20
+        if self.mUnstruct: #OA 17/12/20
+            self.grdArray = Z
+            self.Grid[0].set_array(Z)
+            obj = self.Grid[0]
+        else: # classical square grid
+            obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
+            self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
+        if self.caxis==None: 
+            divider = make_axes_locatable(self.cnv) #EV 26.11.20
+            self.caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
+        self.cbar=self.fig.colorbar(obj,cax=self.caxis) #EV 26.11.20
         self.redraw()
         
     def drawImage(self,bool):
-        if len(self.cnv.images)>0:
+        if self.mUnstruct: #OA 17/12/20
+            if bool : self.Grid[0].set_array(self.grdArray)
+            else : self.Grid[0].set_facecolor((1,1,1));
+        else:
             self.cnv.images[0].set_visible(bool)
-            self.redraw()
-            if self.cbar : self.cbar.remove() #EV 26.11.20
+        if bool == False: 
+            try: 
+                if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
+            except : pass
+        self.redraw()
 
     #####################################################################
     #             Gestion de l'affichage des contours
@@ -408,7 +408,7 @@ class qtVisualisation(FigureCanvasQTAgg):
                 b.append((lim[i][0],c3,c3))
             cdict={'red':r,'green':g,'blue':b}
             cmap=mpl.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
-        if self.mesh==None or self.core.getValueFromName('Modflow','MshType')<1: # OA 29/2/20
+        if self.mUnstruct==0: # OA 24/12/20 #OA 17/12/20
             cf = pl.contourf(pl.array(X),pl.array(Y),Z2,V, cmap=cmap)
             c = pl.contour(pl.array(X),pl.array(Y),Z2,V, cmap=cmap)
         else :

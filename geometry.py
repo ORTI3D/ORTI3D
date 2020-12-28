@@ -970,6 +970,10 @@ def cellsUnderPoly(core,dicz,media,iz):
     xc,yc,idcell = mesh.elcenters[:,0],mesh.elcenters[:,1],mesh.idc
     elxa, elya = array(mesh.elxa),array(mesh.elya)
     poly = dicz['coords'][iz]
+    if len(poly)==1: #OA 18/12/20
+        x,y = poly[0];dst=(x-xc)**2+(y-yc)**2
+        indx=where(dst==amin(dst))[0]
+        return indx,dicz['value'][iz]
     lcoefs=lcoefsFromPoly(poly)
     #l0 = zptsIndices(core,dicz)[iz] # OA 24/7/20
     indx,zval = zeros(len(idcell)),zeros(len(idcell))

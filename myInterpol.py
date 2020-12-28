@@ -271,7 +271,7 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added
         vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
         dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
     else: # here the interval is found by a where condition
-        vx,vy = r_[x0,cumsum(zdx)],r_[y0,cumsum(zdy)]
+        vx,vy = r_[x0,x0+cumsum(zdx)],r_[y0,y0+cumsum(zdy)] #EV 17/12/20 
         xc,yc = (vx[:-1]+vx[1:])/2,(vy[:-1]+vy[1:])/2 # added 3/4/20
         if abs(vx[-1]-x1)>eps or abs(vy[-1]-y1)>eps: return 'wrong grid size'
         vi,vj,dyy,dxx = yy*0,xx*0,yy*0,xx*0 # OA 3/4/20 dxx,dyy added
