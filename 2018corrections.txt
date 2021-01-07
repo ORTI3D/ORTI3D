@@ -1282,3 +1282,9 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - geometry.py lines 973-976
 - modfloWriter lines 771-772, 969-971, 998-1002, 1006, 1008, 1012
 - qtvisualization lines 112, 262, 265, 267-272, 284, 293-303, 335-345, 349-352, 411
+
+07/01/2021 EV
+- myInterpol linIntpFromGrid line 262 put 1e3 instead of 1e5 to increase tolerance
+- modflowWiter writetransizentArray line 421 added condition to inverse yy coordinates for modflow usg (write files)
+- topBar getTransientArray line 188 added condition to inverse yy coordinates for modflow usg (view option)
+- qtVisualisation drawImage l.349 re-added this condition removed by OA

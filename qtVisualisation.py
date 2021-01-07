@@ -346,16 +346,18 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.redraw()
         
     def drawImage(self,bool):
-        if self.mUnstruct: #OA 17/12/20
-            if bool : self.Grid[0].set_array(self.grdArray)
-            else : self.Grid[0].set_facecolor((1,1,1));
-        else:
-            self.cnv.images[0].set_visible(bool)
-        if bool == False: 
-            try: 
-                if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
-            except : pass
-        self.redraw()
+        if len(self.cnv.images)>0: #EV 07/01/2021
+            if self.mUnstruct: #OA 17/12/20
+                if bool : self.Grid[0].set_array(self.grdArray)
+                else : self.Grid[0].set_facecolor((1,1,1));
+            else:
+                print(self.cnv.images)
+                self.cnv.images[0].set_visible(bool)
+            if bool == False: 
+                try: 
+                    if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
+                except : pass
+            self.redraw()
 
     #####################################################################
     #             Gestion de l'affichage des contours

@@ -259,7 +259,7 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added
     x0,y0 are the origin of the domain
     dx,dy are the cell width of the grid'''
     x0,x1,y0,y1 = core_grd['x0'],core_grd['x1'],core_grd['y0'],core_grd['y1']
-    eps = min(x1-x0,y1-y0)/1e5
+    eps = min(x1-x0,y1-y0)/1e3 # EV 07/01/21
     nr,nc = shape(z_grid);z_grid=z_grid.astype('float')
     nr_out =0
     if len(shape(xx))> 1 : 

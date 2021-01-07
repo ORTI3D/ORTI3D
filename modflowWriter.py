@@ -418,9 +418,9 @@ class modflowWriter:
             if gdy != None: gdy = gdy[-1::-1]*1
 #            for iv in range(nvar): arr[iv] = arr[iv,-1::-1,:]*1
         intp = False;arr2 = [];grd = core.addin.getFullGrid()
+        if flgU:yy = [grd['y1']-x for x in yy] ; yy=np.array(yy) # EV 07/01/21
         for iv in range(nvar): 
             arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
-
         s = ''
         for il in llay: #these are the layers in the present media
             if flgU : 
