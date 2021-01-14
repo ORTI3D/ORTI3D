@@ -185,13 +185,14 @@ class BaseTop:
         if ysign==-1:
             if gdy != None: gdy = gdy[-1::-1]*1
         intp = False;arr2 = [];grd = self.core.addin.getFullGrid()
-        if flgU:yy = [grd['y1']-x for x in yy] ; yy=np.array(yy) # EV 07/01/21
         for iv in range(nvar): 
-            arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
-        if ysign==-1 and flgU==False: #EV 11/12/20
-            arr3=arr2[var]
-            arr3=[arr3[::-1]]
-        else: arr3=[arr2[var]]
+            if ysign==-1 :arr[iv]=arr[iv][::-1] #EV 14/01/2021
+            arr2.append(linIntpFromGrid(self.core,grd,arr[iv],xx,yy,intp,gdx,gdy))
+        #if ysign==-1 and flgU==False: #EV 11/12/20 #EV 14/01/2021
+            #arr3=arr2[var]
+            #arr3=[arr3[::-1]]
+        #else: arr3=[arr2[var]]
+        arr3=[arr2[var]]
         return arr3
         
     def onZoneCreate(self, typeZone, xy):

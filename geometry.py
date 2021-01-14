@@ -389,6 +389,7 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     for i in range(len(dicz['name'])):
         if (dicz['name'][i]=='domain'): continue
         idx,zv0 = zmesh(core,dicz,media,i)
+        if len(idx)== 0: continue # OA 9/1/21
         if type(zv0) != type(0) : value[idx]=zv0[idx]
         else : value[idx]=zval[i]
         try : len(idx) 
@@ -407,10 +408,10 @@ def zmesh(core,dicz,media,iz):
     else : x,y = list(zip(*poly))
     if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
     llcoefs = lcoefsFromPoly(poly)
-#    zmedia = dicz['media'][i] # a media or a list of media for the zone OA removed 24/7/20
-#    if type(zmedia)!=type([5]): zmedia=[zmedia]
-#    zmedia = [int(a) for a in zmedia]
-#    if media not in zmedia: return None # the zone is not in the correct media
+    zmedia = dicz['media'][iz] # a media or a list of media for the zone OA removed 24/7/20
+    if type(zmedia)!=type([5]): zmedia=[zmedia]
+    zmedia = [int(a) for a in zmedia]
+    if media not in zmedia: return [],None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
         idx = amin(dst)==dst;#where(amin(dst)==dst)[0] # OA 19/4/20
@@ -980,20 +981,49 @@ def cellsUnderPoly(core,dicz,media,iz):
     for i in range(len(poly)-1):
         if len(poly[0])==3 : x,y,z = list(zip(*poly[i:i+2])) # OA 2/5/20
         else : x,y = list(zip(*poly[i:i+2]));z=0
-        pos = sign(lcoefs[0,i]*elxa+lcoefs[1,i]*elya-1) # posit. vs the line
+        a,b = lcoefs[0,i],lcoefs[1,i]
+        pos = sign(a*elxa+b*elya-1) # posit. vs the line
         dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
         dpos = array(dpos)
-        dst0,dst1 = sqrt((x[0]-xc)**2+(y[0]-yc)**2),sqrt((x[1]-xc)**2+(y[1]-yc)**2) # OA 24/7/20
-        idx0 = amin(dst0)==dst0;idx1 = amin(dst1)==dst1; # index of ends of line OA 24/7/20
-        x0,x1 = min(xc[idx0],xc[idx1]),max(xc[idx0],xc[idx1])  # OA 28/10/20
-        y0,y1 = min(yc[idx0],yc[idx1]),max(yc[idx0],yc[idx1])  # OA 28/10/20
-        idx = (dpos>0)*(xc<=x1)*(xc>=x0)*(yc<=y1)*(yc>=y0)*1
+        seg0 = sign(b*xc - a*yc - b*x[0] +a*y[0])#bx’-ay’-bx0+ay0
+        seg1 = sign(b*xc - a*yc - b*x[1] +a*y[1])#bx’-ay’-bx0+ay0
+        idx = (dpos>0)*(seg0 != seg1)*1
         ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
+        #dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)
+        #srt = argsort(dst);ipts=ipts[srt]
         indx += idx
         dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)/sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
         if z == 0 : zval = 0
         else : zval[ipts] = z[0]+(z[1]-z[0])*dst
     return clip(indx,0,1),zval
+
+def cellsUnderPolyOrd(core,dicz,media,iz):
+    '''same as above but only indices and ordered'''
+    mesh = core.addin.mesh
+    xc,yc,idcell = mesh.elcenters[:,0],mesh.elcenters[:,1],mesh.idc
+    elxa, elya = array(mesh.elxa),array(mesh.elya)
+    poly = dicz['coords'][iz]
+    if len(poly)==1: #OA 18/12/20
+        x,y = poly[0];dst=(x-xc)**2+(y-yc)**2
+        indx=where(dst==amin(dst))[0]
+        return indx,dicz['value'][iz]
+    lcoefs=lcoefsFromPoly(poly)
+    indx = []
+    for i in range(len(poly)-1):
+        if len(poly[0])==3 : x,y,z = list(zip(*poly[i:i+2])) # OA 2/5/20
+        else : x,y = list(zip(*poly[i:i+2]));z=0
+        a,b = lcoefs[0,i],lcoefs[1,i]
+        pos = sign(a*elxa+b*elya-1) # posit. vs the line
+        dpos = [abs(amax(pos[id[0]:id[1]])-amin(pos[id[0]:id[1]])) for id in idcell]
+        dpos = array(dpos)
+        seg0 = sign(b*xc - a*yc - b*x[0] +a*y[0])#bx’-ay’-bx0+ay0
+        seg1 = sign(b*xc - a*yc - b*x[1] +a*y[1])#bx’-ay’-bx0+ay0
+        idx = (dpos>0)*(seg0 != seg1)*1
+        ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
+        dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)
+        srt = argsort(dst);ipts=ipts[srt]
+        indx.extend(ipts)
+    return indx
 
 def zptsIndices(core,dicz):
     '''finds the indices of the points in the zones'''
@@ -1242,7 +1272,7 @@ def zone2array(core,modName,line,im):
         if ysign==-1: # OA 13/6/20 added this and below
             arr = arr[-1::-1,:]*1
             if zdy != None: zdy = zdy[-1::-1]*1 #OA 26/7/20 added condition
-        arr2 = linIntpFromGrid(grd,arr,xx,yy,intp,zdx,zdy) # removed [::-1]
+        arr2 = linIntpFromGrid(core,grd,arr,xx,yy,intp,zdx,zdy) # removed [::-1]
         return arr2
         #else : return arr[::-1]
     else : 

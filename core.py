@@ -80,7 +80,7 @@ class Core:
 #********************* initialisation ****************************
     def initAll(self):
         self.radfact,self.Zblock,self.grd = 1.,None,None
-        self.mfUnstruct,self.ttable = False,None
+        self.mfUnstruct,self.ttable,self.lcellInterp = False,None,[] # OA 9/1/21
         for mod in self.modelList:
             self.dicval[mod] = self.initVal(mod)
             self.dictype[mod] = self.initArray(mod) # ,self.dicarray[mod] #EV 06/02/20
@@ -697,7 +697,7 @@ class Core:
                     a,b,c = zone2index(self,x,y,x*1)
                     ix.append(a[0]);iy.append(b[0])
                 else : # OA 18/12/20 fror Usg
-                    ix,val = cellsUnderPoly(self,zlist,0,izon);iy=[0] 
+                    ix = cellsUnderPolyOrd(self,zlist,0,izon);iy=[0]
             ix2=array(ix);iy2=array(iy);iz2=ix2*0.
         else:    ## TimeSerie & Profile
             izon = zlist['name'].index(zname)
@@ -707,7 +707,8 @@ class Core:
                 if isclosed(self,x,y): # polygon
                     iy,ix = where(fillZone(nx,ny,ix,iy,a));
             else : # OA 18/12/20
-                ix,val = cellsUnderPoly(self,zlist,0,izon);ix=list(ix);iy=[0];asin=[0];acos=[0]  
+                ix = cellsUnderPolyOrd(self,zlist,0,izon); # OA 9/1/21
+                ix=list(ix);iy=[0]*len(ix);asin=[0]*len(ix);acos=[0]*len(ix)  
                 # should we add closed
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
             zlayers = media2layers(self,zlist['media'][izon]) # OA 19/3/20 OA added
@@ -743,6 +744,7 @@ class Core:
        ## For Head and Wcontent (pt index is the layer)
         if esp[0] in ['Head','Wcontent']: 
             m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])
+            #print(shape(m),ix2,iym,iz2)
             if layers_in == 'all': # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -841,8 +843,13 @@ class Core:
             return t2,p1,labels
        ## Profile
         elif typ[0]=='P':  
-            xzon=xvect[ix];yzon=yvect[iy];#print(xzon,yzon) #EV 20/04/20 ix2 -> ix & iy2 -> iy
-            d0=sqrt((xzon[1:]-xzon[:-1])**2.+(yzon[1:]-yzon[:-1])**2.)
+            if flgMesh==0:
+                xzon=xvect[ix];yzon=yvect[iy];#print(xzon,yzon) #EV 20/04/20 ix2 -> ix & iy2 -> iy
+                d0=sqrt((xzon[1:]-xzon[:-1])**2.+(yzon[1:]-yzon[:-1])**2.)
+            else :
+                elc = self.addin.mesh.elcenters
+                xc,yc = elc[ix,0],elc[ix,1]
+                d0 = sqrt((xc[1:]-xc[:-1])**2.+(yc[1:]-yc[:-1])**2.)
             dist = concatenate((array(0.,ndmin=1),cumsum(d0)))
             p1=zeros((len(dist),len(pt)))
             labels[0]='distance'

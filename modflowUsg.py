@@ -430,7 +430,8 @@ class myVor:
             p.angl[ip1] = delete(p.angl[ip1],indx[ip1])
         la = [abs(sum(p.elx[i][:-1]*p.ely[i][1:]-p.elx[i][1:]*p.ely[i][:-1]))/2 for i in range(nc)]
         p.carea = array(la);p.indx = indx;
-        p.elcenters = p.nodes
+        p.elcenters = p.nodes*1 # OA 9/1/21
+        for i in line_dom: p.elcenters[i] = (mean(p.elx[i]),mean(p.ely[i]))
         l = []
         for k in p.dicFeats.keys():
             if k[:2]=='bc': l.append(unique(p.dicFeats[k]))

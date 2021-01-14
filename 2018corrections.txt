@@ -1288,3 +1288,22 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modflowWiter writetransizentArray line 421 added condition to inverse yy coordinates for modflow usg (write files)
 - topBar getTransientArray line 188 added condition to inverse yy coordinates for modflow usg (view option)
 - qtVisualisation drawImage l.349 re-added this condition removed by OA
+
+09/01/21  OA
+- modflowUSG l.433 434 for the sides the center of the cell is the barycentre and not the triangulation node
+- geometry cellsunderpoly l.985-990 all modified there missed cells for line zones
+- geometry zmesh line 409-413 where commented put back (to get correct zones for layers)
+- l.392 in geometry/zone2mesh added if zone is not in media
+- geometry added function cellsUnerPolyOrd to get only the indices bu orderd along th eline
+- corePtobs l.710 modif to have ordered result 
+- coreptobs l 848-851 added for profiles in usg
+- core l 83 added lcellInterp (to remember the indexes of cells in imported arrays)
+- myinterpol linIntpFromGrid has a new inut core, at the beginning, changed everywhere it is called
+
+14/01/21 EV
+- modfloWriter writeTransientFile l.394 remove line break 
+- modfloWriter writeTransientArray l.426 added a condition to inverse array when ysign = -1
+- modfloWriter writeTransientZones1 l.451, 454, 468 added to take into account only zone where ltyp is not 'importarray'
+- modfloWriter writeTransientZones1 l.478 replace nzones by lpts to take into account only zone where ltyp is not 'importarray'
+- modfloWriter/xyzone2Mflow l.530-534 added to take into account only zone where ltyp is not 'importarray'
+- topbar getTransientArray l.189, 191-194 added a condition to inverse array when ysign = -1

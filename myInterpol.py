@@ -251,13 +251,14 @@ class IntpDialog(QDialog):
         
 ######################   BI LINEAR INTERPOLATION  ############################ 
 
-def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added OA 22/5/17
+def linIntpFromGrid(core,core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added OA 22/5/17
     '''linear interpolation from a regular grid (zdx=None) or irregular (zdx!=None)
     that has exactly the same size as the current domain
     zdx and zdy are the cell size of z_grid
     xx,yy are the position of the point where the z value is searched for
     x0,y0 are the origin of the domain
-    dx,dy are the cell width of the grid'''
+    dx,dy are the cell width of the grid
+    lcellIntp is a list of vi vj that can exist in core or not'''
     x0,x1,y0,y1 = core_grd['x0'],core_grd['x1'],core_grd['y0'],core_grd['y1']
     eps = min(x1-x0,y1-y0)/1e3 # EV 07/01/21
     nr,nc = shape(z_grid);z_grid=z_grid.astype('float')
@@ -271,18 +272,22 @@ def linIntpFromGrid(core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added
         vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
         dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
     else: # here the interval is found by a where condition
-        vx,vy = r_[x0,x0+cumsum(zdx)],r_[y0,y0+cumsum(zdy)] #EV 17/12/20 
-        xc,yc = (vx[:-1]+vx[1:])/2,(vy[:-1]+vy[1:])/2 # added 3/4/20
-        if abs(vx[-1]-x1)>eps or abs(vy[-1]-y1)>eps: return 'wrong grid size'
-        vi,vj,dyy,dxx = yy*0,xx*0,yy*0,xx*0 # OA 3/4/20 dxx,dyy added
-        for n in range(len(vy)-1): 
-            cnd = (yy>=vy[n])&(yy<vy[n+1]) #OA 10/6/20 added =
-            vi[cnd] = n # OA 3/4/20 i,j inverted
-            dyy[cnd] = (yy[cnd]-yc[n])/(vy[n+1]-vy[n]) # OA 3/4/20 added
-        for n in range(len(vx)-1): 
-            cnd = (xx>=vx[n])&(xx<vx[n+1]) #OA 10/6/20 added =
-            vj[cnd] = n
-            dxx[cnd] = (xx[cnd]-xc[n])/(vx[n+1]-vx[n]) # OA 3/4/20 added
+        if len(core.lcellInterp)==0:  # OA 9/1/21
+            vx,vy = r_[x0,x0+cumsum(zdx)],r_[y0,y0+cumsum(zdy)] #EV 17/12/20 
+            xc,yc = (vx[:-1]+vx[1:])/2,(vy[:-1]+vy[1:])/2 # added 3/4/20
+            if abs(vx[-1]-x1)>eps or abs(vy[-1]-y1)>eps: return 'wrong grid size'
+            vi,vj,dyy,dxx = yy*0,xx*0,yy*0,xx*0 # OA 3/4/20 dxx,dyy added
+            for n in range(len(vy)-1): 
+                cnd = (yy>=vy[n])&(yy<vy[n+1]) #OA 10/6/20 added =
+                vi[cnd] = n # OA 3/4/20 i,j inverted
+                dyy[cnd] = (yy[cnd]-yc[n])/(vy[n+1]-vy[n]) # OA 3/4/20 added
+            for n in range(len(vx)-1): 
+                cnd = (xx>=vx[n])&(xx<vx[n+1]) #OA 10/6/20 added =
+                vj[cnd] = n
+                dxx[cnd] = (xx[cnd]-xc[n])/(vx[n+1]-vx[n]) # OA 3/4/20 added
+            core.lcellInterp = [vi,vj] # OA 9/1/21
+        else : # OA 9/1/21
+            vi,vj = core.lcellInterp # OA 9/1/21
     # OA 14/2/19 line below changed, 2nd below added
     vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
     vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')

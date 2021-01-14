@@ -1,6 +1,6 @@
 #import scipy.io.array_import as IOAscii
 from array import array as arr2
-import os
+import os,time
 from .modflowKeywords import Mf
 from .geometry import *
 from .timeperiod import *
@@ -24,6 +24,7 @@ class modflowWriter:
         nx,ny,a,b = getXYvects(self.core)
         if dim in ['2D','3D']: self.nlay = getNlayers(self.core)
         else : self.nlay = ny
+        core.lcellInterp = [] # to reset the interpolaiton in cas of arrays and mesh
         if len(self.usgTrans.items())>0: self.trans = True
         else : self.trans = False
         self.dicval = self.core.dicval['Modflow']
@@ -41,12 +42,14 @@ class modflowWriter:
         self.lexceptions = lexceptions
         lgex = ['DIS','DISU','BCF6','LPF','RCH','EVT','UPW','UZF','SMS','HFB6'] # oa 22/7/20 added bcf
         lnorm = ['BAS6','SIP','PCG','SOR','DE4','NWT','GMG'] 
-        self.writeNamFile()
+        self.writeNamFile()#;ts=time.time()
         #self.writeFiles() #OA 13/8/19 for loop below is new
         for grp in self.core.getUsedModulesList('Modflow'):
             if grp in ['WEL','DRN','RIV','MNWT','GHB','HFB6']: continue # in transientfile or specific (MNWT&HBF6) # EV 28/08/19
-            elif grp in lnorm : self.writeOneFile(grp,{})
-            elif grp in lgex : exec('self.write'+grp+'()')
+            elif grp in lnorm : 
+                self.writeOneFile(grp,{})#ts1=time.time();tf=time.time();print(grp,tf-ts1,tf-ts)
+            elif grp in lgex : 
+                exec('self.write'+grp+'()')#;ts1=time.time();tf=time.time();print(grp,tf-ts1,tf-ts)
         self.writeLmtFile()
         self.writeOcFile()
         #print 'mfwrite',self.ttable
@@ -55,11 +58,12 @@ class modflowWriter:
                 self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
             if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
-                self.writeTransientFile(self.core,n+'.1',n)
+                self.writeTransientFile(self.core,n+'.1',n)#;s1=time.time();tf=time.time();print(n,tf-ts1,tf-ts)
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             self.writeMNwtFile(core)
         if self.core.diczone['Modflow'].getNbZones('hbf.3')>0: # EV 28/08/19
             self.writeHFB6()  # EV 28/08/19
+        #print(time.time()-ts)
             
     def setRadial(self):
         g = self.core.addin.getFullGrid()
@@ -387,7 +391,7 @@ class modflowWriter:
             for im in range(self.nlay):
                 if ltyp[im]=='importArray':
                     sA += self.writeTransientArray(core,line,ext,im)
-            nA = len(sA.split('\n'))-1;sA+='\n'
+            nA = len(sA.split('\n'))-1#;sA+='\n' #EV 14/01/21
         #1st line
         s = ' %9i'%(npts+nA)
         if ext == 'wel': s += ' 31'#OA 3/5/20 added mesh condtion
@@ -418,9 +422,9 @@ class modflowWriter:
             if gdy != None: gdy = gdy[-1::-1]*1
 #            for iv in range(nvar): arr[iv] = arr[iv,-1::-1,:]*1
         intp = False;arr2 = [];grd = core.addin.getFullGrid()
-        if flgU:yy = [grd['y1']-x for x in yy] ; yy=np.array(yy) # EV 07/01/21
         for iv in range(nvar): 
-            arr2.append(linIntpFromGrid(grd,arr[iv],xx,yy,intp,gdx,gdy))
+            if flgU:arr[iv]=arr[iv][::-1] #EV 14/01/21
+            arr2.append(linIntpFromGrid(core,grd,arr[iv],xx,yy,intp,gdx,gdy))
         s = ''
         for il in llay: #these are the layers in the present media
             if flgU : 
@@ -444,23 +448,24 @@ class modflowWriter:
         else : return npts,lpts,lindx,zvar,k # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
-          
+        iz1=0 #EV 14/01/21
         for iz in range(nzones): #creates a list of points for each zone
-            lpts.append([])
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
+            if ilay == None: continue #break #EV 14/01/21
+            lpts.append([])
             zvar.append(zvect)
-            if ilay == None: break
             npts += len(irow)
             if core.addin.mesh != None : lindx.extend(list(irow))# OA 3/3/20                                                                           
             for i in range(len(irow)):
                 if core.addin.mesh == None: ## regular grid # OA modif 4/2/19
-                    lpts[iz].append(str(ilay[i]+1).rjust(9)+' '+str(irow[i]+1).rjust(9)+' '+\
+                    lpts[iz1].append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
                 else : #unstruct grid irow is the node number
-                    lpts[iz].append(str(irow[i]+1).rjust(9))
+                    lpts[iz1].append(str(irow[i]+1).rjust(9))
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
+            iz1+=1 #EV 14/01/21
         return npts,lpts,lindx,zvar,k # added 18/10/20
         
     def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper):
@@ -470,7 +475,7 @@ class modflowWriter:
         #for ip in range(nper): # OA removed 18/10/20
         buff, buf1 = '',[]
         #if len(unique(zlist[:,iz]))>1 : flagTr = True # OA removed 18/10/20
-        for iz in range(nzones): # and each zones
+        for iz in range(len(lpts)):#nzones): # and each zones where ltyp is not 'importarray' #EV 14/01/21
             val = zlist[iper,iz] # the value of the variable for the period
             if ext in self.usgTrans.keys(): 
                 soption = self.usgTrans[ext][iper,iz]
@@ -517,11 +522,16 @@ class modflowWriter:
         dicz = core.diczone[modName].dic[line] # OA /3/20
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
-        if xy == '': return None,None,None
+        if xy == '': return None,None,None,None
         if len(xy[0])==2: x,y = list(zip(*xy));z=x*1 # OA 25/4/19 for 3 coords
         else : x,y,z = list(zip(*xy))
         imed = core.diczone[modName].getMediaList(line,iz) # OA 4/3/20
         ilay = media2layers(core,imed)
+        ltyp=core.dictype['Modflow'][line] #EV 14/01/21
+        for t in list(set(ilay)):
+            if ltyp[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
+        if len(ilay)==0 : 
+            return None,None,None,None
         dm = core.addin.getDim()
         if core.addin.mesh == None: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
@@ -993,6 +1003,7 @@ class modflowReader:
         return qx,qy
 
     def getHeadPtObs(self,core,irow,icol,ilay,iper):
+        #print('mfw getpto',irow,icol,ilay)
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
         nlay,ncol,nrow = self.getGeom(core)       #OA 18/12/20  + if below                                    
