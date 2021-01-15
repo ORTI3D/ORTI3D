@@ -267,7 +267,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             ycoo = self.mesh.ely;ncell=len(ycoo)
             pol = [list(zip(xcoo[i],ycoo[i])) for i in range(ncell)]
             self.Grid[0] = PolyCollection(pol); # OA 17/12/20
-            self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+            self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
             self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
             self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
             self.Triangles = self.mesh.trg
@@ -284,6 +284,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.cnv.add_collection(self.Grid[i]) # OA 17/12/20 collec[0]= replaced by add
             self.Grid[i].set_transform(self.transform)
             self.Grid[i].set_linewidth(0.5) #EV 10/12/2020
+            self.Grid[i].set_facecolor((1,1,1,0)) #EV 15/01/21
+            self.Grid[i].set_edgecolor((.5,.5,.5,1)) #EV 15/01/21
         self.redraw()
         
     def drawGrid(self, bool):
@@ -292,10 +294,11 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.createGrid(col=col,ori=self.curOri,layer=self.curLayer)
         if self.mUnstruct:
             if bool:
-                self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+                self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
                 self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
+                self.Grid[0].set_visible(True) #EV 15/01/21
             else:
-                self.Grid[0].set_facecolor((1,1,1))  # OA 17/12/20
+                self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
                 self.Grid[0].set_edgecolor((1,1,1))  # OA 17/12/20                
         else :
             for i in [0,1]: 
@@ -349,9 +352,10 @@ class qtVisualisation(FigureCanvasQTAgg):
         if len(self.cnv.images)>0: #EV 07/01/2021
             if self.mUnstruct: #OA 17/12/20
                 if bool : self.Grid[0].set_array(self.grdArray)
-                else : self.Grid[0].set_facecolor((1,1,1));
+                else : 
+                    self.cnv.images[0].set_visible(bool)
+                    self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
             else:
-                print(self.cnv.images)
                 self.cnv.images[0].set_visible(bool)
             if bool == False: 
                 try: 

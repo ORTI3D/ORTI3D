@@ -287,6 +287,7 @@ class orti3dGui(QMainWindow):
         self.dlgShow.setupUi(qws,self,self.core)     
         self.guiShow = self.dlgShow.guiShow
         self.showSizer.addWidget(qws)
+        self.guiShow.dlgShow.onTickBox('Model','Grid','B',True) #EV 15/01/21
         
     ######################## actions ############################
     def actions(self,action):

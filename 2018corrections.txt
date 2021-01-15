@@ -1307,3 +1307,7 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modfloWriter writeTransientZones1 l.478 replace nzones by lpts to take into account only zone where ltyp is not 'importarray'
 - modfloWriter/xyzone2Mflow l.530-534 added to take into account only zone where ltyp is not 'importarray'
 - topbar getTransientArray l.189, 191-194 added a condition to inverse array when ysign = -1
+
+15/01/21 EV
+- orti3dGui l.290 add onTickBox to check the box when open a model
+- qtVisualisation l.270,287,288,297,299,301,355-357 added to make usg grid transparent in order to get visible map
