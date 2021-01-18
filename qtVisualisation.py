@@ -269,7 +269,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.Grid[0] = PolyCollection(pol); # OA 17/12/20
             self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
             self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
-            self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
+            #self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
             self.Triangles = self.mesh.trg
                  
         else: #rectangular cases
@@ -316,7 +316,10 @@ class qtVisualisation(FigureCanvasQTAgg):
     #####################################################################
     # l'image se met en position 1 dans la liste des images
     def createMap(self):
-        file = self.gui.map
+        try : file = self.gui.map
+        except : 
+            onMessage(self.gui,'Please select a Map to display')
+            return
         mat=Im.imread(file)
         org='upper';ext=(self.xlim[0],self.xlim[1],self.ylim[0],self.ylim[1])
         self.Map=pl.imshow(mat,origin=org,extent=ext,aspect='auto',interpolation='nearest');
@@ -326,18 +329,19 @@ class qtVisualisation(FigureCanvasQTAgg):
         
     def drawMap(self, bool):
         if self.Map == None: self.createMap()
+        if self.Map != None :
 #        self.Map.set_visible(bool)
-        self.cnv.images=[self.Map] #
-        self.cnv.images[0].set_visible(bool)
-        self.redraw()
+            self.cnv.images=[self.Map] #
+            self.cnv.images[0].set_visible(bool)
+            self.redraw()
 
     def createImage(self,data):
         #print 'vis img',len(xt),len(yt),shape(mat)
-        X,Y,Z = data;Z1 = array(Z);#print shape(Z1)
+        X,Y,Z = data;Z1 = array(Z);print(shape(Z1))
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
         if self.mUnstruct: #OA 17/12/20
-            self.grdArray = Z
-            self.Grid[0].set_array(Z)
+            self.grdArray = Z1
+            self.Grid[0].set_array(Z1)
             obj = self.Grid[0]
         else: # classical square grid
             obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
@@ -349,19 +353,20 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.redraw()
         
     def drawImage(self,bool):
-        if len(self.cnv.images)>0: #EV 07/01/2021
-            if self.mUnstruct: #OA 17/12/20
-                if bool : self.Grid[0].set_array(self.grdArray)
-                else : 
+        if self.mUnstruct: #OA 17/12/20
+            if bool : self.Grid[0].set_array(self.grdArray)
+            else : 
+                if len(self.cnv.images)>0: #EV 07/01/2021
                     self.cnv.images[0].set_visible(bool)
-                    self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
-            else:
+                self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
+        else:
+            if len(self.cnv.images)>0: #EV 07/01/2021
                 self.cnv.images[0].set_visible(bool)
-            if bool == False: 
-                try: 
-                    if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
-                except : pass
-            self.redraw()
+        if bool == False: 
+            try: 
+                if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
+            except : pass
+        self.redraw()
 
     #####################################################################
     #             Gestion de l'affichage des contours

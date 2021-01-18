@@ -520,6 +520,7 @@ class addin:
             self.core.setValueFromName('Modflow','NCOL',g['nx'])
             self.core.setValueFromName('Modflow','NROW',g['ny'])
         elif mgroup =='Modflow USG':
+            self.core.lcellInterp = []  # OA 16/1/21
             self.mfU.buildMesh(opt)
             ncell = self.mfU.ncell
             self.core.setValueFromName('Modflow','NCELL',int(ncell))

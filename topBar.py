@@ -144,26 +144,26 @@ class BaseTop:
         """used to see the current variable for current medium"""
         mod = self.gui.currentModel
         line = self.gui.currentLine
-        opt, iper, plane, section = None,0, 'Z',self.gui.currentMedia; #print 'guisho 275',line,self.curVar
-#        if self.curVar.has_key(line): 
+        opt, iper, plane, section = None,0, 'Z',self.gui.currentMedia;
+        #print('topb gcurvar',mod,line,section,var)
 #            mat = self.curVar[line]*1
         if line in ['drn.1','riv.1','ghb.1']:
-            if self.core.dictype[mod][line][section]=='importArray':
-             #EV 26.11.20
-                mat =  self.getTransientArray(line,var)
-                mat = np.array(mat)
-                section=0
+            if self.core.dictype[mod][line][section]=='importArray': #EV 26.11.20
+                mat =  self.getTransientArray(line,var)[0];# OA 16/1/21 added 0
+                #mat = np.array(mat) # OA 16/1/21 removed
+                #section=0 # OA 16/1/21 removed
             else: 
-                mat=zone2grid(self.core,mod,line,section,opt=var,iper=0)
-                mat=np.array([mat]) ; section=0
-                #mat = self.core.getValueLong(mod,line,0)*1
-                #print('1',mat)
+                if 'USG' in self.core.addin.getModelGroup(): # OA 16/1/21
+                    mat=zone2mesh(self.core,mod,line,section,var=var)  # OA 16/1/21
+                else :
+                    mat=zone2grid(self.core,mod,line,section,opt=var,iper=0)
+                #mat=np.array([mat]); #OA 16/1/20 removed 
         else:
-            mat = self.core.getValueLong(mod,line,0)*1;#print 'topb 210',shape(mat)
+            mat = self.core.getValueLong(mod,line,0)[section];#added section
         #self.curVar[line] = mat*1;
         X,Y = getXYmeshSides(self.core,plane,section)
         if 'USG' in self.core.addin.getModelGroup(): # OA 20/11/20
-            return None,None,mat[0]
+            return None,None,mat  # OA 16/1/21 removed [0]
         if self.core.addin.getDim() in ['Radial','Xsection']:
             m2 = mat[-1::-1,0,:]
         else :

@@ -354,7 +354,7 @@ def blockUnstruct(core,modName,line,intp,opt,iper):
             lay +=1
     return m0
         
-def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
+def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value',var=0): # OA 16/1/20
     """return a vector of values for one property over a mesh, values are given
     through zones
     can return values on elts or nodes according to loc value
@@ -377,8 +377,8 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value'):
     for iz,v in enumerate(dicz['value']): # OA 20/2/20
         if '$' in v: # here we take only the 3 value (for riv drn, ghb)
             onev = False # OA 20/2/20
-            v1 = v.split('$')[2]
-            try : zval.append(int(v1))
+            v1 = v.split('$')[1].split('\n')[var] # OA 16/1/21
+            try : zval.append(float(v1))
             except ValueError : pass
         elif '\n' in v: # a transient zone added OA 20/2/20
             zval.append(float(core.ttable[line][iper,iz]))
@@ -989,8 +989,6 @@ def cellsUnderPoly(core,dicz,media,iz):
         seg1 = sign(b*xc - a*yc - b*x[1] +a*y[1])#bx’-ay’-bx0+ay0
         idx = (dpos>0)*(seg0 != seg1)*1
         ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
-        #dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)
-        #srt = argsort(dst);ipts=ipts[srt]
         indx += idx
         dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)/sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
         if z == 0 : zval = 0
@@ -1006,7 +1004,7 @@ def cellsUnderPolyOrd(core,dicz,media,iz):
     if len(poly)==1: #OA 18/12/20
         x,y = poly[0];dst=(x-xc)**2+(y-yc)**2
         indx=where(dst==amin(dst))[0]
-        return indx,dicz['value'][iz]
+        return indx #,dicz['value'][iz]
     lcoefs=lcoefsFromPoly(poly)
     indx = []
     for i in range(len(poly)-1):
@@ -1231,8 +1229,7 @@ def onMessage1(core,txt):
 
 def zone2array(core,modName,line,im):
     fNameExt = core.dicarray[modName][line][im] #EV 05/05/20
-    #fNameExt = file.split('/')[-1] 
-    #fDir = file.replace(fNameExt,'')
+    print('inzon2arr',fNameExt)
     fDir = core.fileDir
     ext=fNameExt[-3:]
     arr=array([]) ; zdx,zdy,ysign=None,None,-1 # OA 26/7/20 set ysign default to -1 (modflow)

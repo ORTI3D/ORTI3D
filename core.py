@@ -707,7 +707,7 @@ class Core:
                 if isclosed(self,x,y): # polygon
                     iy,ix = where(fillZone(nx,ny,ix,iy,a));
             else : # OA 18/12/20
-                ix = cellsUnderPolyOrd(self,zlist,0,izon); # OA 9/1/21
+                ix = cellsUnderPolyOrd(self,zlist,0,izon); # OA 16/1/21
                 ix=list(ix);iy=[0]*len(ix);asin=[0]*len(ix);acos=[0]*len(ix)  
                 # should we add closed
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]

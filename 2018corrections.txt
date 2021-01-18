@@ -1311,3 +1311,12 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 15/01/21 EV
 - orti3dGui l.290 add onTickBox to check the box when open a model
 - qtVisualisation l.270,287,288,297,299,301,355-357 added to make usg grid transparent in order to get visible map
+
+16/1/20 OA
+- geometry zone2mesh l.357 added opt for the variable number (to get the value of each variable in a line)
+- geometry zone2mesh l.380 here we get the var nb
+- addin grindInmodel l.523 reset the core.lcellInterp to [] to have lintinerp redoing the calcualtion
+- core onPtObs added [0] to cellsUnderPolyOrd on l.710 to get only the values
+- qtvisualization in drawImage the cnv[image] condition included in the rest (sometimes htere are no images)
+- topbar l.150 to 157 & 160 considering usg for the variable to show and corecting to use the section
+- geometry cellsunderpolyOrd l.1007 removed z value
