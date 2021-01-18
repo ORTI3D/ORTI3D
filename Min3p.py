@@ -29,10 +29,7 @@ class Min3p:
         '''the objective is to build the mesh and to store most of tis components
         here. With the options read, the mesh is not rebuilt from gmsh, but read from vtk
         reading can seem a little weird, but this is the fastest'''
-        self.meshtype = 'grid'
         if self.core.getValueFromName('Min3pFlow','P_Uns')==0: return
-        self.core.addin.mesh = self
-        self.meshtype='mesh'
         if opt=='build':
             #print 'opt build'
             dct = self.core.diczone['Min3pFlow'].dic
@@ -40,7 +37,7 @@ class Min3p:
             lname,lcoords,lvalue =[],[],[]
             dicM = {'name':[],'coords':[],'value':[]}
             self.polynames = lname
-            s = gmeshString(self.core,dicD,dicM)
+            s = gmeshString(dicD,dicM)
             os.chdir(self.core.fileDir)
             f1 = open('gm_in.txt','w');f1.write(s);f1.close()
             bindir = self.core.baseDir+os.sep+'bin'+os.sep
@@ -50,8 +47,7 @@ class Min3p:
             self.nodes,self.elements,self.nnod,self.nel = nodes,elements,len(nodes),len(elements)
             s= '# vtk DataFile Version 3.0 \n2D scalar \nASCII \n'
             s += 'DATASET UNSTRUCTURED_GRID \nPOINTS '+str(self.nnod)+' float \n'
-            if self.core.addin.getDim() in ['Radial','Xsection']: 
-                nd = around(nodes[:,[1,3,2]],3)
+            if self.core.addin.getDim() in ['Radial','Xsection']: nd = around(nodes[:,[1,3,2]],3)
             else : nd = around(nodes[:,1:],3)
             s += arr2string1(nd)
             s += '\n\nCELLS '+str(self.nel)+' '+str(self.nel*4)+'\n'
@@ -88,7 +84,7 @@ class Min3p:
         else :
             return self.nodes[:,1],self.nodes[:,2]
             
-    def getNumber(self,typ):
+    def getNumber(self):
         return self.nnod
         
     def arr2string2(self,arr):
@@ -131,9 +127,8 @@ class Min3p:
         if group==None:
             for k in list(Bchem.keys()):
                 for i,r in enumerate(Bchem[k]['rows']):
+                    #print 'min3p l 145',k,i,r
                     if Bchem[k]['data'][i][0]: l.append(r)
-        elif group == 'exchange':
-            l = Bchem[group]['text']
         else :
             for i,r in enumerate(Bchem[group]['rows']):
                 if Bchem[group]['data'][i][0]: l.append(r)
@@ -163,7 +158,7 @@ class Min3p:
                 if l == None or l[:3]=='end' or l in ['','\n']: break
                 a = l.split();
                 k = a[0].replace('\'','')
-                l = f1.readline()  # OA all folloiwng for g and compl largely modified
+                l = f1.readline()  # OA all folloiwng ofr g and compl largely modified
                 if n=='complex':
                     dicDB[n].append([k,l.split()[1::2]])
                 else :
@@ -221,7 +216,7 @@ class Min3p:
                 'exchange':[True,2.0,0.,0.,0.,0.],
                 'sorption':[True,1.,1.,1.,10.,6],
                 'linear sorption':[False,0,0,0,0],
-                'gases':[True,0.],
+                'gases':[True,0.,1e-7,2e-5,4.5,300,1.],
                 'complex':[True],
                 'redox':[True,1e-9],
         }
@@ -231,7 +226,7 @@ class Min3p:
                 'exchange':['C','rhob','cecBack','cec1','cec2','cec3'], # OA 24/5 modif to have several exchangers
                 'sorption':['C','massBack','mass1','mass2','area','density'],
                 'linear sorption':['C','Kd_bak','Kd1','Kd2','Kd3'],
-                'gases':['C','1stO dec.rate'],
+                'gases':['C','1stO dec. rate','Diff_coeff','WKvisco','LJ_sigma','LJ_eK','mass'],
                 'complex':['C'],
                 'redox':['C','scaling']
         }
@@ -272,6 +267,9 @@ class Min3p:
                     val = lival[n]*1
                     if name in base['text']: val[0]=False
                     base['data'].append(val)
+                if n=='gases' and name in['o2(g)','n2(g)','co2(g)','ch4(g)']:
+                   base['data'][-1][1] = 'LJ'
+                   base['data'][-1][2:] = self.getLJparms(name)
             baseOut[n] = base.copy()
         #print baseOut['complex']
         self.Base['MChemistry'] = deepcopy(baseOut)
@@ -279,7 +277,11 @@ class Min3p:
     def getBase(self): 
         #print 'min3p 250',self.core.getValueFromName('Min3pTrans','Diff_choice')
         b1 = self.Base['MChemistry'].copy()
-        print('min3p 281',b1)
+        if self.core.getValueFromName('Min3pTrans','Diff_choice')==0:
+            #used to modify the view according to the diffusion type
+            b1['gases']['cols']=['C','1stO dec. rate']
+            data = b1['gases']['data']
+            b1['gases']['data'] = [d[:2] for d in data]
         # remove secondary species for exchange and sorption
         b1['exchange']['rows'] = ['-x']
         lst0 = b1['sorption']['rows']*1

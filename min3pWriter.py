@@ -27,7 +27,6 @@ class min3pWriter:
     def writeMin3pFiles(self, core, option):
         #option Flow, Trans or Chem
         self.core,self.min3p = core,core.addin.min3p
-        self.meshtype = self.min3p.meshtype
         self.chem = self.core.addin.chem
         if option == 'Trans' and core.dicval['Min3pFlow']['glo.1'][6]==1: 
             option = 'Heat' #in transport is engery balcne is active, this is Heat
@@ -54,22 +53,20 @@ class min3pWriter:
         elif option == 'Heat': lgrp.extend(['cont','cone','trans','trac','init','bct','engp','inie','bce'])
         elif option == 'Chem': lgrp.extend(['cont','conc','trans','inic','bcc'])
         Fkey,Tkey,Ckey = core.dickword['Min3pFlow'],core.dickword['Min3pTrans'],core.dickword['Min3pChem']
-        s0 = ' !-----------------------------------------------------------------\n'
         for grp in lgrp:
             #print 'group',grp
             if grp in Fkey.grpList:
-                if grp not in self.core.addin.getUsedModulesList('Min3pFlow'):
-                    continue
+                if grp not in self.core.addin.getUsedModulesList('Min3pFlow'):continue
                 self.dicval = core.dicval['Min3pFlow']
-                s+= s0 +Fkey.longNames[grp]+'\'\n' #GC 21/02/2019
-                s+= self.writeBlock('Min3pFlow',Fkey,grp,Fkey.groups[grp])
+                s+='!-------------------------\n\''+Fkey.longNames[grp]+'\'\n'
+                s+=self.writeBlock('Min3pFlow',Fkey,grp,Fkey.groups[grp])
             elif grp in Tkey.grpList:
                 self.dicval = core.dicval['Min3pTrans']
-                s+= s0 +Tkey.longNames[grp]+'\'\n' #GC 21/02/2019
+                s+='!-------------------------\n\''+Tkey.longNames[grp]+'\'\n'
                 s+=self.writeBlock('Min3pTrans',Tkey,grp,Tkey.groups[grp])
             elif grp in Ckey.grpList:
                 self.dicval = core.dicval['Min3pChem']
-                s+= s0 +Ckey.longNames[grp]+'\'\n' #GC 21/02/2019
+                s+='!-------------------------\n\''+Ckey.longNames[grp]+'\'\n'
                 s+=self.writeBlock('Min3pChem',Ckey,grp,Ckey.groups[grp])
         if option == 'Chem': 
             s+= self.writeGeochem()
@@ -79,14 +76,12 @@ class min3pWriter:
     def writeBlock(self,mod,Dict,grp,llist):
         if grp == 'spat':
             s = self.writeSpat()
-        elif grp in ['glo','time','trac','conf','cont','cone','conc','conv']: 
+        elif grp in ['glo','time','out','trac','conf','cont','cone','conc','conv']: 
             s = self.writeGeneral(mod,Dict,grp,llist)
         elif grp[:4] == 'poro':
             s = self.writeMedia(mod,Dict,llist)
         elif grp[:3] == 'ini':
             s = self.writeIni(mod,Dict,llist)
-        elif grp[:3] == 'out':
-            s = self.writeOut(mod,Dict,llist)
         elif grp[:2] == 'bc':
             s = self.writeBcs(mod,Dict,llist)
         else: # concerns only flow1..4 and engp3
@@ -96,7 +91,9 @@ class min3pWriter:
     def writeGeneral(self,mod,Dict,grp,llist):
         s = '';#print llist
         for l in llist:
-            line = l*1;#print(line)
+            line = l*1;#print line
+#            if self.xsect and l == 'spat.2': line = 'spat.3' # for coords inversion
+#            if self.xsect and l == 'spat.3': line = 'spat.2'
             cond=Dict.lines[line]['cond'];#print line
             if self.core.testCondition(mod,cond)==False : continue
             kwlist=Dict.lines[line]['kw']
@@ -115,9 +112,9 @@ class min3pWriter:
             if (line[:4] not in ['spat','time']) and lprint: 
                 s += '\''+name+'\'\n'
             for ik in range(len(kwlist)):
-                #print('min3pw gene',line,ik,lval[ik])
+                #print line,lval
                 value=lval[ik];#
-                if ktyp[ik]=='choice': # where there is a choice print the nb of the choice not the value
+                if ktyp[ik]=='choice': # where there is a choice print the nb of he choice not value
                     detail = Dict.lines[line]['detail'][ik]
                     choi = detail[value+1]# +1 because the first line is the title
                     if choi in ['true','false']: sep='.' # for the global keywords at the start
@@ -130,13 +127,15 @@ class min3pWriter:
                         choi,sep = '\''+detail[0]+'\'\n\''+detail[value+1]+'\'\n',''
                     else :
                         sep =  '\''
-                    if choi+sep != '': s += sep+choi+sep+'    \n'#     ;'+detail[0]+'\n' # oa 26/5
+                    if choi+sep != '': s += sep+choi+sep+'         ;'+detail[0]+'\n' # oa 26/5
                 elif ktyp[ik]=='title': # case of a title line
                     s += '#'+str(value)+'\n'
                 else : # values with strings
                     if line in ['trac.2']: 
-                        value = os.path.dirname(self.core.baseDir)+'\\utils' # OA 6/1/20
-                    s += str(value) +'\n' #';\t'+str(Dict.lines[line]['detail'][ik])+'\n' # OA 5/6/19
+                        value = '\''+self.core.gui.mainDir+os.sep+'utils\''
+                    if line == 'out.1':
+                        value = self.getTimeList()
+                    s += str(value)+'\n'
         if grp in self.addKey:
             for n in self.addKey[grp]: s+='\''+n+'\'\n'
         return s+'\n\'done\'\n\n'
@@ -154,20 +153,10 @@ class min3pWriter:
                     cumul += dx[i]
             return s1
         g = self.grid
-        s = str1dim(g['x0'],g['x1'],g['nx'],g['dx'])+'\n'
-        s2 = str1dim(g['y0'],g['y1'],g['ny'],g['dy'])+'\n'
-        sz = '\n1\n1\n0.0 1.0\n' # OA 20/7/19 this and 4 lines bleow added for 3d
-        if self.core.addin.getDim()=='3D': 
-            zcoo = self.core.Zblock[-1::-1,0,0];nz = len(zcoo)
-            sz = str(nz-1)+'\n'+'\n'.join(['1\n'+str(zcoo[i])+' '+str(zcoo[i+1]) for i in range(nz-1)])
-        if self.xsect==False: s += s2 + sz
-        else : 
-            ly = [str(a) for a in self.core.dicval['Min3pFlow']['spat.2']]
-            s += '\n'+ly[0]+'\n'+ly[1]+'\n'+ly[2]+' '+ly[3]+'\n\n' + s2
-        if self.core.addin.getDim()=='Radial': # EV 06/01/20
-            s += '\'radial coordinates\'\n' # EV 06/01/20
-        if self.meshtype=='mesh': #unstructured
-            s += '\'read unstructured grid from file\'\n'
+        s = str1dim(g['x0'],g['x1'],g['nx'],g['dx'])
+        s2 = str1dim(g['y0'],g['y1'],g['ny'],g['dy'])
+        if self.xsect==False: s += s2 + '\n1\n1\n0.0 1.0\n'
+        else : s += '\n1\n1\n0.0 1.0\n' + s2
         return s+'\n\'done\'\n\n'
         
     def writeMedia(self,mod,Dict,llist):
@@ -188,7 +177,7 @@ class min3pWriter:
             dicz = self.core.diczone[mod].dic[line]
             nbzline = len(dicz['value']);#print line, nbzline,self.allRectZones(dicz)# nb of zones for this line
             nbz=1 # OA 31/05
-            if self.allRectZones(dicz) or self.meshtype=='mesh': # write only for rect zone or unstructured
+            if self.allRectZones(dicz) or self.min3p.nodes!=None: # write only for rect zone or unstructured
                 for iz in range(nbzline): # OA 23/5
                     zname = dicz['name'][iz]
                     if (zname == 'domain') or (zname in lznames): continue # OA 23/5 added lznames on 24/5
@@ -199,11 +188,11 @@ class min3pWriter:
                     if line[:4]=='poro': s += self.getValue(mod,line,dicz,iz,'zone')
                     else : s += poro_base
                     s += '\'extent of zone'
-                    lzcoords.append(self.getCoords(dicz['coords'][iz],dicz['media'][iz],line))
+                    lzcoords.append(self.getCoords(dicz['coords'][iz],line))
                     s +=  lzcoords[-1]+'\n'
                     s += '\'end of zone\'\n\n'
         self.lznames,self.lzcoords = lznames,lzcoords # OA 25/5 remember the list of zones
-        return s+'\n\'done\'\n\n'
+        return s+'\'done\'\n'
         
     def writeIni(self,mod,Dict,llist):
         nbztot = self.getNbZonesMedia(mod,llist) # nb of zones for this ini
@@ -215,19 +204,19 @@ class min3pWriter:
         s += '\'extent of zone\'\n'
         s += self.getDomainCoords()
         s += '\n\'end of zone\'\n\n'
-        if nbztot ==0: return s+'\n\'done\'\n\n'
+        if nbztot ==0: return s+'\'done\'\n'
         dicz = self.core.diczone[mod].dic[line]
         nbzline = len(dicz['value']);#print line, nbzline,self.allRectZones(dicz)# nb of zones for this line
-        if self.allRectZones(dicz) or self.meshtype=='mesh': # write only for rect zone or unstructured
+        if self.allRectZones(dicz) or self.min3p.nodes!=None: # write only for rect zone or unstructured
             for iz in range(nbzline): # OA 23/5
                 zname = dicz['name'][iz]
                 s += '\'number and name of zone\'\n'+ str(iz+2) +'\n'
                 s += '\''+zname+'\''  + '\n \'initial condition\'\n'
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line)+'\n'
+                s += self.getCoords(dicz['coords'][iz],line)+'\n'
                 s += '\'end of zone\'\n\n'
-        return s+'\n\'done\'\n\n'
+        return s+'\'done\'\n'
                
     def writeByZones(self,mod,Dict,llist):
         '''writes spatial data several situations appear :
@@ -238,18 +227,16 @@ class min3pWriter:
         '''
         nbztot = len(self.lznames);# total nb of zones in porous medium
         s= str(nbztot+1)+'\n' # starts at 0 
-        for line in llist: # don't write as spatial data if not array, for engp,diffu
+        for line in llist: # don't write as spatial data if not array, for engp
             if Dict.lines[line]['type'][0][:3] != 'arr': 
                 s += '\''+Dict.lines[line]['comm'].split('(')[0]+'\'\n'
-                for ik in range(len(Dict.lines[line]['kw'])):
-                    s += self.getValue(mod,line,None,ik,'whole')
+                s += self.getValue(mod,line,None,0,'whole')
                 
         s += '\'number and name of zone\'\n1 \n\'domain\'\n'
         for line in llist:
             if Dict.lines[line]['type'][0][:3] != 'arr':  continue
             cond=Dict.lines[line]['cond'];#the conditio to test if the line shall be printed
             if self.core.testCondition(mod,cond)==False : continue
-            #print( 'min3pw byz',line)
             info = Dict.lines[line]['comm'].split('(')[0]
             s += '\''+info+'\'' + '\n'
             s += self.getValue(mod,line,None,0,'whole')
@@ -258,7 +245,7 @@ class min3pWriter:
         s += '\'end of zone\'\n\n'
 
         flagDis = False #write read from file if necessary
-        if self.meshtype=='grid': # only for structured
+        if self.min3p.nodes==None: # read from file only for structured grid
             for line in llist: 
                 if (line not in list(self.core.diczone[mod].dic.keys())): continue
                 dicz = self.core.diczone[mod].dic[line]
@@ -293,8 +280,7 @@ class min3pWriter:
         return s+'\'done\'\n\n'
         
     def writeBcs(self,mod,Dict,llist):
-        nbz,nbztot = 0,self.getNbZones(mod,llist)   #normally BC zones are "rect" (in fact line)
-        self.endkey = ''
+        nbz,nbztot = 0,self.getNbZonesBCs(mod,llist)   #normally BC zoens are "rect" (in fact line)
         s = str(nbztot)+'\n'
         for line in llist: 
             if line not in list(self.core.diczone[mod].dic.keys()): continue # no zones
@@ -307,44 +293,22 @@ class min3pWriter:
                 # for this zone write type of information and value
                 info = Dict.lines[line]['comm'].split('(')[0]
                 s += '\'boundary type\'\n'
-                s += '\''+info+'\' '     #GC modified 21/02/19 remodi OA 23/2
+                s += '\''+info+'\''  + '\n'
                 s += self.getValue(mod,line,dicz,iz,'zone')
                 # for this zone write extent
                 s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line,'boundary') +'\n'
-                s += '\'end of zone\'\n'
-        s += self.endkey+'\n'+'\'done\'\n\n'
-        return s
-        
-    def writeOut(self,mod,Dict,llist):
-        nbz,nbztot = 0,self.getNbZones(mod,llist)   #normally BC zones are "rect" (in fact line)
-        self.endkey = ''
-        s = '\'output of spatial data\'\n'+self.getTimeList() +'\n'
-
-        s += '\'output of mass through specified boundary\'\n'
-        s += str(nbztot)+'\n\n'
-        for line in llist: 
-            if line not in list(self.core.diczone[mod].dic.keys()): continue # no zones
-            dicz = self.core.diczone[mod].dic[line]
-            nbzline = len(dicz['value'])# nb of zones for this line
-            for iz in range(nbzline):
-                nbz += 1
-                s += '\'number and name of zone\'\n'+ str(nbz) +'\n'
-                s += '\''+dicz['name'][iz]+'\''  + '\n'
-                # for this zone write type of information and value
-                info = Dict.lines[line]['comm'].split('(')[0]
-                # for this zone write extent
-                s += '\'extent of zone'
-                s += self.getCoords(dicz['coords'][iz],dicz['media'][iz],line,'boundary') +'\n'
-                s += '\'end of zone\'\n'
-        s += self.endkey+'\n'+'\'done\'\n\n'
+                s += self.getCoords(dicz['coords'][iz],line,'boundary') +'\n'
+                s += '\'end of zone\'\n\n'
+        s += '\'done\'\n\n'
         return s
         
     def getValue(self,mod,line,dicz,iz,opt):
         """get the values for zones or for the wole domain
         allow to get the chemistry from solutions too
         """
-        Dkeys = self.core.dickword[mod] # mod in Min3pFlow, Trans, Chemistry
+        if mod =='Min3pFlow': Dkeys = self.core.dickword['Min3pFlow'] # added 26/5 because we need to find lines in any dict
+        elif mod =='Min3pTrans': Dkeys = self.core.dickword['Min3pTrans']
+        elif mod =='Min3pChem': Dkeys = self.core.dickword['Min3pChem']
         prefx=''
         if 'prefx' in Dkeys.lines[line]: prefx = Dkeys.lines[line]['prefx']
         suffx=''
@@ -362,44 +326,40 @@ class min3pWriter:
                 s+=a+' %+11.4e' %float(vals[i])+'\n'
         else :
             if opt=='whole':
-                vlist = self.core.dicval[mod][line][iz:iz+1] # OA 11/8 here iz is keyw nb
+                vlist = self.core.dicval[mod][line]
             elif opt=='zone':
                 vlist = [dicz[line]['value'][iz]]
             for v in vlist: # to write all keywords
-                if line in ['bcc.1','bcc.4','inic.1']: # OA 23/5/18 for chemistry
-                    if opt == 'whole': nbsolu = int(v)  # OA 25/5/18 0 -> v because nbsolu can be in background
+                if line in ['bcc.1','bcc.4','inic.1']: # OA 23/5 pb for inic not read
+                    if opt == 'whole': nbsolu = int(v)  # OA 25/5 0 -> v because nbsolu can be in background
                     else: nbsolu = int(dicz[line]['value'][iz])
                     v = self.getStringFromSolution(line,nbsolu) # here, this is the background
-                else:
-                    try :
-                        v = ' %+11.4e' %float(v)
-                        v = v.replace('e','d')
-                    except ValueError:
-                        if '\n' in v: # transient
-                            v = '0.000d+00 \n'
-                            if self.endkey=='': self.writeTransientFile(line)
-                            self.endkey = '\'transient boundary conditions\''
+                else :
+                    v = ' %+11.4e' %float(v)
+                    v = v.replace('e','d')
                 s += prefx + v +' '+ suffx +'\n'
         return s
         
     def getStringFromSolution(self,line,value):
         """provide the string for the solution (or mineral) composition
         given by value as 1000 (like for pht3d) or 1210 for initial conditions
-        and solution number in boundary cond
+        an dsolution number in boundary cond
         """
         if line[:4] == 'inic':
-            nsol,nmin = int(value/1000),int(mod(value,1000)/100)   
-            nexch,nsurf = int(mod(value,100)/10),int(mod(value,10))  # OA 26/11/18
+            nsol,nmin,nexch,nsurf = value/1000,mod(value,1000)/100,mod(value,100)/10,mod(value,10)
         else :
-            nsol = int(value)
-        s = '\n\'concentration input\' \n' # OA 19/3/19
+            nsol = value
+        #lgrp = ['comp','mineral','sorption','sorption']
+        #lnames = ['concentration input','mineral input','sorption parameter input','sorption parameter input']
         # solutions
         dChem = self.core.addin.chem.Base['MChemistry']['comp']
+        s = ''
+        #if line[:3] == 'bcc': #OA removed 23/5 needed ofr inic too
+        s = '\'concentration input\' \n'
         for ir,row in enumerate(dChem['rows']):
             if dChem['data'][ir][0]: #the species is ticked
-                #print(line,ir,dChem['data'][ir],nsol)
                 s += str(dChem['data'][ir][nsol+2]).replace('e','d')+'  \''+\
-                    dChem['data'][ir][-1]+'\'  ;'+row+'\n' # last columns 'free', 'ph'...
+                    dChem['data'][ir][-1]+'\'  ;'+row+'\n' # last columns contains 'free', 'ph'...
         if line[:3] == 'bcc': return s
         # linear sorption
         dChem = self.core.addin.chem.Base['MChemistry']['linear sorption']
@@ -413,7 +373,7 @@ class min3pWriter:
         dChem = self.core.addin.chem.Base['MChemistry']['exchange']
         se = '';#print 'nexch',nexch
         if dChem['data'][0][0]:
-            se += str(dChem['data'][0][nexch+2])+' \n' # cec of the exchanger, modif OA 1/3/19
+            se += str(dChem['data'][0][nexch+1])+' \n' # cec of the right exchanger
             se += str(dChem['data'][0][1])+' \n' # rho
         if se != '': 
             s += '\n\'sorption parameter input\' \n' + se +'\n'      
@@ -464,7 +424,7 @@ class min3pWriter:
                         names.append(n) # OA 24/5
         return nbz
         
-    def getNbZones(self,mod,llist):
+    def getNbZonesBCs(self,mod,llist):
         '''returns the total number of zones for a list of lines, only counting
         the zones that are not rectangles and that are different from the domain'''
         nbz=0
@@ -480,27 +440,18 @@ class min3pWriter:
         for i in lst: s+= str(self.domn[i])+'  '
         return s
 
-    def getCoords(self,coolist,imed,line,opt='all'):
+    def getCoords(self,coolist,line,opt='all'):
         '''returns a formatted string of coords from the orti list, these orti coords are in 
         x and y , they are transformed if Xsection'''
-        nodes,dicv = self.min3p.nodes,self.core.dicval['Min3pFlow']
+        nodes = self.min3p.nodes
         if self.isRectZone(coolist): #squared zones
             s = '\'\n'
             coolist = self.coord2BC(coolist) # OA 25/5 removed the if, may apply to all
             xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
             s0 = str(min(xl))+' '+str(max(xl))+' '
             s1 = str(min(yl))+' '+str(max(yl))+' '
-            if self.xsect : 
-                s += s0+str(self.domn[2])+'  '+str(self.domn[3])+'  '+s1
-            elif self.core.addin.getDim()=='3D':
-                if type(imed)==type([5]): botm,top = dicv['spat.8'][imed[-1]],dicv['spat.7'][imed[0]]
-                else : botm,top = dicv['spat.8'][imed],dicv['spat.7'][imed]
-                if opt=='boundary':
-                    if imed==0 : s += s0+s1+str(top)+' '+str(top)
-                    else : s += s0+s1+str(botm)+' '+str(botm)
-                else : s += s0+s1+str(botm)+' '+str(top)
-            else : 
-                s += s0+s1+str(self.domn[4])+'  '+str(self.domn[5])+'  '
+            if self.xsect : s += s0+str(self.domn[2])+'  '+str(self.domn[3])+'  '+s1
+            else : s += s0+s1+str(self.domn[4])+'  '+str(self.domn[5])+'  '
         else : # usntructured non squared
             s = ': '+opt+' nodes in polygon\'\n\'read data\'\n'
             xl,yl = list(zip(*coolist));#print 'bc l 273',xl,yl
@@ -553,19 +504,6 @@ class min3pWriter:
         return self.fileKeys[line][i]
         
 
-    def writeTransientFile(self,line):
-        '''write transient data to bcvs typs file'''
-        tt = self.core.ttable
-        path0 = self.core.fileDir+os.sep+self.core.fileName
-        if line[:3] == 'bcf':
-            l0 = [a for a in tt.keys() if a[:3]=='bcf']
-            bcvs = array(tt['tlist'],ndmin=2).T
-            for i in range(len(l0)): 
-                bcvs = c_[bcvs,tt[l0[i]]]
-            bcvs = str(bcvs).replace('[','').replace(']','').replace('\'','')
-            f1 = open(path0+'.bcvs','w');f1.write(bcvs);f1.close()
-        
-        
     def writeDistributedFile(self,line,extension):
         """ to write a file with values distributed on the grid, 
         get the object from zone and call write function for external file"""
@@ -634,11 +572,7 @@ class min3pWriter:
         lgrp = ['complex','redox','gases','sorption','mineral']
         lnames = ['secondary aqueous species','intra-aqueous kinetic reactions','gases',
                   'sorbed species','minerals']
-        s  = ' !-----------------------------------------------------------------\n' #GC add 21/02/19
-        s += ' !-----------------------------------------------------------------\n' #GC add 21/02/19
-        s += ' !Data Block 2: geochemical system  -------------------------------\n' #GC add 21/02/19
-        s += ' !-----------------------------------------------------------------\n' #GC add 21/02/19
-        s += '\'geochemical system\'\n\n' #GC add 21/02/19
+        s = '!-----------------------------\n\'geochemical system\'\n'
         s += '\'use new database format\'\n\n\'database directory\'\n'
         s += '\''+self.fDir+'\'\n\n'
         # add components (modified for immobile compounds)
@@ -669,8 +603,9 @@ class min3pWriter:
         # add ion exchange
         l,s1 = self.chem.getListSpecies('exchange'),''
         if len(l)>0:
-            for n in l: s1 += '\''+n+'\' \n' # OA 1/3/19
-            s += '\'sorbed species\'\n' +str(len(l))+'\n' +s1 +'\n'  # OA 1/3/19
+            for n in l: 
+                if n != '-x': s += '\''+n+'\' \n'
+            s += '\'sorbed species\'\n' +str(len(l)-1)+'\n' +s1 +'\n'
         # add non aqueous conc for surface (it's name)
         l = self.chem.getListSpecies('sorption')
         s1,nb = '',0
@@ -699,8 +634,8 @@ class min3pWriter:
             dChem = self.chem.Base['MChemistry']['gases']
             for n in l:
                 indx = dChem['rows'].index(n)
-                s += dChem['data'][indx][1] +'\n' # OA 25/2/19
-        return s+'\n\'done\'\n\n'
+                s += dChem['data'][indx][1] +'\n'
+        return s+'\n\'done\'\n'
         
     def getDiffusion(self):
         diffChoice = self.core.getValueFromName('Min3pTrans','Diff_choice')
@@ -754,12 +689,9 @@ class min3pWriter:
         """writes the databases locally using only species used"""
         for name in ['comp','gases','complex','sorption','redox','mineral']:
             fil1 = self.core.gui.mainDir+os.sep+'utils'+os.sep+name+'.dbs'
-            fil1=os.path.normpath(fil1) #EV 18/02/19
             fil2 = self.fDir+os.sep+name+'.dbs'
-            fil2=os.path.normpath(fil2) #EV 18/02/19
             if name+'.dbs' not in os.listdir(self.fDir): # OA added 23/5/17
                 os.system('copy '+fil1+' '+fil2)
-                #print('ok')
 #        for name in ['redox','mineral']: # 23/5 OA removed ,not usefull and print bad data
 #            if len(self.chem.Base['MChemistry'][name]['rows'])>0:
 #                f1 = open(self.fDir+os.sep+name+'.dbs','w')
@@ -771,7 +703,6 @@ class min3pReader:
     def __init__(self,core,fDir, fName):
         self.fDir,self.fName = fDir,fName
         self.fullPath = fDir+os.sep+fName;#print self.fullPath
-        self.flags = {'gsp':False,'gst':False,'gsg':False,'gsv':False,'vel':False,'gsm':False,'gsc':False}
         self.data = {'gsp':None,'gst':None,'gsg':None,'gsv':None,'vel':None,'gsm':None,'gsc':None}
         self.struct = core.getValueFromName('Min3pFlow','P_Uns')==0
         self.names, self.core = {},core         
@@ -782,33 +713,31 @@ class min3pReader:
         gst : total conc, gsm : general (pH, Alk...), gsc : ion conc (incl complex)
         gsp : pressure.. wcontent..temp"""
         nper = self.core.nper 
-        if self.flags[ext] == False:
-            if self.struct: # structured
-                getval = self.core.getValueFromName
-                nx,ny,nz=getval('Min3pFlow','NX'),getval('Min3pFlow','NY'),getval('Min3pFlow','NZ')
-                if ext=='vel': # velocity have diff shape
-                    nx,ny,nz = max(nx-1,1),max(ny-1,1),max(nz-1,1)
-                f1=open(self.fullPath+'_0.'+ext,'r');f1.readline()
-                nam = f1.readline().replace('"','').replace(' ','').replace('fh_w','h_w').replace('\n','')
-                f1.close()
-                self.names[ext] = nam.split(',')[3:];#print nx,ny,nz,self.names
-                for ip in range(nper-1):
-                    mat = loadtxt(self.fullPath+'_'+str(ip+1)+'.'+ext,skiprows = 3) # OA 14/6 pb read _0
-                    nr,nc = shape(mat);#print nr,nc
-                    if ip==0: self.data[ext] = zeros((nper,nc-3,nz,ny,nx))
-                    mat2 = zeros((nc-3,nz,ny,nx));#print ext,iper,shape(self.data[ext]),shape(mat2)
-                    for iv in range(nc-3):
-                        mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))[::1,:,:] # EV 06/01/20
-                    self.data[ext][ip] = mat2
-            else : # unstructured
-                self.names[ext],self.data[ext] = self.readOutputVtk(ext,nper)
-            self.flags[ext] = True
+        #if self.data[ext] == None:
+           # if self.struct: # structured
+        nx,ny,nz=self.core.getValueFromName('Min3pFlow','NX'),self.core.getValueFromName('Min3pFlow','NY'),self.core.getValueFromName('Min3pFlow','NZ')
+        if ext=='vel': # velocity have diff shape
+            nx,ny,nz = max(nx-1,1),max(ny-1,1),max(nz-1,1)
+        f1=open(self.fullPath+'_0.'+ext,'r');f1.readline()
+        nam = f1.readline().replace('"','').replace(' ','').replace('fh_w','h_w').replace('\n','')
+        f1.close()
+        self.names[ext] = nam.split(',')[3:];#print nx,ny,nz,self.names
+        for iper in range(nper-1):
+            mat = loadtxt(self.fullPath+'_'+str(iper+1)+'.'+ext,skiprows = 3) # OA 14/6 pb read _0
+            nr,nc = shape(mat);#print nr,nc
+            if iper==0: self.data[ext] = zeros((nper,nc-3,nz,ny,nx))
+            mat2 = zeros((nc-3,nz,ny,nx));#print ext,iper,shape(self.data[ext]),shape(mat2)
+            for iv in range(nc-3):
+                mat2[iv] = reshape(mat[:,iv+3],(nz,ny,nx))
+            self.data[ext][iper] = mat2
+           # else : # usntructured
+               # self.names[ext],self.data[ext] = self.readOutputVtk(ext,nper)
         ivar = self.names[ext].index(varname)
         return self.data[ext][iper,ivar]
         
     def readOutputVtk(self,ext,nper):
         '''reads a series of files defined by the extension name ext in vtk format'''
-        names,nlay = [],1 # for now just one layer
+        names = []
         for iper in range(nper):
             f1=open(self.fullPath+'_'+str(iper)+'.'+ext+'.vtk')
             a = f1.read(); f1.close()
@@ -816,13 +745,12 @@ class min3pReader:
             nvar = len(b)
             if iper==0: 
                 npts = len(b[0].split('\n'))-3
-                data=zeros((nper,nvar,nlay,npts))
+                data=zeros((nper,nvar,npts))
             n=-1
             for ivar in range(nvar):
                 b1 = b[ivar].split('\n');#print b1[0]
                 names.append(b1[0].split()[0])
-                #print (shape(data),shape(array(b1[2:n])))
-                data[iper,ivar,0,:]=array(b1[2:n]).astype('float')
+                data[iper,ivar]=array(b1[2:n]).astype('float')
         return names,data
             
     def readHeadFile(self,core,iper):
@@ -832,12 +760,12 @@ class min3pReader:
 
     def readWcontent(self,core,iper):
         self.core = core
-        wc = self.readOutput('gsp',iper,'s_w')#'theta_a')  # EV 06/01/20
+        wc = self.readOutput('gsp',iper,'s_w') # 3rd variable is theta_w
         return wc
 
     def readFloFile(self,core,iper):
         self.core = core
-        vel = self.readOutput('vel',iper,range(2))
+        vel = self.readOutput('vel',iper,rnge(2))
         nv,nz,ny,nx = shape(vel);#print 'redflo',shape(vel)
         # velocity have diff shape
         vel = concatenate((vel[:,:,:,:1],vel,vel[:,:,:,-1:]),axis=3);#print 'redflo',shape(vel)
@@ -852,7 +780,7 @@ class min3pReader:
 
     def readUCN(self,core,option,iper,ispec,specname):
         self.core = core
-        specname = specname.lower().replace('_tot','');#print option,iper,specname
+        specname = specname.lower();#print option,iper,specname
         eng=core.getValueFromName('Min3pFlow','energy_balance');
         if eng==1:
             return self.readOutput('gsp',iper,'temp_n') 
@@ -863,29 +791,29 @@ class min3pReader:
         if specname =='tracer':
             trc = self.readOutput('gsc',iper,'tracer'); #print shape(trc)
             return trc
-        lgrp = ['comp','gases','mineral','complex'] # OA 25/2/19
-        suff = ['t','g','v','c'] # totals, gases, mineral vol fraction
+        lgrp = ['comp','gases','mineral']
+        suff = ['t','g','v'] # totals, gases, mineral vol fraction
         for i,grp in enumerate(lgrp): 
             slist = self.core.addin.chem.getListSpecies(grp)
             if specname in slist:
                 cnc = self.readOutput('gs'+suff[i],iper,specname) # OA 24/5 name are now read directly
         return cnc
         
-    def getPtObs(self,core,irow,icol,ilay,iper,option,ispec=0,specname='',ss=''): #EV 23/03/20
+    def getPtObs(self,core,irow,icol,ilay,iper,option,ispec=0,specname=''):
         """get an observation point or a list of obs points for one period
         up to now, no different periods"""
         #print irow,icol,ilay,iper
-        if len(iper)==1: iper=iper[0] # OA 21/2/2019 needs to be changes later for breakthrouhg
         if core.addin.getDim() in ['Xsection','Radial']:
             ilay=irow*1;irow=[0]*len(ilay)
-        #print('mpwrite 339',ilay,icol,irow)
         specname = specname.lower()
         if option in ['Tracer','Chemistry']: # transport or chemistry
-            obs = self.readUCN(core,option,iper,ispec,specname)[:,ilay,irow,icol] # OA 25/2/19
-        elif option == 'Head':
-            obs = self.readHeadFile(core,iper)[:,ilay,irow,icol]
+            #a = self.readUCN(core,option,iper,ispec,specname);#print shape(a)
+            #obs = a[:,ilay,irow,icol]
+            obs = self.readUCN(core,option,iper,ispec,specname)[ilay,irow,icol]
+        elif option == 'head':
+            obs = self.readHeadFile(core,iper)[ilay,irow,icol]
         elif option == 'Wcontent':
-            obs = self.readWcontent(core,iper)[:,ilay,irow,icol]
+            obs = self.readWcontent(core,iper)[ilay,irow,icol]
         elif option == 'flux': 
             obs = self.readFloFile(core,iper)[:,ilay,irow,icol]
         return obs

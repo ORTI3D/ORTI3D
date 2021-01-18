@@ -19,24 +19,23 @@ class m3T:
         'cone':['cone.'+str(x) for x in range(1,10)],
         'conv':['conv.'+str(x) for x in range(14)],
         }
-        s='!--------------------------------------------------------------\n'
-        self.longNames={'trans':s+'!Data Block 11: Physical Parameters - Reactive Transport \n'+s+s+'\'physical parameters - reactive transport', #GC 21/02/2019
-            'trac' :s+'!Data Block 2: Geochemical System \n'+s+s+'\'geochemical system', #GC 21/02/2019
-            'init' :s+'!Data Block 16: Initial Condition - Reactive Transport \n '+s+s+'\'initial condition - reactive transport', #GC 21/02/2019
-            'bct'  :s+'!Data Block 15: Boundary Condition - Reactive Transport \n '+s+s+'\'boundary conditions - reactive transport', #GC 21/02/2019 
-            'cont' :s+'!Data Block 7: Control Parameters - Reactive Transport \n '+s+s+' \'control parameters - reactive transport', #GC 21/02/2019
-            'engp' :s+'!Data Block 10B: Physical Parameters - Energy Balance \n'+s+s+' \'physical parameters - energy balance', #GC 21/02/2019
-            'inie' :s+'!Data Block 12B: Initial Condition - Energy Balance \n'+s+s+' \'initial condition - energy balance', #GC 21/02/2019
-            'bce'  :s+'!Data Block 13B: Boundary Condition - Energy Balance \n'+s+s+' \'boundary conditions - energy balance', #GC 21/02/2019
-            'cone' :s+'!Data Block 6B: Control Parameters - Energy Balance \n'+s+s+' \'control parameters - energy balance', #GC 21/02/2019
-            'conv' :s+'!Data Block 6B?: Control Parameters - Evaporation \n'+s+s+'\'control parameters - evaporation', #GC 21/02/2019
+        self.longNames={'trans':'physical parameters - reactive transport',
+                   'trac':'geochemical system',
+                   'init':'initial condition - reactive transport',
+                   'bct':'boundary conditions - reactive transport', 
+                   'cont':'control parameters - reactive transport',
+                   'engp':'physical parameters - energy balance',
+                   'inie':'initial condition - energy balance',
+                   'bce':'boundary conditions - energy balance', 
+                   'cone':'control parameters - energy balance',
+                   'conv':'control parameters - evaporation',
         }
         self.lines={
         #'physical parameters – reactive transport'  
-        'trans.1':{'comm':'diffusion coefficients','cond':'','kw':['Diff_w','Diff_a','Diff_n','Diff_choice'],
-                  'detail':['Diff in water (m2/s)','Diff in air (m2/s)','Diff in napl',['Diffusion type','Original','Binary','Dusty gas']],
-                   'type':['float','float','float','choice'],
-                   'default':[1e-10,1e-5,0,0]},
+        'trans.1':{'comm':'diffusion coefficients','cond':'','kw':['Diff_w','Diff_a','Diff_choice'],
+                  'detail':['Diff in water (m2/s)','Diff in air (m2/s)',['Diffusion type','Original','Binary','Dusty gas']],
+                   'type':['float','float','choice'],
+                   'default':[1e-10,1e-5,0]},
         'trans.2':{'comm':'dispersivities','cond':'','kw':['Dsp'],
                   'detail':[''],'type':['arrint'],'default':[1.,0.1,0.1],
                   'names':['DspL','DspT','DspTV'],
@@ -108,7 +107,7 @@ class m3T:
         'engp.2':{'comm':'specific heat of air','cond':'','kw':['Aheat'],'detail':[''],
                   'type':['float'],'default':[1005]},
         'engp.3':{'comm':'gas thermal conductivity','cond':'','kw':['Acond'],'detail':[''],
-                  'type':['float'],'default':[0.025]},
+          'type':['float'],'default':[0.025]},
         'engp.4':{'comm':'Thermal properties','cond':'','kw':['Thermp'],'detail':[''],
                   'type':['arrint'],
                   'names':['spHeat sol','wat Conduct x','wat Conduct y','wat Conduct z',

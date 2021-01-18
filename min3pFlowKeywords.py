@@ -9,7 +9,7 @@ class m3F:
         self.grpList=['glo','spat','time','out','poro','flow','inif','bcf','conf']
         self.groups={
         'glo':['glo.1'],
-        'spat':['spat.'+str(x) for x in range(1,9)],
+        'spat':['spat.'+str(x) for x in range(1,7)],
         'time':['time.1'],
         'out':['out.1'], #,'out.2','out.3'],
         'poro':['poro.1'],
@@ -18,16 +18,15 @@ class m3F:
         'bcf':['bcf.1','bcf.2','bcf.3','bcf.4','bcf.5'],
         'conf':['conf.1','conf.2','conf.2a','conf.3','conf.4','conf.5','conf.6','conf.7','conf.8']
         }
-        s='!--------------------------------------------------------------\n'
-        self.longNames={'glo': s+'!Data Block 1: Global Control Parameters \n'+s+s+ '\'global control parameters', #GC 21/02/2019 + OA
-            'spat' : s+'!Data Block 3: Spatial Discretization \n'+s+s+'\'spatial discretization', #GC 21/02/2019
-            'time': s+'!Data Block 4: Time Step Control - Global System \n'+s+s+'\'time step control - global system', #GC 21/02/2019
-            'out' : s+'!Data Block 8: Output Control \n'+s+s+'\'output control', #GC 21/02/2019
-            'poro': s+'!Data Block 9: Physical Parameters - Porous Medium \n'+s+s+'\'physical parameters - porous medium', #GC 21/02/2019
-            'flow': s+'!Data Block 10: Physical Parameters - Variably Saturated Flow \n '+s+s+'\'physical parameters - variably saturated flow', #GC 21/02/2019
-            'inif': s+'!Data Block 12: Initial Condition - Variably Saturated Flow \n '+s+s+'\'initial condition - variably saturated flow', #GC 21/02/2019
-            'bcf' : s+'!Data Block 13: Boundary Condition - Variably Saturated Flow \n '+s+s+'\'boundary conditions - variably saturated flow', #GC 21/02/2019 
-            'conf': s+'!Data Block 6: Control Parameters - Variably Saturated Flow \n -'+s+s+'\'control parameters - variably saturated flow', #GC 21/02/2019
+        self.longNames={'glo':'global control parameters',
+                   'spat':'spatial discretization',
+                   'time':'time step control - global system',
+                   'out': 'output control',
+                   'poro':'physical parameters - porous medium',
+                   'flow':'physical parameters - variably saturated flow',
+                   'inif':'initial condition - variably saturated flow',
+                   'bcf':'boundary conditions - variably saturated flow', 
+                   'conf':'control parameters - variably saturated flow',
         }
         self.lines={
         #'global control parameters' 
@@ -61,10 +60,6 @@ class m3F:
                     'type':['choice','choice','choice','choice'],'default':[3,0,0,1]},
         'spat.6': {'comm':'mesh','cond':'P_Uns!=0','kw':['P_MESH'],'detail':[''],
                    'type':['arrfloat']},
-        'spat.7': {'comm':'top','cond':'','kw':['P_TOP'],'detail':[''],
-                   'type':['arrfloat']},
-        'spat.8': {'comm':'bottom','cond':'','kw':['P_BOTM'],'detail':[''],
-                   'type':['arrfloat']},
         #'time step control' 
         'time.1':{'comm':'time control','cond':'','kw':['Tunit','Tstart','Tfinal','Tmaxstep','Tminstep'],
                   'detail':[['time unit','years','days','hours','minutes'],
@@ -73,7 +68,7 @@ class m3F:
                   'default':[1,0.,10.,.1,1e-7]},
         #'output control
         'out.1':{'comm':'output of spatial data','cond':'','kw':['Outs'],
-                  'detail':[''],'type':['arrfloat'],'default':['']},
+                  'detail':[''],'type':['string'],'default':['']},
         #'physical parameters – porous medium'  
         'poro.1':{'comm':'porosity','cond':'','kw':['Poro'],'detail':[],'type':['arrfloat'],'default':[0.25]},
         #'physical parameters – variably saturated flow'  
@@ -97,7 +92,7 @@ class m3F:
         #'boundary condition – variably saturated flow' 
         'bcf.1':{'comm':'first(BC head)','cond':'','kw':['BChead'],
                   'detail':[],'type':['arrfloat'],'default':[10.]},
-        'bcf.2':{'comm':'second(BC flux) (m/s)','cond':'','kw':['BCflux'],
+        'bcf.2':{'comm':'second(BC flux)','cond':'','kw':['BCflux'],
                   'detail':[],'type':['arrfloat'],'default':[0.]},
         'bcf.3':{'comm':'third(seepage)','cond':'','kw':['BCseep'],
                   'detail':[],'type':['arrfloat'],'default':[0.]},
@@ -107,7 +102,7 @@ class m3F:
                   'detail':[],'type':['arrfloat'],'default':[0.]},
         #'control parameters – variably saturated flow'
         'conf.1':{'comm':'mass balance','cond':'','kw':['conf1'],
-                  'detail':[['use','no','yes']],'type':['choice'],'default':[1]}, # OA 5/6/19
+                  'detail':[['use','no','yes']],'type':['choice'],'default':[0]},
         'conf.2':{'comm':'input units for boundary and initial conditions','cond':'',
                   'kw':['conf2'],'detail':[['type','hydraulic head','pressure head']],
                 'type':['choice'],'default':[0]},

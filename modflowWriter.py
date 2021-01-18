@@ -442,6 +442,7 @@ class modflowWriter:
         return s
 
     def writeTransientZones1(self,core,line,ext):
+        '''first part of transient zones : to have all the info'''
         #f1=open(self.fullPath +'.'+ ext,'w') OA 18/10/20
         lpts, k, npts,zvar,lindx = [],[],0,[],[] # OA 3/3/20 added lindx
         if line in self.ttable.keys(): zlist = self.ttable[line]
@@ -469,6 +470,7 @@ class modflowWriter:
         return npts,lpts,lindx,zvar,k # added 18/10/20
         
     def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper):
+        '''2nd part of transient zones : to have the real vectors to be written'''
         zlist = self.ttable[line] # OA 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         indx = argsort(lindx)    # OA moved 18/10/20        
@@ -519,7 +521,7 @@ class modflowWriter:
         standards"""
         if line == 'pcb.2':modName='MfUsgTrans' # OA 2/3/20
         else : modName = 'Modflow'                                                                                            
-        dicz = core.diczone[modName].dic[line] # OA /3/20
+        dicz = core.diczone[modName].dic[line];print(dicz) # OA /3/20
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
         if xy == '': return None,None,None,None
@@ -541,22 +543,24 @@ class modflowWriter:
             n0 = len(icol)
             if dm in ['3D','2D']:
                 icol, irow, zmat = list(icol)*len(ilay),list(irow)*len(ilay),list(zmat)*len(ilay) # OA 27/4/19 added zmat
-                ilay = list(ilay)*n0;ilay.sort()
+                ilay1 = list(ilay)*n0;ilay1.sort()  # OA 18/1/21
             if dm in ['Xsection','Radial']:
                 irow1=[0]*len(irow);ilay=[ny-x-1 for x in irow]
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            idx,zval =zmesh(core,dicz,imed,iz) # OA corrected 24/7/20
-            irow = where(idx==1)[0] # OA 22/2/20
-            n0,irow1 = len(irow),[]
+            idx,zval = zmesh(core,dicz,imed[0],iz) # OA corrected 24/7/2, modif 18/1/21
+            irow = where(idx==1)[0];#print(line,imed,iz,irow) # OA 22/2/20
+            n0,irow1,ilay1 = len(irow),[],[]  # OA 18/1/21
             ncell_lay = core.addin.mfU.getNumber('elements')
-            for il in ilay: irow1.extend(list(irow+il*ncell_lay))
-            ilay,icol = list(ilay)*n0,None
+            for il in ilay: # OA 18/1/21
+                irow1.extend(list(irow+il*ncell_lay))
+                ilay1.extend([il]*n0)
+            icol = [0]*len(irow1) # OA 18/1/21
 #        if core.addin.mesh !=None and core.getValueFromName('Modflow','MshType')<1:
 #            irow1 = array(irow1)*nx+array(icol) # uses square grid ref to connect to unstrcut rect                                                                                  
         if len(xy[0]) ==2: zmat = 0 # OA 25/4/19 return 0 if not polyV
-        return ilay,irow1,icol,zmat
+        return ilay1,irow1,icol,zmat # OA 18/1/21
 
     def getPermScaled(self,ilay,irow,icol):
         """return the permeability for a list of layer, col rows scaled by the
