@@ -191,6 +191,7 @@ class guiShow:
                 else :
                     arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
                 #arr = arr[:,-1::-1,:] already done in flofile
+                arr=arr[0]
         if group=='Transport':
             if name=='Tracer':
                 #print 'hello',self.core.transReader

@@ -81,8 +81,12 @@ class qgisVisu:
         for layer in allLayers:
             if layer.name() == lname : QgsProject.instance().removeMapLayer(layer) # OA 12/5/19
         wkt = self.encodeGrid()
-        wcrs=self.iface.activeLayer().crs().toWkt()#crs = allLayers[0].crs()# finds the coordinates system
-        layer = QgsVectorLayer('Polygon'+"?crs=" + wcrs, lname, "memory")
+        if self.iface.activeLayer()!= None: # OA 28/1/21
+            wcrs=self.iface.activeLayer().crs().toWkt()#crs = allLayers[0].crs()# finds the coordinates system
+            layer = QgsVectorLayer('Polygon'+"?crs=" + wcrs, lname, "memory")
+        else :
+            wcrs = None
+            layer = QgsVectorLayer('Polygon', lname, "memory")
         QgsProject.instance().addMapLayer(layer)
         layer.startEditing()
         layer.dataProvider().addAttributes( [QgsField("id", QVariant.Int) ] )

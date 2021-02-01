@@ -164,13 +164,13 @@ class BaseTop:
         X,Y = getXYmeshSides(self.core,plane,section)
         if 'USG' in self.core.addin.getModelGroup(): # OA 20/11/20
             return None,None,mat  # OA 16/1/21 removed [0]
-        if self.core.addin.getDim() in ['Radial','Xsection']:
-            m2 = mat[-1::-1,0,:]
-        else :
-            if plane=='Z': m2 = mat[section,:,:] #-1 for different orientation in modflow and real world
-            elif plane=='Y': m2 = mat[:,section,:]
-            elif plane=='X': m2 = mat[:,:,section]
-        return X,Y,m2
+        #if self.core.addin.getDim() in ['Radial','Xsection']:
+            #m2 = mat[-1::-1,0,:]
+        #else :
+            #if plane=='Z': m2 = mat[section,:,:] #-1 for different orientation in modflow and real world
+            #elif plane=='Y': m2 = mat[:,section,:]
+            #elif plane=='X': m2 = mat[:,:,section]
+        return X,Y,mat #m2
     
     def getTransientArray(self,line,var): #EV 26.11.20
         line=line.split('.')[0]
@@ -222,7 +222,7 @@ class BaseTop:
             #self.modifZones(line)
         else : #cancel
             curzones.delZone(line,iz)
-            self.gui.visu.redraw()#line)
+            self.gui.visu.redraw(line)  # OA 28/1/21
         #if line=='obs.1': #EV 06/03/20
             #onames = self.core.diczone['Observation'].dic['obs.1']['name']
             #self.gui.guiShow.setNames('Observation_Zone_L',onames)

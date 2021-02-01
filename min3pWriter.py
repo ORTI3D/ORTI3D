@@ -6,7 +6,7 @@ Created on Sun Oct 19 12:54:49 2014
 """
 from array import array as arr2
 import os
-from pylab import savetxt,loadtxt
+from numpy import savetxt,loadtxt
 from .geometry import *
 from .timeperiod import *
 

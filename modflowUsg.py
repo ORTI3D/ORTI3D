@@ -320,7 +320,7 @@ class myVor:
         for i in range(1,len(dcoo)): line_dom = r_[line_dom,dicFeats['bc'+str(i)]]# 15/8/20
         line_dom = unique(line_dom) 
         xdom,ydom = zip(*dcoo)
-        dmax = (max(xdom)-min(xdom)+max(ydom)-min(ydom))/40;eps=dmax/1e6
+        dmax = (max(xdom)-min(xdom)+max(ydom)-min(ydom))/40;eps=dmax/1e9
         # new method with arrays
         it = array(arange(nelts),ndmin=2).T
         xc,yc = self.calcCentre(points,elts,eps)

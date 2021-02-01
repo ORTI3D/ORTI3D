@@ -151,7 +151,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         """definit l'affichage ou non des donnees qaund contour"""
         self.dataon=bool
         
-    def redraw(self):
+    def redraw(self,opt=''): # OA 28/1/21
         #self.cnv.set_xlim(self.xlim)
         #self.cnv.set_ylim(self.ylim)
         self.draw()

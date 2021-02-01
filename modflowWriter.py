@@ -530,11 +530,12 @@ class modflowWriter:
         imed = core.diczone[modName].getMediaList(line,iz) # OA 4/3/20
         ilay = media2layers(core,imed)
         ltyp=core.dictype['Modflow'][line] #EV 14/01/21
-        for t in list(set(ilay)):
-            if ltyp[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
+        dm = core.addin.getDim()
+        if dm not in ['Xsection','Radial']: # OA 1/2/21 
+            for t in list(set(ilay)):
+                if ltyp[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
         if len(ilay)==0 : 
             return None,None,None,None
-        dm = core.addin.getDim()
         if core.addin.mesh == None: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
@@ -545,7 +546,7 @@ class modflowWriter:
                 icol, irow, zmat = list(icol)*len(ilay),list(irow)*len(ilay),list(zmat)*len(ilay) # OA 27/4/19 added zmat
                 ilay1 = list(ilay)*n0;ilay1.sort()  # OA 18/1/21
             if dm in ['Xsection','Radial']:
-                irow1=[0]*len(irow);ilay=[ny-x-1 for x in irow]
+                irow1=[0]*len(irow);ilay1=[ny-x-1 for x in irow] # OA 2/1/21 ilay1
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
@@ -883,6 +884,7 @@ class modflowReader:
         
     def getThickness(self,core,iper): 
         #if type(iper)==type([5]): iper=iper[0] # takes the thick only for the 1st tstep  #EV 23/03/20 
+        if type(iper) == int : iper = [iper]
         zb = core.Zblock
         thk = zb[:-1,:,:]-zb[1:,:,:]
         thkMat=array([thk]*len(iper))

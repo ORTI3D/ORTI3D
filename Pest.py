@@ -26,7 +26,7 @@ for each pest run, the python script is run"""
 
 # all imports
 import os,sys, subprocess
-from pylab import loadtxt,savetxt
+from numpy import loadtxt,savetxt
 from .config import *
 
 class Pest:
@@ -44,7 +44,7 @@ class Pest:
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             MFlist=['lpf.8','lpf.9','lpf.10','lpf.11','bas.5','rch.2','wel.1']
-            MTlist=['btn.11','btn.13','dsp.2','dsp.3','dsp.4','vsc.3a']
+            MTlist=['btn.11','btn.13','dsp.2','dsp.3','dsp.4','vsc.3a','rct.2b']
             PHlist=[]#'Rates','Solutions','Kinetic_Minerals','Phases','Surface'] #EV 23/09/19
             modlist=[MFlist,MTlist,PHlist]
             for i,md in enumerate (list(dic.keys())) :
@@ -217,6 +217,7 @@ class Pest:
            'dsp.3': 'aT',   #value of transverse dispersivity
            'dsp.4': 'aZ',   #value of vertical dispersivity
            'vsc.3a': 'v',   #value of viscosity coefficient
+           'rct.2b' : 'ni', #value of immobile porosity
            }   
         self.pnames=[]; # list of parameter names
         self.ptrans=[]; # list of parameter transformation

@@ -1323,3 +1323,13 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 18/1/21 OA
 - modflowwriter l.546 and 552-559 modfi because the layers were not considered corectly
+
+28/1/21 OA
+- qgisGui l.69 & 94 added onGridMesh to be consistent with ortiGui but nothing is done pass)
+- same for onWriteModflow (l.70 et 95)
+- qgisVisu createGridLayer l.84 89 changed to allow the start with no CRS
+- qtVisualisation redraw l.154 added an option to redraw for use in qgisVisu
+- topbar onZoneCreate l.225 added line in redraw (for qgisVisu)
+
+29/1/21  OA
+- modflowUsg transformVor pb precision grid when large x0 and fine grid  l.323 /1e6 -> /1e9

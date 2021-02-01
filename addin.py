@@ -4,7 +4,7 @@ from .Pht3d import *
 from .Min3p import *
 from .modflowUsg import *
 from .geometry import *
-from matplotlib import pylab # for having grafs in batch
+#from matplotlib import pylab # for having grafs in batch
 from .Pest import *
 from .Opgeo import *
 from .instantFit import *
@@ -461,8 +461,8 @@ class addin:
         self.fit.startDialog()
 
     def onBatchDialog(self,evt):
-        from matplotlib import rcParams
-        rcParams['interactive']=True
+        #from matplotlib import rcParams  # OA 25/1/21
+        #rcParams['interactive']=True  # OA 25/1/21
         head='insert python commands below'
         dialg = self.dialogs.textDialog(self.gui,'Batch program',(500,300),self.lastBatch)
         retour = dialg.getText();#print retour

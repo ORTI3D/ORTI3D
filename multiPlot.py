@@ -232,7 +232,7 @@ class multiPlot(QDialog):
             dicIn['splist']=[dic['Species'][i][0] for i in range(
                     len(dic['Species'])) if dic['Species'][i][1]==2]
         else :dicIn['plotOrder']='Zones' 
-        print('dicIn',dicIn)
+        #print('dicIn',dicIn)
         return dicIn
     
     def buildPlot(self): #,dicIn
@@ -380,7 +380,7 @@ class multiPlot(QDialog):
         elif 'W content' in splist : group = 'Flow' ; aylabel = 'W content' # OA 21/2/2019
         elif 'Tracer' in splist : 
             group = 'Transport' 
-            print('ptyp[1]',ptyp[1],len(ptyp[1]))
+            #print('ptyp[1]',ptyp[1],len(ptyp[1]))
             if ptyp[1]=='2': aylabel = 'Mass discharge (kg/'+utime+')'
             elif ptyp[1]=='3': 
                 aylabel = 'Mass flux (kg/'+utime+'/'+ulength+'\u00b2)' 
@@ -431,7 +431,7 @@ class multiPlot(QDialog):
         fDir,fName = dlg.getsetFile(self.gui,'Save','*.txt')
         if fDir == None: return
         f1 = open(fDir+os.sep+fName+'.txt','w', encoding="utf-8")
-        if self.ptyp == 'XY':
+        if self.ptyp == 'X0':
             f1.write('Well '+'Type '+'Layer '+'Time '+'Observed '+'Simulated'+'\n')
             for n in range(len(self.label_all)): 
                     f1.write(self.label_all[n].split('_')[0]+' ')

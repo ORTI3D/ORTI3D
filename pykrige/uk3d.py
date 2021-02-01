@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 import scipy.linalg
 from scipy.spatial.distance import cdist
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from . import variogram_models
 from . import core
 from .core import _adjust_for_anisotropy, _initialize_variogram_model, \
@@ -475,14 +475,14 @@ class UniversalKriging3D:
             print("Q2 =", self.Q2)
             print("cR =", self.cR, '\n')
 
-    def display_variogram_model(self):
-        """Displays semivariogram and variogram model."""
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(self.lags, self.semivariance, 'r*')
-        ax.plot(self.lags,
-                self.variogram_function(self.variogram_model_parameters, self.lags), 'k-')
-        plt.show()
+    # def display_variogram_model(self):
+        # """Displays semivariogram and variogram model."""
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.plot(self.lags, self.semivariance, 'r*')
+        # ax.plot(self.lags,
+                # self.variogram_function(self.variogram_model_parameters, self.lags), 'k-')
+        # plt.show()
 
     def switch_verbose(self):
         """Enables/disables program text output. No arguments."""
@@ -496,13 +496,13 @@ class UniversalKriging3D:
         """Returns the epsilon residuals for the variogram fit. No arguments."""
         return self.epsilon
 
-    def plot_epsilon_residuals(self):
-        """Plots the epsilon residuals for the variogram fit. No arguments."""
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
-        ax.axhline(y=0.0)
-        plt.show()
+    # def plot_epsilon_residuals(self):
+        # """Plots the epsilon residuals for the variogram fit. No arguments."""
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(range(self.epsilon.size), self.epsilon, c='k', marker='*')
+        # ax.axhline(y=0.0)
+        # plt.show()
 
     def get_statistics(self):
         """Returns the Q1, Q2, and cR statistics for the

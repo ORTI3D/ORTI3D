@@ -14,7 +14,7 @@ from .geometry import *
 from .importExport import *
 from .addin import *
 from .timeperiod import *
-from pylab import loadtxt,size
+from numpy import loadtxt,size #OA 25/1/21
 from numpy import savez_compressed
 from numpy import load as npload
 from .config import *
@@ -757,16 +757,12 @@ class Core:
                     labels.append('lay'+str1)
        ## For Tracer
         elif group=='Transport':
-            if mtype == 'Mod': opt ='Mt3dms'
+            if mtype == 'Mod': 
+                opt ='Mt3dms'
             elif mtype in ['Sut','Min','Opg']: 
                 ss=''
                 opt = 'Tracer' # OA 19/3/19
-            m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,ss)
-            for il in layers:
-                if il!= -1: iz2=[il]*len(ix2)
-                pt.append(self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt)); # irow,icol,ilay
-                labels.append('lay'+str(il))
-            '''
+            m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,0,'',ss)
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -777,7 +773,6 @@ class Core:
                 if typ[0]=='V':
                     str1 = ','.join(str(l) for l in layers)
                     labels.append('lay'+str1)
-            '''
             #print('iz2 :',iz2)
        ## For chemistry
         elif group=='Chemistry': 
@@ -840,7 +835,6 @@ class Core:
         #if esp[0] == 'Flux': pt=flux1 #EV 20/04/20 # OA 13/5/20 no it is 1 mutliplied later by flux or discharge
        ## Time-serie graph
         if typ[0]=='B': 
-            print('pt',pt)
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below

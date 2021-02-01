@@ -1229,7 +1229,7 @@ def onMessage1(core,txt):
 
 def zone2array(core,modName,line,im):
     fNameExt = core.dicarray[modName][line][im] #EV 05/05/20
-    print('inzon2arr',fNameExt)
+    #print('inzon2arr',fNameExt)
     fDir = core.fileDir
     ext=fNameExt[-3:]
     arr=array([]) ; zdx,zdy,ysign=None,None,-1 # OA 26/7/20 set ysign default to -1 (modflow)
