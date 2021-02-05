@@ -521,7 +521,7 @@ class modflowWriter:
         standards"""
         if line == 'pcb.2':modName='MfUsgTrans' # OA 2/3/20
         else : modName = 'Modflow'                                                                                            
-        dicz = core.diczone[modName].dic[line];print(dicz) # OA /3/20
+        dicz = core.diczone[modName].dic[line]#;print(dicz) # OA /3/20
         coo = dicz['coords'][iz]
         if coo != '': xy = coo
         if xy == '': return None,None,None,None

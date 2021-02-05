@@ -1333,3 +1333,7 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 29/1/21  OA
 - modflowUsg transformVor pb precision grid when large x0 and fine grid  l.323 /1e6 -> /1e9
+
+3/2/21  OA
+- geometry zmesh l.409-11 and 422 to get the minimal distance for a closed polygon from the frist cell
+- topbar getCurVariable added l.150 and 160-161 if usg and 3D we just used directly zmesh and not getvaluelong

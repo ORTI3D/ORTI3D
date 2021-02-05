@@ -406,7 +406,10 @@ def zmesh(core,dicz,media,iz):
     poly = dicz['coords'][iz];#print poly
     if len(poly[0])==3 : x,y,z = list(zip(*poly)) # OA 2/5/20
     else : x,y = list(zip(*poly))
-    if len(x)>1: d = sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
+    if len(x)>1: # OA 3/2/21 this and three below
+        d = sqrt((x[0]-xc)**2+(y[0]-yc)**2)
+        ic = where(d==amin(d))[0][0]
+        d = max(mesh.elx[ic])-min(mesh.elx[ic])
     llcoefs = lcoefsFromPoly(poly)
     zmedia = dicz['media'][iz] # a media or a list of media for the zone OA removed 24/7/20
     if type(zmedia)!=type([5]): zmedia=[zmedia]
@@ -416,7 +419,7 @@ def zmesh(core,dicz,media,iz):
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
         idx = amin(dst)==dst;#where(amin(dst)==dst)[0] # OA 19/4/20
         zval = 0
-    elif (abs(x[0]-x[-1])<d/20) & (abs(y[0]-y[-1])<d/20): #a closed polygon
+    elif (abs(x[0]-x[-1])<d) & (abs(y[0]-y[-1])<d): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs));
         zval = 0 #OA 2/5/20 add zval
     else : # a line

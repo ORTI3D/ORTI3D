@@ -66,7 +66,8 @@ class Ui_Main(object):
         self.gui.dlgShow.setupUi(self.page3,self.gui,core)
         self.toolBox.addItem(self.page3,"Results")
         self.gui.guiShow = self.gui.dlgShow.guiShow # OA 1/6/19
-        
+        self.gui.onGridMesh = self.onGridMesh
+        self.gui.onWriteModflow = self.onWriteModflow
         QMetaObject.connectSlotsByName(Main)
         # make an event if qgis project is saved
         self.menus = Menus(self.gui,core) # OA added 22/10/18
@@ -86,6 +87,9 @@ class Ui_Main(object):
         for i in range(nbM): self.gui.varBox.choice3D.addItem(str(i))
         self.gui.dlgShow.setNames('Model_Layer_L',list(range(nbL)))
         
+    def onGridMesh(self,typ): pass
+    def onWriteModflow(self,bool): pass
+    
     def resetCurVar(self):
         global curVar
         curVar = {}    

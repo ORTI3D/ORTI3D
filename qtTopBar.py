@@ -334,7 +334,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 01/02/2021 ")
+        version = QLabel("       version 05/02/2021 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

@@ -116,7 +116,7 @@ class Mf:
         'lpf.5':{'comm':'flag for vertical cond: VKA(0) or ratio(1)','cond':'','kw':['LAYVKA(NLAY)'],
                 'detail':[['what is Vka','vertical K','ratio Kh/Kv']],'type':['layint']},
         'lpf.6':{'comm':'wetting active or inactive','cond':'','kw':['LAYWET(NLAY)'],
-                'detail':[['wetting','inactive','active']],'type':['laychoice']},
+                'detail':[['wetting','inactive','active']],'type':['layint']},
         'lpf.7':{'comm':'calculation of wetting','cond':'LAYWET>0','kw':['WETFCT','IWETIT','IHDWET'],'detail':[],
                'type':['float','int','int'],'default':[0.1,1,1]},
         'lpf.8':{'comm':'Hydraulic conductivity','cond':'','kw':['HK(NLAY,NROW,NCOL)'],

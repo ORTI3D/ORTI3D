@@ -337,7 +337,7 @@ class qtVisualisation(FigureCanvasQTAgg):
 
     def createImage(self,data):
         #print 'vis img',len(xt),len(yt),shape(mat)
-        X,Y,Z = data;Z1 = array(Z);print(shape(Z1))
+        X,Y,Z = data;Z1 = array(Z)#;print(shape(Z1))
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
         if self.mUnstruct: #OA 17/12/20
             self.grdArray = Z1
@@ -998,7 +998,7 @@ class PolygonInteractor:
         #     self.line.set_visible(self.showverts)
         #     if not self.showverts: self._ind = None
         if event.key=='d':
-            ind = self.get_ind_under_point(event);print(ind)
+            ind = self.get_ind_under_point(event)#;print(ind)
             if ind is not None:
                 self.lx.pop(ind[0]);self.ly.pop(ind[0]) # added 0 OA 19/11/19
                 self.line.set_data(self.lx,self.ly)
