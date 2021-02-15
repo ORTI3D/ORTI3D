@@ -114,12 +114,14 @@ class guiShow:
         m = self.dicVisu['Model'] 
         plane, layer, tstep = m['Plane'],m['Layer'],m['Tstep'];
         self.Tstep = tstep
-        self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
+        #self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
         if m['Variable'] : 
             self.visu.createImage(self.getCurrentVariable(plane,layer))
             m['Map'] = False
         elif m['Map'] : 
             self.visu.drawObject('Map',True)
+        elif name == 'Grid' :#EV 15/02/2021
+            self.visu.drawObject('Grid',retour)
         else :
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])

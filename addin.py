@@ -143,8 +143,9 @@ class addin:
         bool = self.core.mfUnstruct;#print('in mfuns',bool,lmodules)
         val[lmodules.index('DIS')] = not bool
         val[lmodules.index('PCG')] = not bool
-        val[lmodules.index('DISU')] = bool
-        val[lmodules.index('SMS')] = bool
+        if bool: # OA 6/2/21
+            val[lmodules.index('DISU')] = bool
+            val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
     def setChemType(self):

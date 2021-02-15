@@ -188,9 +188,11 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.createVector(dataV)
         
     def drawObject(self,typObj,bool):
-        try : self.cbar.remove() #EV 26.11.20
-        except : 
-            self.cbar = None
+        #print('GRID array',self.Grid[0].get_array())
+        if typObj not in ['Particles','Grid']: #EV 15.2.21
+            try : self.cbar.remove() #EV 26.11.20
+            except : 
+                self.cbar = None
         if typObj == 'Map' and self.Map == None and bool == False : return
         exec('self.draw'+typObj+'('+str(bool)+')')
         
@@ -266,9 +268,10 @@ class qtVisualisation(FigureCanvasQTAgg):
             xcoo = self.mesh.elx
             ycoo = self.mesh.ely;ncell=len(ycoo)
             pol = [list(zip(xcoo[i],ycoo[i])) for i in range(ncell)]
-            self.Grid[0] = PolyCollection(pol); # OA 17/12/20
+            cmap = mpl.cm.jet #EV 26.11.20
+            self.Grid[0] = PolyCollection(pol,cmap=cmap); # OA 17/12/20
             self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
-            self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
+            self.Grid[0].set_edgecolor((.5,.5,.5,0))  # OA 17/12/20
             #self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
             self.Triangles = self.mesh.trg
                  
@@ -294,12 +297,13 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.createGrid(col=col,ori=self.curOri,layer=self.curLayer)
         if self.mUnstruct:
             if bool:
-                self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
+                #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
                 self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
                 self.Grid[0].set_visible(True) #EV 15/01/21
             else:
-                self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
-                self.Grid[0].set_edgecolor((1,1,1))  # OA 17/12/20                
+                #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21 #EV 15/02/21
+                self.Grid[0].set_edgecolor((1,1,1,0))  # OA 17/12/20  
+                #self.Grid[0].set_visible(False) 
         else :
             for i in [0,1]: 
                 self.cnv.collections[i].set_visible(bool)
@@ -343,6 +347,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.grdArray = Z1
             self.Grid[0].set_array(Z1)
             obj = self.Grid[0]
+            obj.update_scalarmappable() ; obj.autoscale() ; obj.changed() #EV 15/02/21
         else: # classical square grid
             obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
             self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
@@ -354,17 +359,22 @@ class qtVisualisation(FigureCanvasQTAgg):
         
     def drawImage(self,bool):
         if self.mUnstruct: #OA 17/12/20
-            if bool : self.Grid[0].set_array(self.grdArray)
-            else : 
-                if len(self.cnv.images)>0: #EV 07/01/2021
-                    self.cnv.images[0].set_visible(bool)
+            if bool : 
+                self.Grid[0].set_array(self.grdArray)
+                self.cbar.on_mappable_changed(self.Grid[0]) #EV 15/02/21
+            else:
+                #if len(self.cnv.images)>0: #EV 07/01/2021 #EV 15/02/21
+                    #self.cnv.images[0].set_visible(bool)
                 self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
         else:
             if len(self.cnv.images)>0: #EV 07/01/2021
                 self.cnv.images[0].set_visible(bool)
         if bool == False: 
             try: 
-                if self.cbar : self.cbar.remove();self.caxis=None #EV 26.11.20
+                if self.cbar : 
+                    self.cbar.remove()
+                    #self.fig.delaxes(self.fig.axes[1])
+                    self.caxis=None #EV 26.11.20
             except : pass
         self.redraw()
 

@@ -250,8 +250,8 @@ class modflowWriter:
 
     def writeUPW(self):
         #upw.7' writes several lines per layer
-        strt = int(line[-1])
-        llist = [line[:4]+str(a) for a in range(strt,strt+6)];#take four lines
+        strt = 7
+        llist = ['upw.'+str(a) for a in range(strt,strt+6)];#take four lines
         value = []
         for l2 in llist:
             cond = self.Fkey.lines[l2]['cond'];
@@ -262,11 +262,11 @@ class modflowWriter:
         ilay=getNlayersPerMedia(self.core) 
         lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
         lval= [item for sublist in lval1 for item in sublist]
-        for l in range(nlay):
+        for l in range(self.nlay): # OA 12/2/21
             for i in range(len(value)):
                 if i==3 and lval[l]==0 : continue
                 s += self.writeMatModflow(value[i][l],'arrfloat')+'\n'
-        exceptDict['upw.7'] = s
+        exceptDict={'upw.7':s} # OA 12/2/21
         self.writeOneFile('UPW',exceptDict)
         
     def writeSMS(self):        
@@ -278,7 +278,7 @@ class modflowWriter:
         
     def writeUZF(self):
         #uzf.9' writes an array for each period with zero before
-        m0, s = 0,''
+        s = ''
         for iper in range(self.nper): 
             #m = block(self.core,'Modflow','uzf.10',False,None,iper); #EV 04/02/20
             m = self.core.getValueLong('Modflow','uzf.10',0,iper) #EV 04/02/20
@@ -287,11 +287,11 @@ class modflowWriter:
         exceptDict = {'uzf.9':s}
         # in uzf put only one value of these parameters
         s = ''
-        for line in ['uzf.2','uzf.3','uzf.4','uzf.5','uzf.6','uzf.7']: 
+        for line in ['uzf.2','uzf.4','uzf.5','uzf.6','uzf.7']:# OA 12/2/21 removed uzf.3
             m = self.core.getValueLong('Modflow',line,0)
-            s += self.writeMatModflow(m[0],ktyp)+'\n'  # OA 7/3/19
-            exceptDict[line] = s
-        self.writeOneFile(self,'UZF',exceptDict)
+            s += self.writeMatModflow(m[0],self.Fkey.lines[line]['type'][0])+'\n'  # OA 12/2/21
+        exceptDict['uzf.2'] = s # OA 12/2/21
+        self.writeOneFile('UZF',exceptDict) # OA 12/2/21
         
     def writeHFB6(self):
         #hfb.3': # EV 26/11/2018
@@ -551,7 +551,7 @@ class modflowWriter:
                 irow1=[ny-x-1 for x in irow]
         else : # usg
             idx,zval = zmesh(core,dicz,imed[0],iz) # OA corrected 24/7/2, modif 18/1/21
-            irow = where(idx==1)[0];#print(line,imed,iz,irow) # OA 22/2/20
+            irow = idx[0];# OA 6/2/21
             n0,irow1,ilay1 = len(irow),[],[]  # OA 18/1/21
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: # OA 18/1/21

@@ -417,7 +417,7 @@ def zmesh(core,dicz,media,iz):
     if media not in zmedia: return [],None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
-        idx = amin(dst)==dst;#where(amin(dst)==dst)[0] # OA 19/4/20
+        idx = where(amin(dst)==dst) # OA 6/2/21
         zval = 0
     elif (abs(x[0]-x[-1])<d) & (abs(y[0]-y[-1])<d): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs));
