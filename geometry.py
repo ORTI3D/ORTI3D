@@ -388,9 +388,9 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value',var=0)
     pindx = zeros(nbc) # this will be the index, 0 for the background, then poly number
     for i in range(len(dicz['name'])):
         if (dicz['name'][i]=='domain'): continue
-        idx,zv0 = zmesh(core,dicz,media,i)
+        idx,zv0 = zmesh(core,dicz,media,i) #OA 23/2/21
         if len(idx)== 0: continue # OA 9/1/21
-        if type(zv0) != type(0) : value[idx]=zv0[idx]
+        if type(zv0) != type(0) : value[idx]=zv0 #OA 23/2/21 commented
         else : value[idx]=zval[i]
         try : len(idx) 
         except TypeError : continue # the zone media is not the right one
@@ -424,7 +424,8 @@ def zmesh(core,dicz,media,iz):
         zval = 0 #OA 2/5/20 add zval
     else : # a line
         id0,zval = cellsUnderPoly(core,dicz,media,iz) # OA 2/5/20 added zval
-        idx = id0>0
+        idx = where(id0>0)[0]  # OA 23/2/21
+        if type(zval) != type(0): zval = zval[idx] # OA 23/2/21
     return idx,zval
         
 def blockRegular(core,modName,line,intp,opt,iper):
@@ -1134,7 +1135,8 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     #### creates the list of point values
     xpt,ypt,zpt=[],[],[];
     for iz in range(nz):  # loop on zones to get coordinates
-        lmed = int(diczone['media'][iz])#*1
+        #lmed = int(diczone['media'][iz])#*1
+        lmed = diczone['media'][iz]#*1
         if type(lmed) != type([5,6]): lmed = [lmed]# not a list
         if media not in lmed : 
             continue

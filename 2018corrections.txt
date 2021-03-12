@@ -1358,3 +1358,8 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - qtVisualisation l.366 not used for unstrutured grid
 - topBar l.162-163 added to view importarray modflow usg parameters
 - guishow l.117,123 to draw grid under the parameter image
+
+23/2/21  OA
+- geometry zmesh l.427(added 428, removed 393) modified to have the same output (only cells that are below the the zone, not 0 and 1)
+- modflowwriter xy2mdflow l.554 removed [0] ad l.553 zval -> zmat
+- modflowwriter writeTransientZones2 l/511 modif zvar (for poly vairble) added to stage isntead of bottom

@@ -203,6 +203,8 @@ class modflowWriter:
         value = []
         for l2 in llist:
             cond = self.Fkey.lines[l2]['cond'];
+            print('l2',l2)
+            print('cond',cond)
             if self.testCondition(cond) == False : continue
             v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
             if l2=='lpf.8': self.Ktemp = v0 # OA 8/6/20 store K for futher use
@@ -322,7 +324,7 @@ class modflowWriter:
         f1=open(self.fullPath +'.'+ ext.lower(),'w')
         llist=self.Fkey.groups[grp];
         for ll in llist:
-            cond=self.Fkey.lines[ll]['cond']#;print('writing ',ll)
+            cond=self.Fkey.lines[ll]['cond'];#print('writing ',ll)
             if self.testCondition(cond)==False : continue
             kwlist=self.Fkey.lines[ll]['kw']
             ktyp=self.Fkey.lines[ll]['type'];#print 'mfw',ktyp
@@ -508,7 +510,7 @@ class modflowWriter:
                     a,cond,botm = vparms.split()
                     if flgTr: stage = float(val)
                     else : stage = float(vparms.split()[0]) # OA 7/6/20
-                    s1=lpts[iz][pt]+' %9.4e %9.4e %9.4e ' %(stage,float(cond),float(botm)+zbase)
+                    s1=lpts[iz][pt]+' %9.4e %9.4e %9.4e ' %(float(stage)+zbase,float(cond),float(botm)) # OA 23/2/21
                 buf1.append(s1+soption)
         if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
         else : buff += '\n'.join(buf1) + '\n'
@@ -550,8 +552,8 @@ class modflowWriter:
             else : 
                 irow1=[ny-x-1 for x in irow]
         else : # usg
-            idx,zval = zmesh(core,dicz,imed[0],iz) # OA corrected 24/7/2, modif 18/1/21
-            irow = idx[0];# OA 6/2/21
+            idx,zmat = zmesh(core,dicz,imed[0],iz) # OA corrected 24/7/2, modif 18/1/21
+            irow = idx;# OA 23/2/21
             n0,irow1,ilay1 = len(irow),[],[]  # OA 18/1/21
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: # OA 18/1/21
