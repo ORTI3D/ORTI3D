@@ -203,8 +203,6 @@ class modflowWriter:
         value = []
         for l2 in llist:
             cond = self.Fkey.lines[l2]['cond'];
-            print('l2',l2)
-            print('cond',cond)
             if self.testCondition(cond) == False : continue
             v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
             if l2=='lpf.8': self.Ktemp = v0 # OA 8/6/20 store K for futher use
