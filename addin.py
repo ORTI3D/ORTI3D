@@ -143,9 +143,8 @@ class addin:
         bool = self.core.mfUnstruct;#print('in mfuns',bool,lmodules)
         val[lmodules.index('DIS')] = not bool
         val[lmodules.index('PCG')] = not bool
-        if bool: # OA 6/2/21
-            val[lmodules.index('DISU')] = bool
-            val[lmodules.index('SMS')] = bool
+        val[lmodules.index('DISU')] = bool
+        val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
     def setChemType(self):
@@ -237,6 +236,8 @@ class addin:
                 self.gui.onWriteModflow(self.checkFlowMod) # EV 27/04/20
                 self.set3D()
                 self.setChemType()
+                self.gui.on3D(m['dimension']=='3D')  # OA 14/3/21
+                self.gui.onSetMediaNb(nmed,getNlayers(self.core))  # OA 14/3/21
                 
         if actionName =='Ad_Grid':
             g = self.core.dicaddin['Grid']
@@ -286,6 +287,7 @@ class addin:
                 dic = self.make3DTable()
                 dialg = self.dialogs.myNoteBook(self.gui,'3D',dic)
                 retour = dialg.getValues()
+            self.gui.onSetMediaNb(getNmedia(self.core),getNlayers(self.core))  # OA 14/3/21
                 
         if actionName == 'Ad_Time':
             t = self.core.dicaddin['Time']
@@ -568,7 +570,6 @@ class addin:
         dm = self.getDim()
         if dm not in ['2D','3D'] : return
         med = self.core.dicaddin['3D']
-        self.gui.on3D(dm=='3D')
         nbL = getNlayers(self.core)
         z0 = med['zmin']
         botM = med['topMedia'][1:];botM.append(z0)
@@ -581,7 +582,6 @@ class addin:
         if self.getModelGroup()=='Opgeo': 
             self.core.setValueFromName('OpgeoFlow','O_TOP',med['topMedia'])
             self.core.setValueFromName('OpgeoFlow','O_BOTM',botM)
-        self.gui.onSetMediaNb(getNmedia(self.core),nbL)
         self.core.setValueFromName('Modflow','NLAY',nbL)            
         self.core.setValueFromName('Modflow','UNLAY',nbL)            
             

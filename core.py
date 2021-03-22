@@ -198,6 +198,7 @@ class Core:
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         self.flgMesh = 0 #18/12/20                      
+        self.mfUnstruct = False  # OA 13/3/21
         mtype = self.dicaddin['Model']['group']
         if mtype == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
@@ -361,7 +362,8 @@ class Core:
                 except IndexError:
                     return('Model fail to converge')
         if modName == 'MfUsgTrans': # OA 19/8/19
-            s=self.baseDir+sep+'bin'+sep+'mfUSGs_1_3.exe '+self.fileName
+            s=self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName #EV 19/03/21
+            #s=self.baseDir+sep+'bin'+sep+'mfUSGs_1_3.exe '+self.fileName
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
         if modName == 'Pht3d':
@@ -369,6 +371,7 @@ class Core:
                 s = self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName           
             else :
                 s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
+                info == False  #EV 19/03/21
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :

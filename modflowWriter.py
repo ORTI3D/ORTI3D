@@ -193,7 +193,7 @@ class modflowWriter:
         ilay=getNlayersPerMedia(self.core) # EV 23/11/2018
         val = self.core.dicval['Modflow']['lpf.2']
         lval1 = [[val[x]]*ilay[x] for x in range(len(ilay))]
-        lval2 = [item for sublist in lval1 for item in sublist]
+        lval2 = [int(item) for sublist in lval1 for item in sublist] # OA 14/3 aded str
         s=''
         for i in range(len(lval2)):
             s+=' '+str(int(lval2[i])).rjust(2) 
@@ -529,11 +529,13 @@ class modflowWriter:
         else : x,y,z = list(zip(*xy))
         imed = core.diczone[modName].getMediaList(line,iz) # OA 4/3/20
         ilay = media2layers(core,imed)
+        nlay = getNlayersPerMedia(core) #EV 16/03/21
         ltyp=core.dictype['Modflow'][line] #EV 14/01/21
         dm = core.addin.getDim()
+        ltyp1=[i for nlay in [[c]*d for c, d in zip(ltyp, nlay)] for i in nlay] #EV 16/03/21
         if dm not in ['Xsection','Radial']: # OA 1/2/21 
             for t in list(set(ilay)):
-                if ltyp[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
+                if ltyp1[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
         if len(ilay)==0 : 
             return None,None,None,None
         if core.addin.mesh == None: # OA 4/3/20
@@ -551,7 +553,8 @@ class modflowWriter:
                 irow1=[ny-x-1 for x in irow]
         else : # usg
             idx,zmat = zmesh(core,dicz,imed[0],iz) # OA corrected 24/7/2, modif 18/1/21
-            irow = idx;# OA 23/2/21
+            try : len(idx[0]);irow = idx[0];# OA 23/2/21
+            except TypeError : irow = idx #OA 28/2/21
             n0,irow1,ilay1 = len(irow),[],[]  # OA 18/1/21
             ncell_lay = core.addin.mfU.getNumber('elements')
             for il in ilay: # OA 18/1/21

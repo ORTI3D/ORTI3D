@@ -35,6 +35,7 @@ class Menus:
         if fName == '': return
         self.onOpen1(fDir,fName) # OA 16/12/18 to separate if file dir is already known
         if self.core.mfUnstruct: self.gui.onGridMesh('Mesh') # OA 18/2/20 removed from core, set here
+        self.gui.onSetMediaNb(getNmedia(self.core),getNlayers(self.core))  # OA 14/3/21
         
     def onOpen1(self,fDir,fName): # OA 16/12/18 to be able to use only that part
         self.core.openModel(fDir,fName)

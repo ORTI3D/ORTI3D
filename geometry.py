@@ -417,7 +417,7 @@ def zmesh(core,dicz,media,iz):
     if media not in zmedia: return [],None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
-        idx = where(amin(dst)==dst) # OA 6/2/21
+        idx = where(amin(dst)==dst)[0] # OA 28/2/21
         zval = 0
     elif (abs(x[0]-x[-1])<d) & (abs(y[0]-y[-1])<d): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs));
@@ -1135,8 +1135,7 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     #### creates the list of point values
     xpt,ypt,zpt=[],[],[];
     for iz in range(nz):  # loop on zones to get coordinates
-        #lmed = int(diczone['media'][iz])#*1
-        lmed = diczone['media'][iz]#*1
+        lmed = int(diczone['media'][iz])#*1
         if type(lmed) != type([5,6]): lmed = [lmed]# not a list
         if media not in lmed : 
             continue

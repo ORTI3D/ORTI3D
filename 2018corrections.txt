@@ -1363,3 +1363,23 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - geometry zmesh l.427(added 428, removed 393) modified to have the same output (only cells that are below the the zone, not 0 and 1)
 - modflowwriter xy2mdflow l.554 removed [0] ad l.553 zval -> zmat
 - modflowwriter writeTransientZones2 l/511 modif zvar (for poly vairble) added to stage isntead of bottom
+
+28/2/21  OA
+- modflowWrtier xyzone2Mflow l.555 added because sometime the form of idx is different
+- geometry zmesh l.420 cahnged to have one value 
+
+13/3/21  OA
+- core l.201 set mfUnstruct to false default opening
+
+14/3/21 OA
+- addin l.145 in setmfUnstruct removed the if bool
+- modfloWriter in writeLPF l.196 added int(item) because sometimes it is a string
+- in addin line removed from l.570 to l.239 : set3D()msut be accessed without a gui (ame fr 583 to 240)
+
+15/03/21  OA
+- menu line 38 to set the nb of layers/mediain th emodel
+
+16/03/21 EV
+- modfloWriter writeTransientZones1 l.532,535 added to take into account only zone where ltyp is not 'importarray' and more than 1 layer per media
+
+19/03/21 EV

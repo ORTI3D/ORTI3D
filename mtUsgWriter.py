@@ -319,7 +319,7 @@ class mtUsgWriter:
             idx = zmesh(core,dicz,media,iz)
             try : len(idx) 
             except TypeError : continue # the zone media is not the right one
-            pindx[idx] = iz+1
+            pindx[idx[0]] = iz+1 #EV 19/03/21
             nbelts += sum(idx==1)
         #write the values for every period
         s1 = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB

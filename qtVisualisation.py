@@ -434,8 +434,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             c = pl.contour(pl.array(X),pl.array(Y),Z2,V, cmap=cmap)
         else :
             #print 'qtVi 385',shape(Z2),shape(V),shape(self.Triangles.x)
-            cf = pl.tricontourf(self.Triangles,Z2,V, cmap=cmap)
-            c = pl.tricontour(self.Triangles,Z2,V, cmap=cmap)            
+            cf = pl.tricontourf(self.Triangles,Z2,levels=V, cmap=cmap)
+            c = pl.tricontour(self.Triangles,Z2,levels=V, cmap=cmap)            
         #print col[3]
         for c0 in cf.collections:
             c0.set_alpha(int(col[3])/100.);#print cl
