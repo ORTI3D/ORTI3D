@@ -1383,3 +1383,6 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modfloWriter writeTransientZones1 l.532,535 added to take into account only zone where ltyp is not 'importarray' and more than 1 layer per media
 
 19/03/21 EV
+- core.py l.365-366-374 modified executable for modflow usg transport and pht3d + removed pht3d run message 
+- mtusgwriter l.322 replaed [idx] by [idx[0]]
+ 
