@@ -1384,5 +1384,18 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 19/03/21 EV
 - core.py l.365-366-374 modified executable for modflow usg transport and pht3d + removed pht3d run message 
-- mtusgwriter l.322 replaed [idx] by [idx[0]]
+- mtusgwriter l.325 replaed [idx] by [idx[0]]
+
+20/03/21  OA
+- geometry zmesh l.426 changed to cellsUnderPolyOrd and thus removed the 427 and 428
+- geometry cellsUnderPolyOrd added/modif l.1027-1031
  
+23/3/21  OA
+- mtUsgwriter writeMtphtFiles l.37-38 added to write the ph.4 line in chd
+- modflowWriter l.56-59 aded the usgTrans condition, used in l. 10
+
+07/04/21 EV
+- modflowWriter l.481 added to take into account transient value for ghb boundary condition
+- modflowWriter l.643-645 added to write result in text file
+- mtUsgwriter l.56 and 507 added to write MT3DMS usg result in text file
+- qtVisualisaiotn l.415 removed ma.masked and replaced it np.nan_to_num

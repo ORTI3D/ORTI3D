@@ -33,7 +33,9 @@ class mtUsgWriter:
         if 'cwell.1' in self.core.diczone['MfUsgTrans'].dic.keys():
             usgTrans['wel'] = self.writeWelValues(opt)            
         if 'cchd.1' in self.core.diczone['MfUsgTrans'].dic.keys(): # OA 28/10/20 modifs
-            usgTrans['chd'] = self.writeChdValues(opt)            
+            usgTrans['chd'] = self.writeChdValues(opt)   
+        if 'ph.4' in self.core.diczone['Pht3d'].dic.keys(): # OA 21/03
+            usgTrans['chd'] = self.writeChdValues(opt)  # OA 21/03
         self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
         self.writeBCT(opt)
         if opt=='Pht3d':
@@ -50,7 +52,8 @@ class mtUsgWriter:
             s += 'PCB  42 '+self.fName+'.pcb\n'
         if opt=='Pht3d':
             s += ' PHT  64    Pht3d_ph.dat\n'
-        s += 'DATA(BINARY) 101  '+self.fName+'.conc\n'
+        #s += 'DATA(BINARY) 101  '+self.fName+'.conc\n'
+        s += 'DATA 101  '+self.fName+'.conc\n' # EV 07/04/21
         s += 'DATA(BINARY) 102  '+self.fName+'.cbb\n'
         return s
         
@@ -500,9 +503,9 @@ class mtUsgReader:
 
     def readUCN(self,core,opt,iper,iesp,specname=''): 
         """ read .conc file, here opt, iesp, specname are not used
-        in free flow Thksat from flo file must be added (not done)"""  
-        if opt=='Pht3d': 
-            return self.readACN(core,opt,iper,iesp)
+        in free flow Thksat from flo file must be added (not done)""" 
+        if opt in ['Mt3dms','Pht3d']: 
+            return self.readACN(core,opt,iper,iesp,specname)
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             cnc=zeros((nlay,ncell));#print('mfw 491', shape(cnc))
@@ -512,6 +515,7 @@ class mtUsgReader:
             cnc=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.conc','rb')
         except IOError: return None
+        #print('f1',f1.read()) 
         blok=44+ncell*4; # v210 60
         for il in range(nlay):
             f1.seek(iper*nlay*blok+blok*il+44)
@@ -522,13 +526,16 @@ class mtUsgReader:
             else : 
                 cnc[il] = reshape(data,(nrow,ncol)) #
                 if core.mfUnstruct == False : cnc[il] = cnc[il][::-1] #OA 23/4/2
-        f1.close()  
+        f1.close() 
         return cnc
     
     def readACN(self,core,opt,iper,iesp,specname=''): 
-        if opt != 'Pht3d': return
-        if iesp<9: f1 = self.fDir+os.sep+'PHT3D00'+str(iesp+1)+'.ACN'
-        else : f1 = self.fDir+os.sep+'PHT3D0'+str(iesp+1)+'.ACN'
+        #if opt != 'Pht3d': return
+        if opt == 'Mt3dms':
+            f1 = open(self.fDir+os.sep+self.fName+'.conc','rb')
+        else :
+            if iesp<9: f1 = self.fDir+os.sep+'PHT3D00'+str(iesp+1)+'.ACN'
+            else : f1 = self.fDir+os.sep+'PHT3D0'+str(iesp+1)+'.ACN'
         m = loadtxt(f1);
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now

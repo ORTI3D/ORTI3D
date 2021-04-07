@@ -325,6 +325,7 @@ class Core:
         if modName in ['Modflow','Modflow_USG']:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
             if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
+            #if 'USG' in modName: mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -363,7 +364,7 @@ class Core:
                     return('Model fail to converge')
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName #EV 19/03/21
-            #s=self.baseDir+sep+'bin'+sep+'mfUSGs_1_3.exe '+self.fileName
+            #s=self.baseDir+sep+'bin'+sep+'mfUSG_1_3.exe '+self.fileName
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
         if modName == 'Pht3d':

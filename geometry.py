@@ -417,15 +417,15 @@ def zmesh(core,dicz,media,iz):
     if media not in zmedia: return [],None # the zone is not in the correct media
     if len(poly)==1: # one point
         dst = sqrt((poly[0][0]-xc)**2+(poly[0][1]-yc)**2)
-        idx = where(amin(dst)==dst)[0] # OA 28/2/21
+        idx = where(amin(dst)==dst) # OA 6/2/21
         zval = 0
     elif (abs(x[0]-x[-1])<d) & (abs(y[0]-y[-1])<d): #a closed polygon
         idx = where(pointsInPoly(xc,yc,poly,llcoefs));
         zval = 0 #OA 2/5/20 add zval
     else : # a line
-        id0,zval = cellsUnderPoly(core,dicz,media,iz) # OA 2/5/20 added zval
-        idx = where(id0>0)[0]  # OA 23/2/21
-        if type(zval) != type(0): zval = zval[idx] # OA 23/2/21
+        idx,zval = cellsUnderPolyOrd(core,dicz,media,iz) # OA 20/3/21 changed to Ord
+        #idx = where(id0>0)[0]  # OA 20/3/21 removed <->Ord
+        #if type(zval) != type(0): zval = zval[idx] # OA 20/3/21 removed <->Ord
     return idx,zval
         
 def blockRegular(core,modName,line,intp,opt,iper):
@@ -1010,7 +1010,7 @@ def cellsUnderPolyOrd(core,dicz,media,iz):
         indx=where(dst==amin(dst))[0]
         return indx #,dicz['value'][iz]
     lcoefs=lcoefsFromPoly(poly)
-    indx = []
+    indx, zval = [],[]
     for i in range(len(poly)-1):
         if len(poly[0])==3 : x,y,z = list(zip(*poly[i:i+2])) # OA 2/5/20
         else : x,y = list(zip(*poly[i:i+2]));z=0
@@ -1022,10 +1022,14 @@ def cellsUnderPolyOrd(core,dicz,media,iz):
         seg1 = sign(b*xc - a*yc - b*x[1] +a*y[1])#bx’-ay’-bx0+ay0
         idx = (dpos>0)*(seg0 != seg1)*1
         ipts = where(idx==1)[0]  # OA 2/5/20 this and two lines below added
-        dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)
-        srt = argsort(dst);ipts=ipts[srt]
+        dst = sqrt((xc[ipts]-x[0])**2+(yc[ipts]-y[0])**2)/sqrt((x[1]-x[0])**2+(y[1]-y[0])**2)
+        srt = argsort(dst);
+        if i > 0: srt = srt[1:] # OA 20/3/21 not to take twice the points
+        ipts=ipts[srt]
         indx.extend(ipts)
-    return indx
+        if z == 0 : zval = 0  # OA 20/3/21 added + below and zval in return
+        else : zval.extend(z[0]+(z[1]-z[0])*dst[srt])
+    return indx,zval
 
 def zptsIndices(core,dicz):
     '''finds the indices of the points in the zones'''
@@ -1135,7 +1139,8 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     #### creates the list of point values
     xpt,ypt,zpt=[],[],[];
     for iz in range(nz):  # loop on zones to get coordinates
-        lmed = int(diczone['media'][iz])#*1
+        #lmed = int(diczone['media'][iz])#*1
+        lmed = diczone['media'][iz]#*1
         if type(lmed) != type([5,6]): lmed = [lmed]# not a list
         if media not in lmed : 
             continue

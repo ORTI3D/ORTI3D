@@ -42,7 +42,6 @@ class modflowWriter:
         self.lexceptions = lexceptions
         lgex = ['DIS','DISU','BCF6','LPF','RCH','EVT','UPW','UZF','SMS','HFB6'] # oa 22/7/20 added bcf
         lnorm = ['BAS6','SIP','PCG','SOR','DE4','NWT','GMG'] 
-        self.writeNamFile()#;ts=time.time()
         #self.writeFiles() #OA 13/8/19 for loop below is new
         for grp in self.core.getUsedModulesList('Modflow'):
             if grp in ['WEL','DRN','RIV','MNWT','GHB','HFB6']: continue # in transientfile or specific (MNWT&HBF6) # EV 28/08/19
@@ -53,9 +52,11 @@ class modflowWriter:
         self.writeLmtFile()
         self.writeOcFile()
         #print 'mfwrite',self.ttable
-        if 'bas.5' in list(self.ttable['Transient'].keys()): # var head
-            if self.ttable['Transient']['bas.5']:
-                self.writeTransientFile(core,'bas.5','chd')
+        a,b, self.chd = 'bas.5' in list(self.ttable['Transient'].keys()),False,False # OA 23/3/21 
+        if a:
+            if self.ttable['Transient']['bas.5']: b = True
+        if b or 'chd' in usgTrans.keys(): self.chd = True # var head OA 23/3/21 added usgTrans
+        if self.chd : self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
             if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
                 self.writeTransientFile(self.core,n+'.1',n)#;s1=time.time();tf=time.time();print(n,tf-ts1,tf-ts)
@@ -63,7 +64,7 @@ class modflowWriter:
             self.writeMNwtFile(core)
         if self.core.diczone['Modflow'].getNbZones('hbf.3')>0: # EV 28/08/19
             self.writeHFB6()  # EV 28/08/19
-        #print(time.time()-ts)
+        self.writeNamFile()#;ts=time.time()
             
     def setRadial(self):
         g = self.core.addin.getFullGrid()
@@ -100,9 +101,8 @@ class modflowWriter:
         if 'WEL' in lmod:# EV 28/08/19
             if self.core.diczone['Modflow'].getNbZones('wel.1')>0:
                 f1.write('WEL     36     ' + self.fName + '.wel\n')
-        if 'bas.5' in list(self.ttable['Transient'].keys()):
-            if self.ttable['Transient']['bas.5']:
-                f1.write('CHD     37     ' + self.fName + '.chd\n')
+        if self.chd: # OA 23/3/21
+            f1.write('CHD     37     ' + self.fName + '.chd\n')
         if 'MNWT' in lmod: # EV 28/08/19
             if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
                 f1.write('MNW2     39     ' + self.fName + '.mnwt\n')
@@ -476,8 +476,9 @@ class modflowWriter:
         indx = argsort(lindx)    # OA moved 18/10/20        
         #for ip in range(nper): # OA removed 18/10/20
         buff, buf1 = '',[]
-        #if len(unique(zlist[:,iz]))>1 : flagTr = True # OA removed 18/10/20
         for iz in range(len(lpts)):#nzones): # and each zones where ltyp is not 'importarray' #EV 14/01/21
+            flgTr=None
+            if len(unique(zlist[:,iz]))>1 : flgTr = True # EV 07/04/21
             val = zlist[iper,iz] # the value of the variable for the period
             if ext in self.usgTrans.keys(): 
                 soption = self.usgTrans[ext][iper,iz]
@@ -486,7 +487,6 @@ class modflowWriter:
             if '$' in a: vparms = a.split('$')[1]
             vnext = zlist[min(iper+1,self.nper-1),iz] #OA 7/8/17 pb of Chd
             npz = len(lpts[iz])
-            flgTr=None
             for pt in range(npz): # for each zone the list of points
                 if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
                     zbase = float(zvar[iz][pt])
@@ -640,7 +640,9 @@ class modflowWriter:
 
         f1=open(self.fullPath +'.oc','w')     
         s = 'HEAD SAVE UNIT 30 \n'
-        if len(self.usgTrans.items())>0: s += 'CONC SAVE UNIT 101 \n'
+        if len(self.usgTrans.items())>0: # EV 07/04/21
+            s += 'CONC SAVE FORMAT (1F7.3)\n'
+            s += 'CONC SAVE UNIT 101 \n'
         s += 'Compact Budget \n'
         nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
         if self.nper>1:
