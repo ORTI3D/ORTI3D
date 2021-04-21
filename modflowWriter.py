@@ -698,19 +698,16 @@ class modflowWriter:
             else : s += 'CONSTANT     %9.5e  ' %(amin(amin(m)))
             return s
         if typ=='I':
-            fmt='1    ('+str(c)+'I'+str(ln)
+            fmt='1    ('+str(c)+'I'+str(ln+1)
         else :
             fmt='0    ('+str(c)+'G12.4' #+str(ln)            
         s += 'INTERNAL     '+fmt+')     3           '+opt+'\n'  #OA 10/8/20 added opt    
         if typ=='I':
             fmt='%'+str(ln)+'i'
         else :
-            fmt='%+11.4e ' #'+str(ln)+'e ' 
-            #fmt='{:8e}' #OA 16/4/21           
+            fmt='%8.4e ' #OA 16/4/21           
         for i in range(l-1,-1,-1): # to write the rows from top to bottom
-            for j in range(c):
-                s+=fmt %(m[i][j])
-            #s += ' '.join([fmt.format(x) for x in m[i]]) # OA 15/4/21 to write faster
+            s += ' '.join([fmt %x for x in m[i]]) # OA 15/4/21 to write faster
             #for j in range(c):s+=fmt %(m[i][j])
             s+='\n'
         return s[:-1]

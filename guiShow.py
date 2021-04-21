@@ -243,17 +243,30 @@ class guiShow:
         """using a coordinate get the value of the current variable at
         this coordinates, using self.data which is a 2D array
         or """
-        if self.data == None or x==None or y==None or self.core.mfUnstruct: #OA 24/10/20 removed mesh
+        if self.data == None or x==None or y==None: #OA 24/10/20 removed mesh
             return ' '
-        x0,y0 = self.data[0][0,:],self.data [1][:,0]
-        d=x-x0; d1=d[d>0.]
-        if len(d1)==0 : return ' '
-        ix=where(d==amin(d1))[0][0]
-        d=y-y0; d1=d[d>0.]
-        if len(d1)==0 : return ' '
-        iy=where(d==amin(d1))[0][0] 
-        zval = self.data[2][iy,ix]
-        return '%g'%zval # OA 6/11/18
+        if self.core.mfUnstruct:
+            c = self.core.addin.mesh.elcenters
+            xc,yc = c[:,0],c[:,1]
+            d = sqrt((x-xc)**2+(y-yc)**2);
+            inod = where(d==amin(d))[0][0];# print(self.curVarView )
+            if self.curVarView != None: # !!! does not work curVarView is not used in fact (it is all in topbar)
+                return '%g, node nb : %i, parm value : %g'%(self.data[2][inod],inod,self.curVarView[inod])
+            else :
+                return '%g, node nb : %i'%(self.data[2][inod],inod)
+        else :
+            x0,y0 = self.data[0][0,:],self.data [1][:,0]
+            d=x-x0; d1=d[d>0.]
+            if len(d1)==0 : return ' '
+            ix=where(d==amin(d1))[0][0]
+            d=y-y0; d1=d[d>0.]
+            if len(d1)==0 : return ' '
+            iy=where(d==amin(d1))[0][0] 
+            zval = self.data[2][iy,ix]
+            if self.curVarView != None:
+                return '%g, parm value %g'%(zval,self.curVarView[iy,ix])
+            else :
+                return '%g'%zval # OA 6/11/18
             
     def getXyHeadFree(self,arr3,Y):
         """modifies the Y coord to show the elevation of the water table
@@ -314,7 +327,7 @@ class guiShow:
     def getCurrentVariable(self,plane,section):
         mod = self.gui.varBox.parent.currentModel
         line = self.gui.varBox.parent.currentLine
-        media, opt, iper = 0,None,0; #print 'guisho 275',line,self.curVar
+        media, opt, iper = 0,None,0;print('guisho 330',line,self.curVar)
         if line in self.curVar: 
             mat = self.curVar[line]*1
         else:
