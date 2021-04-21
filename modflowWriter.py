@@ -217,21 +217,31 @@ class modflowWriter:
         
     def writeRCH(self):
         s= ''
-        if 'rch.2' in self.ttable:
-            trch = self.ttable['rch.2']; zrch = True
+        if 'rch' in self.usgTrans.keys():   lin0 = '    0      INCONC\n'
+        else :  lin0 = '    0\n' #EV 15/4/21                                                                                                                          
+        s += lin0
+        # write first time period
+        R = self.core.getValueLong('Modflow','rch.2',0,0)[0]
+        s += self.writeMatModflow(R,'arrfloat')+ '\n'
+        if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
+       
+        # write the other periods
+        if 'rch.2' not in self.ttable:
+            for ip in range(1,self.nper): s += '     -1\n'
         else :
-            trch = ones(self.nper); zrch = False # a constant value over the domain
-        for iper in range(self.nper): 
-            if (iper==0) or (prod(trch[iper]==trch[iper-1])==0): #values diff than previous
-                if 'rch' in self.usgTrans.keys():  s += '    0      INCONC\n'
-                else :  s += '    0\n'# 0: data are written not reused from previous
-                #m = block(self.core,'Modflow','rch.2',False,None,iper); #EV 04/02/20 
-                m = self.core.getValueLong('Modflow','rch.2',0,iper) #EV 04/02/20
-                s += self.writeMatModflow(m[0],'arrfloat')+ '\n'
-                if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
-            else:
-                if 'rch' in self.usgTrans.keys():  s += '    -1   \n' # OA 21/8/19 removed Inconc
-                else :  s += '    -1\n'
+            trch = self.ttable['rch.2'].astype('float') # OA 15/4/21 added astype
+            nper,nzon = shape(trch)
+            zindx = block(self.core,'Modflow','rch.2',3,iper=0,opt='zon')[0]; # OA 16/4/21 False to 3
+            for iper in range(1,self.nper): 
+                if (sum(abs(trch[iper]-trch[iper-1]))!=0): #OA 15/4/21 
+                    s += lin0
+                    R = R*0 + self.core.dicval['Modflow']['rch.2'][0]
+                    for iz in range(nzon):
+                        R[zindx==iz+1] = trch[iper,iz]
+                    s += self.writeMatModflow(R,'arrfloat')+ '\n'
+                    if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
+                else:
+                    s += '    -1\n'
         exceptDict={'rch.2':s}
         if 'rch' in self.usgTrans.keys(): optionDict = {'rch.1': ' CONC  \n       1'} # one species
         else : optionDict = {}
@@ -695,10 +705,13 @@ class modflowWriter:
         if typ=='I':
             fmt='%'+str(ln)+'i'
         else :
-            fmt='%+11.4e ' #'+str(ln)+'e '            
+            fmt='%+11.4e ' #'+str(ln)+'e ' 
+            #fmt='{:8e}' #OA 16/4/21           
         for i in range(l-1,-1,-1): # to write the rows from top to bottom
             for j in range(c):
                 s+=fmt %(m[i][j])
+            #s += ' '.join([fmt.format(x) for x in m[i]]) # OA 15/4/21 to write faster
+            #for j in range(c):s+=fmt %(m[i][j])
             s+='\n'
         return s[:-1]
 

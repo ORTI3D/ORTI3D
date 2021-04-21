@@ -280,6 +280,7 @@ class Core:
             if 'USG' in mtype: #28/7/19 this and 2 below # oa modif 10/2/20
                 self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
                 self.transReader = mtUsgReader(self.fileDir,self.fileName)    # OA 21/08/19
+                print('model write 1')
             else : 
                 self.mtWriter = mtphtWriter(self,self.fileDir,self.fileName)
                 self.transReader = mtphtReader(self.fileDir,self.fileName)   
@@ -287,6 +288,7 @@ class Core:
             if modName =='Pht3d':
                 dicSpec = self.addin.pht3d.getDictSpecies()
                 parmk = self.addin.pht3d.calcNbParm()
+                print('model write 2')
             else : 
                 dicSpec ={'mcomp':1,'ncomp':1,'gcomp':1,'kim':[]}
             self.mtWriter.writeMtphtFiles(dicSpec,modName,parmk)
@@ -324,8 +326,8 @@ class Core:
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName in ['Modflow','Modflow_USG']:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
-            if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
-            #if 'USG' in modName: mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
+            #if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
+            if 'USG' in modName: mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -364,12 +366,17 @@ class Core:
                     return('Model fail to converge')
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName #EV 19/03/21
+            print('model run')
             #s=self.baseDir+sep+'bin'+sep+'mfUSG_1_3.exe '+self.fileName
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
         if modName == 'Pht3d':
             if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
-                s = self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName           
+                s = self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName
+                #s = self.baseDir+sep+'bin'+sep+'mfUSG_1_3.exe '+self.fileName
+                #s = self.baseDir+sep+'bin'+sep+'mfusg_1_5.exe '+self.fileName
+                info=False
+                print('model run 2')
             else :
                 s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
                 info == False  #EV 19/03/21

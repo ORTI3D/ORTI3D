@@ -340,27 +340,27 @@ def blockUnstruct(core,modName,line,intp,opt,iper):
             parms = core.dicinterp[modName][line][im] # EV 19/02/20
             a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
         elif intp[im]==3 :
-            a = zone2mesh(core,modName,line,im)
+            a = zone2mesh(core,modName,line,im,opt=opt) # OA 15/4/21 added opt
         elif intp[im]==4 :
             #try : 
             a = zone2array(core,modName,line,im) 
             if a.size == 0 : 
-                a = zone2mesh(core,modName,line,im)
+                a = zone2mesh(core,modName,line,im,opt=opt) # OA 15/4/21 added opt
                 core.dictype[modName][line][im]='one_value'
         else : # OA added 28/10/20
-            a = zone2mesh(core,modName,line,im)            
+            a = zone2mesh(core,modName,line,im,opt=opt)  # OA 15/4/21 added opt          
         for il in range(int(lilay[im])): # several layers can exist in each media
             m0[lay]=a
             lay +=1
     return m0
         
-def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value',var=0): # OA 16/1/20
+def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',opt=None,var=0): # OA 16/1/20
     """return a vector of values for one property over a mesh, values are given
     through zones
     can return values on elts or nodes according to loc value
     if val = 'value' returns the value, if val ='nb', return the zone number"""
     vbase = 0
-    if val =='value': 
+    if opt !='zon': #OA 15/4/21 
         lval = core.dicval[modName][line]
         if media<len(lval): vbase=float(lval[media])
         else : vbase =float(lval[0])
@@ -395,7 +395,7 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',val='value',var=0)
         try : len(idx) 
         except TypeError : continue # the zone media is not the right one
         pindx[idx] = i+1
-    if val == 'nb': return pindx
+    if opt == 'zon': return pindx # OA 15/4/21
     else : return value
     
 def zmesh(core,dicz,media,iz):

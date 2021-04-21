@@ -1399,3 +1399,12 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modflowWriter l.643-645 added to write result in text file
 - mtUsgwriter l.56 and 507 added to write MT3DMS usg result in text file
 - qtVisualisaiotn l.415 removed ma.masked and replaced it np.nan_to_num
+
+15/04/21 OA
+- modflowUsg l.359 in myVor changed 1e4 to 1e6 (the modle was limited to 10 000 cells/layer)
+- modflowWriter writeRCH l.221 226 change the comparison of one period to previeouw
+- modflowWriter writeMat l.701 to write a little faster the matrix in a string
+
+16/04/21  OA
+- modflowWriter Rch completely reordered for usg
+- in geometry blockUnstruct added opt donw to zone2mesh

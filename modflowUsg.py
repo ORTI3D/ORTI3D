@@ -69,15 +69,15 @@ class modflowUsg:
         if mshType == 3: # voronoi
             msh = myVor(self)
             msh.transformVor(points,elts,dcoo1,dicD,self.dicFeats) # OA 15/8/20
-            xn,yn = self.nodes[:,0],self.nodes[:,1]
+            xn,yn = self.nodes[:,0],self.nodes[:,1];print('voronoi made')
             self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
         self.addMeshVects()
         Zblock = makeZblock(self.core)
         nlay = getNlayers(self.core)
         if self.core.addin.getDim()=='3D': 
             thick = Zblock[:-1]-Zblock[1:]
-            self.core.addin.get3D()
-            self.add3d(nlay,thick) # !!! media = layer up to now
+            self.core.addin.get3D();print('start 3D')
+            self.add3d(nlay,thick);print('3D done')
         else :
             thick = Zblock[0]-Zblock[-1]
             self.fahl = [array(lg)*thick[i] for i,lg in enumerate(self.fahl)]
@@ -175,6 +175,7 @@ class modflowUsg:
         cneighb0,cdist0,carea0,fahl0,angl0 = self.cneighb,self.cdist,self.carea,self.fahl,self.angl
         cneighb1, cdist1, carea1, fahl1, angl1 = [],[],[],[],[]
         for il in range(nlay):
+            print(il)
             if il==0: # add the cell below
                 cneighb1.extend([r_[array(cn),i+ncell2d] for i,cn in enumerate(cneighb0)])
                 cdist1.extend([r_[array(cd), thk[0,i]/2] for i,cd in enumerate(cdist0)])
@@ -356,7 +357,7 @@ class myVor:
         M1[:,1],M1[:,2] = M0[:,2],M0[:,1] # invert the points
         M1[:,-1] = mod(M1[:,-1]+pi,2*pi) # add pi to the angle
         M2 = r_[M1,M]
-        u,indx = unique(M2[:,1]*1e4+M2[:,2],return_index=True)# some segmts were already there
+        u,indx = unique(M2[:,1]*1e6+M2[:,2],return_index=True)# OA 15/4/21 1e4-> 1e6
         M = M2[indx,:]
         indx = argsort(M[:,1]*10+M[:,-1]) # sort again
         M = M[indx,:]
@@ -438,7 +439,7 @@ class myVor:
         for i in range(p.ncorn): p.dicFeats['bc_cell'+str(i)]=l[i]
 
     def putInDomain(self,elts,dcoo,M,dicFeats):  # added 25/4/20 some poits can be outside domain
-        poly=dcoo*1;poly.append(dcoo[0]);np=len(poly)
+        poly=dcoo*1;poly.append(dcoo[0]);npl=len(poly)
         lcoefs=lcoefsFromPoly(poly)
         iIn=array(pointsInPoly(M[:,3],M[:,4],poly,lcoefs))
         lout = where(iIn==0)[0];nl=len(lout)
@@ -448,17 +449,17 @@ class myVor:
         it0 = unique(M[lout,0]).astype('int') # index of the triangle on which is the outlier
         # on whcich bdy is the triangle
         for i in it0:
-            for p in range(np-1):
-                if sum(in1d(lines[p],elts[i]))==2: 
-                    lc1.append(lcoefs[:,p])
+            for ip in range(npl-1):
+                if sum(in1d(lines[ip],elts[i]))==2: 
+                    lc1.append(lcoefs[:,ip])
         # set the point symetric to the line (ax+by+c=0) ici ax+by=1
         # y’=(-2abx-y(b^2-a^2)-2bc)/(b^2+a^2) et x’=x-a(y-y’)/b
         for i,it in enumerate(it0):
             a,b = lc1[i];c=-1
             x,y = M[M[:,0]==it,3],M[M[:,0]==it,4]
-            yn = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)
+            yn = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2+1e-6) #OA 15/4/21 added 1e-6
             M[M[:,0]==it,4] = yn
-            M[M[:,0]==it,3] = x-a/b*(y-yn)
+            M[M[:,0]==it,3] = x-a/(b+1e-6)*(y-yn) #OA 15/4/21 added 1e-6
 #        for i in range(nl):
 #            a,b = lc1[i,:];c=-1;i1 = lout[i]; x,y = ptx[i1],pty[i1]
 #            pty1[i1] = (-2*a*b*x-y*(b**2-a**2)-2*b*c)/(b**2+a**2)

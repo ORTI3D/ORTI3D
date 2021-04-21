@@ -412,7 +412,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             if r==1: 
                 X=concatenate([X,X]);Y=concatenate([Y-Y*.45,Y+Y*.45]);Z=concatenate([Z,Z])
         #Z2=ma.masked_where(Z.copy()>1e5,Z.copy());#print value,n,V
-        Z[Z>1e5]=0 ; Z2=np.nan_to_num(Z,nan=0) #EV 07/04/21
+        Z[Z>1e5]=0 ; Z2= Z;#np.nan_to_num(Z,nan=0) #EV 07/04/21
         # definir les couleurs des contours
         if col==None or type(col)<type(5): # or (col==[(0,0,0),(0,0,0),(0,0,0),10]):
             cmap = mpl.cm.jet
