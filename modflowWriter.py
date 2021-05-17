@@ -223,7 +223,7 @@ class modflowWriter:
         # write first time period
         R = self.core.getValueLong('Modflow','rch.2',0,0)[0]
         s += self.writeMatModflow(R,'arrfloat')+ '\n'
-        if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
+        if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][0]  #♣ 9/5/21 OA iper->0
        
         # write the other periods
         if 'rch.2' not in self.ttable:
@@ -243,7 +243,9 @@ class modflowWriter:
                 else:
                     s += '    -1\n'
         exceptDict={'rch.2':s}
-        if 'rch' in self.usgTrans.keys(): optionDict = {'rch.1': ' CONC  \n       1'} # one species
+        if 'rch' in self.usgTrans.keys(): 
+            s = ' CONC  \n'+' '.join(['1']*(self.usgTrans['mcomp']+2))  # OA added 9/5/21 for multicomonent
+            optionDict = {'rch.1': s} # one species
         else : optionDict = {}
         self.writeOneFile('RCH',exceptDict,optionDict)
         
@@ -343,6 +345,8 @@ class modflowWriter:
             if (ktyp[0][:3]=='lay'):
                 s += self.layerLines(ll)
                 continue
+            if ll=='lpf.1': #EV 15/05/21
+                if len(lval)==3: lval.extend([0, 'CONSTANTCV', 'NOVFC'])
             for ik in range(len(kwlist)):
                 value=lval[ik]
                 if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
@@ -651,7 +655,7 @@ class modflowWriter:
         f1=open(self.fullPath +'.oc','w')     
         s = 'HEAD SAVE UNIT 30 \n'
         if len(self.usgTrans.items())>0: # EV 07/04/21
-            s += 'CONC SAVE FORMAT (1F7.3)\n'
+            s += 'CONC SAVE FORMAT (1G11.3E3)\n'  # OA 13/5/21
             s += 'CONC SAVE UNIT 101 \n'
         s += 'Compact Budget \n'
         nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
@@ -698,16 +702,16 @@ class modflowWriter:
             else : s += 'CONSTANT     %9.5e  ' %(amin(amin(m)))
             return s
         if typ=='I':
-            fmt='1    ('+str(c)+'I'+str(ln+1)
+            fmt='1    ('+str(c)+'I3'
         else :
             fmt='0    ('+str(c)+'G12.4' #+str(ln)            
         s += 'INTERNAL     '+fmt+')     3           '+opt+'\n'  #OA 10/8/20 added opt    
         if typ=='I':
-            fmt='%'+str(ln)+'i'
+            fmt='%2i'
         else :
-            fmt='%8.4e ' #OA 16/4/21           
+            fmt='%11.4e' #OA 16/4/21           
         for i in range(l-1,-1,-1): # to write the rows from top to bottom
-            s += ' '.join([fmt %x for x in m[i]]) # OA 15/4/21 to write faster
+            s += ' '.join([fmt%x for x in m[i]]) # OA 15/4/21 to write faster
             #for j in range(c):s+=fmt %(m[i][j])
             s+='\n'
         return s[:-1]

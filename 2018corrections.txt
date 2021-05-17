@@ -1404,11 +1404,40 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modflowUsg l.359 in myVor changed 1e4 to 1e6 (the modle was limited to 10 000 cells/layer)
 - modflowWriter writeRCH l.221 226 change the comparison of one period to previeouw
 - modflowWriter writeMat l.701 to write a little faster the matrix in a string
-- modflowUsg 459 461 putInDomain added on two line +1e-6 to remove nan
-- geometry zone2mesh val -> opt for consistency with blockRegular (l.363 398)
-- geometry blockUnstruct l. 343 348 351 aded opt for consistency with blockRegular
-- modflowWriter writeRCH l.226-229 added to make the first period and remember the zone numebrs for later
 
-21/5/21  OA
--modflow Writer l.708 -710 for writing array with given format
-- guiShow changed the getPointValue funciotn to display value for usg and noe number (parameters not working)
+16/04/21  OA
+- modflowWriter Rch completely reordered for usg
+- in geometry blockUnstruct added opt donw to zone2mesh
+- modflowWriter writeMat l.708-710 to get the correct format
+
+20/04/21 OA
+- modflowWriter writeTransientFile l.436 nb of points*nper
+- modflowWriter writeRch l.236 == -> - (in sum(abs))
+- mtUsgKeywords added CCHD group and cchd.1 line to add conc to chd boundaries,
+- also added in addin modules (l.56)
+- mtUsgwriter writeChdValues l.183 modif bct.20 -> cchd.1
+
+22/04/21
+- mtpht Writer added l.486-487 in writeSSm to prevent writing in ssm if the source is steady
+- mtphtwriter writeArray l.131 remove correctBTn just usse the btn.13 value
+
+4/5/21  OA
+- moflowUSG l.46 algo front2d (for openfaom interpolation)
+
+9/5/21  OA
+- mtUsgWriter l.268 formatVecMt instead of writeVecModflow
+- mtUsgWriter l.226 in wirteRch changed iper to 0 for 1St period
+- mtUsgWriter l.22 added in writeMtphtFiles to know the numer of mobile components in usgTrans
+- modflowWriter in writeRCH l.247 added to consider several components
+
+10/5/21  OA
+- mtUsgWriter writeBCT l.94 added timeweigth for crankNicolson (should be in keywords?)
+
+11/5/21  OA
+- mtUsgWriter l.35 added l.39-43 modfiied to write chd with different ocnditions for transport and chemistry
+- mtusgwriter l.224 phval2conc added snum to get the solution number
+- modfloWriter writeOcFile l.656 changed format for numbers in conc file
+- mtUsgWriter created readConc we read the conc file (now in ascii) because it contains only one step in each period
+
+17/5/21 EV
+- modfloWriter l.348-349 added for old model without nex option in lpf.1

@@ -43,7 +43,7 @@ class modflowUsg:
                 #clmax = self.core.dicval['Modflow']['disu.3'][0];print('start gmesh')
                 #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -clmax '+str(clmax)+' -o '+fmsh)
                 #os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -o '+fmsh)
-                os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo meshadapt -o '+fmsh)
+                os.system(bindir+'gmsh gm_in.txt -2 -smooth 5 -algo front2d -o '+fmsh) #meshadapt
             f1 = open(fmsh,'r');s = f1.read();f1.close();print('gmesh file read')
             nbdy = len(dcoo1) # 15/8/20
             nodes,elements,self.dicFeats = readGmshOut(s,outline=True,nbdy=nbdy,liNames=liNames); # OA 15/8/20

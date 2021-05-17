@@ -205,7 +205,7 @@ def makeZblock(core):
                 botm = getTopBotm(core,modName,line,intp[im],im,refer=top,mat='botm') # EV 19/02/20
             ## creates the sublayers
             if lilay[im]==1: ## just one sublayer
-                dff = top-botm;
+                dff = top-botm;#print(top,botm,dff)
                 limit = mean(dff)/500 ## limit the thick not to be 0
                 #if type(dzL[im])==type([5]): dzL[im]=dzL[im][0] ## don't understand why i need that
                 Zblock[i+1] = top - maximum(dff,limit) #*dzL[im]
@@ -240,7 +240,7 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         if z.size == 0 : #EV 01/04/20
             z = zone2grid(core,modName,line,im)
             core.dictype[modName][line][im]='one_value'
-    if shape(refer)==shape(z) : return minimum(z,refer-1)
+    if shape(refer)==shape(z) : return minimum(z,refer-0.1)
     else : return z
     
 def getXYvects(core):
