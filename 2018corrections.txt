@@ -1441,3 +1441,33 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 17/5/21 EV
 - modfloWriter l.348-349 added for old model without nex option in lpf.1
+
+20/5/21  OA
+- mtUsgWriter several lines changed in readConc
+
+22/5/21  OA
+- modflowWriter writeBCT l.357 and 361 added blanks
+- modflowWriter removed lines 348-349 these keywords are in modflowKewords so they can be added automatically
+- modflowWriter l.247 added two comoonents for pht3d_usg
+- addin l.178 initMenu aded choice of usgTrans modules
+29/5/21
+- modflowWriter removed lines 348-349 should not be removed
+
+2/6/21 OA
+-mtphtWriter l.131 replaced by 132 for writing btn correctly if inital values
+-mtphtWriter added 488 489 for the ssm not writing it if no bc at the same place
+
+4/6/21  OA
+-modflowReader getThickness l.908 and 924 removed 2nd and 3rd index to allow it to work for usg
+- modflowReader readFloFile l.866 for getThkickness, here we use only one period, added [0]
+- modflowReader completely modified the readFlowMesh
+- modflowWriter writeTransient, added the area option l.398,421,487
+- modflowWriter added larea in l462, add line 463,464 in writeTransientZones1, l.481 484 larea calculated, l.489 returned
+- modflowWriter added l.404 for larea (depending on the option)
+- modflowWriter added l.511 512 in writeTransientZones2 to calculate the multiplicator of conductance if larea present, and use it each time cond is present
+
+8/6/21 OA
+- modfloWriter writeTransientZones1 l.480-83 added (tot area of zone)
+- modfloWriter writeTransientZones1 added /zarea at l.489,492
+- core getPtObs l.722 modif to get only the index and 723 for a quesiton of list
+- mtUsgWriter, in reader added getPtObs

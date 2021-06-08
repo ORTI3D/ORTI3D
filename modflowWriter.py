@@ -59,7 +59,10 @@ class modflowWriter:
         if self.chd : self.writeTransientFile(core,'bas.5','chd')
         for n in ['wel','drn','riv','ghb']:
             if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
-                self.writeTransientFile(self.core,n+'.1',n)#;s1=time.time();tf=time.time();print(n,tf-ts1,tf-ts)
+                area = 0 # this and 3 below OA 6/6/21
+                if 'conductance' in self.core.dicaddin['Model'].keys():
+                   if self.core.dicaddin['Model']['conductance'] == 'byZone': area=1
+                self.writeTransientFile(self.core,n+'.1',n,area)#;s1=time.time();tf=time.time();print(n,tf-ts1,tf-ts)
         if self.core.diczone['Modflow'].getNbZones('mnwt.2a')>0:
             self.writeMNwtFile(core)
         if self.core.diczone['Modflow'].getNbZones('hbf.3')>0: # EV 28/08/19
@@ -244,7 +247,7 @@ class modflowWriter:
                     s += '    -1\n'
         exceptDict={'rch.2':s}
         if 'rch' in self.usgTrans.keys(): 
-            s = ' CONC  \n'+' '.join(['1']*(self.usgTrans['mcomp']+2))  # OA added 9/5/21 for multicomonent
+            s = ' CONC  \n'+' '.join(['1']*(self.usgTrans['mcomp']+4))  # OA added 22/5/21 for multicomonent
             optionDict = {'rch.1': s} # one species
         else : optionDict = {}
         self.writeOneFile('RCH',exceptDict,optionDict)
@@ -346,7 +349,7 @@ class modflowWriter:
                 s += self.layerLines(ll)
                 continue
             if ll=='lpf.1': #EV 15/05/21
-                if len(lval)==3: lval.extend([0, 'CONSTANTCV', 'NOVFC'])
+                if len(lval)==3: lval.extend([0, '', ''])
             for ik in range(len(kwlist)):
                 value=lval[ik]
                 if ktyp[ik] in ['vecint','vecfloat','arrint','arrfloat']:
@@ -354,11 +357,11 @@ class modflowWriter:
                     value=self.core.getValueLong('Modflow',ll,ik);
                     s += self.writeBlockModflow(value,ktyp[ik]) # OA 1/8/17
                 elif ktyp[ik]=='choice': # where there is a choice print the nb othe choice not value
-                    s += str(value).rjust(10)
+                    s += str(value).ljust(9)+' ' # OA 27/5/21
                 elif ktyp[ik]=='title': # case of a title line
                     s += '#'+str(value).rjust(10)
                 else : # values with strings
-                    s += str(value).rjust(10);#print 'write str',ll
+                    s += str(value)+' ';# OA 27/5/21
             if ll in optionDict.keys(): s+= ' '+optionDict[ll]+'\n'
             else : s += '\n'
         f1.write(s);f1.close()
@@ -395,11 +398,13 @@ class modflowWriter:
         return self.core.testCondition('Modflow',cond,option)
         
     #************************ file for transient data *************************************
-    def writeTransientFile(self,core,line,ext):
+    def writeTransientFile(self,core,line,ext,area=0): #♣OA added area 6/6/21
         """this method write files that have point location (wells, variable head)
-        which are transient but can be permanent for wells"""
+        which are transient but can be permanent for wells
+        area=1 means that we consider the cell area : the conductance are given as /m2"""
         ltyp=core.dictype['Modflow'][line]#;print('w transient ',line)
-        npts,lpts,lindx,zvar,k = self.writeTransientZones1(core,line,ext)
+        npts,lpts,lindx,zvar,k,larea = self.writeTransientZones1(core,line,ext)
+        if area ==0 : larea = [] # OA 6/6/21
         s,sA,nA = '','',0
         if 'importArray' in ltyp: # OA 17/10/20
             for im in range(self.nlay):
@@ -417,7 +422,7 @@ class modflowWriter:
             s += str(npts+nA)
             if ext == 'wel'and self.core.addin.mesh!=None: s +='  0  0' # OA 10/12/20
             s += '\n'+sA
-            if npts>0 : s += self.writeTransientZones2(core,line,ext,lindx,lpts,zvar,k,iper)
+            if npts>0 : s += self.writeTransientZones2(core,line,ext,lindx,lpts,zvar,k,iper,larea) # OA 6/6/21
         f1=open(self.fullPath +'.'+ ext,'w');f1.write(s);f1.close()
 
             
@@ -458,32 +463,40 @@ class modflowWriter:
     def writeTransientZones1(self,core,line,ext):
         '''first part of transient zones : to have all the info'''
         #f1=open(self.fullPath +'.'+ ext,'w') OA 18/10/20
-        lpts, k, npts,zvar,lindx = [],[],0,[],[] # OA 3/3/20 added lindx
+        lpts, k, npts,zvar,lindx,larea = [],[],0,[],[],[] # OA 3/3/20 added lindx
+        nx,ny,xvect,yvect = getXYvects(core); # OA 6/6/21
+        dx,dy = xvect[1:]-xvect[:-1],yvect[1:]-yvect[:-1]  # OA 6/6/21
         if line in self.ttable.keys(): zlist = self.ttable[line]
         else : return npts,lpts,lindx,zvar,k # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
-        iz1=0 #EV 14/01/21
+        iz1=0;mesh=core.addin.mesh #EV 14/01/21
         for iz in range(nzones): #creates a list of points for each zone
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
-            if ilay == None: continue #break #EV 14/01/21
-            lpts.append([])
+            if len(ilay) == 0: continue #break # OA 8/6/21
+            lpts.append([]);larea.append([]) # OA 6/6/21 added learea
             zvar.append(zvect)
             npts += len(irow)
-            if core.addin.mesh != None : lindx.extend(list(irow))# OA 3/3/20                                                                           
+            if mesh == None :  # OA 7/6/21 this and below
+                zarea = sum(array(dx[icol])*dy[ny-1-array(irow)])
+            else : 
+                zarea = sum(mesh.carea[mod(irow,mesh.ncell_lay)])
+                lindx.extend(list(irow))# OA 3/3/20                                                                           
             for i in range(len(irow)):
-                if core.addin.mesh == None: ## regular grid # OA modif 4/2/19
+                if mesh == None: ## regular grid # OA modif 4/2/19
                     lpts[iz1].append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
+                    larea[iz1].append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21
                 else : #unstruct grid irow is the node number
                     lpts[iz1].append(str(irow[i]+1).rjust(9))
+                    larea[iz1].append(mesh.carea[mod(irow[i],mesh.ncell_lay)]/zarea)
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
             iz1+=1 #EV 14/01/21
-        return npts,lpts,lindx,zvar,k # added 18/10/20
+        return npts,lpts,lindx,zvar,k,larea # OA 6/6/21 larea
         
-    def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper):
+    def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper,larea):
         '''2nd part of transient zones : to have the real vectors to be written'''
         zlist = self.ttable[line] # OA 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
@@ -502,6 +515,8 @@ class modflowWriter:
             vnext = zlist[min(iper+1,self.nper-1),iz] #OA 7/8/17 pb of Chd
             npz = len(lpts[iz])
             for pt in range(npz): # for each zone the list of points
+                if len(larea)>0: mult = larea[iz][pt] # OA 6/6/21
+                else : mult = 1 # OA 6/6/21
                 if len(unique(zvar[iz]))>1:  # OA 25/4/19 for polyV
                     zbase = float(zvar[iz][pt])
                 else : 
@@ -511,18 +526,18 @@ class modflowWriter:
                 elif ext=='chd': 
                     s1=lpts[iz][pt]+' %9.4e %9.4e ' %(float(val)+zbase,float(vnext)+zbase)
                 elif ext=='drn': # elevation adding zbase (polyV), then cond.
-                    v1,v2 = vparms.split();#OA 6/6/20
-                    s1=lpts[iz][pt]+' %9.4e %9.4e ' %(float(v1)+zbase,float(v2))
+                    hd,cond = vparms.split();#OA 6/6/21
+                    s1=lpts[iz][pt]+' %9.4e %9.4e ' %(float(hd)+zbase,float(cond)*mult)
                 elif ext=='ghb':
                     a,cond = vparms.split(); #conductance steady (time & space)
                     if flgTr: hd = float(val)
                     else : hd = float(vparms.split()[0]) # OA 7/6/20 val-> vaprms
-                    s1=lpts[iz][pt]+' %9.4e %9.4e '%(hd+zbase,float(cond))
+                    s1=lpts[iz][pt]+' %9.4e %9.4e '%(hd+zbase,float(cond)*mult)
                 elif ext=='riv':
                     a,cond,botm = vparms.split()
                     if flgTr: stage = float(val)
                     else : stage = float(vparms.split()[0]) # OA 7/6/20
-                    s1=lpts[iz][pt]+' %9.4e %9.4e %9.4e ' %(float(stage)+zbase,float(cond),float(botm)) # OA 23/2/21
+                    s1=lpts[iz][pt]+' %9.4e %9.4e %9.4e ' %(float(stage)+zbase,float(cond)*mult,float(botm)) # OA 23/2/21
                 buf1.append(s1+soption)
         if len(lindx)>0: buff += '\n'.join(array(buf1)[indx]) + '\n'
         else : buff += '\n'.join(buf1) + '\n'
@@ -858,11 +873,12 @@ class modflowReader:
         return hd3
 
     def readFloFile(self, core,iper=0):
-        """ read flo file and gives back Darcy velocities"""
+        """ read flo file and gives back Darcy velocities
+        here iper is one value (not a list of timesteps)"""
         grd = core.addin.getFullGrid()
         dx, dy = grd['dx'], grd['dy'];
         dxm,dym=meshgrid(dx,dy)
-        thick = self.getThickness(core,iper);
+        thick = self.getThickness(core,iper)[0]; # OA 6/6/21 iper send back a list
         try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
         except IOError : return None
         ncol,nrow,nlay,blok,part=self.getPart()
@@ -905,7 +921,7 @@ class modflowReader:
         #if type(iper)==type([5]): iper=iper[0] # takes the thick only for the 1st tstep  #EV 23/03/20 
         if type(iper) == int : iper = [iper]
         zb = core.Zblock
-        thk = zb[:-1,:,:]-zb[1:,:,:]
+        thk = zb[:-1]-zb[1:] # OA 4/6/21
         thkMat=array([thk]*len(iper))
         dim = core.addin.getDim()
         if dim in ['Xsection','Radial']:
@@ -921,7 +937,7 @@ class modflowReader:
             for i in range(len(iper)):  #EV 23/03/20 
                 hd=self.readHeadFile(core,iper[i])
                 if dim =='3D': hd=hd[0]
-                thk[0,:,:]=hd-zb[1,:,:]
+                thk[0]=hd-zb[1]  # OA 4/6/21
                 thkMat.append(array(thk))
         return thkMat
     
@@ -1102,7 +1118,7 @@ class modflowReader:
             nghb = data[0];part += l2+nghb*16
         return ncol,nrow,nlay,blok,part
         
-    def readFlowMesh(self,core,mesh):
+    def readFlowMesh_old(self,core,mesh):
         '''a simplified reader of the budget file
         if we assume flux enters on face 1 and flows out on face 2 and 3, the velocity vector
         starts from the point on face 1 corresponding to the proportion of flux
@@ -1169,4 +1185,59 @@ class modflowReader:
                 vz[il,ic1] = q[-1]/mesh.carea[ic1]
         return vx,vy,vz
 
-        
+    def readFlowMesh(self,core,mesh,iper=0):
+        '''a reader of the budget file
+        it seems that usg writes nval budget values for each stress period 
+        of the time step and then njag values flow at faces
+        !!! in oc by default there is only the 1st period
+        !! if meth=2 there is no nlist, this seems to be the same as meth=1
+        to calculate the horizontal velocity verctor at one point of the
+        mesh we combine the vectors entering or leaving the corresponding faces'''
+        nlay = getNmedia(core) ### !!! nlayer = nmedia
+        nfc = mesh.nconnect
+        try : f1 = open(self.fDir+os.sep+self.fName+'.budget','rb')
+        except IOError: return None
+        f1.seek(0);data =arr2('i');data.fromfile(f1,2);kstep,kper = data
+        f1.seek(24);data =arr2('i');data.fromfile(f1,3);nval,step,icode = data
+        '''
+        if icode>=0: 
+            data =arr2('f');data.fromfile(f1,nval);pos = 24+4*4+nval*4
+        else :
+            f1.seek(36);data =arr2('i');data.fromfile(f1,1);imeth=data[0]
+            data =arr2('f');data.fromfile(f1,3); delt,pertim,totim = data
+            if imeth==1:
+                f1.seek(48);data = arr2('f');data.fromfile(f1,nval) # budget
+                pos = 24+4*4+nval*4;
+            if imeth==2:
+                f1.seek(48);data = arr2('i'); data.fromfile(f1,1);nlist=data[0]
+#                data = arr2('i'); data.fromfile(f1,nlist*2) # should have the 2nd value as 'f'
+#                pos = 24+4*4+4*4+nlist*8+4
+        '''
+        #8 269 188;a=int(8269188/4)
+        #where(d==nfc+nc): 8540, 1097263
+        s=f1.read();strt = 0
+        for ip in range(iper):
+            pos = s[strt+1:].find(b'FLOW JA FACE')
+            strt = pos
+        f1.seek(pos+13+4*4);data =arr2('f');data.fromfile(f1,3);delt,pertim,totim = data
+        data =arr2('f');data.fromfile(f1,nfc+nc);data=array(data)
+        zb=core.Zblock;thk = zb[:-1]-zb[1:]
+        vx = zeros((nlay,mesh.ncell_lay));vy=vx*1;vz=vx*1
+        icnt=0
+        for il in range(nlay):
+            for ic in range(mesh.ncell_lay):#): #
+                ic1 = ic+il*mesh.ncell_lay
+                nc = len(mesh.cneighb[ic1])
+                flu = data[icnt+1:icnt+nc+1]; icnt+= nc+1# flux per face
+                flu = flu/mesh.fahl[ic1] # divide by face area
+                # make the flux vector/face
+                if il==0: 
+                    idx=range(nc-1);vz[il,ic]=flu[-1]
+                elif il==nlay-1: 
+                    idx=range(1,nc);vz[il,ic]=(flu[0]+flu[-1])/2
+                else :
+                    idx =range(1,nc-1);vz[il,ic]=flu[0]
+                vx[il,ic] = -sum(flu[idx]*sin(mesh.angl[ic1][idx]))
+                vy[il,ic] = sum(flu[idx]*cos(mesh.angl[ic1][idx]))
+        return vx,vy,vz
+

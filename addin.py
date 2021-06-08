@@ -175,6 +175,7 @@ class addin:
         '''add the menus in the gui interface''' 
         self.gui.addMenu(502,'Modflow_modules',self.onUsedModules)   
         self.gui.addMenu(503,'Mt3dms_modules',self.onUsedModules)   
+        self.gui.addMenu(504,'MfUsgTrans_modules',self.onUsedModules)  #OA 27/5/21 
         #self.gui.addMenu(504,'Interactive fitting',self.onInstantFit)   
         #self.gui.addMenu(505,'MultiPlot',self.onMultiPlot)   #OA 28/11/18
         self.gui.addMenu(506,'Batch',self.onBatchDialog)   

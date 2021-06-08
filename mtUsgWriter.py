@@ -92,8 +92,8 @@ class mtUsgWriter:
                     if ik<len(lval): 
                         if type(lval[ik])==type(5):s += ' %3i ' %lval[ik] # OA 25/4/20
                         elif type(lval[ik])==type(5.0):s += ' %9.3e ' %lval[ik]
-                        else :s +=  lval[ik]
-                    else : s += '0'.rjust(10)
+                        else :s +=  ' '+lval[ik]
+                    else : s += '        0 '  # OA 22/5/21 rjust whtie spc
                 if ll == 'bct.1a': s+= 'TIMEWEIGHT 0.5' # OA 10/5/21
                 s += '\n'
         f1=open(self.fDir+os.sep+self.fName +'.bct','w')
@@ -556,16 +556,21 @@ class mtUsgReader:
     
     def readConc(self,core,opt,iper,iesp,specname=''): 
         #if opt != 'Pht3d': return
-        lSpec = core.addin.chem.getListSpecies();nsp=len(lSpec)
+        if opt=='Pht3d': # OA 20/5/21
+            lSpec = core.addin.chem.getListSpecies();
+            nsp=len(lSpec)+3;iesp+=3; # always 3 species added (O,H,charge)
+        else : # OA 20/5/21
+            nsp = 1
         f1 = open(self.fDir+os.sep+self.fName+'.conc','r')
+        nper = len(core.ttable['tlist'])-1 # OA 20/5/21
         if self.flag == 0 : 
             self.conc = loadtxt(f1);self.flag = 1
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             ncell1 = nlay*ncell
-            ncell2 = ncell1*(nsp+3) # always 3 species added (O,H,charge)
+            ncell2 = ncell1*nsp 
             a = self.conc[iper*ncell2:(iper+1)*ncell2]
-            cnc=reshape(a[(iesp+3)*ncell1:(iesp+4)*ncell1],(nlay,ncell))
+            cnc=reshape(a[iesp*ncell1:(iesp+1)*ncell1],(nlay,ncell))
         else :
             nlay,ncol,nrow = self.getGeom(core)
             ncell = nlay*nrow*ncol
@@ -573,6 +578,34 @@ class mtUsgReader:
             cnc = cnc[:,::-1,:]
         return cnc
 
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp,spec,ss=None):
+        ''' get conc for given line (or poly), if tracer iesp=0
+        spec not used, icol not used here
+        '''
+        nper = len(iper) # OA 20/5/21
+        f1 = open(self.fDir+os.sep+self.fName+'.conc','r')
+        if self.flag == 0 : 
+            self.conc = loadtxt(f1);self.flag = 1
+        if opt=='Pht3d': # OA 20/5/21
+            lSpec = core.addin.chem.getListSpecies();
+            nsp=len(lSpec)+3;iesp+=3; # always 3 species added (O,H,charge)
+        else : # OA 20/5/21
+            nsp = 1
+        c = zeros((nper,len(irow)))
+        if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
+            nlay,nc_lay = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
+            ncell1 = nlay*nc_lay
+            ncell2 = ncell1*nsp 
+            for ip in range(nper): 
+                c[ip] = self.conc[ip*ncell2+iesp*ncell1+ilay*ncell1+icol]
+        else :
+            nlay,ncol,nrow = self.getGeom(core)
+            ncell1 = nlay*nrow*ncol
+            ncell2 = ncell1*nsp 
+            for ip in range(nper): 
+                c[ip] = self.conc[iper*ncell2+iesp*ncell1+ilay*ncell1+irow*nrow+icol]            
+        return c
+        
     def getGeom(self,core):
         grd = core.addin.getFullGrid()
         ncol, nrow = grd['nx'], grd['ny']

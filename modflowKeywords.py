@@ -107,7 +107,7 @@ class Mf:
         'lpf.0':{'comm':'Lpf title 1','cond':'','kw':['title'],'detail':[],'type':['title']},
         'lpf.1':{'comm':'General flags','cond':'','kw':['ILPFCB','HDRY','NPLPF','NWOPT1','NWOPT2','NWOPT3'],
                'detail':['Write budget','head for dry cells','Nb Lpf params','Newt opt1','Newt opt2','Newt opt3'],#EV 25/02/20 + OA 7/5/21
-               'type':['int','float','int','int','string','string'],'default':[31,0.01,0,0,'CONSTANTCV','NOVFC']},
+               'type':['int','float','int','int','string','string'],'default':[31,0.01,0,0,' ',' ']},
         'lpf.2':{'comm':'Type of layer: confined(0) or convertible(1)','cond':'','kw':['LAYTYP(NLAY)'],'detail':[],'type':['layint']}, #[['confinement','confined','convertible']],
         #'lpf.2':{'comm':'Type of layer: confined(0) or convertible(1)','cond':'','kw':['LAYTYP(NLAY)'],'detail':['Confined or convertible'],'type':['arrint'],'default':[0]},
         'lpf.3':{'comm':'Type of averaging','cond':'','kw':['LAYAVG(NLAY)'],'detail':[['type of average','harmonic','logarithmic','harm/log']],'type':['layint']},

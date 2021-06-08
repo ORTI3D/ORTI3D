@@ -719,8 +719,8 @@ class Core:
                 if isclosed(self,x,y): # polygon
                     iy,ix = where(fillZone(nx,ny,ix,iy,a));
             else : # OA 18/12/20
-                ix = cellsUnderPolyOrd(self,zlist,0,izon); # OA 16/1/21
-                ix=list(ix);iy=[0]*len(ix);asin=[0]*len(ix);acos=[0]*len(ix)  
+                ix = cellsUnderPolyOrd(self,zlist,0,izon)[0]; # OA 8/6/21
+                a = [0]*len(ix);iy=a*1;asin=a*1;acos=a*1 
                 # should we add closed
             ix2,iy2,iz2,asin2,acos2=[],[],[],[],[]
             zlayers = media2layers(self,zlist['media'][izon]) # OA 19/3/20 OA added
@@ -770,7 +770,7 @@ class Core:
        ## For Tracer
         elif group=='Transport':
             if mtype == 'Mod': 
-                opt ='Mt3dms'
+                opt ='Mt3dms';ss=''
             elif mtype in ['Sut','Min','Opg']: 
                 ss=''
                 opt = 'Tracer' # OA 19/3/19
