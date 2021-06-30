@@ -1471,3 +1471,16 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - modfloWriter writeTransientZones1 added /zarea at l.489,492
 - core getPtObs l.722 modif to get only the index and 723 for a quesiton of list
 - mtUsgWriter, in reader added getPtObs
+
+30/6/21 EV
+- core.py l.330, 368, 373 define PHT_USG.exe as executable file for modflow, transport and pht3d usg
+- core.py l.718-719 added to plot point zone
+- guishow l. 196 removed arr=arr[0] to read velocity in 3D
+- mtusgwriter / writeMtphtFiles add self. to usgtrans
+- mtusgwriter l.35-36 removed cwell.1 
+- mtusgwriter l.40, 44 removed usgTrans['chd'] to take into account all inflow boundary condition
+- mtusgwriter / writeWelValues l.179 184 removes this function, well is treated with other inflow boundary condition
+- mtusgwriter l.186 - 190 replaced writeChdValue by writeConsValues to take into account all inflow boundary condition
+- mtusgwriter / getTransTable function modified to take into account all inflow boundary condition
+- mtusgwriter l.224 replaced 1e-15 by 0 to be consistant 
+- mtusgwriter l.249, 251, 257, 258 lout2 variable added to get the order of the transport or pht3d zones

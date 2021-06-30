@@ -18,29 +18,31 @@ class mtUsgWriter:
     def writeMtphtFiles(self,listEsp,opt,parmk=None):
         self.mgroup = self.core.dicaddin['Model']['group']
         self.listEsp = listEsp
-        usgTrans = {'active':True}
-        usgTrans['mcomp'] = listEsp['mcomp'] # added OA 9/5/21
+        self.usgTrans = {'active':True}
+        self.usgTrans['mcomp'] = listEsp['mcomp'] # added OA 9/5/21
         self.ttable = self.core.makeTtable();#print 'mtpht ttable',self.ttable
         self.dim = self.core.addin.getDim()
         self.core.updateDicts()
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)#;print('writempht l.26',self.nper)
-        usgTrans['nam'] = self.writeNamString(opt)
+        self.usgTrans['nam'] = self.writeNamString(opt)
         rc1 = self.core.getValueLong('MfUsgTrans','crch.1',0) # OA 28/10/20
         rc2 = self.core.getValueLong('Pht3d','ph.5',0)
         dicz = self.core.diczone  # added OA 11/5/21
         if (amax(rc1)>0) or (amax(rc2)>0): 
-            usgTrans['rch'] = self.writeRchString(opt)
-        if 'cwell.1' in dicz['MfUsgTrans'].dic.keys():
-            usgTrans['wel'] = self.writeWelValues(opt)            
+            self.usgTrans['rch'] = self.writeRchString(opt)
+        #if 'cwell.1' in dicz['MfUsgTrans'].dic.keys(): #EV 30/06/21
+            #self.usgTrans['wel'] = self.writeWelValues(opt)            
         if opt=='Pht3d': # OA 11/5/21
             if 'ph.4' in dicz['Pht3d'].dic.keys(): 
-                usgTrans['chd'] = self.writeChdValues(opt)  # OA 21/03
+                #self.usgTrans['chd'] = self.writeConsValues(opt)  # OA 21/03
+                self.writeConsValues(opt) #EV 30/06/21
         else :
-            if 'cchd.1' in dicz['MfUsgTrans'].dic.keys(): # OA 11/5/21            
-                usgTrans['chd'] = self.writeChdValues(opt)  # OA 21/03
-        self.mfloW.writeModflowFiles(self.core,usgTrans=usgTrans)
+            if self.core.ttable['Transient']['bct.20'] :
+                #if 'cchd.1' in dicz['MfUsgTrans'].dic.keys(): # OA 11/5/21            
+                self.writeConsValues(opt)  # OA 21/03 #EV 30/06/21
+        self.mfloW.writeModflowFiles(self.core,usgTrans=self.usgTrans)
         self.writeBCT(opt)
         if opt=='Pht3d':
             self.writePhFile(self.core,listEsp,parmk)
@@ -174,37 +176,42 @@ class mtUsgWriter:
         return listC,names
         
     #************************ write wells, rech, evt... ******************
-    def writeWelValues(self,opt=None):
-        '''a table of value that will be used in modflow'''
-        if opt == 'Pht3d': 
-            return self.getTransTable(opt,'ph.4','wel.1')
-        else : 
-            return self.getTransTable(opt,'cwell.1','wel.1')
+    #def writeWelValues(self,opt=None): #EV 30/06/21
+        #'''a table of value that will be used in modflow'''
+        #if opt == 'Pht3d': 
+        #    return self.getTransTable(opt,'ph.4','wel.1')
+       # else : 
+          #  return self.getTransTable(opt,'cwell.1','wel.1')
 
-    def writeChdValues(self,opt=None):
+    def writeConsValues(self,opt=None): #EV 30/06/21
+        ''' return concentrations values for each inflow boundary conditions '''
         if opt == 'Pht3d': 
-            return self.getTransTable(opt,'ph.4','bas.5')
-        else :
-            return self.getTransTable(opt,'cchd.1','bas.5') # OA 20/4/21
+            return self.getTransTable(opt,'ph.4')#,'bas.5')
+        else : # Mt3dms
+            return self.getTransTable(opt,'bct.20')#,'bas.5') # OA 20/4/21
                
-    def getTransTable(self,opt,tline,mfline):
+    def getTransTable(self,opt,tline):#,mfline): #EV 30/06/21
         '''returns a transient table containing the species, it is ordered
         in the same way as modflow (thanks to connectZones)'''
-        #if tline not in self.core.ttable.keys(): return None
         ttable = self.core.ttable[tline];nt,nzo = shape(ttable)
         lsolu = unique(ttable) 
         if opt == 'Pht3d' :
             spec0,spec = self.phval2conc(lsolu)  # OA 11/5/21
         else :
             spec0,spec = ' 0.000e+00',lsolu
-        lout,nzmf = self.connectZones(tline,mfline) # the index correct for modflow
-        ttabl1 = np.full((nt,nzmf),spec0)
-        if len(lout)>0:
-            for i,solu in enumerate(lsolu):
-                it,izo = where(ttable==solu)
-                izo2 = array(lout)[izo]
-                ttabl1[it,izo2] = spec[i] # lout[izo] allow to place the ph zone in correc tplace for modflow
-        return ttabl1
+        dicz = self.core.diczone['Modflow']
+        for mfline in ['bas.5','wel.1','drn.1','riv.1','ghb.1']: #EV30/6/21
+            if mfline in dicz.dic.keys():
+                lmod,ltr,nzmf = self.connectZones(tline,mfline) # the index correct for modflow
+                ttabl1 = np.full((nt,nzmf),spec0)
+                ttable2 = ttable[:,ltr] 
+                if len(lmod)>0:
+                    for i,solu in enumerate(lsolu):
+                        it,izo = where(ttable2==solu)
+                        izo2 = array(lmod)[izo]
+                        ttabl1[it,izo2] = spec[i] # lmod[izo] allow to place the ph zone in correc tplace for modflow
+                if mfline == 'bas.5' : mfline='chd.1'
+                self.usgTrans[mfline[:3]]=ttabl1
         
     def phval2conc(self,lsolu):
         '''returns the composition of solutions for 'k','i','kim'''
@@ -214,7 +221,7 @@ class mtUsgWriter:
         data,rows = chm['data'],chm['rows']
         ncol=len(data[0]);#rcol=list(range(2,ncol)) # the range of columns to be read
         for il in range(nsol): # fills the matrix with the solutions
-            schem[il] = ' %9.3e %9.3e %9.3e' %(1e-15,1e-15,1e-15)
+            schem[il] = ' %9.3e %9.3e %9.3e' %(0.000e+00,0.000e+00,0.000e+00) #EV 30/06/21
         for kw in['k','i','kim']:
             if len(listE[kw])==0 : continue
             for e in listE[kw]:
@@ -239,15 +246,16 @@ class mtUsgWriter:
             litrans = zptsIndices(self.core,dicz)
         dicz = self.core.diczone['Modflow'].dic[mfline]
         limod = zptsIndices(self.core,dicz)
-        lout = []
+        lout = [] ; lout2 = []
         for i0,ipts in enumerate(limod):
-            for ipt2 in litrans: # the zone in pht
+            for i1,ipt2 in enumerate(litrans): # the zone in pht
                 a = 0
                 for coo in ipt2 :
                     if coo in ipts: a += 1 # nb of points recognized in ipts
                 if a == len(ipt2):
                     lout.append(i0)
-        return lout,len(limod)
+                    lout2.append(i1)
+        return lout,lout2,len(limod)
                     
     def writeRchString(self,opt=None):
         '''this list of strings will be used by modflow, one string for each
