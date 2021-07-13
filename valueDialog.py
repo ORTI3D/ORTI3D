@@ -44,8 +44,12 @@ class valueDialog:
         and gets all value that need to be stored as keywords
         """
         for ll in list(self.Mkword.lines.keys()):
-            #print 'valdlg l47',ll
             lk=self.Mkword.lines[ll];
+            if len(self.val[ll]) != len(lk['kw']): # news keywords added EV 13/7/21
+                c=len(self.val[ll])
+                while(len(self.val[ll]) < len(lk['kw'])) :
+                    self.val[ll].append(lk['default'][c])
+                    c+=1  
             for i,kwd in enumerate(lk['kw']):
                 if ll not in list(self.val.keys()): continue
                 if lk['type'][:3] == 'lay': val =self.val[ll] # OA added 18/9/19
@@ -103,7 +107,6 @@ class valueDialog:
             if 'detail' in lines[n]: details = lines[n]['detail']
             else : details = [None]*len(self.val[n])
             if len(details)==0: details = [None]*len(self.val[n])
-            #print(n,lines[n]['type'])
             self.changeButtons(name,comm,lines[n]['kw'],self.val[n],details,lines[n]['type']);
             #print('valueD l102',self.val[n])
 
@@ -128,7 +131,7 @@ class valueDialog:
                 self.core.dicaddin['Model']['type']='Confined'
             elif set(values)=={'1'}:
                 self.core.dicaddin['Model']['type']='Unconfined'
-            else : self.core.dicaddin['Model']['type']='Mix (for 3D only)'            
+            else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21           
 
     def showBox(self,box,bool):
         box.setVisible(bool)    

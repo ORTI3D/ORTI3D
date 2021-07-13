@@ -147,8 +147,9 @@ class multiPlot(QDialog):
     def getObsZone(self):
     ## get the names of model observation zone
         dic={'Zones':{}}
-        zname=self.core.diczone['Observation'].dic['obs.1']['name']
-        dic['Zones'] = list(zip(zname,[False]*len(zname)))
+        self.zname=self.core.diczone['Observation'].dic['obs.1']['name']
+        if self.typ=='X' : self.zname.insert(0,'All observations') #EV 7/7/21
+        dic['Zones'] = list(zip(self.zname,[False]*len(self.zname)))
         return dic
     
     def getLayers(self):
@@ -156,7 +157,7 @@ class multiPlot(QDialog):
         dic={'Layers':{}}
         nblay=getNlayers(self.core)
         lnblay =  [str(x) for x in range(nblay)]
-        if self.typ != 'V' :lnblay.append('All layers')
+        if self.typ != 'V' :lnblay.insert(0,'All layers')
         dic['Layers'] = list(zip(lnblay,[False]*len(lnblay)))
         return dic
         
@@ -232,7 +233,10 @@ class multiPlot(QDialog):
             dicIn['splist']=[dic['Species'][i][0] for i in range(
                     len(dic['Species'])) if dic['Species'][i][1]==2]
         else :dicIn['plotOrder']='Zones' 
-        #print('dicIn',dicIn)
+        if 'All observations' in dicIn['zolist'] :  #EV 7/7/21
+            if 'All observations' in self.zname :  #EV 7/7/21
+                self.zname.remove('All observations') #EV 7/7/21
+            dicIn['zolist'] =self.zname
         return dicIn
     
     def buildPlot(self): #,dicIn

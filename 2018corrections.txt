@@ -1484,3 +1484,14 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - mtusgwriter / getTransTable function modified to take into account all inflow boundary condition
 - mtusgwriter l.224 replaced 1e-15 by 0 to be consistant 
 - mtusgwriter l.249, 251, 257, 258 lout2 variable added to get the order of the transport or pht3d zones
+
+02/07/21 EV
+- valueDaialog l.131 replace "Mix (for 3D only)" by "Mix (for 3D model)" to be consistant with addin.py
+- pht3dKeywords l.27 added option to run pht3d in //
+- core / runModel l.378-380 added option to run pht3d in //
+
+07/07/21 EV
+- multiplot l.151 & 236-238 added 'All observations' options for calibration graph
+
+13/07/21 EV
+- valueDialog l.48-52 added to add default value to dicval when new keywords added

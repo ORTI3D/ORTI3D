@@ -24,9 +24,9 @@ class Ph:
         'ph.4':{'comm':'Source / sink','cond':'','kw':['PH_SSM(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         'ph.5':{'comm':'Recharge','cond':'','kw':['PH_RECH(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         'ph.6':{'comm':'specific options','cond':'',
-                'kw':['SU_OPT','NB_SOLU','NB_PHASE','NB_EXCH','NB_SURF'],
-                'detail':['surface option','nb solutions','nb phases','nb exchange','nb surfaces'],
-                'type':['string','int','int','int','int'],'default':['no_edl',4,4,4,4]},
+                'kw':['SU_OPT','NB_SOLU','NB_PHASE','NB_EXCH','NB_SURF','// Run','NB_PROC'], #EV 2/7/21
+                'detail':['surface option','nb solutions','nb phases','nb exchange','nb surfaces',['','No','Yes'],'Nb proc'],
+                'type':['string','int','int','int','int','choice','int'],'default':['no_edl',4,4,4,4,0,2]},
         'ph.7':{'comm':'Evapotransp','cond':'','kw':['PH_EVT(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         'ph.8':{'comm':'Gwet','cond':'','kw':['PH_GWET(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         }

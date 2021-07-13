@@ -71,7 +71,6 @@ class qtBoxKeys:
         for b in self.lValBut: b.deleteLater()
         self.labl,self.lValBut=[],[];
         #self.parent.gui.onMessage(str(names)+' '+str(values)+' '+str(details))
-        
         for i in range(self.nb):
             bname,bcontent,bselect,btype=self.parent.makeButton(names[i],values[i],details[i],types[i])
             txt = QLabel(self.layoutWidget)

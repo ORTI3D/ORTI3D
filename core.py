@@ -326,8 +326,8 @@ class Core:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
             #if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
             if 'USG' in modName: 
-                #mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
-                mod,lastline = 'PHT_USG',7 #EV 19/03/21
+                mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
+                #mod,lastline = 'PHT_USG',7 #EV 19/03/21
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -375,8 +375,11 @@ class Core:
                 #s = self.baseDir+sep+'bin'+sep+'mfusg_1_5.exe '+self.fileName
                 info=False
             else :
-                s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
-                info == False  #EV 19/03/21
+                if self.dicval['Pht3d']['ph.6'][5]== 1 : #EV 2/7/21
+                    N=self.dicval['Pht3d']['ph.6'][6]
+                    s='mpiexec -n '+ str(N) +' '+ self.baseDir+sep+'bin'+sep+'pht3dv217_mpi_fett.exe Pht3d.nam'
+                else : s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
+                info = False  #EV 19/03/21
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :

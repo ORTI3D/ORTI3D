@@ -467,7 +467,7 @@ class modflowWriter:
         nx,ny,xvect,yvect = getXYvects(core); # OA 6/6/21
         dx,dy = xvect[1:]-xvect[:-1],yvect[1:]-yvect[:-1]  # OA 6/6/21
         if line in self.ttable.keys(): zlist = self.ttable[line]
-        else : return npts,lpts,lindx,zvar,k # added 18/10/20
+        else : return npts,lpts,lindx,zvar,k,larea # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
         iz1=0;mesh=core.addin.mesh #EV 14/01/21
