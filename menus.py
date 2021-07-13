@@ -267,6 +267,8 @@ class Menus:
             znew.extractall(dirutil) # EV 23/10/18 new exe version
             os.system('xcopy /Y /E '+dirutil+os.sep+'ORTI3D-'+fname+' '+dirlib) #EV 26/11/18
             for n in os.listdir(dirlib): #EV 30/09/19 
+                if ('.chm' in n) or ('.pdf' in n) : #EV 30/09/19 add .png
+                    os.system('move '+dirlib+os.sep+n+' '+dirdoc)
                 if ('.png' in n) or ('.dbs' in n): #EV 30/09/19 add .png
                     os.system('move '+dirlib+os.sep+n+' '+dirutil)
                 if ('.exe' in n) : #EV 30/09/19 
