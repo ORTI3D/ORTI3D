@@ -418,8 +418,11 @@ class Core:
                 return self.getTxtFileLastLine(self.fileName+'.log',5)
         if modName[:5] == 'Pest': #EV 07/11
             if self.dicval['Pest']['ctd.1'][1]==0:
-                s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName #; print(s)
-            else : s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' #; print(s)
+                #s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName #; print(s)
+                s=self.baseDir+sep+'bin'+sep+'pestpp-glm.exe '+self.fileName #EV 15/7/21
+            else : 
+                s=self.baseDir+sep+'bin'+sep+'pestpp-glm.exe '+self.fileName
+                #s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' #; print(s)
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)

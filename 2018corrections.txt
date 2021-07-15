@@ -1495,3 +1495,10 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 13/07/21 EV
 - valueDialog l.48-52 added to add default value to dicval when new keywords added
+
+15/07/21 EV
+- pest.py l.115-125 added to update pest zone dic when some zone is added
+- pest.py l.158-159, 229-231 added ghb, riv, drn conductance value as parameters
+- tplPestScript1 added ghb, riv, drn conductance value as parameters
+- pest.py l386,406 added option for ORTI windows option
+- core.py l.421 replace pest executable by pestpp-glm

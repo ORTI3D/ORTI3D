@@ -206,7 +206,7 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
                 ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
                 ch.setText(str(dicIn[n][i][0])) # OA modif 2/4
-                s =(dicIn[n][i][1] == True) #EV 26/08/19 replaced "True" by True
+                s =(dicIn[n][i][1] in [1,2]) #EV 26/08/19 replaced "True" by True
                 ch.setChecked(s) # OA modif 2/4 , EV 26/08/19 
                 if n=='Layers': #EV 20/04/20
                     if dicIn[n][nbChk-1][0] == 'All layers':

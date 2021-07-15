@@ -33,9 +33,9 @@ class Pest:
     def __init__(self,core):
     # get all important parameters from the current model (names and timelist)
         self.core = core
-        cfg = Config(self.core)
+        self.cfg = Config(self.core)
         if core.gui != None:
-            self.dialogs = cfg.dialogs
+            self.dialogs = self.cfg.dialogs
               
     def getDicBack1(self):
         '''creates a dic to choose the lines that will be used to vary parameters'''
@@ -110,7 +110,20 @@ class Pest:
     def getDicZones1(self):
         '''creates a dic to choose the lines that will be used to vary parameters'''
         if self.core.dicaddin['Pzones1'] != {}:
-            return self.core.dicaddin['Pzones1']
+            dic1 = self.core.dicaddin['Pzones1']
+            for md in list(dic1.keys()) :
+                if dic1[md] : # EV 15/07/21
+                    l0 = list(self.core.diczone[md].dic.keys())
+                    l1=[dic1[md][i][0].split()[0] for i in range(len(dic1[md]))]
+                    for i,cl in enumerate(l1):
+                        if cl not in l0:
+                            del dic1[md][i]
+                    for line in l0:
+                        if line not in l1:
+                            Mlines=self.core.dickword[md].lines
+                            comm=str(line+' '+Mlines[line]['comm'])
+                            dic1[md].append((comm,False))
+            return dic1
         else :
             dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             for md in list(dic.keys()) :
@@ -142,7 +155,9 @@ class Pest:
                 nzone = len(dicz['name'])
                 dicout[line] = {'cols': cols,'rows': dicz['name'],'data':['a']*nzone}
                 for i,n in enumerate(dicz['name']):
-                    val = float(dicz['value'][i])#;print(line,n)
+                    if line in ['drn.1', 'riv.1', 'ghb.1']: #EV 15/7/21 
+                        val = float(dicz['value'][i].split('\n')[1])
+                    else : val = float(dicz['value'][i])#;print(line,n)
                     if n not in dicPzones[line]['rows']: # a zone has been added
                         vmin,vmax= str("{:.5}".format(val/5)),str("{:.5}".format(val*5)) #EV 06/11
                         lst = [False,dicz['media'][i],str("{:.5}".format(val)),vmin,vmax,'log','G2'] #EV 06/11 & 25/07/19
@@ -211,6 +226,9 @@ class Pest:
            'bas.5': 'H',    #value of initial and fixed head
            'rch.2': 'Rc',   #value of recharge
            'wel.1': 'W',    #value of flux rate for well
+           'ghb.1': 'Gc',   #value of GHB conductance   #EV 15/7/21
+           'drn.1': 'DC',   #value of drain conductance
+           'riv.1': 'RC',   #value of river conductance
            'btn.13': 'C',   #value of MT3DMS zone source concentration
            'btn.11': 'n',   #value of effective porosity
            'dsp.2': 'aL',   #value of longitudinal dispersivity
@@ -365,7 +383,8 @@ class Pest:
 
     def writePyscript(self):
     # writes the pyton script to write data before model run
-        os.chdir(self.mdir+os.sep+'ilibq')
+        if self.cfg.typInstall=='python': os.chdir(self.mdir+os.sep+'ilibq') #EV 15/7/21
+        else : os.chdir(self.mdir+os.sep+'lib'+os.sep+'ilibq')
         f1=open('tplPestScript1.txt','r')
         s=f1.read();f1.close()
         os.chdir(self.fdir)
@@ -384,7 +403,8 @@ class Pest:
         f1=open(self.fdir+os.sep+'scriptPest1.py','w')
         f1.write(s);f1.close()
     # writes the pyton script to retrieve data after model run
-        os.chdir(self.mdir+os.sep+'ilibq')
+        if self.cfg.typInstall=='python': os.chdir(self.mdir+os.sep+'ilibq') #EV 15/7/21
+        else : os.chdir(self.mdir+os.sep+'lib'+os.sep+'ilibq')
         f1=open('tplPestScript2.txt','r')
         s=f1.read();f1.close()
         os.chdir(self.fdir)

@@ -46,7 +46,12 @@ for pl in parm:
             y1 = array(y) + v0-ctr
             md.diczone[modName].dic[line]['coords'][iz] = zip(x,y1)
         elif typ =='v':
-            md.diczone[modName].setValueFromName(line,zname,str(v0))
+            if line in ['ghb.1','drn.1','riv.1']:
+                iz = md.diczone[modName].getIndexFromName(line,zname)
+                val = md.diczone[modName].dic[line]['value'][iz]
+                val2=val.split('\n');val2[1]=str(v0) ;val3='\n'.join(val2)
+                md.diczone[modName].setValueFromName(line,zname,str(val3))
+            else : md.diczone[modName].setValueFromName(line,zname,str(v0))
         else : # this is for backgound value
             if imedia==-1:
                 for im in range(nmedia):
