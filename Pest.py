@@ -389,7 +389,8 @@ class Pest:
         s=f1.read();f1.close()
         os.chdir(self.fdir)
         if self.core.dicval['Pest']['sys.1']==[0]: #windows
-            s=s.replace('ppmdir',self.mdir)
+            if self.cfg.typInstall=='python': s=s.replace('ppmdir',self.mdir)
+            else : s=s.replace('ppmdir',self.mdir+os.sep+'lib')
         else : 
             s=s.replace('ppmdir',str(self.core.dicval['Pest']['sys.2'][0]))
         #s=s.replace('ppfdir',self.fdir)
@@ -409,7 +410,8 @@ class Pest:
         s=f1.read();f1.close()
         os.chdir(self.fdir)
         if self.core.dicval['Pest']['sys.1']==[0]:
-            s=s.replace('ppmdir',self.mdir)
+            if self.cfg.typInstall=='python': s=s.replace('ppmdir',self.mdir)
+            else : s=s.replace('ppmdir',self.mdir+os.sep+'lib')
         else : 
             s=s.replace('ppmdir',str(self.core.dicval['Pest']['sys.2'][0]))
         #s=s.replace('ppfdir',self.fdir)
