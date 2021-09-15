@@ -1502,3 +1502,49 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - tplPestScript1 added ghb, riv, drn conductance value as parameters
 - pest.py l386,406 added option for ORTI windows option
 - core.py l.421 replace pest executable by pestpp-glm
+
+1/8/21  OA
+- modflowwriter writeTransientZones1 l.477 modified, l4.85 added and loop below [iz1] replaced by l0 and l1 (zones were not writtin correctly if empty zones)
+- modflowwriter writeTransientZones2 added l.511 (the skip of empty zone was transferred here)
+- timeperiod l.104 replaced by 105 to format it better
+
+12/8/21 OA
+-in mflowKeywrods dic mnw2d1 did not have the correct length for default
+- mflowKeywords lpf.7 cacl of wetting 'default':[0.01,1,0] seems to work better (just one case)
+
+13/8/21  OA
+- modflowwriter several modificaiton in wirte RCH to be able to write conc in recharge
+- mtusgwriter l.42 test bct.20 in ttable changed
+- mtusgwriter getTransTable l.203 removed drain
+-modflowwriter writeTransient with transport l.427 dded 0 before aux
+- mtusgwriter writeRchStrin l.282 added \n
+
+15/8/21 OA
+- mtUsgWriter added to read binary conc in ucn
+-modflowWriter l 686 removed the ascii format all connc will be written in binary
+- mtUsgWriter l.62 name file removed conc file (ascii)
+
+17/8/21 OA
+- mtUsgWriter l.531 changed name file to cbb
+- mtUsgWriter/getConcRch l.305-308 added to get the conc of th eimmobile species in rch (even if useless, they aree needed by usg)
+- mtUsgWriter/writeMtphtFiles l.23 added ncomp in sugTrans dict
+
+25/8/21 OA
+- mtUsgReader in read UCn changes to read the concentraiotn for chemistry
+
+28/8/21  OA
+- mtUsgWriter writePCB largley modified to work in 3D
+- mtUsgWriter modif of getPtObs to read binary files
+-moflowreader l.844-847 modif to read binaries from pht_usg (consistent with transport)
+- core l.330 any usg model is run with pht_usg (if not different output binary format)
+
+31/8/21  OA
+- modflowWriter l.489 removed 0 in print AUX (useless)
+- addin set3D l.572 removed 2D for continue : it was taking 3D bottom for 2D models
+
+5/9/21  OA
+- mtUsgWriter replaced the name writeConsValues to writeConcValues
+-modflowriter writeTransientFile added l.427 for ghb (a 0)
+
+8/9/21 OA
+- in core removed all reference to Opengeosys and Sutra and added openfoam keywords

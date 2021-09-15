@@ -7,8 +7,6 @@ from .modflowWriter import *
 from .mtphtWriter import *
 from .mtUsgWriter import *
 from .min3pWriter import *
-from .sutraWriter import *
-from .ogWriter import *
 import xml.dom.minidom as xdom
 from .geometry import *
 from .importExport import *
@@ -25,9 +23,8 @@ from .pht3dKeywords import Ph
 from .min3pFlowKeywords import m3F
 from .min3pTransKeywords import m3T
 from .min3pChemKeywords import m3C
-from .ogFlowKeywords import ogF
-from .ogTransKeywords import ogT
-from .sutraKeywords import suK
+from .opfoamKeywords import OpF
+from .opfoamKeywords import OpT
 from .obsKeywords import Obs
 from .pestKeywords import Pst
 
@@ -37,8 +34,7 @@ class Core:
     """
     def __init__(self,gui=None):
         self.modelList = ['Modflow','Mt3dms','MfUsgTrans','Pht3d','Min3pFlow', # OA 27/7/19 added MfUsgTrans
-            'Min3pTrans','Min3pChem', #'FipyFlow','FipyTrans','FipyChem',
-            'OpgeoFlow','OpgeoTrans','Sutra','Observation','Pest']
+            'Min3pTrans','Min3pChem','Opflow','Optrans','Observation','Pest']
         self.gui = gui
         self.baseDir = os.getcwd(); # OA 11/9/18 2 lines below modfiied
         if gui!=None:
@@ -64,10 +60,9 @@ class Core:
         self.dickword['Min3pFlow'] = m3F()
         self.dickword['Min3pTrans'] = m3T()
         self.dickword['Min3pChem'] = m3C()
-        self.dickword['OpgeoFlow'] = ogF()
-        self.dickword['OpgeoTrans'] = ogT()
-        self.dickword['Sutra'] = suK()
         self.dickword['Observation'] = Obs()
+        self.dickword['Opflow'] = OpF()
+        self.dickword['Optrans'] = OpT()
         self.dickword['Pest'] = Pst()
         self.initAll()
         self.mfUnstruct = False # OA 17/9/17 made to work with modflow USG
@@ -215,13 +210,6 @@ class Core:
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        elif mtype[:5] == 'Opgeo' :
-            self.addin.opgeo.buildMesh()
-            self.flowReader = ogReader(fDir,fName,'flow')
-            self.transReader = ogReader(fDir,fName,'trans')
-        elif mtype[:5] == 'Sutra' :
-            self.flowReader = sutraReader(fDir,fName)
-            self.transReader = sutraReader(fDir,fName)
         if self.Zblock==None: self.Zblock = makeZblock(self)
         self.addin.setChemType()
         #self.usePostfix()
@@ -294,17 +282,6 @@ class Core:
             self.m3pWriter = min3pWriter(self,self.fileDir,self.fileName)
             self.m3pWriter.writeMin3pFiles(self,modName[5:])
             self.transReader=self.flowReader = min3pReader(self,self.fileDir,self.fileName)
-        if modName[:5]  == 'Opgeo':
-            self.ogWriter = ogWriter(self,self.fileDir,self.fileName)
-            self.ogWriter.writeFiles(self,modName[5:])
-            self.flowReader = ogReader(self.fileDir,self.fileName,'flow')
-            self.transReader = ogReader(self.fileDir,self.fileName,'trans')
-            self.flowReader.read = False
-        if modName[:5]  == 'Sutra':
-            self.sutraWriter = sutraWriter(self,self.fileDir,self.fileName)
-            self.sutraWriter.writeSutraFiles()
-            self.transReader=self.flowReader = sutraReader(self.fileDir,self.fileName)
-            self.flowReader.read = False
         if modName == 'Pest':
             info=self.addin.pest.writeFiles() #EV 11/12/19
         if info ==True :return 'Files written'
@@ -326,8 +303,8 @@ class Core:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
             #if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
             if 'USG' in modName: 
-                mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
-                #mod,lastline = 'PHT_USG',7 #EV 19/03/21
+                #mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
+                mod,lastline = 'PHT_USG',7 #EV 19/03/21
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
                 exec_name = '"'+self.baseDir+sep+'bin'+sep+mod+'.exe"'
@@ -390,18 +367,6 @@ class Core:
                     else: return('Model fail to converge') #return self.getTxtFileLastLine('Pht3d.out',3)
                 except IndexError:
                     return('Model fail to converge')
-        if modName == 'Sutra':
-            s=self.baseDir+sep+'bin'+sep+'sutra_2_2.exe'
-            os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
-            if info !=False :
-                return self.getTxtFileLastLine(self.fileName+'.lst',5)
-        if modName[:5] == 'Opgeo':
-            s=self.baseDir+sep+'bin'+sep+'ogs.exe '+self.fileName+' >logfile.txt'
-            os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
-            if info !=False :
-                return self.getTxtFileLastLine('logfile.txt',3) # OA 14/2/19
         if modName[:5] =='Min3p':
             #print('name',self.fileName)
             s=self.baseDir+sep+'bin'+sep+'min3p.exe '+self.fileName ; # OA 19/3/19

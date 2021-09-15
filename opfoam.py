@@ -26,10 +26,13 @@ from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,whe
 from ilibq.geometry import *
 
 import os
+from ilibq.core import dicZone
+from ilibq.opfoamKeywords import OpF
+from ilibq.opfoamKeywords import OpT
 
 class opfoam:
     def __init__(self,md,mesh):
-        self.mesh = mesh
+        self.md,self.mesh = md,mesh
         if md.getValueFromName('Modflow','MshType')>0:
             self.ncell_lay = len(mesh.carea)
             lbc,lnb = [],[]
@@ -48,8 +51,37 @@ class opfoam:
             dxm,dym = meshgrid(dx,dy)
             self.area = ravel(dxm*dym)
             self.nbc = 4
-        self.bcindx = bcindx
-        
+        self.bcindx = bcindx  
+        self.md.dickword['Opflow'] = OpF()
+        self.md.dickword['Optrans'] = OpT()
+            
+    def opfDictFromUsg(self):
+        '''get some values form usg to openfoam dicts'''
+        l0 = ['dis.2','dis.3','disu.9','bas.5']
+        l1 = ['dis.1','dis.2','dis.5','head.1']
+        for i in range(len(l0)):
+            self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
+            self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
+        # fixed heads are for the zones of bas.5
+        self.md.diczone['Opflow'].dic['head.2'] = self.md.diczone['Modflow'].dic['bas.5']        
+        l0 = ['disu.7','disu.8','lpf.8','lpf.9']
+        l1 = ['dis.3','dis.4','khy.2','khy.3']
+        for i in range(len(l0)):
+            self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
+            self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
+            if l0[i] in self.md.diczone['Modflow'].dic.keys():
+                self.md.diczone['Opflow'].dic[l1[i]] = self.md.diczone['Modflow'].dic[l0[i]]
+            if l0[i] in self.md.dicarray['Modflow'].keys():
+                self.md.dicarray['Opflow'][l1[i]] = self.md.dicarray['Modflow'][l0[i]]
+        # transport
+        self.md.dicval['Optrans'],self.md.dictype['Optrans'] = {},{}
+        self.md.diczone['Optrans'] = dicZone(self.md,'Optrans')
+        l0 = ['bct.2','bct.3']
+        l1 = ['conc.1','poro.1']
+        for i in range(len(l0)):
+            self.md.dicval['Optrans'][l1[i]] = self.md.dicval['MfUsgTrans'][l0[i]]
+            self.md.dictype['Optrans'][l1[i]] = self.md.dictype['MfUsgTrans'][l0[i]]
+       
     def opfMeshFromUsg(self,md):
         # determiner le num des bcs
         mesh,bcindx,dim = self.mesh,self.bcindx,md.addin.getDim()

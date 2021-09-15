@@ -569,7 +569,7 @@ class addin:
     
     def set3D(self):
         dm = self.getDim()
-        if dm not in ['2D','3D'] : return
+        if dm not in ['3D'] : return
         med = self.core.dicaddin['3D']
         nbL = getNlayers(self.core)
         z0 = med['zmin']

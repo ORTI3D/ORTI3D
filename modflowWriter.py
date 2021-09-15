@@ -219,14 +219,14 @@ class modflowWriter:
         self.writeOneFile('LPF',exceptDict)
         
     def writeRCH(self):
-        s= ''
-        if 'rch' in self.usgTrans.keys():   lin0 = '    0      INCONC\n'
-        else :  lin0 = '    0\n' #EV 15/4/21                                                                                                                          
-        s += lin0
+        lin0a,lin0b = '    0      INCONC\n','    0\n'
+        if 'rch' in self.usgTrans.keys(): s=lin0a
+        else :  s=lin0b #EV 15/4/21                                                                                                                          
         # write first time period
         R = self.core.getValueLong('Modflow','rch.2',0,0)[0]
         s += self.writeMatModflow(R,'arrfloat')+ '\n'
-        if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][0]  #♣ 9/5/21 OA iper->0
+        if 'rch' in self.usgTrans.keys(): 
+            s += self.usgTrans['rch'][0]  #♣ 9/5/21 OA iper->0
        
         # write the other periods
         if 'rch.2' not in self.ttable:
@@ -236,18 +236,28 @@ class modflowWriter:
             nper,nzon = shape(trch)
             zindx = block(self.core,'Modflow','rch.2',3,iper=0,opt='zon')[0]; # OA 16/4/21 False to 3
             for iper in range(1,self.nper): 
+                s1 = '\n' #OA 13/8/21
+                if 'rch' in self.usgTrans.keys():
+                    if len(self.usgTrans['rch'][iper])>12: s1 = 'INCONC\n' # OA 13/8 if conc is here
                 if (sum(abs(trch[iper]-trch[iper-1]))!=0): #OA 15/4/21 
-                    s += lin0
                     R = R*0 + self.core.dicval['Modflow']['rch.2'][0]
                     for iz in range(nzon):
                         R[zindx==iz+1] = trch[iper,iz]
+                    s += '        0'+s1
                     s += self.writeMatModflow(R,'arrfloat')+ '\n'
-                    if 'rch' in self.usgTrans.keys(): s += self.usgTrans['rch'][iper]
                 else:
-                    s += '    -1\n'
+                    s += '       -1'+s1
+                if 'rch' in self.usgTrans.keys(): #OA 13/8/21 moved out prev if
+                    if len(self.usgTrans['rch'][iper])>12:
+                        s += self.usgTrans['rch'][iper] 
         exceptDict={'rch.2':s}
         if 'rch' in self.usgTrans.keys(): 
-            s = ' CONC  \n'+' '.join(['1']*(self.usgTrans['mcomp']+4))  # OA added 22/5/21 for multicomonent
+            if self.usgTrans['mcomp']==1: #OA 13/8/21
+                s = ' CONC  \n1 '
+            else :
+                lstC = ' '.join(['1']*(self.usgTrans['mcomp']+3))+' ' # OA modif 22/5/21 for multicomonent
+                lstC += ' '.join(['0']*(self.usgTrans['ncomp']-self.usgTrans['mcomp']))  # OA modif 22/5/21 for multicomonent
+                s = ' CONC  \n'+ lstC 
             optionDict = {'rch.1': s} # one species
         else : optionDict = {}
         self.writeOneFile('RCH',exceptDict,optionDict)
@@ -399,7 +409,7 @@ class modflowWriter:
         
     #************************ file for transient data *************************************
     def writeTransientFile(self,core,line,ext,area=0): #♣OA added area 6/6/21
-        """this method write files that have point location (wells, variable head)
+        """this method write files that have point location (wells, variable head, ghb..)
         which are transient but can be permanent for wells
         area=1 means that we consider the cell area : the conductance are given as /m2"""
         ltyp=core.dictype['Modflow'][line]#;print('w transient ',line)
@@ -414,9 +424,10 @@ class modflowWriter:
         #1st line
         s = ' %9i'%(npts+nA)
         if ext == 'wel': s += ' 31'#OA 3/5/20 added mesh condtion
+        elif ext == 'ghb': s+= ' 0' #OA 5/9/21 (strange nnt needed for chd?)
         if ext in self.usgTrans.keys():  #OA 4/3/20
             nspec = len(self.usgTrans[ext][0,0].split())
-            for i in range(nspec): s += ' AUX C%02i' %(i+1)
+            for i in range(nspec): s += ' AUX C%02i' %(i+1) #OA 31/8/21
         s += '\n'
         for iper in range(self.nper):
             s += str(npts+nA)
@@ -470,11 +481,13 @@ class modflowWriter:
         else : return npts,lpts,lindx,zvar,k,larea # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
-        iz1=0;mesh=core.addin.mesh #EV 14/01/21
+        mesh=core.addin.mesh #EV 14/01/21
         for iz in range(nzones): #creates a list of points for each zone
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
-            if len(ilay) == 0: continue #break # OA 8/6/21
-            lpts.append([]);larea.append([]) # OA 6/6/21 added learea
+            if len(ilay) == 0: 
+                lpts.append([]);larea.append([]);k.append(0);zvar.append(0)
+                continue #break # OA 8/6/21
+            #lpts.append([]);larea.append([]) # OA 1/8/21 removed
             zvar.append(zvect)
             npts += len(irow)
             if mesh == None :  # OA 7/6/21 this and below
@@ -482,18 +495,20 @@ class modflowWriter:
             else : 
                 zarea = sum(mesh.carea[mod(irow,mesh.ncell_lay)])
                 lindx.extend(list(irow))# OA 3/3/20                                                                           
+            l0,l1 = [],[] # ☻OA 1/8/21 added for below to remove iz1
             for i in range(len(irow)):
                 if mesh == None: ## regular grid # OA modif 4/2/19
-                    lpts[iz1].append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
+                    l0.append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
-                    larea[iz1].append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21
+                    l1.append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21
                 else : #unstruct grid irow is the node number
-                    lpts[iz1].append(str(irow[i]+1).rjust(9))
-                    larea[iz1].append(mesh.carea[mod(irow[i],mesh.ncell_lay)]/zarea)
+                    l0.append(str(irow[i]+1).rjust(9))
+                    l1.append(mesh.carea[mod(irow[i],mesh.ncell_lay)]/zarea)
             #print 'mfw transt',iz,ilay,irow,ir2,lpts
+            lpts.append(l0);larea.append(l1)
             if ext=='wel': 
                 k.append(self.getPermScaled(ilay,irow,icol))
-            iz1+=1 #EV 14/01/21
+            #iz1+=1 #OA 1/8/21 removed
         return npts,lpts,lindx,zvar,k,larea # OA 6/6/21 larea
         
     def writeTransientZones2(self,core,line,ext,lindx,lpts,zvar,k,iper,larea):
@@ -503,7 +518,8 @@ class modflowWriter:
         indx = argsort(lindx)    # OA moved 18/10/20        
         #for ip in range(nper): # OA removed 18/10/20
         buff, buf1 = '',[]
-        for iz in range(len(lpts)):#nzones): # and each zones where ltyp is not 'importarray' #EV 14/01/21
+        for iz in range(nzones): # and each zones where ltyp is not 'importarray' #EV 14/01/21
+            if len(lpts[iz]) == 0: continue #break # OA 1/8/21
             flgTr=None
             if len(unique(zlist[:,iz]))>1 : flgTr = True # EV 07/04/21
             val = zlist[iper,iz] # the value of the variable for the period
@@ -670,8 +686,8 @@ class modflowWriter:
         f1=open(self.fullPath +'.oc','w')     
         s = 'HEAD SAVE UNIT 30 \n'
         if len(self.usgTrans.items())>0: # EV 07/04/21
-            s += 'CONC SAVE FORMAT (1G11.3E3)\n'  # OA 13/5/21
-            s += 'CONC SAVE UNIT 101 \n'
+            #s += 'CONC SAVE FORMAT (1G11.3E3)\n'  # OA 13/5/21
+            s += 'CONC SAVE UNIT 102 \n'
         s += 'Compact Budget \n'
         nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
         if self.nper>1:
@@ -826,10 +842,10 @@ class modflowReader:
             hd=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
-        blok=44+ncell*4; # v210 60
+        blok=52+ncell*8; # v210 60
         for il in range(nlay):
-            f1.seek(iper*nlay*blok+blok*il+44) #vpmwin
-            data = arr2('f')
+            f1.seek(iper*nlay*blok+blok*il+52) #vpmwin
+            data = arr2('d')
             data.fromfile(f1,ncell)
             if core.mfUnstruct  and core.getValueFromName('Modflow','MshType')>0: 
                 hd[il] = data
