@@ -1548,3 +1548,9 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 8/9/21 OA
 - in core removed all reference to Opengeosys and Sutra and added openfoam keywords
+
+29/9/21 OA
+- modflowwriter changed l.1076,1079,1081 for getHeadptObs to be double (pht_usg)
+
+07/10/21 OA
+- modflowwriter changed 845-849, 851,853 and 1080-1084, 1087, 1089

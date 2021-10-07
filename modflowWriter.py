@@ -842,10 +842,14 @@ class modflowReader:
             hd=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
-        blok=52+ncell*8; # v210 60
+        if 'USG' in self.core.dicaddin['Model']['group']:
+            bk0,nb0,ftyp = 52,8,'d'
+        else :
+            bk0,nb0,ftyp = 44,4,'f'        
+        blok=bk0+ncell*nb0; # v210 60
         for il in range(nlay):
-            f1.seek(iper*nlay*blok+blok*il+52) #vpmwin
-            data = arr2('d')
+            f1.seek(iper*nlay*blok+blok*il+bk0) #vpmwin
+            data = arr2(nb0)
             data.fromfile(f1,ncell)
             if core.mfUnstruct  and core.getValueFromName('Modflow','MshType')>0: 
                 hd[il] = data
@@ -1073,12 +1077,16 @@ class modflowReader:
         nper=len(iper)
         hd = zeros((nper,len(irow)))
         f1.seek(32);data=arr2('i');
-        blok=44+ncell*4;#OA 18/12/20
+        if 'USG' in self.core.dicaddin['Model']['group']:
+            bk0,nb0,ftyp = 52,8,'d'
+        else :
+            bk0,nb0,ftyp = 44,4,'f'        
+        blok=bk0+ncell*nb0; #OA 18/12/20
         for ip in range(nper):
             for i in range(len(irow)):
-                pos=44+iper[ip]*nlay*blok+ilay[i]*blok+irow[i]*ncol*4+icol[i]*4;
+                pos=bk0+iper[ip]*nlay*blok+ilay[i]*blok+irow[i]*ncol*nb0+icol[i]*nb0; # 44->52 and 4->8
                 f1.seek(pos) #OA 18/12/20
-                data = arr2('f');data.fromfile(f1,1);#print iper[ip],irow[i],icol[i],data
+                data = arr2(ftyp);data.fromfile(f1,1);#print iper[ip],irow[i],icol[i],data
                 hd[ip,i]=float(data[0])
         f1.close()
         return hd
