@@ -1549,8 +1549,18 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 8/9/21 OA
 - in core removed all reference to Opengeosys and Sutra and added openfoam keywords
 
+13/9/21  OA
+- in pht3dkeywords changed meaning of ph.8 it is for fixed conc (just for usg)
+- in mtUsgWriter modif l.59 to write pcb file for pht3d is ph.8 is present
+- mtUsgWriter numerous modifs in writePcb to consider solutions
+- other modfis in openfoam and openfoamwriter
+
+16*9/21 OA
+- in geometry l.243-244 added because before the layers could not be smaller than 0.1
+- pht3dkeywrods added ph.9 for gases (opf)
+
 29/9/21 OA
 - modflowwriter changed l.1076,1079,1081 for getHeadptObs to be double (pht_usg)
 
-07/10/21 OA
-- modflowwriter changed 845-849, 851,853 and 1080-1084, 1087, 1089
+12/10/21 OA
+- mtUsgwriter l.630,633 irow -> icol : ix or icol stores cell nb in usg

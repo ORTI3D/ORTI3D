@@ -612,6 +612,7 @@ class mtUsgReader:
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp,spec,ss=None):
         ''' get conc for given line (or poly), if tracer iesp=0
+        for usg icol contains the cell number
         spec not used, icol not used here
         '''
         nper = len(iper) # OA 20/5/21
@@ -626,9 +627,10 @@ class mtUsgReader:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             dc,blok,styp = 52,52+ncell*8,'d'; # pht3d_usg                                               
             for ip in range(nper): 
-                for i in range(len(irow)):
+                ip1 = iper[ip]  # OA 11/10/21
+                for i in range(len(icol)):# OA 12/10 irow->icol
                     il= ilay[i]
-                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+irow[i]*8)
+                    f1.seek(ip1*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[i]*8) # OA 12/10/21
                     data = arr2(styp)
                     data.fromfile(f1,1);#plot(data)#1)
                     c[ip,i] = data[0]
