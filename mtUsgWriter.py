@@ -32,30 +32,29 @@ class mtUsgWriter:
         rc2 = self.core.getValueLong('Pht3d','ph.5',0)
         dicz = self.core.diczone  # added OA 11/5/21
         if (amax(rc1)>0) or (amax(rc2)>0 or 'ph.5' in self.ttable.keys()): 
-            self.usgTrans['rch'] = self.writeRchString(opt)
+            self.usgTrans['rch'] = self.writeRchString(opt);print('rch written')
         #if 'cwell.1' in dicz['MfUsgTrans'].dic.keys(): #EV 30/06/21
             #self.usgTrans['wel'] = self.writeWelValues(opt)            
         if opt=='Pht3d': # OA 11/5/21
             if 'ph.4' in dicz['Pht3d'].dic.keys(): 
-                #self.usgTrans['chd'] = self.writeConcValues(opt)  # OA 21/03
-                self.writeConcValues(opt) #EV 30/06/21
+                self.writeConcValues(opt);print('conc written') #EV 30/06/21
         else :
             if 'bct.20' in self.core.ttable['Transient'].keys() : # OA 14/8/21
-                #if 'cchd.1' in dicz['MfUsgTrans'].dic.keys(): # OA 11/5/21            
-                self.writeConcValues(opt)  # OA 21/03 #EV 30/06/21
+                self.writeConcValues(opt);print('conc written')  # OA 21/03 #EV 30/06/21
         self.mfloW.writeModflowFiles(self.core,usgTrans=self.usgTrans)
-        self.writeBCT(opt)
+        self.writeBCT(opt);print('bct written')
         if opt=='Pht3d':
             self.writePhFile(self.core,listEsp,parmk)
             #self.writePhreeqc(self.core,listEsp);
-        if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()):
-            if self.mgroup == 'Modflow USG_rect': self.writePcbRectFile(opt)
-            else :self.writePcbFile(opt)
+        if 'pcb.2' in dicz['MfUsgTrans'].dic.keys() or 'ph.8' in dicz['Pht3d'].dic.keys():
+#            if self.mgroup == 'Modflow USG_rect': self.writePcbRectFile(opt)
+#            else :
+            self.writePcbFile(opt);print('pcb written')
         return 
         
     def writeNamString(self,opt):
         s='BCT  41 '+self.fName+'.bct\n'
-        if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()):
+        if 'pcb.2' in list(self.core.diczone['MfUsgTrans'].dic.keys()) or 'ph.8' in list(self.core.diczone['Pht3d'].dic.keys()):
             s += 'PCB  42 '+self.fName+'.pcb\n'
         if opt=='Pht3d':
             s += ' PHT  64    Pht3d_ph.dat\n'
@@ -188,12 +187,15 @@ class mtUsgWriter:
         ''' return concentrations values for each inflow boundary conditions '''
         if opt == 'Pht3d': 
             self.getTransTable(opt,'ph.4')
+            #self.phPCB()
         else : # Mt3dms
             self.getTransTable(opt,'bct.20')#,'bas.5') # OA 20/4/21
                
     def getTransTable(self,opt,tline):#,mfline): #EV 30/06/21
-        '''returns a transient table containing the species, it is ordered
-        in the same way as modflow (thanks to connectZones)'''
+        '''returns a transient table containing the species,it is linked
+        to the corresponding files (ghb, riv, drn..) to be printed in the correct file
+        it is ordered in the same way as modflow (thanks to connectZones)
+        for ph.4 a fix zone goes to pcb.2'''
         ttable = self.core.ttable[tline];nt,nzo = shape(ttable)
         lsolu = unique(ttable) 
         if opt == 'Pht3d' :
@@ -201,19 +203,21 @@ class mtUsgWriter:
         else :
             spec0,spec = ' 0.000e+00',lsolu
         dicz = self.core.diczone['Modflow']
+        self.usedTzones = [] # OA 13/9/21
         for mfline in ['bas.5','wel.1','riv.1','ghb.1']: #EV30/6/21
             if mfline in dicz.dic.keys():
                 lmod,ltr,nzmf = self.connectZones(tline,mfline) # the index correct for modflow
-                ttabl1 = np.full((nt,nzmf),spec0)
+                ttabl1 = np.full((nt,nzmf),spec0) # a ttable with string repres of solu
                 ttable2 = ttable[:,ltr] 
                 if len(lmod)>0:
                     for i,solu in enumerate(lsolu):
                         it,izo = where(ttable2==solu)
                         izo2 = array(lmod)[izo]
-                        ttabl1[it,izo2] = spec[i] # lmod[izo] allow to place the ph zone in correc tplace for modflow
+                        ttabl1[it,izo2] = spec[i] # allow to place the ph zone in correc tplace for modflow
                 if mfline == 'bas.5' : mfline='chd.1'
                 self.usgTrans[mfline[:3]]=ttabl1
-        
+                self.usedTzones.extend(ltr) # OA 13/9/21
+                        
     def phval2conc(self,lsolu):
         '''returns the composition of solutions for 'k','i','kim'''
         nsol = len(lsolu);schem = ['']*nsol;
@@ -226,7 +230,7 @@ class mtUsgWriter:
         for kw in['k','i','kim']:
             if len(listE[kw])==0 : continue
             for e in listE[kw]:
-                if e in ['pH','pe']: continue
+                #if e in ['pH','pe']: continue # OA 18/10/21 commented
                 inde = rows.index(e) # finds the index of the species e
                 for il in range(nsol): # fills the matrix with the back and solutions
                     snum = int(lsolu[il]) # OA 11/5/21 added il1
@@ -248,7 +252,7 @@ class mtUsgWriter:
         dicz = self.core.diczone['Modflow'].dic[mfline]
         limod = zptsIndices(self.core,dicz)
         lout = [] ; lout2 = []
-        for i0,ipts in enumerate(limod):
+        for i0,ipts in enumerate(limod): # the zone in modflow
             for i1,ipt2 in enumerate(litrans): # the zone in pht
                 a = 0
                 for coo in ipt2 :
@@ -269,16 +273,16 @@ class mtUsgWriter:
             trch = self.ttable['crch.1']; zrch = True
         for iper in range(self.nper): 
             if (opt=='Pht3d'):
-                if (iper==0) or (prod(prch[iper]==prch[iper-1])==0): #values diff than previous
+                if (iper==0) or (all(prch[iper]==prch[iper-1])): #OA 20/10/21
                     s = 'CONSTANT     0.00 \n'*3 # for water, O, H
-                    self.Conc, self.Names = self.getConcRch('ph.5',iper=0);  # OA 28/10/20
+                    self.Conc, self.Names = self.getConcRch('ph.5');  # OA 20/10/21
                     nspec = len(self.Conc)
-                    for i in range(nspec-2):
+                    for i in range(nspec): # OA 15/10/21 removed -2
                         s += self.formatMatMt(self.Conc[i],self.Names[i])+'\n'  # OA 28/10/20
                     ls.append(s)
                 else : ls.append('    -1  \n')
             else :
-                if (iper==0) or (prod(trch[iper]==trch[iper-1])==0): #values diff than previous
+                if (iper==0) or (all(trch[iper]==trch[iper-1])): #values diff than previous
                     m = block(self.core,'MfUsgTrans','crch.1',False,None,iper)[0];
                     ls.append(self.formatVecMt(m,'arrfloat')+'\n') # OA 14/8/21
                 else : ls.append('    -1  \n')
@@ -286,7 +290,7 @@ class mtUsgWriter:
 
     def getConcRch(self,line,iper=0):
         """returns the concentrations arrays to be printed for recharge
-        in fact it must contain pH pe and the phases (even if not used)
+        in fact it must contain pH pe and the phases 
         order : 'k','i','kim','g',
         """
         listC=[];names=[] # this will be the list of conc arrays and names of species
@@ -327,16 +331,25 @@ class mtUsgWriter:
         return listC,names
             
     #************************ file for boundary conditions ******************
+
     def writePcbFile(self,opt):
         # finds if the zones are transient and their values
-        nzones,line = 0,'pcb.2'
-        dicz = self.core.diczone['MfUsgTrans'].dic[line]
+        nzones = 0
+        if opt == 'Pht3d': 
+            line = 'ph.8'
+            dicz = self.core.diczone['Pht3d'].dic[line]
+            lsolu = list(unique(self.ttable[line]).astype('int')) # OA 14/10 added list
+            spec0,spec = self.phval2conc(lsolu)  # OA 11/5/21
+            nspec = len(spec0.split())
+        else : 
+            line,nspec = 'pcb.2',1
+            dicz = self.core.diczone['MfUsgTrans'].dic[line]
         if line in self.ttable:
-            clist = self.ttable[line];
+            clist = self.ttable[line].astype('float');
             nzones = len(dicz['name'])
         # find the nodes of the zones
         nbe,ncl = self.mesh.ncell,self.mesh.ncell_lay; #core.addin.mesh.getNumber('elements');
-        pindx,nbelts = zeros(nbe),0 # this will be the index, 0 for the background, then poly number
+        pindx = zeros(nbe) # this will be the index, 0 for the background, then poly number
         for iz in range(nzones):
             lmedia = dicz['media'][iz]
             if type(lmedia)==type(5): lmedia=[lmedia]
@@ -346,25 +359,34 @@ class mtUsgWriter:
             except TypeError : continue # the zone media is not the right one
             idx1 = idx + lmedia[0]*ncl
             pindx[idx1] = iz+1 #OA 20/4/21 removed [)0] EV 19/03/21
-            nbelts += len(idx) # OA 20/4/21 removed idx==1
             for im in lmedia[1:]:
-                pindx[idx+ncl*im] = iz+1;nbelts+= len(idx)
+                pindx[idx+ncl*im] = iz+1;
         #write the values for every period
-        s = str(nbelts*self.nper)+' 0\n' # MXPCB IPCBCB
-        for ip in range(self.nper):
+        nbelts = len(where(pindx>0)[0])
+        nspec1 = 1
+        if opt == 'Pht3d': nspec1 = nspec-3
+        s = str(nbelts*nspec1)+' 0\n' # MXPCB IPCBCB
+        for ip in range(self.nper): 
             if (ip==0) or (prod(clist[ip]==clist[ip-1])==0):
-                s += str(nbelts).rjust(10)+'  0\n' # ITMP MP
+                s1 = str(nbelts*nspec1)+'  0\n'
                 for iz in range(nzones):
                     nodelist = where(pindx==iz+1)[0]
-                    for n in nodelist : 
-                        s += str(n+1).rjust(10)+ '        1 ' # Node(Cell) iSpecies_No
-                        s += str(clist[ip,iz]).rjust(10)+'\n' # Conc
+                    if opt == 'Pht3d':
+                        isolu = int(clist[ip,iz])
+                        splist = spec[lsolu.index(isolu)].split()[3:] # OA 14/10 added index
+                        for n in nodelist : 
+                            for i,js in enumerate(splist):
+                                s1 += str(n+1)+' '+str(i+4)+' '+js+'\n'
+                    else :
+                        for n in nodelist : 
+                            s1 += str(n+1)+ ' 1  %9.3e \n'%clist[ip,iz]# Conc
+                s += s1
             else :
                 s += '    -1  \n'
         
         f1=open(self.fullPath+'.pcb','w')            
         f1.write(s);f1.close()
-        
+  
     #********************************* write Pht3d file ********************
     def writePhFile(self,core,listE,parmk):
         # order of species 'k','i','kim','g','p','e','s','kp'
@@ -553,9 +575,9 @@ class mtUsgReader:
         #print('f1',f1.read()) 
         #if opt == 'Mt3dms': dc,blok,styp = 44,44+ncell*4,'f'; # usg transport
         #else : 
-        dc,blok,styp = 52,52+ncell*8,'d'; # pht3d_usg                                               
+        dc,blok,styp = 52,52+ncell*8.,'d'; # pht3d_usg                                               
         for il in range(nlay):
-            f1.seek(iper*nspec*nlay*blok+(iesp-1)*nlay*blok+blok*il+dc)
+            f1.seek(int(iper*nspec*nlay*blok+(iesp-1)*nlay*blok+blok*il+dc)) # OA 19/10/21
             data = arr2(styp)
             data.fromfile(f1,ncell)
             if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0: 
@@ -612,7 +634,6 @@ class mtUsgReader:
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp,spec,ss=None):
         ''' get conc for given line (or poly), if tracer iesp=0
-        for usg icol contains the cell number
         spec not used, icol not used here
         '''
         nper = len(iper) # OA 20/5/21
@@ -627,10 +648,9 @@ class mtUsgReader:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             dc,blok,styp = 52,52+ncell*8,'d'; # pht3d_usg                                               
             for ip in range(nper): 
-                ip1 = iper[ip]  # OA 11/10/21
-                for i in range(len(icol)):# OA 12/10 irow->icol
+                for i in range(len(icol)):
                     il= ilay[i]
-                    f1.seek(ip1*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[i]*8) # OA 12/10/21
+                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[i]*8)
                     data = arr2(styp)
                     data.fromfile(f1,1);#plot(data)#1)
                     c[ip,i] = data[0]

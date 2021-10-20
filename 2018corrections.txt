@@ -1564,3 +1564,22 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 12/10/21 OA
 - mtUsgwriter l.630,633 irow -> icol : ix or icol stores cell nb in usg
+- modflow writer l.845 1080 removed self. from self.core
+- modflowwriter l.852 changed to ftyp in array2
+
+14/10/21 OA
+- mtUsgWriter in writeFile pcb l.341 and 376 to ge thte correct solution number
+
+15/10/21  OA
+- mtUsgWriter in getRchconc l. 280 removed -2 to get pH
+- modflowWriter writeRCH l.258-259 changed to add 1 in recharge
+
+18/10/21
+- mtUsgWriter l.233 commented it is needed to write pH and pe
+- modflowriter l.249 added space for -1 inconc
+
+19/10/21 OA
+- mtUsgWriter l.580 int(float) required for large integers (very strange)
+
+20/10/21 OA
+- mtUsgWriter l.276 278 changed to correctly get varying recharge (276 all vs prod, 278 removed iper=0)

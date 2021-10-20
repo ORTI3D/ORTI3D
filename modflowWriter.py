@@ -243,10 +243,10 @@ class modflowWriter:
                     R = R*0 + self.core.dicval['Modflow']['rch.2'][0]
                     for iz in range(nzon):
                         R[zindx==iz+1] = trch[iper,iz]
-                    s += '        0'+s1
+                    s += '      0  '+s1
                     s += self.writeMatModflow(R,'arrfloat')+ '\n'
                 else:
-                    s += '       -1'+s1
+                    s += '     -1  '+s1 # OA 18/10/21
                 if 'rch' in self.usgTrans.keys(): #OA 13/8/21 moved out prev if
                     if len(self.usgTrans['rch'][iper])>12:
                         s += self.usgTrans['rch'][iper] 
@@ -255,8 +255,8 @@ class modflowWriter:
             if self.usgTrans['mcomp']==1: #OA 13/8/21
                 s = ' CONC  \n1 '
             else :
-                lstC = ' '.join(['1']*(self.usgTrans['mcomp']+3))+' ' # OA modif 22/5/21 for multicomonent
-                lstC += ' '.join(['0']*(self.usgTrans['ncomp']-self.usgTrans['mcomp']))  # OA modif 22/5/21 for multicomonent
+                lstC = ' '.join(['1']*(self.usgTrans['mcomp']+5))+' ' # OA modif 22/5/21 for multicomonent
+                lstC += ' '.join(['0']*(self.usgTrans['ncomp']-self.usgTrans['mcomp']-2))  # OA modif 22/5/21 for multicomonent
                 s = ' CONC  \n'+ lstC 
             optionDict = {'rch.1': s} # one species
         else : optionDict = {}
@@ -842,14 +842,14 @@ class modflowReader:
             hd=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
-        if 'USG' in self.core.dicaddin['Model']['group']:
+        if 'USG' in core.dicaddin['Model']['group']: # OA 12/10 removed self.
             bk0,nb0,ftyp = 52,8,'d'
         else :
             bk0,nb0,ftyp = 44,4,'f'        
         blok=bk0+ncell*nb0; # v210 60
         for il in range(nlay):
             f1.seek(iper*nlay*blok+blok*il+bk0) #vpmwin
-            data = arr2(nb0)
+            data = arr2(ftyp)  # OA 12/10/21 replaced nb0 by ftyp
             data.fromfile(f1,ncell)
             if core.mfUnstruct  and core.getValueFromName('Modflow','MshType')>0: 
                 hd[il] = data
@@ -1077,7 +1077,7 @@ class modflowReader:
         nper=len(iper)
         hd = zeros((nper,len(irow)))
         f1.seek(32);data=arr2('i');
-        if 'USG' in self.core.dicaddin['Model']['group']:
+        if 'USG' in core.dicaddin['Model']['group']:
             bk0,nb0,ftyp = 52,8,'d'
         else :
             bk0,nb0,ftyp = 44,4,'f'        
