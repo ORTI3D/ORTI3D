@@ -39,7 +39,7 @@ class mtUsgWriter:
             if 'ph.4' in dicz['Pht3d'].dic.keys(): 
                 self.writeConcValues(opt);print('conc written') #EV 30/06/21
         else :
-            if 'bct.20' in self.core.ttable['Transient'].keys() : # OA 14/8/21
+            if 'css.1' in self.core.ttable['Transient'].keys() : # OA 3/11/21
                 self.writeConcValues(opt);print('conc written')  # OA 21/03 #EV 30/06/21
         self.mfloW.writeModflowFiles(self.core,usgTrans=self.usgTrans)
         self.writeBCT(opt);print('bct written')
@@ -189,7 +189,7 @@ class mtUsgWriter:
             self.getTransTable(opt,'ph.4')
             #self.phPCB()
         else : # Mt3dms
-            self.getTransTable(opt,'bct.20')#,'bas.5') # OA 20/4/21
+            self.getTransTable(opt,'css.1')#,'bas.5') # OA 20/4/21
                
     def getTransTable(self,opt,tline):#,mfline): #EV 30/06/21
         '''returns a transient table containing the species,it is linked
@@ -273,9 +273,9 @@ class mtUsgWriter:
             trch = self.ttable['crch.1']; zrch = True
         for iper in range(self.nper): 
             if (opt=='Pht3d'):
-                if (iper==0) or (all(prch[iper]==prch[iper-1])): #OA 20/10/21
+                if (iper==0) or (any(prch[iper]!=prch[iper-1])): #OA 20/10/21
                     s = 'CONSTANT     0.00 \n'*3 # for water, O, H
-                    self.Conc, self.Names = self.getConcRch('ph.5');  # OA 20/10/21
+                    self.Conc, self.Names = self.getConcRch('ph.5',iper);  # OA 20/10/21
                     nspec = len(self.Conc)
                     for i in range(nspec): # OA 15/10/21 removed -2
                         s += self.formatMatMt(self.Conc[i],self.Names[i])+'\n'  # OA 28/10/20
@@ -646,20 +646,24 @@ class mtUsgReader:
         c = zeros((nper,len(irow)))
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
-            dc,blok,styp = 52,52+ncell*8,'d'; # pht3d_usg                                               
-            for ip in range(nper): 
-                for i in range(len(icol)):
-                    il= ilay[i]
-                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[i]*8)
+            dc,blok,styp = 52,52+ncell*8,'d';                                               
+            for i,ip in enumerate(iper):  # OA 2/11
+                for j in range(len(irow)): # OA 2/11
+                    il= ilay[j]
+                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[j]*8)
                     data = arr2(styp)
-                    data.fromfile(f1,1);#plot(data)#1)
-                    c[ip,i] = data[0]
-        else :
+                    data.fromfile(f1,1)
+                    c[i,j] = data[0];#plot(data)#1)
+        else : # OA 2/11 all below changed
             nlay,ncol,nrow = self.getGeom(core)
-            ncell1 = nlay*nrow*ncol
-            ncell2 = ncell1*nsp 
-            for ip in range(nper): 
-                c[ip] = self.conc[iper*ncell2+iesp*ncell1+ilay*ncell1+irow*nrow+icol]            
+            dc,blok,styp = 52,52+ncol*nrow*8,'d'; # OA 2/11 put here                                              
+            for i,ip in enumerate(iper): 
+                for j in range(len(irow)):
+                    il= ilay[j]
+                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+irow[j]*ncol*8+icol[j]*8)
+                    data = arr2(styp)
+                    data.fromfile(f1,1)
+                    c[i,j] = data[0];#plot(data)#1)
         return c
         
     def getGeom(self,core):

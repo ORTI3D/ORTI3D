@@ -1,6 +1,6 @@
 class  Mtu:
     def __init__(self):
-        self.grpList=['BCT','PCB','CRCH','CWELL','CGHB','DPT','DDF']
+        self.grpList=['BCT','PCB','CRCH','CSS','CGHB','DPT','DDF']
         bclist=['1a','1b'];
         bclist.extend([str(a) for a in range(2,8)])
         bclist.extend([str(a) for a in range(14,21)])
@@ -8,17 +8,17 @@ class  Mtu:
         'BCT':['bct.'+a for a in bclist],
         'PCB':['pcb.1','pcb.2'], # conc at Boundaries
         'CRCH':['crch.1'], # conc at recharge zones
-        'CWELL':['cwell.1'], # conc at wells
+        'CSS':['css.1'], # conc at source and sinks
         'CGHB':['cghb.1'], # conc at g hed boundaries
         'DPT':['dpt.1'], # dual porosity
         'DDF':['ddf.1'], # variable density
         }
         self.longNames={'BCT':'major transport parameters',
-        'PCB': 'prescribed concentrations at boundaries',
+        'PCB': 'fixed concentrations',
         'CRCH':' Conc. in recharge',
         'CRIV':' Conc. in rivers',
         'CCHD':' Conc. at transient head BC',
-        'CWELL': 'Conc at inj. wells'}
+        'CSS': 'Conc at sources and sink'}
         
         self.lines={
             #BCT
@@ -107,7 +107,7 @@ class  Mtu:
         'kw': ['FODRS'],'detail': ['1sto coeff'],
         'type':['arrfloat'],'default':[0.]},
         # initial concentrations (including T and immobile species
-        'bct.20': {'comm':'concentrations', 'cond':'',
+        'bct.20': {'comm':'initial concentrations', 'cond':'',
         'kw': ['CONC'],'detail': ['conc.'],
         'type':['arrfloat'],'default':[0.]},
         
@@ -124,8 +124,8 @@ class  Mtu:
         'crch.1': {'comm':'Recharge concentrations', 'cond':'',
         'kw': ['RCHCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
-        ## CWELL
-        'cwell.1': {'comm':'Well concentrations', 'cond':'',
+        ## CWSSL
+        'css.1': {'comm':'source sink concentrations', 'cond':'',
         'kw': ['WELLCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
         ## CRIV

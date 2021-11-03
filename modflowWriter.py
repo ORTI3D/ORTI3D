@@ -16,6 +16,7 @@ class modflowWriter:
     def writeModflowFiles(self, core,usgTrans={}):
         nbfor,recharge = 0,0
         self.ttable,self.usgTrans = self.core.makeTtable(),usgTrans;
+        self.Usg = 'USG' in self.core.dicaddin['Model']['group']
         tlist = array(self.ttable['tlist'])
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)
@@ -91,7 +92,7 @@ class modflowWriter:
         f1.write('OC       26    '+ self.fName + '.oc\n')
         f1.write('DATA(BINARY)     30        ' + self.fName + '.head\n')
         f1.write('DATA(BINARY)     31        ' + self.fName + '.budget\n')
-        if 'USG' not in self.core.dicaddin['Model']['group']:
+        if self.Usg==False : # OA 3/11/21
             f1.write('LMT6     28    '+ self.fName + '.lmt\n')
         r0=self.core.getValueLong('Modflow','rch.2',0)
         if 'RCH' in lmod:
@@ -689,7 +690,10 @@ class modflowWriter:
             #s += 'CONC SAVE FORMAT (1G11.3E3)\n'  # OA 13/5/21
             s += 'CONC SAVE UNIT 102 \n'
         s += 'Compact Budget \n'
-        nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
+        if self.Usg:
+            nstp=int(self.core.getValueFromName('Modflow','NSTPu'));#print 'mfwrite 334',self.nper,nstp
+        else :
+            nstp=int(self.core.getValueFromName('Modflow','NSTP'));#print 'mfwrite 334',self.nper,nstp
         if self.nper>1:
             for p in range(self.nper):
                 s += 'Period %5i Step %5i \n' %(p+1,nstp)

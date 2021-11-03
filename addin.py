@@ -53,7 +53,7 @@ class addin:
             for i in range(len(lmodules)):
                 if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL']): val[i]=True # OA 10/3/19 removed pcg
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
-                if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CRCH','CWELL']): val[i]=True # OA 27/7/19
+                if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CRCH','CSS']): val[i]=True # OA 3/11/21
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19

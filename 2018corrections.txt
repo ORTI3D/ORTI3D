@@ -1583,3 +1583,17 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 
 20/10/21 OA
 - mtUsgWriter l.276 278 changed to correctly get varying recharge (276 all vs prod, 278 removed iper=0)
+
+21/10/21  OA
+- mtUswriter l.276 278 changed again, above was not correct
+- geometry l.343, 348, 351 added iper in zone2mesh call
+
+2/11/20 OA
+- mtUsgReader getPtObs l.650 651 for periords only taking time 0 + 657-666 for regular grid
+
+3/11/21 OA
+- mtUsgKeywords changes : Cwell -> Css for source and sinks (short css), bct20 initial and pcb fixed concentrations
+- mtUsgWriter l.42 replaced bct.20 by css
+- addin l.53 replaced cwell by css
+- modflowWriter l.94 writeNam replaced condition by self.Usg True or false
+- modfloWriter wirteOc l.693-694 added to get the correct substeps
