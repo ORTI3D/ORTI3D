@@ -711,7 +711,7 @@ class Core:
         #if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
-        if mtype=='Mod' and flgMesh==0: iym = [ny-y-1 for y in iy2] # transform to modflow coords #OA 18/12/20
+        if mtype=='Mod' and self.mfUnstruct==False: iym = [ny-y-1 for y in iy2] # transform to modflow coords NOT for Usg #OA 6/11/21
         else : iym =iy2
         ix2,iym,iz2 = array(ix2),array(iym),array(iz2) # OA 11/4/20 added to index later
     ### Get list of time and period 

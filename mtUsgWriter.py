@@ -560,7 +560,7 @@ class mtUsgReader:
         #    return self.readConc(core,opt,iper,iesp,specname)
         if opt=='Pht3d': # OA 20/5/21
             lSpec = core.addin.chem.getListSpecies();
-            nspec=len(lSpec)+3;iesp+=4; # 4 species added by usg/pht3d
+            nspec=len(lSpec)+3;iesp+=3; # 3 species added by usg/pht3d OA 3/11/21
         else:
             nspec=1
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
@@ -577,7 +577,7 @@ class mtUsgReader:
         #else : 
         dc,blok,styp = 52,52+ncell*8.,'d'; # pht3d_usg                                               
         for il in range(nlay):
-            f1.seek(int(iper*nspec*nlay*blok+(iesp-1)*nlay*blok+blok*il+dc)) # OA 19/10/21
+            f1.seek(int(iper*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc)) # OA 6/11/21
             data = arr2(styp)
             data.fromfile(f1,ncell)
             if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0: 
