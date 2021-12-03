@@ -185,6 +185,7 @@ class Ui_Var(object):
         self.gui.modifBox.updateChoiceZone(line)
         self.base.changeVisu()
         self.onSetVariable() #EV 26.11.20
+        self.onViewVariable() #EV 08.11.21
             
     def onChoiceMedia(self,evt):
         """changes the media in visualization and stores the current media"""
@@ -334,7 +335,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 08/11/2021 ")
+        version = QLabel("       version 03/12/2021 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

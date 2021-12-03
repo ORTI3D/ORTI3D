@@ -77,6 +77,9 @@ class orti3dGui(QMainWindow):
         boutonVisible(self,'Ad_3D',bool) #EV 05/08/19
         self.varBox.choice3D.setEnabled(bool) #EV 05/08/19
         
+    def onParticle(self,bool): # EV 3/12/21
+        boutonVisible(self,'Ad_Particle',bool) 
+        
     def onSetMediaNb(self,nbM,nbL):
         self.varBox.choice3D.clear()
         for i in range(nbM): self.varBox.choice3D.addItem(str(i))
@@ -117,7 +120,6 @@ class orti3dGui(QMainWindow):
         menuFile.addAction(saveAsAction)
         menuFile.addSeparator()
         menuFile.addAction(exitAction)
-
         # import menu
         menuImport = self.menuBar().addMenu("&Import")
         #idataAction = QAction("&Data", self, 

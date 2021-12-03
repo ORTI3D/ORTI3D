@@ -23,9 +23,10 @@ class valueDialog:
         #self.currentGroup,self.currentLine = self.gui.currentGroup,self.gui.currentLine
         self.dialg = qtValueDialog(self,gui,core,modName)
         # some lines will not be shown (they are in the addin)
-        self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS',
+        self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS', # OA 24/5/19 removed al, trpt, trpv, dmcoef... 
                     'NCOMP','MCOMP','GCOMPN','KCOMPN','HTOP','DZ','PRSTY','ICBUND','SCONC','MTRECH',
-                    'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON','LAYCBD'] # OA 24/5/19 removed al, trpt, trpv, dmcoef... EV 25/09/19 add TLAYCON EV 15/11/2019 add LAYCBD
+                    'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON','LAYCBD', # EV 25/09/19 add TLAYCON EV 15/11/2019 add LAYCBD
+                    'NCELL','UNLAY','NJAG','IVSD','UNPER','ANGLEX'] # EV 3/12/21
         #print self.Mkword.lines
 
     def show(self):
@@ -82,7 +83,18 @@ class valueDialog:
                 lstout.append(l); #print 'valudiag 75',l,cond, 'True'
         #print 'valdilg 80',lstout
         return lstout
-                       
+    
+    def getGroup(self): # EV 3/12/21
+        groups,lines = self.Mkword.groups,self.Mkword.lines
+        glist = self.core.getUsedModulesList(self.modName)
+        gname=[]
+        for name in glist: 
+            if name in groups :
+                lst1=self.testConditions(groups[name]) 
+                if lst1 :
+                    gname.append(name)
+        return gname
+                    
     def onChoiceGroup(self,name):
         '''action when a group is chosen, changes the line list'''
         #onMessage(self.gui,str(name))
@@ -113,25 +125,29 @@ class valueDialog:
     def OnSetNewVal(self,evt=''):
         """sets the new values when user click on OK in key box"""
         values=self.dialg.boxkeys.getValues()#;print ('vdialg, setnew',self.currentLine,values)
-        for i in range(len(values)):
-            #print (self.val[self.currentLine][i])
-            self.val[self.currentLine][i]=values[i]
-        names = []
-        self.changeStoredValues();
-        #readapt lines if condition modify them
-        lst0=self.Mkword.groups[self.currentGroup]
-        lst1=self.testConditions(lst0) #select lines that satisfy the conditions
-        for l in lst1:
-            names.append(l+'- '+self.Mkword.lines[l]['comm'])
-        self.changeCombo(self.dialg.chlines,names)
-        self.dialg.boxkeys.setVisible(False) # OA 10/09/2018
-        #readapt unconfined / confined for lpf.2
-        if self.currentLine == 'lpf.2':  #EV 25/09/19
-            if set(values)=={'0'}:
-                self.core.dicaddin['Model']['type']='Confined'
-            elif set(values)=={'1'}:
-                self.core.dicaddin['Model']['type']='Unconfined'
-            else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21           
+        if values : # EV 3/12/21
+            for i in range(len(values)):
+                self.val[self.currentLine][i]=values[i]
+            names = []
+            self.changeStoredValues();
+            #readapt lines if condition modify them
+            lst0=self.Mkword.groups[self.currentGroup]
+            lst1=self.testConditions(lst0) #select lines that satisfy the conditions
+            for l in lst1:
+                names.append(l+'- '+self.Mkword.lines[l]['comm'])
+            self.changeCombo(self.dialg.chlines,names)
+            self.dialg.boxkeys.setVisible(False) # OA 10/09/2018
+            #readapt unconfined / confined for lpf.2
+            if self.currentLine == 'lpf.2':  #EV 25/09/19
+                if set(values)=={'0'}:
+                    self.core.dicaddin['Model']['type']='Confined'
+                elif set(values)=={'1'}:
+                    self.core.dicaddin['Model']['type']='Unconfined'
+                else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21 
+            if self.currentLine == 'disu.2':
+                if values in [[3],[2]]:
+                    self.gui.onGridMesh('Mesh')
+                else : self.gui.onGridMesh('Grid')
 
     def showBox(self,box,bool):
         box.setVisible(bool)    

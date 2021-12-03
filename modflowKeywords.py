@@ -195,7 +195,7 @@ class Mf:
         #SMS sovler for modflow USG
         #1a. OPTIONS SIMPLE MODERATE COMPLEX
         'sms.1a':{'comm':'SMS options','cond':'','kw':['SMS_opt'],
-               'detail':['options','No opt','SIMPLE','MODERATE','COMPLEX'],
+               'detail':[['options','No opt','SIMPLE','MODERATE','COMPLEX']],# EV 3/12/21
                'type':['choice'],'default':[0]},
         'sms.1b':{'comm':'SMS globals','cond':'',
                 'kw':['sHCLOSE','sHICLOSE','sMXITER','sITER1','sIPRSMS','sNONLINMTH','sLINMTH'],

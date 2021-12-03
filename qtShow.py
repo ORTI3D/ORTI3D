@@ -99,6 +99,10 @@ class Ui_Show(object):
         combo = self.Show.findChild(QComboBox,nameBox) 
         names = [combo.itemText(i) for i in range(combo.count())]
         return names
+    
+    def getBoxNames(self,nameBox,opt): # EV 3/12/21
+        combo = self.Show.findChild(QCheckBox,nameBox) 
+        combo.setDisabled(opt)
 
     def setNames(self,nameBox,names,opt='strings'):
         combo = self.Show.findChild(QComboBox,nameBox) 

@@ -1,6 +1,6 @@
 class  Mtu:
     def __init__(self):
-        self.grpList=['BCT','PCB','CRCH','CSS','CGHB','DPT','DDF']
+        self.grpList=['BCT','PCB','CRCH','CSS'] # EV 3/12/21
         bclist=['1a','1b'];
         bclist.extend([str(a) for a in range(2,8)])
         bclist.extend([str(a) for a in range(14,21)])
@@ -9,15 +9,15 @@ class  Mtu:
         'PCB':['pcb.1','pcb.2'], # conc at Boundaries
         'CRCH':['crch.1'], # conc at recharge zones
         'CSS':['css.1'], # conc at source and sinks
-        'CGHB':['cghb.1'], # conc at g hed boundaries
-        'DPT':['dpt.1'], # dual porosity
-        'DDF':['ddf.1'], # variable density
+        #'CGHB':['cghb.1'], # conc at g hed boundaries # EV 3/12/21
+        #'DPT':['dpt.1'], # dual porosity
+        #'DDF':['ddf.1'], # variable density
         }
         self.longNames={'BCT':'major transport parameters',
         'PCB': 'fixed concentrations',
         'CRCH':' Conc. in recharge',
-        'CRIV':' Conc. in rivers',
-        'CCHD':' Conc. at transient head BC',
+        #'CRIV':' Conc. in rivers', # EV 3/12/21
+        #'CCHD':' Conc. at transient head BC',
         'CSS': 'Conc at sources and sink'}
         
         self.lines={
@@ -27,11 +27,11 @@ class  Mtu:
         'IDISP','IXDISP','DIFFNC','IZOD','IFOD','IFMBC','IHEAT','NIMCOMP','IDISPCLN','NSEQITR',\
         'ITRNSP'],
         'detail' : [
-        ['simulation','no','steady or each flow step','not implemented'], # -1 not set
+        ['simulation','no transport','steady or each flow step','not implemented'], # -1 not set
         'save budget','nb of mobile species',
         ['domain','diff from flow','equal to flow'],
         'adv scheme, TVD nb',
-        ['sorption','no','linear','freundlich'],
+        ['sorption','no sorption','linear','freundlich'],
         ['sorbed transport','no','total'],
         'Conc at inactive cells',
         'Solver Conc tolerance',
@@ -124,25 +124,25 @@ class  Mtu:
         'crch.1': {'comm':'Recharge concentrations', 'cond':'',
         'kw': ['RCHCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
-        ## CWSSL
+        ## CSS
         'css.1': {'comm':'source sink concentrations', 'cond':'',
         'kw': ['WELLCONC'],'detail': [''],
         'type':['arrfloat'],'default':[0.]},
-        ## CRIV
-        'criv.1': {'comm':'River concentrations', 'cond':'',
-        'kw': ['RIVCONC'],'detail': [''],
-        'type':['arrfloat'],'default':[0.]},
+        ## CRIV # EV 3/12/21
+        #'criv.1': {'comm':'River concentrations', 'cond':'',
+        #'kw': ['RIVCONC'],'detail': [''],
+        #'type':['arrfloat'],'default':[0.]},
         ## CGHB
-        'cghb.1': {'comm':'Well concentrations', 'cond':'',
-        'kw': ['GHBCONC'],'detail': [''],
-        'type':['arrfloat'],'default':[0.]},
+        #'cghb.1': {'comm':'Well concentrations', 'cond':'',
+        #'kw': ['GHBCONC'],'detail': [''],
+        #'type':['arrfloat'],'default':[0.]},
         ## DPT
-        'dpt.1': {'comm':'dummy', 'cond':'',
-        'kw': ['dummy1'],'detail': [''],
-        'type':['int'],'default':[0]},
+        #'dpt.1': {'comm':'dummy', 'cond':'',
+        #'kw': ['dummy1'],'detail': [''],
+        #'type':['int'],'default':[0]},
 
         ## DDF
-        'ddf.1': {'comm':'dummy', 'cond':'',
-        'kw': ['dummy2'],'detail': [''],
-        'type':['int'],'default':[0]},
+        #'ddf.1': {'comm':'dummy', 'cond':'',
+        #'kw': ['dummy2'],'detail': [''],
+        #'type':['int'],'default':[0]}, # EV 3/12/21
         }

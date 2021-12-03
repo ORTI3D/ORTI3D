@@ -301,9 +301,7 @@ class Core:
         except UnicodeEncodeError: return 'Bad caracters in folder name'
         if modName in ['Modflow','Modflow_USG']:
             mod,lastline = 'mf2k_PMwin',3 # OA 22/8/19 added lastline for search line for usg too
-            #if 'USG' in modName: mod,lastline = 'mfUSG_1_3',7 # OA 9/2/20
             if 'USG' in modName: 
-                #mod,lastline = 'mfusg_1_5',7 #EV 19/03/21
                 mod,lastline = 'PHT_USG',7 #EV 19/03/21
             if 'NWT' in self.getUsedModulesList('Modflow'): mod = 'mfNWT_dev'
             if os.name == 'nt':
@@ -315,14 +313,17 @@ class Core:
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();#os.system(s) OA 8/6/19
             if info !=False :
                 try :  # EV 13/11 "show model fail to converge"
-                    time_model=self.dicval['Modflow']['dis.2'][4]
+                    if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
+                    else : time_model=self.dicval['Modflow']['disu.4'][5] # EV 3/12/21
                     if time_model==0 : 
                         time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[4]
                     else : 
                         time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[(time_model+1)]
                     time_last=self.getTlist2()[-1]
                     if float(time_out)==float(time_last):
-                        return ('Normal termination of MODFLOW-2000')
+                        if modName == 'Modflow':
+                            return ('Normal termination of MODFLOW-2000')
+                        else : return ('Normal termination of Modflow USG') # EV 3/12/21
                     else: return('Model fail to converge')
                 except :# IndexError:
                     return('Model fail to converge')
@@ -345,28 +346,51 @@ class Core:
             s=self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName #EV 19/03/21
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
+            try :  # EV 3/12/21
+                time_model=self.dicval['Modflow']['disu.4'][5]
+                if time_model==0 : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
+                else : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
+                time_last=self.getTlist2()[-1]
+                if float(time_out)==float(time_last):
+                    return ('Normal termination of Modflow USG Transport')
+                else: return('Model fail to converge')
+            except :
+                return('Model fail to converge')
         if modName == 'Pht3d':
             if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
                 s = self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName
-                #s = self.baseDir+sep+'bin'+sep+'pht3d_usg.exe '+self.fileName
-                #s = self.baseDir+sep+'bin'+sep+'mfusg_1_5.exe '+self.fileName
-                info=False
             else :
                 if self.dicval['Pht3d']['ph.6'][5]== 1 : #EV 2/7/21
                     N=self.dicval['Pht3d']['ph.6'][6]
                     s='mpiexec -n '+ str(N) +' '+ self.baseDir+sep+'bin'+sep+'pht3dv217_mpi_fett.exe Pht3d.nam'
                 else : s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
-                info = False  #EV 19/03/21
             os.chdir(self.fileDir)
             p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
-                try : # EV 13/11 "show model fail to converge"
-                    line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
-                    if line_out=='END':
-                        return ('Normal termination of PHT3D')
-                    else: return('Model fail to converge') #return self.getTxtFileLastLine('Pht3d.out',3)
-                except IndexError:
-                    return('Model fail to converge')
+                if self.dicaddin['Model']['group'] != 'Modflow USG': 
+                    try : # EV 13/11 "show model fail to converge"
+                        line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
+                        if line_out=='END':
+                            return ('Normal termination of PHT3D')
+                        else: return('Model fail to converge') 
+                    except IndexError:
+                        return('Model fail to converge')
+                else : 
+                    try :  # EV 3/12/21
+                        time_model=self.dicval['Modflow']['disu.4'][5]
+                        if time_model==0 : 
+                            time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
+                        else : 
+                            time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
+                        time_last=self.getTlist2()[-1]
+                        if float(time_out)==float(time_last):
+                            return ('Normal termination of PHT-USG')
+                        else: return('Model fail to converge')
+                    except :
+                        return('Model fail to converge')
+                
         if modName[:5] =='Min3p':
             #print('name',self.fileName)
             s=self.baseDir+sep+'bin'+sep+'min3p.exe '+self.fileName ; # OA 19/3/19

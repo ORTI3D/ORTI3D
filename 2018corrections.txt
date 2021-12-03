@@ -1601,3 +1601,24 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 6/11/21 OA
 - mtUsgWriter readUCN l.563 580 replaced +4 thus no iesp-1
 - core getptobs l.714 added msUnstruct==false the matrix inversion is not needed for usg
+
+8/11/21 EV
+- qtTopBar onChoiceLine l.188 add onViewVaraible function to change the visu when line is changed and view box is checked
+
+3/12/21 EV
+- addin.py doaction l.224-235 add option to disabled/enabled particles and Wcontent box and button for model where this function are or are not available
+- addin.py onUsedModule l.461-466 add option to disabled/enabled Wcontent box for module where this function are or are not available
+- core.py runModel l.317, 326, 349-360, 381-392 add end model message for Modflow usg, transport and pht-usg
+- guishow.py openModel l.66-81 add option to disabled/enabled particles and Wcontent box and button for model where this function are or are not available
+- modflowKeywards l.198 add bracket 
+- mtUSGKeywards.py l.3, 19-20, 131-147 remove CRIV and CGHB modules and DPT and DDF modules
+- multiplot.py l.63-69 added to remove Wcontent option formodel where this option is not available
+- orti3dGui.py onParticle l.80-81 function created to disabled/enabled particles button
+- qtShow.py getBoxNames l.103-105 function created to disabled result checkbox
+- qtValueDialog.py l.26 add to get only module/group with parameters (and remove those with only spatial attributes) 
+- qtValueDialog.py l.64, l.120 add self.nb variable to avoid error message when clicked apply without activated the second QcomboBox of parameter
+- qtVisualisation.py button_release_callback l.1001 changed to update v variable when point in deleted or inserted
+- qtVisualisaiotn.py dist / dist_point_to_segment l.1005-1010, 1012-1029 functions added to replace dist_point_to_segment from matplotlib
+- valueDialog.py l.29 added USG parameter to blind 
+- valueDialog.py getGroup l.87-96 add to get only module/group with parameters (and remove those with only spatial attributes) 
+- ValueDialog.py OnSetNewVal l.128 add "if values" condition to avoid error message when clicked apply without activated the second QcomboBox of parameter dialog

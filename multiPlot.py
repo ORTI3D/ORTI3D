@@ -60,8 +60,13 @@ class multiPlot(QDialog):
             self.label_0.setText("Type of result")
             self.gl.addWidget(self.label_0,0,0,1,1)
             self.rgroup = QComboBox(self)
-            if self.res == 'Flow' : self.rgroup.addItems(
-                    ['Head','W content'])#,'Flux']) #EV 02/03/20
+            if self.res == 'Flow' :   # EV 3/12/21
+                mm,mval = self.core.dicaddin['usedM_Modflow']
+                v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
+                mod=self.core.dicaddin['Model']['group']
+                if (v1==2 or v2==2) and (mod =='Modflow series'):
+                    self.rgroup.addItems(['Head','W content'])#,'Flux']) #EV 02/03/20
+                else : self.rgroup.addItems(['Head'])
             if self.res in ['Transport','Chemistry'] : 
                 self.rgroup.addItems(
                         ['Concentration','Weighted concentration',

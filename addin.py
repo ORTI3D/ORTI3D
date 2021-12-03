@@ -221,6 +221,19 @@ class addin:
                     if self.core.getValueFromName('Modflow','MshType')>0: self.gui.onGridMesh('Mesh') # to chang the button
                     self.mesh = self.mfU # OA 22/8/19
                     self.setMfUnstruct()
+                    self.gui.onParticle(False) # EV 3/12/21
+                    self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',True)
+                else : 
+                    self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
+                    self.gui.onParticle(True)
+                mm,mval = self.core.dicaddin['usedM_Modflow']
+                if m['group'] == 'Min3p':
+                    self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+                else :
+                    v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
+                    if (v1==2 or v2==2) and (m['group']=='Modflow series'):
+                        self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+                    else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True) # EV 3/12/21
                 self.gui.varBox.chooseCategory(m['group'])
                 if m['type']=='Confined': #EV 25/09/19
                     self.core.setValueFromName('Modflow','LAYTYP',[0]*nmed) # 0 for confined, 1 for unconfined
@@ -446,6 +459,12 @@ class addin:
         bool = False
         if 'RCT' in mtm : bool = mtval[mtm.index('RCT')]
         self.gui.onRCT(bool)
+        mm,mval = self.core.dicaddin['usedM_Modflow'] # EV 3/12/21
+        v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
+        mod=self.core.dicaddin['Model']['group']
+        if (v1==2 or v2==2) and (mod =='Modflow series'):
+            self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+        else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True) # EV 3/12/21
         
     def callCheckDialog(self):
         dicIn = self.chem.temp['Dbase'].copy()

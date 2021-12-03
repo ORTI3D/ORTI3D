@@ -44,7 +44,7 @@ class BaseParms:
     
     def action(self,name):
         action=self.dicaction[str(name)]
-        #print self.core.dicaddin['Model']['group'],action
+        #print (self.core.dicaddin['Model']['group'],action)
         mgroup = self.core.dicaddin['Model']['group']
         if 'USG' in mgroup: # only the transport is different in USG
             action=action.replace('Mt3dms','MfUsgTrans')            

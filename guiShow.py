@@ -63,6 +63,22 @@ class guiShow:
     def openModel(self):
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
         else : self.setNames('Model_Plane_L',['Z'])
+        if self.core.dicaddin['Model']['group'] == 'Min3p':
+            self.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+        else : 
+            mm,mval = self.core.dicaddin['usedM_Modflow']
+            v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
+            mod=self.core.dicaddin['Model']['group']
+            if (v1==2 or v2==2) and (mod =='Modflow series'):
+                self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+            else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True)
+        if self.core.dicaddin['Model']['group'] == 'Modflow USG':
+            self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',True)
+            self.gui.onParticle(False) 
+        else : 
+            self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
+            self.gui.onParticle(True)
+            
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)

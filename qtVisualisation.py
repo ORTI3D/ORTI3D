@@ -997,9 +997,36 @@ class PolygonInteractor:
         # des nouveaux sommets crees par le PolygonInteractor
         x = self.line.get_xdata()
         y = self.line.get_ydata()  
-        v = self.poly.verts
+        #v = self.poly.verts
+        v=list(zip(x,y)) # EV 3/12/21
         for i in range(len(x)):
             v[i] = (x[i],y[i])  
+            
+    def dist(self,x, y): # EV 3/12/21
+        """
+        Return the distance between two points.
+        """
+        d = x - y
+        return np.sqrt(np.dot(d, d))
+    
+    def dist_point_to_segment(self,p, s0, s1): # EV 3/12/21
+        p = np.asarray(p, float)
+        s0 = np.asarray(s0, float)
+        s1 = np.asarray(s1, float)
+        v = s1 - s0
+        w = p - s0
+
+        c1 = np.dot(w, v)
+        if c1 <= 0:
+            return self.dist(p, s0)
+    
+        c2 = np.dot(v, v)
+        if c2 <= c1:
+            return self.dist(p, s1)
+    
+        b = c1 / c2
+        pb = s0 + b * v
+        return self.dist(p, pb)
         
     def key_press_callback(self, event):
         'whenever a key is pressed'
@@ -1019,7 +1046,7 @@ class PolygonInteractor:
             for i in range(len(self.lx)-1):                
                 s0 = (self.lx[i],self.ly[i]); #xys[i]
                 s1 = (self.lx[i+1],self.ly[i+1]); #xys[i+1]
-                d = dist_point_to_segment(p, s0, s1)
+                d = self.dist_point_to_segment(p, s0, s1)
                 if d<=self.epsilon:
                     self.lx.insert(i+1,event.xdata)
                     self.ly.insert(i+1,event.ydata)

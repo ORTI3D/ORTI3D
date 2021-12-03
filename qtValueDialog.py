@@ -21,8 +21,9 @@ class qtValueDialog(QDialog):
         self.vbox = QVBoxLayout(self.layoutWidget)
         #self.vbox.setGeometry(QRect(0, 0, 80,60))
 
-        grpList = core.getUsedModulesList(modName)
+        #grpList = core.getUsedModulesList(modName)
         self.chgroups = QComboBox(self.layoutWidget)
+        grpList = self.parent.getGroup() # EV 3/12/21
         for i,n in enumerate(grpList):
             self.chgroups.addItem("")
             self.chgroups.setItemText(i, n)
@@ -60,6 +61,7 @@ class qtBoxKeys:
         self.layoutWidget = QWidget(Main)
         self.gridLayout = QGridLayout(self.layoutWidget) #EV 22/07/2019
         self.labl,self.lValBut,self.values=[],[],[]
+        self.nb=None # EV 3/12/21
         
     def setVisible(self,bool):self.layoutWidget.setVisible(bool)
         
@@ -115,26 +117,27 @@ class qtBoxKeys:
             
     def getValues(self):
         #nb = len(self.values) # OA 23/9/19 removed
-        for i in range(self.nb):
-            but = self.lValBut[i]
-            val = self.values[i]
-            if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
-                self.values[i] = but.currentIndex()
-                continue
-            elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
-                self.values = self.vect
-                continue
-            elif self.types[i]=='textlong': # added 21/11/19
-                self.values = [but.document().toPlainText()]
-                continue
-            if but.text() not in ['formula','zone','array']:
-                if self.types[i] in ['int','vecint','arrint']:
-                    val=int(but.text())
-                elif self.types[i] in ['float','vecfloat','arrfloat']:
-                    val=float(but.text())
+        if self.nb : # EV 3/12/21
+            for i in range(self.nb):
+                but = self.lValBut[i]
+                val = self.values[i]
+                if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
+                    self.values[i] = but.currentIndex()
+                    continue
+                elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
+                    self.values = self.vect
+                    continue
+                elif self.types[i]=='textlong': # added 21/11/19
+                    self.values = [but.document().toPlainText()]
+                    continue
+                if but.text() not in ['formula','zone','array']:
+                    if self.types[i] in ['int','vecint','arrint']:
+                        val=int(but.text())
+                    elif self.types[i] in ['float','vecfloat','arrfloat']:
+                        val=float(but.text())
+                    else :  
+                        val=str(but.text())  # OA 10/9/18 added str
                 else :  
-                    val=str(but.text())  # OA 10/9/18 added str
-            else :  
-                val=str(but.text());#print(val)  # OA 10/9/18 added str
-            self.values[i]=val*1
-        return self.values
+                    val=str(but.text());#print(val)  # OA 10/9/18 added str
+                self.values[i]=val*1
+            return self.values
