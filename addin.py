@@ -53,7 +53,7 @@ class addin:
             for i in range(len(lmodules)):
                 if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL']): val[i]=True # OA 10/3/19 removed pcg
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
-                if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CRCH','CSS']): val[i]=True # OA 3/11/21
+                if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CSS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19
@@ -106,7 +106,7 @@ class addin:
         self.structure['button']['4.Chemistry']=[{'name':name,'pos':0,'short':'I'}]
         name = 'Chemistry' # opens the chemistry dialog
         self.core.dicaddin[name] = {}
-        self.core.dicaddin['MChemistry'] = {} # for Min3p to store a different chemistry
+        self.core.dicaddin['Chemistry'] = {} # for Min3p to store a different chemistry
         self.structure['button']['4.Chemistry'].append({'name':name,'pos':0,'short':'C'})        
 
         name = 'Pback' # dict for the pest zoens parameters
@@ -124,6 +124,7 @@ class addin:
 
         name = 'InitialChemistry' # to set specific initial chemistry
         self.core.dicaddin[name] = {'name':'','formula':'','tstep':''} #ev05/02/19 removed value =
+        self.core.dicaddin0 = self.core.dicaddin.copy()  # OA 5/12/21
         self.grd = makeGrid(self.core,self.core.dicaddin['Grid'])
         self.mesh = None  # OA added 25.9.18
         self.setChemType()
@@ -154,22 +155,20 @@ class addin:
         self.chem.resetBase()
         
     def update1(self,dict1):
-        cdict = self.core.dicaddin.copy()
+        '''
+        called by core when opening a file: if a dict key was not existing in the
+        addin0 create it, if it was existing replace it, but keep the existing
+        keys that do not exist in dict1 (OA all modif 5/12/21)
+        '''
+        dict2 = self.core.dicaddin0.copy()
         for k in list(dict1.keys()):
-            if k not in list(cdict.keys()): continue
-            if type(dict1[k])==type({'d':1}):
-                for k1 in list(dict1[k].keys()):
-                    cdict[k][k1] = dict1[k][k1]
-            # elif k[:5]=='usedM': # some moduls can have been added in new version # OA removed 10/3/19
-            #     lmod,val = cdict[k]
-            #     lmod1,val1 = dict1[k]
-            #     for i,md in enumerate(lmod): 
-            #         if md in lmod1: 
-            #             if val1[lmod1.index(md)]: val[i]=True
-            #     cdict[k] = (lmod,val)
-            else :
-                cdict[k] = dict1[k]
-        self.core.dicaddin = cdict.copy()
+            dict2[k] = dict1[k]
+#            if type(dict1[k])==type({'d':1}):
+#                for k1 in list(dict1[k].keys()):
+#                    cdict[k][k1] = dict1[k][k1]
+#            else :
+#                cdict[k] = dict1[k]
+        self.core.dicaddin = dict2.copy()
                 
     def initMenus(self):
         '''add the menus in the gui interface''' 

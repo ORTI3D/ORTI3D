@@ -2,8 +2,8 @@ class  Mtu:
     def __init__(self):
         self.grpList=['BCT','PCB','CRCH','CSS'] # EV 3/12/21
         bclist=['1a','1b'];
-        bclist.extend([str(a) for a in range(2,8)])
-        bclist.extend([str(a) for a in range(14,21)])
+        bclist.extend([str(a) for a in range(2,21)])
+        #bclist.extend([str(a) for a in range(14,21)])
         self.groups={
         'BCT':['bct.'+a for a in bclist],
         'PCB':['pcb.1','pcb.2'], # conc at Boundaries
@@ -81,6 +81,30 @@ class  Mtu:
         # transverse dispersivity
         'bct.7': {'comm':'transv. dispersivity','cond':'IDISP==1',
         'kw': ['DT'],'detail': ['transv Disp.'],
+        'type':['arrfloat'],'default':[0.1]},
+        # x-direction longitudinal dispersivity for an anisotropic medium #EV 8/12/21
+        'bct.8': {'comm':'x-direction long Disp.','cond':'IDISP==2',
+        'kw': ['DLX'],'detail': ['x-direction long Disp.'],
+        'type':['arrfloat'],'default':[1.]},
+        # y-direction longitudinal dispersivity for an anisotropic medium
+        'bct.9': {'comm':'y-direction long Disp.','cond':'IDISP==2',
+        'kw': ['DLY'],'detail': ['y-direction long Disp. '],
+        'type':['arrfloat'],'default':[1.]},
+        # z-direction longitudinal dispersivity for an anisotropic medium
+        'bct.10': {'comm':'z-direction long Disp.','cond':'IDISP==2',
+        'kw': ['DLZ'],'detail': ['z-direction long Disp. '],
+        'type':['arrfloat'],'default':[1.]},
+        # xy-direction transverse dispersivity for an anisotropic medium
+        'bct.11': {'comm':'xy-direction trans Disp.','cond':'IDISP==2',
+        'kw': ['DTXY'],'detail': ['xy-direction trans Disp. '],
+        'type':['arrfloat'],'default':[0.1]},
+        # yz-direction transverse dispersivity for an anisotropic medium
+        'bct.12': {'comm':'yz-direction trans Disp.','cond':'IDISP==2',
+        'kw': ['DTYZ'],'detail': ['yz-direction trans Disp. '],
+        'type':['arrfloat'],'default':[0.1]},
+        # xz-direction transverse dispersivity for an anisotropic medium
+        'bct.13': {'comm':'xz-direction trans Disp.','cond':'IDISP==2',
+        'kw': ['DTXZ'],'detail': ['xz-direction trans Disp. '],
         'type':['arrfloat'],'default':[0.1]},
         # linear sorption
         'bct.14': {'comm':'Sorption', 'cond':'IADSRB!=0',

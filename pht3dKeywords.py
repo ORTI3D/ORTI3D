@@ -28,5 +28,5 @@ class Ph:
                 'detail':['surface option','nb solutions','nb phases','nb exchange','nb surfaces',['','No','Yes'],'Nb proc'],
                 'type':['string','int','int','int','int','choice','int'],'default':['no_edl',4,4,4,4,0,2]},
         'ph.7':{'comm':'Evapotransp','cond':'','kw':['PH_EVT(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
-        'ph.8':{'comm':'Gwet','cond':'','kw':['PH_GWET(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
+        'ph.8':{'comm':'Fixed solu','cond':'','kw':['PH_FIXC(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         }

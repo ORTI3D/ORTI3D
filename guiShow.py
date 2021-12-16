@@ -89,7 +89,7 @@ class guiShow:
     def setUserSpecies(self,dicU): self.userSpecies = dicU.copy();#print dicU
 
     def getGlist(self,group,name):
-        #print 'guish 55',group,name,self.Glist
+        #print('guish getglist',group,name,self.Glist)
         if group in self.Glist:
             if name in self.Glist[group]: return self.Glist[group][name] 
             else :
@@ -101,7 +101,7 @@ class guiShow:
     
     def setGlistParm(self,group,name,parm,value):
         #print 'guish 67', group,name,parm, value
-        self.Glist[group][name][parm]= value
+        self.Glist[group][name][parm]= value;#print('guishow setglist',group,name,self.Glist[group][name])
         
     # def resetGlist(self):
     #     """reset all Glist tags 'calc' to False"""
@@ -118,7 +118,7 @@ class guiShow:
         there are four types of action : 
           -  if a False arrives in retour just make the object unvisible. 
           - for observation go elsewhere to show the observations
-          - if plane, time has changed show the same object but for different time
+          - if plane/time has changed show the same object but for different plane/time
           - for the other case show the object
         objects : grid (true/false), vectors(true/false), map(true/false)
         variable (?), contour(group,name):True/false, types in Vtypes
@@ -154,6 +154,11 @@ class guiShow:
         #print 'guish 116', name,species,self.userSpecies
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
+            if self.arr3 is None : # EV 8/12/21
+                mess=onMessage(self.gui,'No result')
+                self.dlgShow.onTickBox(group,name,'B',False)
+                self.dicVisu[group][name]=False
+                return
             if species in list(self.userSpecies.keys()):
                 dataM = self.getUserSpecies(species,plane,layer)
             else :
@@ -168,7 +173,7 @@ class guiShow:
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
         glist = self.getGlist(Cgroup,toshow)
-        value,color = glist['value'],glist['color'];#print('guishow 143',Cgroup,Cname,value,color)
+        value,color = glist['value'],glist['color'];#print('guishow 171',Cgroup,Cname,value,color)
         if layer !=0 : self.visu.changeAxesOri(plane)
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)
@@ -204,12 +209,14 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                if vz is None: #EV 01/02/19 & 19/07/19
-                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
-                else :
-                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
-                #arr = arr[:,-1::-1,:] already done in flofile
-                #arr=arr[0] #EV 14/06/21
+                if vx is not None : #EV 8/12/21
+                    if vz is None: #EV 01/02/19 & 19/07/19
+                        arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
+                    else :
+                        arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
+                    #arr = arr[:,-1::-1,:] already done in flofile
+                    #arr=arr[0] #EV 14/06/21
+                else : return None
         if group=='Transport':
             if name=='Tracer':
                 #print 'hello',self.core.transReader
@@ -239,7 +246,7 @@ class guiShow:
             Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
         #print('guish 196',shape(arr3),self.mesh,self.core.getValueFromName('Modflow','MshType'))
         if self.core.mfUnstruct and self.core.getValueFromName('Modflow','MshType')>0: # OA 24/10/20 mfUnstruct
-            return None,None,arr3[section,:]
+            return None,None,arr3[section,:]*self.Umult # OA 7/12/21
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:
                 if modgroup[:4]=='Modf': 

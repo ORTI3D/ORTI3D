@@ -22,8 +22,8 @@ class BaseTop:
         else :
             if 'series' in categ: # 27/7/19 this line and 3 more changed forUsg transp
                 lmodels = ['Modflow','Mt3dms','Pht3d']
-            elif 'USG' in categ:
-                lmodels = ['Modflow','MfUsgTrans','Pht3d']
+            elif 'USG' in categ: #EV 8/12/21
+                lmodels = ['Modflow USG','MfUsgTrans','PHT-USG']
         if 'Observation' not in lmodels: 
             lmodels.append('Observation')
         return lmodels

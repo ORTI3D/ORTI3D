@@ -136,6 +136,8 @@ class Ui_Var(object):
     def onChoiceModel(self,evt):
         """contains the models : for modflow series : modflow, mt3d, pht3d..."""
         model = str(self.choiceM.currentText()) # OA 28/7/19 removed 4 lines for upper/lower
+        if model == 'Modflow USG' : model = 'Modflow' #EV 8/12/21
+        if model == 'PHT-USG' : model = 'Pht3d'
         self.gui.currentModel = model
         lmodules = self.core.addin.getUsedModulesList(model); #print 'topbar,l84',lmodules# to set the groups
         lmodules = self.selectGroups(model,lmodules)
@@ -335,7 +337,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 03/12/2021 ")
+        version = QLabel("       version 16/12/2021 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

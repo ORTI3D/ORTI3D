@@ -14,6 +14,10 @@ class qtValueDialog(QDialog):
     def __init__(self, parent,gui,core,modName):
         QDialog.__init__(self)
         self.parent = parent
+        g=self.parent.core.dicaddin['Model']['group']
+        if g == 'Modflow USG' : #EV 8/12/21
+            if modName == 'Modflow' : modName = 'Modflow_USG'
+            if modName == 'Pht3d' : modName = 'PHT-USG'
         self.setWindowTitle(modName+' parameters')
         self.layoutWidget = QWidget(self)
         screenShape = QDesktopWidget().screenGeometry()

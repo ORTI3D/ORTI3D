@@ -44,8 +44,11 @@ class modflowWriter:
         lgex = ['DIS','DISU','BCF6','LPF','RCH','EVT','UPW','UZF','SMS','HFB6'] # oa 22/7/20 added bcf
         lnorm = ['BAS6','SIP','PCG','SOR','DE4','NWT','GMG'] 
         #self.writeFiles() #OA 13/8/19 for loop below is new
+        lgrp=[] # EV 8/12/21
         for grp in self.core.getUsedModulesList('Modflow'):
-            if grp in ['WEL','DRN','RIV','MNWT','GHB','HFB6']: continue # in transientfile or specific (MNWT&HBF6) # EV 28/08/19
+            if grp in ['WEL','DRN','RIV','MNWT','GHB','HFB6']: # EV 8/12/21
+                lgrp.append(grp)
+                continue # in transientfile or specific (MNWT&HBF6) # EV 28/08/19
             elif grp in lnorm : 
                 self.writeOneFile(grp,{})#ts1=time.time();tf=time.time();print(grp,tf-ts1,tf-ts)
             elif grp in lgex : 
@@ -58,7 +61,8 @@ class modflowWriter:
             if self.ttable['Transient']['bas.5']: b = True
         if b or 'chd' in usgTrans.keys(): self.chd = True # var head OA 23/3/21 added usgTrans
         if self.chd : self.writeTransientFile(core,'bas.5','chd')
-        for n in ['wel','drn','riv','ghb']:
+        for n in lgrp:#['wel','drn','riv','ghb']: # EV 8/12/21
+            n=n.lower()
             if self.core.diczone['Modflow'].getNbZones(n+'.1')>0 or 'importArray' in self.core.dictype['Modflow'][n+'.1']: # modified 18/10/20
                 area = 0 # this and 3 below OA 6/6/21
                 if 'conductance' in self.core.dicaddin['Model'].keys():
@@ -413,7 +417,7 @@ class modflowWriter:
         """this method write files that have point location (wells, variable head, ghb..)
         which are transient but can be permanent for wells
         area=1 means that we consider the cell area : the conductance are given as /m2"""
-        ltyp=core.dictype['Modflow'][line]#;print('w transient ',line)
+        ltyp=core.dictype['Modflow'][line];#print('w transient 416',line)
         npts,lpts,lindx,zvar,k,larea = self.writeTransientZones1(core,line,ext)
         if area ==0 : larea = [] # OA 6/6/21
         s,sA,nA = '','',0
@@ -902,9 +906,9 @@ class modflowReader:
         grd = core.addin.getFullGrid()
         dx, dy = grd['dx'], grd['dy'];
         dxm,dym=meshgrid(dx,dy)
-        thick = self.getThickness(core,iper)[0]; # OA 6/6/21 iper send back a list
         try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
-        except IOError : return None
+        except IOError : return None, None, None #EV 8/12/21
+        thick = self.getThickness(core,iper)[0]; # OA 6/6/21 iper send back a list
         ncol,nrow,nlay,blok,part=self.getPart()
         if core.addin.getDim() in ['Xsection','Radial']:
             dxm=array(dx);thick = reshape(dym,(nlay,1,ncol));dym=1.;

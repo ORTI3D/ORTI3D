@@ -405,6 +405,7 @@ class zoneDialog(QDialog): # Dialog for zone
         self.buttonBox.accepted.connect(self.accept1)
         self.buttonBox.rejected.connect(self.reject1)
         self.gl.addWidget(self.buttonBox)
+        self.state = 'reject' #EV 8/12/21
 
     def showDialogAndDisconnect(self):
         self.show()

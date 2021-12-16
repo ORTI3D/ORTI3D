@@ -30,6 +30,7 @@ import numpy.ma as ma
 
 from .geometry import *
 from .qtDialogs import *
+from .qtShow import *
 #from mayavi.mlab import *
 
 def smoo(v):
@@ -188,7 +189,6 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.createVector(dataV)
         
     def drawObject(self,typObj,bool):
-        #print('GRID array',self.Grid[0].get_array())
         if typObj not in ['Particles','Grid']: #EV 15.2.21
             try : self.cbar.remove() #EV 26.11.20
             except : 
@@ -323,13 +323,15 @@ class qtVisualisation(FigureCanvasQTAgg):
         try : file = self.gui.map
         except : 
             onMessage(self.gui,'Please select a Map to display')
-            return
-        mat=Im.imread(file)
-        org='upper';ext=(self.xlim[0],self.xlim[1],self.ylim[0],self.ylim[1])
-        self.Map=pl.imshow(mat,origin=org,extent=ext,aspect='auto',interpolation='nearest');
-        self.cnv.images=[self.Map] #
-        self.cnv.images[0].set_visible(True)
-        self.redraw()
+            self.gui.guiShow.dlgShow.onTickBox('Model','Map','B',False)#EV 8/12/21
+            self.gui.guiShow.dicVisu['Model']['Map']=False 
+        else : #EV 8/12/21
+            mat=Im.imread(file)
+            org='upper';ext=(self.xlim[0],self.xlim[1],self.ylim[0],self.ylim[1])
+            self.Map=pl.imshow(mat,origin=org,extent=ext,aspect='auto',interpolation='nearest');
+            self.cnv.images=[self.Map] #
+            self.cnv.images[0].set_visible(True)
+            self.redraw()
         
     def drawMap(self, bool):
         if self.Map == None: self.createMap()

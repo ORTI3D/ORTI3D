@@ -157,7 +157,7 @@ class Ui_Show(object):
         #item2=self.FindWindowByName(group+'_'+name+'_L');
         #if item2 != None: name=item2.GetStringSelection()
         color = self.guiShow.getGlist(group,name)['color']
-        value = self.guiShow.getGlist(group,name)['value']
+        value = self.guiShow.getGlist(group,name)['value'];#print('qtshow on change',value, color)
         if name in list(change.keys()): # case different than contours
             try : len(color) # OA 22/11/19
             except TypeError : color = (0,0,0)
@@ -171,6 +171,9 @@ class Ui_Show(object):
                 if len(lst1)>1: value=lst1[1]
             else : return
         else: # cas contour
+            group,name0,name = self.guiShow.getCurrentContour() # OA 1/10/19
+            color = self.guiShow.getGlist(group,name)['color'] # OA 7/12/21 added
+            value = self.guiShow.getGlist(group,name)['value'];#print('qtshow on change',value, color)
             dialg = dialogContour(self.gui, "Contours",value,color)
             value = dialg.GetStrings()
 #            if value != None:
@@ -178,7 +181,7 @@ class Ui_Show(object):
 #                color=[(c[0].Red(),c[0].Green(),c[0].Blue()),(c[1].Red(),c[1].Green(),c[1].Blue()),
 #                     (c[2].Red(),c[2].Green(),c[2].Blue()),int(c[3])];#print 'in change',color
 #            else : return
-        if name == 'Species': Cgroup,Cname,name = self.guiShow.getCurrentContour() # OA 1/10/19
+        #print('qtshow on change end dlg',value, color) #ok works
         self.guiShow.setGlistParm(group,name,'value',value)
         self.guiShow.setGlistParm(group,name,'color',color)
         #self.onTickBox(group,name,tag,True)

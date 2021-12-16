@@ -1622,3 +1622,24 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - valueDialog.py l.29 added USG parameter to blind 
 - valueDialog.py getGroup l.87-96 add to get only module/group with parameters (and remove those with only spatial attributes) 
 - ValueDialog.py OnSetNewVal l.128 add "if values" condition to avoid error message when clicked apply without activated the second QcomboBox of parameter dialog
+
+5/12/21 OA
+- pht3dKeywords replaced the signification f ph.8 it is a fixed solution number at one place (possible in the pcb)
+- addin totally modified simplified update1 (and added a comment, the objective was not clear) only used for chemistry
+
+7/12/21 OA
+- guishow getArray2d l.242 added self.Umult for unit change
+- qtshow on change 174-176 added to find the species currently on contour (to change dlg)
+
+8/12/21 EV
+- addin.py initAddin l.56 remove CRCH modflowUSG module to be consistant with modflow
+- guishow.py onClick2 l.157-161 add message when result model are not available
+- guishow.py getArray3D l.212 condition added to add message when not result model available
+- modflowwriter.py writeModflowFiles l.47, 49-51, 64-65 added "lgrp" list to avoid that wel, drn, riv... files are writtent when module uncheck but zones present in orti file
+- modflowwriter.py readFloFile l.910 added to return None when result model are not available
+- mtUSGKeywords.py l.85-108 added longitudinal and transverse dispersivity for anisotropic medium
+- qtDialogs zoneDialog l.408 added to avoid message error when zone dialog is close with the cross
+- qtTopBar onChoiceModel l.139-140 added to get in topBar modflow usg and pht-usg words when usg model is used
+- qtValueDialog.py init l.18-20 added to get in parameters dialog modflow usg and pht-usg words when usg model is used
+- qtVisualisation creaateMap l.326-327, 328 added to unckeck map box when map is not display
+- topBar l.26 added to get in topBar modflow usg and pht-usg words when usg model is used
