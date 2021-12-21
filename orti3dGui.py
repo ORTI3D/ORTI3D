@@ -73,6 +73,14 @@ class orti3dGui(QMainWindow):
         f = traceback.format_tb(trace_b, limit=10) # OA modif 1/10
         onMessage(self,'\n'.join(f[-10:])+'\n'+str(value))
         
+    def onInitGui(self,core):
+        self.on3D(core.addin.getDim()=='3D')
+        self.onSetMediaNb(getNmedia(core),getNlayers(core))
+        self.onRCT(False)
+        self.guiShow.init()
+        self.guiShow.openModel()
+        self.core.addin.resetAddin()
+
     def on3D(self,bool):
         boutonVisible(self,'Ad_3D',bool) #EV 05/08/19
         self.varBox.choice3D.setEnabled(bool) #EV 05/08/19
@@ -96,6 +104,8 @@ class orti3dGui(QMainWindow):
         if check == 2 : check = False
         else : check = True
         boutonVisible(self,'Fl_Write',check) 
+        
+    def onMessage(self,text): onMessage(self,text)  # OA 18/12/21
 
     ####################################################
     #                   make menus
@@ -290,6 +300,7 @@ class orti3dGui(QMainWindow):
         self.guiShow = self.dlgShow.guiShow
         self.showSizer.addWidget(qws)
         self.guiShow.dlgShow.onTickBox('Model','Grid','B',True) #EV 15/01/21
+        self.guiShow.dlgShow.setLine('Chemistry_Units_L',1) #EV 16/12/21
         
     ######################## actions ############################
     def actions(self,action):

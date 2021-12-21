@@ -268,7 +268,7 @@ class guiShow:
         or """
         if self.data == None or x==None or y==None: #OA 24/10/20 removed mesh
             return ' '
-        if self.core.mfUnstruct:
+        if self.core.mfUnstruct and self.core.getValueFromName('Modflow','MshType')>0:
             c = self.core.addin.mesh.elcenters
             xc,yc = c[:,0],c[:,1]
             d = sqrt((x-xc)**2+(y-yc)**2);

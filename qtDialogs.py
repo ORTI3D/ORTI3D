@@ -507,8 +507,8 @@ class zoneDialog(QDialog): # Dialog for zone
     def corrCoords(self,lcooI):
         '''change coordinates if they are out of the domain'''
         g = self.core.dicaddin['Grid']
-        ex = (float(g['x1'])-float(g['x0']))/1e5
-        ey = (float(g['y1'])-float(g['y0']))/1e5
+        ex = (float(g['x1'])-float(g['x0']))/1e6 # OA 19/12/21
+        ey = (float(g['y1'])-float(g['y0']))/1e6
         lcoord = [];#onMessage(self.gui,str(lcooI))
         for b in lcooI:
             try : x = clip(float(b[0]),float(g['x0'])+ex,float(g['x1'])-ex)

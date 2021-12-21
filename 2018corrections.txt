@@ -1643,3 +1643,38 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - qtValueDialog.py init l.18-20 added to get in parameters dialog modflow usg and pht-usg words when usg model is used
 - qtVisualisation creaateMap l.326-327, 328 added to unckeck map box when map is not display
 - topBar l.26 added to get in topBar modflow usg and pht-usg words when usg model is used
+
+16/12/21 EV
+- qtShow.py setLine l.112-114 function added to set the line of a comboBox in result panel
+- orti3dGui.py makePanelShow l.293 added to set unit to mmol/L
+- parameters.py l.92-93, 99 lines commented and line added to update result when the medel is run and result box checked 
+- qtTopBar.py l.145-147 added to update the qcombobox when the first qcombobox (model type) is changed
+- topBar.py l.55-56 function added call setUnvisibleZones() function un qtTopBar.py
+- qtVisualisation setUnvisibleZones l.646 added to draw the effect of the function when it s called
+
+16/12/21  OA
+-geometry added iper=iper to consider the transient vairation of chemistry l.343,348,351
+
+18/12 OA
+- guishow getpointValue l.271 added cond on type of mesh to get correct z
+- ortiGui l.100 added onMessage (refer to the qtDialogs onMessage)
+- mtUsgWriter writeMtphtFiles l.35-45 all rewritten fro recharge zones in pht 
+- core writeModel l.280 added info=
+
+19/12/21 OA
+- qtvisualisation/setZone end  l.611 662 reset the test of closed polygon, then set same point for 1st and last one
+- geometry modified isclosed, there is no distance limit : a poly is closed if 1st and last pt in same cell
+- qtDialogs zoneDialog corrCoords l.510 /1e5 -> 1e6 for large sites
+- mtphtWriter correctBtn l.152 changed to !=-1 (remaining pb of initial or bc conc in mt3dms)
+- mtphtwriter l.514 in writessm as above
+- mtphtwriter l.171-173 added exception for btn.12 (never write the -1 will be in ssm)
+
+20/12/21 OA
+- core openModel l.193 added to init the gui
+- orti3dGui added onInitGui(core)
+
+21/12/21  OA
+- addin added resetAddin to remove mesh, grd
+- orti3dGui in initGui added teh resetAddin above
+- qtVisualization polygoninteractor _init_ l.958 changed Qt to QtCore.Qt
+

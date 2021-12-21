@@ -108,6 +108,10 @@ class Ui_Show(object):
         combo = self.Show.findChild(QComboBox,nameBox) 
         combo.clear() # danger if set it is not possible to add items
         combo.addItems([str(n) for n in names])
+        
+    def setLine(self,nameBox,line): #EV 16/12/21
+        combo = self.Show.findChild(QComboBox,nameBox) 
+        combo.setCurrentIndex(line)
 
     def uncheckContours(self,group,name,bool):
         """used to uncheck the other contours when group is changed"""

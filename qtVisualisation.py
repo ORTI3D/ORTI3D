@@ -414,7 +414,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             if r==1: 
                 X=concatenate([X,X]);Y=concatenate([Y-Y*.45,Y+Y*.45]);Z=concatenate([Z,Z])
         #Z2=ma.masked_where(Z.copy()>1e5,Z.copy());#print value,n,V
-        Z[Z>1e5]=0 ; Z2= Z;#np.nan_to_num(Z,nan=0) #EV 07/04/21
+        Z[Z>1e7]=0 ; Z2= Z;#np.nan_to_num(Z,nan=0) #EV 07/04/21
         # definir les couleurs des contours
         if col==None or type(col)<type(5): # or (col==[(0,0,0),(0,0,0),(0,0,0),10]):
             cmap = mpl.cm.jet
@@ -439,7 +439,6 @@ class qtVisualisation(FigureCanvasQTAgg):
             #print 'qtVi 385',shape(Z2),shape(V),shape(self.Triangles.x)
             cf = pl.tricontourf(self.Triangles,Z2,levels=V, cmap=cmap)
             c = pl.tricontour(self.Triangles,Z2,levels=V, cmap=cmap)            
-        #print col[3]
         for c0 in cf.collections:
             c0.set_alpha(int(col[3])/100.);#print cl
         if value==None: fmt = '%1.3f' 
@@ -642,6 +641,7 @@ class qtVisualisation(FigureCanvasQTAgg):
                 if type(txt)==type([5,6]):
                     for t in txt : t.set_visible(False)
                 else : txt.set_visible(False)
+        self.redraw() #EV 16/12/21
 
     # method called by the GUI to create a new zone
     def setZoneReady(self,typeZone, curVar):
@@ -658,9 +658,9 @@ class qtVisualisation(FigureCanvasQTAgg):
     def setZoneEnd(self,evt):
         # the GUI is informed about end of drawing
         xv, yv = self.getcurZone().get_xdata(),self.getcurZone().get_ydata()
-        #dx,dy = (amax(xv)-amin(xv))/25, (amax(yv)-amin(yv))/25 # closing the poly if needed
-        #if (abs(xv[0]-xv[1])<dx) & (abs(yv[0]-yv[1])<dy): 
-        #    xv[-1], yv[-1] = xv[0], yv[0]
+        # precisely closing the poly if needed
+        if isclosed(self.core,xv,yv): 
+            xv[-1], yv[-1] = xv[0], yv[0]
         if len(self.tempZoneVal)>1: xy = list(zip(xv,yv,self.tempZoneVal))
         else : xy = list(zip(xv,yv))
         # remove zone if cancel, reorder
@@ -889,7 +889,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         #if evt.button==3: self.finMoveZone(evt) # removed OA 6/2/13
         d=sqrt((evt.xdata-self.xstart)**2+(evt.ydata-self.ystart)**2)
         xmn,xmx=self.xlim;ymn,ymx=self.ylim
-        dmax=sqrt((xmx-xmn)**2+(ymx-ymn)**2)/100;
+        dmax=sqrt((xmx-xmn)**2+(ymx-ymn)**2)/1000;
         if d>dmax: return
         self.m2 = self.mpl_connect('motion_notify_event', self.zone_motion)
         self.m3 = self.mpl_connect('button_release_event', self.finMoveZone)
@@ -956,7 +956,7 @@ class PolygonInteractor:
         
         cid = self.poly.add_callback(self.poly_changed)
         self._ind = None # the active vert
-        self.canvas.setFocusPolicy( Qt.ClickFocus) # OA added for Qt to focus on keyboard 19/11/19
+        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus) # OA added for Qt to focus on keyboard 19/11/19
         self.canvas.setFocus()
 
         self.c1 = self.canvas.mpl_connect('button_press_event', self.button_press_callback)

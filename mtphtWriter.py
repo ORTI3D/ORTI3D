@@ -72,8 +72,8 @@ class mtphtWriter:
         """to write all modflow file.
         reads the keyword file and prints all keywords by types : param (0D)
         vector (1D) array (2D). types are found by (dim1,dim2).."""
-        lexceptions=['adv.1','dsp.1','dsp.3','dsp.4','dsp.5','btn.7','btn.8','btn.21','btn.22',
-                'rct.1']
+        lexceptions=['adv.1','dsp.1','dsp.3','dsp.4','dsp.5','btn.7','btn.8',
+            'btn.12','btn.21','btn.22','rct.1']
         lexceptions.extend(['uzt.'+str(a) for a in range(2,11)])
         for grp in self.core.getUsedModulesList('Mt3dms'):
             if grp == 'RCT' and self.rct==0: continue
@@ -146,10 +146,10 @@ class mtphtWriter:
     def correctBtn(self): # OA added 15/4/20
         '''this take conc to be written in btn only if there is a -1 in btn.12
         (or in modflow bas.3 not sure)'''
-        arr = self.core.getValueLong('Mt3dms','btn.13',0)
         mtbc = self.core.getValueLong('Mt3dms','btn.12',0)
+        arr = self.core.getValueLong('Mt3dms','btn.13',0)
         #mfbc = self.core.getValueLong('Modflow','bas.3',0)
-        return arr*(mtbc==-1) #+(mfbc==-1))
+        return arr*(mtbc!=-1) #+(mfbc==-1)) # OA 19/12/21 OA changed to !=
         
     def writeExceptions(self,line,kwlist,ktyp,f1,opt):
         """to write some things mt3d wants in a specific format"""
@@ -168,6 +168,11 @@ class mtphtWriter:
                 end = self.core.getValueFromName('Modflow','BOTM')
                 f1.write('      0     '+str(front-end)+'\n')
 
+        if line =='btn.12':
+            arr = self.core.getValueLong('Mt3dms',line,0)
+            s = self.formatBlockMt3d(abs(arr),line) # don't write -1
+            f1.write(s)
+            
         if line=='btn.21': # periods characteristics 4 values per period
             lval = self.core.dicval['Mt3dms']['btn.21'] # contains period sze, end time, 3 things to print
             lval2 = self.core.dicval['Mt3dms']['btn.22']
@@ -511,7 +516,7 @@ class mtphtWriter:
                     if GHB[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 5 #added OA 6/5/19
                 #print iz,i,typ,ilay[i],irow[i],icol[i],BC[ilay[i],irow[i],icol[i]],wells[ilay[i],irow[i],icol[i]]
                 if opt=='Pht3d' and typ[iz]==-1: continue
-                if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]==-1: continue
+                if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]!=-1: continue
                 s= str(ilay[i]+1).rjust(9)+' '+str(ir2[i]+1).rjust(9)+' '+str(icol[i]+1).rjust(9)
                 lpts[iz].append(s)
             #print mxpts,self.nper

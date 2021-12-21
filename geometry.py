@@ -632,17 +632,25 @@ def zone2index(core,x,y,z,opt=None):
 
 def minDiff(x,xvect):
     d=x-xvect; d1=d[d>0.]; #print('d',d)
-    if len(d1)==0: return 0
-    else :
+    if len(d1)==0: 
+        return 0
+    else : 
         a=where(d==amin(d1));return int(a[0])
         
-def isclosed(core,x,y):
-    nx,ny,xv,yv=getXYvects(core) #print('x0',x[0],'y0',y[0])
-    ix,iy = minDiff(x[0],xv),minDiff(y[0],yv)
-    dmin=min(xv[ix+1]-xv[ix],yv[iy+1]-yv[iy]) # modified 22/3/2017 for variable grid
-    d0=sqrt((x[0]-x[-1])**2+(y[0]-y[-1])**2);
-    if d0<dmin: return True
-    else : return False     
+def isclosed(core,x,y): # OA all modified 19/12/21
+    '''a poly is closed if the 1s and last pt are in the same cell'''
+    mesh = core.addin.mesh
+    if mesh == None: # mstType rect
+        nx,ny,xv,yv=getXYvects(core) #print('x0',x[0],'y0',y[0])
+        ix0,iy0,ix1,iy1 = minDiff(x[0],xv),minDiff(y[0],yv),minDiff(x[-1],xv),minDiff(y[-1],yv)
+        return (ix0==ix1 and iy0==iy1)
+    else : 
+        xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
+        dst = sqrt((x[0]-xc)**2+(y[0]-yc)**2)
+        ic0 = where(amin(dst)==dst)
+        dst = sqrt((x[-1]-xc)**2+(y[-1]-yc)**2)
+        ic1 = where(amin(dst)==dst)
+        return (ic0==ic1)
     
 ##########################   GMESH    ########################
 ##########################################################

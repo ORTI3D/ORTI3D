@@ -50,7 +50,10 @@ class BaseTop:
         to be modified to consider qgis'''
         line = self.gui.currentLine
         media = self.gui.currentMedia
-        self.visu.showVar(line, media)        
+        self.visu.showVar(line, media)   
+        
+    def clearVisu(self): #EV 16/12/21
+        self.visu.setUnvisibleZones()
         
     def onImportZones(self):
         fdialg = myFileDialog()

@@ -190,6 +190,7 @@ class Core:
             elif typ=='addin': self.addin.update1(dict1)
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
+        if self.gui!=None: self.gui.onInitGui(self)
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         self.flgMesh = 0 #18/12/20                      
@@ -277,7 +278,7 @@ class Core:
                 parmk = self.addin.pht3d.calcNbParm()
             else : 
                 dicSpec ={'mcomp':1,'ncomp':1,'gcomp':1,'kim':[]}
-            self.mtWriter.writeMtphtFiles(dicSpec,modName,parmk)
+            info = self.mtWriter.writeMtphtFiles(dicSpec,modName,parmk) # OA 18/12/21 adde info
         if modName[:5]  == 'Min3p':
             self.m3pWriter = min3pWriter(self,self.fileDir,self.fileName)
             self.m3pWriter.writeMin3pFiles(self,modName[5:])

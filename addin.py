@@ -132,6 +132,9 @@ class addin:
         self.fit = instant(self.gui,self.core)
         self.particle = {}
         
+    def resetAddin(self):
+        self.grd,self.mesh = None,None
+        
     def addSolver(self,lmodules,val): # OA adde 10/3/19 to select one solver, at least pcg
         a = False
         for i in range(len(val)): 

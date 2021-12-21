@@ -28,11 +28,22 @@ class mtUsgWriter:
         self.per = tlist[1:]-tlist[:-1]
         self.nper = len(self.per)#;print('writempht l.26',self.nper)
         self.usgTrans['nam'] = self.writeNamString(opt)
-        rc1 = self.core.getValueLong('MfUsgTrans','crch.1',0) # OA 28/10/20
-        rc2 = self.core.getValueLong('Pht3d','ph.5',0)
+        #rc2 = self.core.getValueLong('Pht3d','ph.5',0) #OA 18/12/21 removed
         dicz = self.core.diczone  # added OA 11/5/21
-        if (amax(rc1)>0) or (amax(rc2)>0 or 'ph.5' in self.ttable.keys()): 
-            self.usgTrans['rch'] = self.writeRchString(opt);print('rch written')
+        # if recharge is present in flow
+        lmod,val = self.core.dicaddin['UsedM_Modflow']; # ll the recharge changed OA 18/12/21
+        print('opt',opt)
+        if 1*val[lmod.index('RCH')]>0: # there is recharge in modflow(can be true or 1)
+            if opt=='Pht3d':
+                if 'ph.5' in self.ttable.keys():
+                    self.usgTrans['rch'] = self.writeRchString(opt);print('rch written')
+                else :
+                    self.core.gui.onMessage('Missing zone for pht recharge')
+                    return 'Writing stopped'
+            else:
+                rc1 = self.core.getValueLong('MfUsgTrans','crch.1',0) # OA 28/10/20
+                if amax(rc1)>0: 
+                    self.usgTrans['rch'] = self.writeRchString(opt);print('rch written')
         #if 'cwell.1' in dicz['MfUsgTrans'].dic.keys(): #EV 30/06/21
             #self.usgTrans['wel'] = self.writeWelValues(opt)            
         if opt=='Pht3d': # OA 11/5/21
@@ -50,7 +61,7 @@ class mtUsgWriter:
 #            if self.mgroup == 'Modflow USG_rect': self.writePcbRectFile(opt)
 #            else :
             self.writePcbFile(opt);print('pcb written')
-        return 
+        return True
         
     def writeNamString(self,opt):
         s='BCT  41 '+self.fName+'.bct\n'

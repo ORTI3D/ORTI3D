@@ -89,11 +89,12 @@ class BaseParms:
         listSpec = self.core.addin.chem.getListSpecies() # just the names
         self.gui.guiShow.init() # OA 22/8/19 added
         self.gui.guiShow.setChemSpecies(listSpec)
-        self.gui.guiShow.resetDicContour() # the show panel nows that everything has to be reread # OA modifs 1/10/19
-        self.gui.guiShow.setNames('Model_Tstep_L',tl2)
+        #self.gui.guiShow.resetDicContour() # the show panel nows that everything has to be reread # OA modifs 1/10/19
+        #self.gui.guiShow.setNames('Model_Tstep_L',tl2) #EV 16/12/21
         return messg
         
     def runModel(self,modName):
         message = self.core.runModel(modName);#print message
         self.dialogs.onMessage(self.gui,message)
+        self.gui.guiShow.redraw() #EV 16/12/21
         #if modName == 'Pht3d': self.core.usePostfix() #OA 3/10/19 removed, usePostFix does not exist anymore?
