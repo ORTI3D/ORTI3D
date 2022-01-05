@@ -142,7 +142,7 @@ class PHT3D:
         the values already entered in the dictionnaries"""
         if kw not in list(old.keys()):
             old[kw]=None; return dic
-        lrows=list(self.tempDbase[dbkw].keys());lrows.sort();lrows2=[]
+        lrows=list(self.tempDbase[dbkw].keys());lrows2=[] #lrows.sort() EV 04/01/22 from JG
         if lexclude!=None:
             for r in lrows:
                 if r not in lexclude: lrows2.append(r)

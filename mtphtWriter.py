@@ -40,7 +40,7 @@ class mtphtWriter:
             self.writePhFile(self.core,listEsp,parmk)
             self.writePhreeqc(self.core,listEsp);
         self.writeSsmFile(self.core,opt)
-        return 
+        return True #EV 04/01/22
         
     def writeNamFile(self,opt):
         f1=open(self.fDir+os.sep+opt +'.nam','w');#print 'mtpw l41',opt
