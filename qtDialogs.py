@@ -201,7 +201,7 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
             self.layouts[n]= lay
             lay.setContentsMargins(0,0,0,0);lay.setSpacing(0)
             self.dwidget[n] = [0]*nbChk
-            if opt=='sort': dicIn[n] = self.sortList1(dicIn[n]) # OA modif 3/4
+            #if opt=='sort': dicIn[n] = self.sortList1(dicIn[n]) # OA modif 3/4 # EV 10/1/22
             for i in range(nbChk):
                 ic = mod(i,1);il = i/1
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch

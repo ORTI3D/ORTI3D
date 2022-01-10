@@ -1682,3 +1682,5 @@ addin/doaction l.342 added 'else' to avoid error message when database missing
 - mtphWriter writeMtphtFilesl.43 added True to send message "file writen" for pht3d model
 - Pht3d.py updateDict l.145 modification proposed by Janek to not sort the species, better for parallel pht3d using kinetics 
 
+10/1/22 EV
+- qtDialogs myNoteBookCheck l.204 line commented to not sort the species as proposed by janek
