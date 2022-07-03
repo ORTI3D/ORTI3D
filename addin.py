@@ -6,7 +6,6 @@ from .modflowUsg import *
 from .geometry import *
 #from matplotlib import pylab # for having grafs in batch
 from .Pest import *
-from .Opgeo import *
 from .instantFit import *
 from .modflowWriter import *
 from .multiPlot import * # oa 28/11/18
@@ -40,7 +39,6 @@ class addin:
         self.pht3d = PHT3D(self.core)
         self.min3p = Min3p(self.core)
         self.mfU = modflowUsg(self.core)
-        self.opgeo = Opgeo(self.core)
         self.pest = Pest(self.core)
         # creating usedModules addin
         self.lastBatch = ''
@@ -147,7 +145,8 @@ class addin:
         bool = self.core.mfUnstruct;#print('in mfuns',bool,lmodules)
         val[lmodules.index('DIS')] = not bool
         val[lmodules.index('PCG')] = not bool
-        val[lmodules.index('DISU')] = bool
+        if self.core.dicaddin['Model']['group'] == 'Modflow USG': # OA 3/7/22
+            val[lmodules.index('DISU')] = bool
         val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         

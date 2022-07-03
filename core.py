@@ -436,8 +436,10 @@ class Core:
         f1.close()
         return a[-line]
     
-    def runZonebud(self): # EV 04/03/20
-        s=self.baseDir+os.sep+'bin'+os.sep+'zonbud.exe'
+    def runZonebud(self,modName): # EV 04/03/20
+        s = self.baseDir+os.sep+'bin'+os.sep
+        if 'USG' in modName: s += 'zonbudusg.exe'
+        else : s += 'zonbud.exe'
         myinput = open(self.fileDir+os.sep+'zonbud.in')
         os.chdir(self.fileDir)
         p = Popen(s,stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()

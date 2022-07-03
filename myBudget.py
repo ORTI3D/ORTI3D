@@ -26,6 +26,7 @@ class myBudget(QDialog):
     def __init__(self,gui,core,typ,res):
         self.gui,self.core= gui,core
         self.typ,self.res= typ,res
+        self.modName = self.core.dicaddin['Model']['group']  # 12/2/22
         QDialog.__init__(self,gui) 
         self.setModal(False)
         self.setWindowTitle('Plot of results')
@@ -334,7 +335,7 @@ class myBudget(QDialog):
             if self.res == 'Flow':
                 self.writeZoneFile(self.inlist,self.outlist,self.zone)
                 self.writeInFile()
-                self.core.runZonebud()
+                self.core.runZonebud(self.modName) #12/2/22
                 self.xy=self.readZBfile(self.graph,self.zone,self.inlist,
                               self.outlist)
             else : 
@@ -436,25 +437,32 @@ class myBudget(QDialog):
         nmedia = getNmedia(self.core)
         nlayers = getNlayers(self.core)
         lilay = getNlayersPerMedia(self.core)
+        mesh = self.core.addin.mesh
         self.fullPath = self.core.fileDir+os.sep+self.core.fileName
-        f1=open(self.fullPath +'.zone','w')
-        f1.write(' %0i %1i %1i ' %(nlayers, ny, nx) +'\n')
-        inout=sort(inlist+outlist)
-        zname=self.lzname #self.core.diczone['Observation'].dic['obs.1']['name']
-        zlist=[zone]
+        f1 = open(self.fullPath +'.zone','w')
+        inout = sort(inlist+outlist)
+        zname = self.lzname #self.core.diczone['Observation'].dic['obs.1']['name']
+        zlist = [zone]
         for i in range(len(zname)):
             if zname[i] in inout:zlist.append(zname[i])
         #print('z',zlist)
-        m0 = ones((nlayers,ny,nx)) ; lay=0
-        if self.typ != 'M':
-            for im in range(nmedia):
-                mat=zone2grid(self.core,'Observation','obs.1',im,opt=zlist,iper=0)
-                for il in range(int(lilay[im])): ## several layers can exist in each media
-                    m0[lay]=mat[-1::-1]
-                    lay +=1
-        for mlay in m0:
-            f1.write('INTERNAL ('+str(nx)+'I5)\n')
-            np.savetxt(f1, mlay, fmt='%4i')
+        m0 = block(self.core,'Observation','obs.1',intp=False,opt=zlist)
+        m0 = m0.astype('int');s,s0 ='', '';
+        if 'USG' in self.modName : 
+            f1.write(' %i \n' %mesh.ncell)
+            f1.write('INTERNAL 1 (free) -1 \n')
+            nlay,nn = shape(m0)
+            for il in range(nlay):
+                s += s0+' '.join([str(a) for a in m0[il]])+'\n'
+        else : 
+            nlay,ny,nx = shape(m0)
+            s0 = 'INTERNAL ('+str(nx)+'I3) \n'
+            f1.write(' %0i %1i %1i \n' %(nlayers, ny, nx))
+            for il in range(nlay):
+                s += s0
+                for irow in range(ny):
+                    s += ' '.join(['%3i'%a for a in m0[il,irow]])+'\n'
+        f1.write(s)
         f1.close()
     
     def writeInFile(self):
@@ -597,28 +605,6 @@ class myBudget(QDialog):
                 else :  xy2['ylab']='Volume ('+ulength+'\u00b3)'
                 return xy2
         return xy
-        '''
-        if graph == 'Time Step':
-            ind,lab=self.getIndLab(td,inlist,outlist,zone)
-            xy={'lab':[],'yin':[],'yout':[]};i=0
-            t=self.Tstep.currentText()
-            for row in td['data']:
-                if row[td['title'].index('ZONE')]==str(idz+1):
-                    
-                    if float(row[td['title'].index('TOTIM')])==float(t):
-                        for key, value in ind.items(): 
-                            if value[0]:
-                                xy['yin'].append(float(row[int(value[0])]))
-                            else : xy['yin'].append(np.nan)
-                            if value[1]:
-                                xy['yout'].append(float(row[int(value[1])]))
-                            else: xy['yout'].append(np.nan)
-                            if str(list(lab.keys())[i]).isdigit():
-                                xy['lab'].append(zname[list(lab.keys())[i]-1])
-                            else:xy['lab'].append(list(lab.keys())[i])
-                            i+=1
-            xy['ylab']='Rates ('+ulength+'$^{3}$/'+utime+')'
-            #print ('TStep',xy)'''
     
     def getIndLab(self,td,inlist,outlist,zone):
         ''' Return the label and column index for each user selected zone 

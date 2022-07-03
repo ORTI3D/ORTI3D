@@ -7,7 +7,7 @@ import numpy as np
 """all geometrical operations are performed here
 all coordinates are in real world ones. so matrices have index 0 for rows
 at x=0. As modflow work the other way round, the transformation are done
-by the modflow writer"""
+by the modflow writer aaa"""
 
 def arr2string1(arr):
     '''only for coordinates'''
@@ -302,15 +302,19 @@ def getMesh3Dcenters(core):
     
 def block(core,modName,line,intp=False,opt=None,iper=0):
     #print("block",core.addin.mesh)
-    if core.addin.mesh == None: # OA 29/2/20 added mstType rect
+    if core.addin.mesh == None : # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
+    elif core.getValueFromName('Modflow','MshType')==0:
+        m = blockRegular(core,modName,line,intp,opt,iper)
+        (l,r,c) = shape(m)
+        return reshape(m[:,::-1,:],(l,r*c)) # OA 22/2/22
     else : #mfUnstruct or modName[:5]=='Opgeo':
         return blockUnstruct(core,modName,line,intp,opt,iper)
     
 def block1(core,modName,line,intp=False,opt=None,nvar=2):
     #a special block for n variables (2 for drn,ghb or chd, 3 for riv)
     iper=0
-    if core.addin.mesh == None: # OA 29/2/20 added mstType rect
+    if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')==0: # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
         blk = ones(nvar,(getNlayers(core),core.addin.mesh.getNumber('elements')))
@@ -437,6 +441,7 @@ def blockRegular(core,modName,line,intp,opt,iper):
     nlayers = getNlayers(core)
     lilay = getNlayersPerMedia(core)
     g = core.addin.getFullGrid()
+    if type(intp)==bool: intp =[3] # OA 12/1/21
     if type(intp)==type(0): intp=[intp] #OA 16/02/20 # EV 05/05/20
     if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
     #### interpolation and array option for 2D and 3D model #EV 07/02/20
@@ -528,7 +533,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
                 if line in ['drn.1','riv.1','ghb.1']: #EV 26/11/20
                     zv0=float(core.ttable[line][iper,i].split()[opt])
                 else : zv0=float(core.ttable[line][iper,i])
-        if line != 'obs.1' and opt=='zon': zv0=i+1 # OA added 8/5/19 #EV 26/02/20
+        if line!='obs.1' and opt=='zon': zv0=i+1 # OA removed  10/2/22
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
         if len(xy)==1:  # case point
@@ -640,7 +645,7 @@ def minDiff(x,xvect):
 def isclosed(core,x,y): # OA all modified 19/12/21
     '''a poly is closed if the 1s and last pt are in the same cell'''
     mesh = core.addin.mesh
-    if mesh == None: # mstType rect
+    if mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 12/1/21
         nx,ny,xv,yv=getXYvects(core) #print('x0',x[0],'y0',y[0])
         ix0,iy0,ix1,iy1 = minDiff(x[0],xv),minDiff(y[0],yv),minDiff(x[-1],xv),minDiff(y[-1],yv)
         return (ix0==ix1 and iy0==iy1)
@@ -650,8 +655,46 @@ def isclosed(core,x,y): # OA all modified 19/12/21
         ic0 = where(amin(dst)==dst)
         dst = sqrt((x[-1]-xc)**2+(y[-1]-yc)**2)
         ic1 = where(amin(dst)==dst)
-        return (ic0==ic1)
+        b = (ic0==ic1)
+        return b
     
+def facesZone1toZone2(self,zn0,zn1):
+    '''
+    this function takes two zones which must be in observation and finds
+    the faces that are shardeby the two zones
+    the output is a list composed of lists of three values : the cell nb in
+    zone0, the corresponding cell in zone2 and the index of the connected face
+    in cell1 of zone0
+    '''
+    dicz=md.diczone['Observation'].dic['obs.1']
+    iz0,iz1 = dicz['name'].index(zn0),dicz['name'].index(zn1)
+    indx0 = zmesh(md,dicz,0,iz0)[0][0]
+    indx1 = zmesh(md,dicz,0,iz1)[0][0]
+    # find connexion between 0 and 1
+    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
+    for ic0 in indx0:
+        for ic1 in mesh.cneighb[ic0]:
+            if ic1 in indx1:
+                connect.append([ic0,ic1,where(mesh.cneighb[ic0]==ic1)[0][0]]) 
+    return connect
+    
+def facesZoneLimit(self,zn):
+    '''
+    this function takes one zone which must be in observation and finds
+    the faces that are at the zone boundary
+    the output is a list composed of lists of two values : the cell nb in
+    zone and the index at boundary in celli of zone
+    '''
+    dicz=md.diczone['Observation'].dic['obs.1']
+    iz = dicz['name'].index(zn)
+    indx = zmesh(md,dicz,0,iz)[0][0]
+    # find connexion between 0 and 1
+    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
+    for ic0 in indx:
+        for ic1 in mesh.cneighb[ic0]:
+            if ic1 not in indx:
+                connect.append([ic0,ic1,where(mesh.cneighb[ic0]==ic1)[0][0]]) 
+    return connect
 ##########################   GMESH    ########################
 ##########################################################
 

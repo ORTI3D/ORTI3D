@@ -113,7 +113,7 @@ class mtphtWriter:
         s = ''
         #print 'mt113',opt,line
         if (opt=='Pht3d') and (line in ['btn.13','rct.2c']):
-            self.Conc, self.Names = self.getConcInit('main','ph.3',iper=0);#print self.Conc
+            self.Conc, self.Names = self.getConcInit('main',line,iper=0);#print self.Conc
             nspec = len(self.Names)
             for i in range(nspec):
                 s += self.formatBlockMt3d(self.Conc[i],self.Names[i])
@@ -274,7 +274,8 @@ class mtphtWriter:
         listC=[];names=[] # this will be the list of conc arrays and names of species
         dictE = self.core.addin.pht3d.getDictSpecies()
         Chem = self.core.addin.pht3d.Base['Chemistry']
-        pht = self.core.getValueLong('Pht3d',line,0)
+        if line=='btn.13': pht = self.core.getValueLong('Pht3d','ph.3',0) #OA 3/7/22
+        elif line=='rct.2c': pht = self.core.getValueLong('Mt3dms',line,0)*1000 #OA 3/7/22
         dim = self.core.addin.getDim()
         grd = self.core.addin.getFullGrid()
         dx,ny = array(grd['dx']),int(grd['ny'])
@@ -328,14 +329,6 @@ class mtphtWriter:
                     ncol=len(data[0])
                     names.append(e)
                     inde=rows.index(e) # finds the index of the species e
-                    #if inital chemistry is specified 
-                    #if str(e) == str(initChem['name']): # EV 05/02/19
-                        #txt= initChem['formula']
-                        #txt1=txt.replace('core','self.core')
-                        #value=core.formExec(txt1)
-                        #exec(txt1)
-                        #listC.append(value)
-                        #continue
                     # set background value
                     rcol=list(range(2,ncol)) # the range of columns to be read
                     if longn[i] in ['Phases','Gases']: 
@@ -353,10 +346,10 @@ class mtphtWriter:
                         for l in range(ny): 
                             m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
                     if dim =='Radial' and longn[i]=='Surface':
-                        scol=chm['cols'].index('Specif_area')
-                        if data[inde][scol+2]=='':
-                            for l in range(ny): 
-                                m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
+                        #scol=chm['cols'].index('Specif_area') # comment 3/7/22
+                        #if data[inde][scol+2]=='': # comment 3/7/22
+                        for l in range(ny): 
+                            m0[l] = m0[l]*(cumsum(dx)-dx/2.)*6.28
                     listC.append(m0)
         return listC,names
         
@@ -437,30 +430,20 @@ class mtphtWriter:
     #************************ file for transient data *************************************
     def writeSsmFile(self,core,opt):
         f1=open(self.fDir+os.sep+opt+'.ssm','w')
-        nx,ny,xvect,yvect = getXYvects(core)
+        nx,ny,xvect,yvect = getXYvects(core);nlay=getNlayers(core)
         BC = core.getValueLong('Modflow','bas.3',0);
         BCmt = core.getValueLong('Mt3dms','btn.12',0)
-        wells = sign(abs(core.getValueLong('Modflow','wel.1',0)));
         SSMspec = core.getValueLong('Mt3dms','ssms.1',0) # specific conditions given in ssm
         # for ghb,riv and drn l 423 to 436 added OA 6/5/19
-        GHB, DRN, RIV = BC*0,BC*0,BC*0
+        dicSSM = {};lSSM = ['wel.1','drn.1','riv.1','ghb.1']
         dicz = self.core.diczone['Modflow']
-        if 'drn.1' in list(dicz.dic.keys()): 
-            for iz in range(dicz.getNbZones('drn.1')): 
-                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'drn.1',iz)
-                DRN[ilay,irow,icol] = 1
-                DRN=DRN[:,::-1,:] # EV 07/05/19
-        if 'riv.1' in list(dicz.dic.keys()): 
-            for iz in range(dicz.getNbZones('riv.1')): 
-                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'riv.1',iz)
-                RIV[ilay,irow,icol] = 1
-                RIV=RIV[:,::-1,:] # EV 07/05/19
-        if 'ghb.1' in list(dicz.dic.keys()): 
-            for iz in range(dicz.getNbZones('ghb.1')): 
-                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,'ghb.1',iz)
-                GHB[ilay,irow,icol] = 1
-                GHB=GHB[:,::-1,:] # EV 07/05/19
-        nwells,nBC = sum(ravel(wells)),sum(ravel(BC)==-1)
+        for n in lSSM :
+            dicSSM[n] = zeros((nlay,ny,nx))
+            for iz in range(dicz.getNbZones(n)): 
+                ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,n,iz)
+                dicSSM[n][ilay,irow,icol] = 1
+                dicSSM[n] = dicSSM[n][:,::-1,:]
+        nwells,nBC = sum(ravel(dicSSM['wel.1'])),sum(ravel(BC)==-1)
         mxpts = (nBC+nwells)*self.nper;#print type(BC),nBC,mxpts,self.nper
         if opt=='Pht3d' : self.createConcStrings()
         # writes first line with flags
@@ -510,10 +493,10 @@ class mtphtWriter:
                 typ[iz] = SSMspec[ilay[i],irow[i],icol[i]] # set to the specified ssm value
                 if typ[iz]==-1: # nothing was specified in ssm, then search for other sources
                     if BC[ilay[i],irow[i],icol[i]]==-1: typ[iz] = 1
-                    if wells[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 2
-                    if DRN[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 3 #added OA 6/5/19
-                    if RIV[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 4 #added OA 6/5/19
-                    if GHB[ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 5 #added OA 6/5/19
+                    if dicSSM['wel.1'][ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 2
+                    if dicSSM['drn.1'][ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 3 #added OA 6/5/19
+                    if dicSSM['riv.1'][ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 4 #added OA 6/5/19
+                    if dicSSM['ghb.1'][ilay[i],irow[i],icol[i]]!=0 : typ[iz] = 5 #added OA 6/5/19
                 #print iz,i,typ,ilay[i],irow[i],icol[i],BC[ilay[i],irow[i],icol[i]],wells[ilay[i],irow[i],icol[i]]
                 if opt=='Pht3d' and typ[iz]==-1: continue
                 if opt=='Mt3dms' and  typ[iz]==-1 and BCmt[ilay[i],irow[i],icol[i]]!=-1: continue

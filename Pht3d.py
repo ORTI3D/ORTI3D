@@ -337,27 +337,30 @@ class PHT3D:
         f1=open(fname,'r');a=f1.readline();f1.close()
         lnames = a.split()[2:] #; print(lnames)
         mat = loadtxt(fname,skiprows=1)
-        nr,nc = shape(mat)
-        #print('mat',shape(mat))
-        grd = self.core.addin.getFullGrid()
-        nx,ny = grd['nx'],grd['ny'];
-        if self.core.addin.getDim() in ['Radial','Xsection']: ny=1 # OA 30/6/19
+        nr,nc = shape(mat);unst = False
         nlay = getNlayers(self.core)
-        ncell = nx*ny*nlay
+        if core.mfUnstruct  and core.getValueFromName('Modflow','MshType')>0:
+            ncell_lay = core.addin.mfU.getNumber('elements')
+            ncell = ncell_lay*nlay;unst = True
+        else :
+            grd = self.core.addin.getFullGrid()
+            nx,ny = grd['nx'],grd['ny'];
+            if self.core.addin.getDim() in ['Radial','Xsection']: ny=1 # OA 30/6/19
+            ncell = nx*ny*nlay
         times = unique(mat[:,0])
-        nt = len(times);print(nt,nlay,nx,ny)
+        nt = len(times);#print(nt,nlay,nx,ny)
         values = {}
         for n in lnames : 
-            print(n)
             values[n] = zeros((nt,nlay,ny,nx))
         for it,t in enumerate(times):
             for i,n in enumerate(lnames):
                 a = zeros(ncell)
                 indx = mat[mat[:,0]==t,1].astype('int')
                 a[indx-1]=mat[mat[:,0]==t,i+2]  ### EV indx start to 1 
-                b = reshape(a,(nlay,ny,nx))
-                #print('n',b[:,-1::-1,:])
-                values[n][it]= b[:,-1::-1,:] #always this inversion...
-                #print('val',values)
+                if unst :
+                    values[n][it] = reshape(a,(nlay,ncell_lay))
+                else :
+                    b = reshape(a,(nlay,ny,nx))
+                    values[n][it]= b[:,-1::-1,:] #always this inversion...
         return values
     

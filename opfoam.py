@@ -57,15 +57,16 @@ class opfoam:
             
     def opfDictFromUsg(self):
         '''get some values form usg to openfoam dicts'''
-        l0 = ['dis.2','dis.3','disu.9','bas.5']
+        l0 = ['disu.2','disu.3','disu.9','bas.5']
         l1 = ['dis.1','dis.2','dis.5','head.1']
         for i in range(len(l0)):
             self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
             self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
         # fixed heads are for the zones of bas.5
-        self.md.diczone['Opflow'].dic['head.2'] = self.md.diczone['Modflow'].dic['bas.5']        
-        l0 = ['disu.7','disu.8','lpf.8','lpf.9']
-        l1 = ['dis.3','dis.4','khy.2','khy.3']
+        if 'bas.5' in self.md.diczone['Modflow'].dic.keys():
+            self.md.diczone['Opflow'].dic['head.2'] = self.md.diczone['Modflow'].dic['bas.5']        
+        l0 = ['disu.7','disu.8','lpf.8','lpf.9','wel.1','drn.1','ghb.1','rch.2']
+        l1 = ['dis.3','dis.4','khy.2','khy.3','wel.1','drn.1','ghb.1','rch.1']
         for i in range(len(l0)):
             self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
             self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
@@ -76,11 +77,13 @@ class opfoam:
         # transport
         self.md.dicval['Optrans'],self.md.dictype['Optrans'] = {},{}
         self.md.diczone['Optrans'] = dicZone(self.md,'Optrans')
-        l0 = ['bct.2','bct.3']
-        l1 = ['conc.1','poro.1']
+        l0 = ['bct.2','bct.3','bct.20','pcb.2']
+        l1 = ['conc.1','poro.1','conc.2','conc.3']
         for i in range(len(l0)):
             self.md.dicval['Optrans'][l1[i]] = self.md.dicval['MfUsgTrans'][l0[i]]
             self.md.dictype['Optrans'][l1[i]] = self.md.dictype['MfUsgTrans'][l0[i]]
+            if l0[i] in self.md.diczone['MfUsgTrans'].dic.keys():
+                self.md.diczone['Optrans'].dic[l1[i]] = self.md.diczone['MfUsgTrans'].dic[l0[i]]
        
     def opfMeshFromUsg(self,md):
         # determiner le num des bcs
@@ -188,7 +191,7 @@ class opfoam:
         dx,dy = array(grd['dx']), array(grd['dy']);
         nx,ny,x0,y0 = grd['nx'],grd['ny'],grd['x0'],grd['y0']
         xv,yv = r_[x0,x0+cumsum(dx)],r_[y0,y0+cumsum(dy)]
-        ncell = nx*ny;npt = (nx+1)*(ny+1)
+        npt = (nx+1)*(ny+1)
         ic= 0
         l = [];fc = []
         for j in range(ny):

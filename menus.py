@@ -66,7 +66,7 @@ class Menus:
                 self.gui.updateTitle()
             if self.gtyp=='qgis':
                 self.gui.visu.zonesQgs2core()
-            self.core.saveModel()
+            self.core.saveModel(str(self.core.fileDir),str(self.core.fileName))
             self.dialogs.onMessage(self.gui,'File saved')
         else :
             self.OnSaveAs(evt)

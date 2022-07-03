@@ -431,6 +431,7 @@ class modflowWriter:
         if ext == 'wel': s += ' 31'#OA 3/5/20 added mesh condtion
         elif ext == 'ghb': s+= ' 0' #OA 5/9/21 (strange nnt needed for chd?)
         if ext in self.usgTrans.keys():  #OA 4/3/20
+            #print(ext,self.usgTrans[ext])
             nspec = len(self.usgTrans[ext][0,0].split())
             for i in range(nspec): s += ' AUX C%02i' %(i+1) #OA 31/8/21
         s += '\n'
@@ -495,7 +496,7 @@ class modflowWriter:
             #lpts.append([]);larea.append([]) # OA 1/8/21 removed
             zvar.append(zvect)
             npts += len(irow)
-            if mesh == None :  # OA 7/6/21 this and below
+            if mesh == None or core.getValueFromName('Modflow','MshType')<1:  # OA 13/1/22 this and below
                 zarea = sum(array(dx[icol])*dy[ny-1-array(irow)])
             else : 
                 zarea = sum(mesh.carea[mod(irow,mesh.ncell_lay)])
@@ -506,6 +507,9 @@ class modflowWriter:
                     l0.append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
                     l1.append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21
+                elif core.getValueFromName('Modflow','MshType')<1: # OA 15/1/21 unstruct but regular
+                    l0.append(str((ilay[i]+1)*((ny-irow[i]-1)*nx+icol[i]+1)).rjust(10)) #☺ OA 21/2/22
+                    l1.append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21                    
                 else : #unstruct grid irow is the node number
                     l0.append(str(irow[i]+1).rjust(9))
                     l1.append(mesh.carea[mod(irow[i],mesh.ncell_lay)]/zarea)
@@ -588,7 +592,7 @@ class modflowWriter:
                 if ltyp1[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
         if len(ilay)==0 : 
             return None,None,None,None
-        if core.addin.mesh == None: # OA 4/3/20
+        if core.addin.mesh == None or core.getValueFromName('Modflow','MshType')<1: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
             if isclosed(core,x,y) : 
@@ -1272,4 +1276,31 @@ class modflowReader:
                 vx[il,ic] = -sum(flu[idx]*sin(mesh.angl[ic1][idx]))
                 vy[il,ic] = sum(flu[idx]*cos(mesh.angl[ic1][idx]))
         return vx,vy,vz
+    
+    def readFlowFaces(self,core,flist):
+        '''
+        A reader of flow at specific faces (for all periods)
+        flist is a list of [cell1,cell2,face nb in cell1] in face only cell1 is used
+        '''
+        nlay = getNmedia(core) ### !!! nlayer = nmedia
+        nfc = mesh.nconnect
+        try : f1 = open(self.fDir+os.sep+self.fName+'.budget','rb')
+        except IOError: return None
+        f1.seek(0);data =arr2('i');data.fromfile(f1,2);kstep,kper = data
+        f1.seek(24);data =arr2('i');data.fromfile(f1,3);nval,step,icode = data
+        nper=0
+        for ip in range(nper):
+            pos = s[strt+1:].find(b'FLOW JA FACE')
+            strt = pos
+        f1.seek(pos+13+4*4);data =arr2('f');data.fromfile(f1,3);delt,pertim,totim = data
+        data =arr2('f');data.fromfile(f1,nfc+nc);data=array(data)
+        icnt=0
+        for il in range(nlay):
+            for ic in range(mesh.ncell_lay):#): #
+                ic1 = ic+il*mesh.ncell_lay
+                nc = len(mesh.cneighb[ic1])
+                flu = data[icnt+1:icnt+nc+1]; icnt+= nc+1# flux per face
+                flu = flu/mesh.fahl[ic1] # divide by face area
+        return flu
+        
 

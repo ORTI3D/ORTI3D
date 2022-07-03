@@ -221,10 +221,10 @@ class myRect:
         for j in range(ny):
             for i in range(nx):
                 a,b,c,d = [],[],[],[]
-                if i>0: a.append(j*nx+i-1);b.append(dy[j]);c.append(dx[i]/2);d.append(pi/2) # left
-                if j>0: a.append((j-1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(0) # top
-                if i<nx-1: a.append(j*nx+i+1);b.append(dy[j]);c.append(dx[i]/2);d.append(pi/2) # right
-                if j<ny-1: a.append((j+1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(0) # bottom
+                if i>0: a.append(j*nx+i-1);b.append(dy[j]);c.append(dx[i]/2);d.append(pi) # left
+                if j>0: a.append((j-1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(-pi/2) # bottom
+                if i<nx-1: a.append(j*nx+i+1);b.append(dy[j]);c.append(dx[i]/2);d.append(0) # right
+                if j<ny-1: a.append((j+1)*nx+i);b.append(dx[i]);c.append(dy[j]/2);d.append(pi/2) # top
                 cn.append(a);fa.append(b);ds.append(c);agl.append(d)
                 ex.append(array([xv[i],xv[i+1],xv[i+1],xv[i]]))
                 ey.append(array([yv[j],yv[j],yv[j+1],yv[j+1]]))
@@ -278,7 +278,7 @@ class myTrg:
                     dlist.append(dst)
                     # find the length of the vertex and the angle
                     llist.append(sqrt((x[i]-x[i+1])**2+(y[i]-y[i+1])**2))
-                    angl = arctan((y[i+1]-y[i])/(x[i+1]-x[i]))
+                    angl = arctan((y[i+1]-y[i])/(x[i+1]-x[i]))-pi/2
                     if x[i+1]<x[i] : angl += pi
                     alist.append(angl)
             p.cneighb.append(neighb)
@@ -330,7 +330,7 @@ class myVor:
         ymid = c_[(yp[:,0:2]+yp[:,1:3])/2,(yp[:,0]+yp[:,2])/2]
         dx = xp[:,1:3]-xp[:,0:2]+eps; dx = c_[dx,xp[:,0]-xp[:,2]+eps]
         dy = yp[:,1:3]-yp[:,0:2]; dy = c_[dy,yp[:,0]-yp[:,2]]
-        theta = arctan(dy/dx)  # angle from point 1 to 2
+        theta = arctan(dy/dx) # angle from point 1 to 2
         theta[dx<0] += pi
         # to calculate the mid point and length
         xv,yv = c_[xp[:,0],xmid[:,0],xc,xmid[:,2],xp[:,0]],c_[yp[:,0],ymid[:,0],yc,ymid[:,2],yp[:,0]]
@@ -355,7 +355,7 @@ class myVor:
         M0 = M[indx,:] # where the segments are both in bdy
         M1 = M0*1
         M1[:,1],M1[:,2] = M0[:,2],M0[:,1] # invert the points
-        M1[:,-1] = mod(M1[:,-1]+pi,2*pi) # add pi to the angle
+        M1[:,-1] = mod(M1[:,-1]+pi/2,2*pi) # add pi to the angle
         M2 = r_[M1,M]
         u,indx = unique(M2[:,1]*1e6+M2[:,2],return_index=True)# OA 15/4/21 1e4-> 1e6
         M = M2[indx,:]
@@ -421,7 +421,8 @@ class myVor:
         for i in range(nc) :
             angl = arctan((p.ely[i][1:]-p.ely[i][:-1])/(p.elx[i][1:]-p.elx[i][:-1]))
             angl[p.elx[i][1:] < p.elx[i][:-1]] += pi
-            angl[angl<0]=2*pi+angl[angl<0]
+            angl -= pi/2
+            #angl[angl<0]=2*pi+angl[angl<0]
             p.angl.append(angl)
         for ip1 in range(p.ncorn): # OA 26/4/20 changed to indx
             p.fahl[ip1] = delete(p.fahl[ip1],indx[ip1])

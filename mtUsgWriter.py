@@ -50,7 +50,7 @@ class mtUsgWriter:
             if 'ph.4' in dicz['Pht3d'].dic.keys(): 
                 self.writeConcValues(opt);print('conc written') #EV 30/06/21
         else :
-            if 'css.1' in self.core.ttable['Transient'].keys() : # OA 3/11/21
+            if 'bct.20' in self.core.ttable['Transient'].keys() : # OA 3/11/21
                 self.writeConcValues(opt);print('conc written')  # OA 21/03 #EV 30/06/21
         self.mfloW.writeModflowFiles(self.core,usgTrans=self.usgTrans)
         self.writeBCT(opt);print('bct written')
@@ -200,7 +200,7 @@ class mtUsgWriter:
             self.getTransTable(opt,'ph.4')
             #self.phPCB()
         else : # Mt3dms
-            self.getTransTable(opt,'css.1')#,'bas.5') # OA 20/4/21
+            self.getTransTable(opt,'bct.20')#,'bas.5') # OA 20/4/21
                
     def getTransTable(self,opt,tline):#,mfline): #EV 30/06/21
         '''returns a transient table containing the species,it is linked
@@ -564,7 +564,7 @@ class mtUsgReader:
         self.fName = fName
         self.flag,self.conc = 0,None
 
-    def readUCN(self,core,opt,iper,iesp,specname=''): 
+    def readUCN(self,core,opt,iper,iesp,specname='',double=True): 
         """ read .conc file, here opt, iesp, specname are not used
         in free flow Thksat from flo file must be added (not done)""" 
         #if core.dicval['MfUsgTrans']['uoc.1'][0]==0: # ascii                                                 
@@ -586,7 +586,8 @@ class mtUsgReader:
         #print('f1',f1.read()) 
         #if opt == 'Mt3dms': dc,blok,styp = 44,44+ncell*4,'f'; # usg transport
         #else : 
-        dc,blok,styp = 52,52+ncell*8.,'d'; # pht3d_usg                                               
+        if double : dc,blok,styp = 52,52+ncell*8.,'d' # pht3d_usg     
+        else : dc,blok,styp = 44,44+ncell*4,'f'                                   
         for il in range(nlay):
             f1.seek(int(iper*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc)) # OA 6/11/21
             data = arr2(styp)

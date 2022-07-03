@@ -8,7 +8,7 @@ class Ph:
     def __init__(self):
         self.grpList=['PH']
         self.groups = {
-        'PH':['ph.'+str(i) for i in range(1,9)]
+        'PH':['ph.'+str(i) for i in range(1,10)]
         }
         self.lines ={
         'ph.1':{'comm':'major flags','cond':'',
@@ -29,4 +29,5 @@ class Ph:
                 'type':['string','int','int','int','int','choice','int'],'default':['no_edl',4,4,4,4,0,2]},
         'ph.7':{'comm':'Evapotransp','cond':'','kw':['PH_EVT(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         'ph.8':{'comm':'Fixed solu','cond':'','kw':['PH_FIXC(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
+        'ph.9':{'comm':'Fixed gas','cond':'','kw':['PH_FIXG(NLAY,NCOL,NROW)'],'detail':[],'type':['arrint']},
         }

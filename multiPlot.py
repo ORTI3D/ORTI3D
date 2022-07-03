@@ -425,7 +425,7 @@ class multiPlot(QDialog):
                         if dic[i][ispe]!='': # EV 05/03/19
                             xobs.append(float(dic[i][2]))     
                             yobs.append(float(dic[i][ispe]))
-                            lobs=str(dic[i][1])
+                            lobs=int(dic[i][1])
                 else :
                     if float(dic[i][2])==float(opt):
                         if dic[i][ispe]!='': # EV 05/03/19
