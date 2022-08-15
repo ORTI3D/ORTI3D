@@ -3,11 +3,13 @@ from .config import *
 from .Pht3d import *
 from .Min3p import *
 from .modflowUsg import *
+from .opfoam import *
 from .geometry import *
 #from matplotlib import pylab # for having grafs in batch
 from .Pest import *
 from .instantFit import *
 from .modflowWriter import *
+from .opfoamWriter import *
 from .multiPlot import * # oa 28/11/18
 
 #from matplotlib.tri import CubicTriInterpolator
@@ -24,7 +26,7 @@ class addin:
     def __init__(self,core,gui=None):
         self.gui,self.core = gui,core
         self.dickword = core.dickword
-        self.grd = None
+        self.grd,self.MshType = None,0
         self.initAddin()
         
     def setGui(self,gui):
@@ -38,6 +40,7 @@ class addin:
         self.structure={'button':{},'menu':{}}
         self.pht3d = PHT3D(self.core)
         self.min3p = Min3p(self.core)
+        self.opfoam = opfoam(self.core)
         self.mfU = modflowUsg(self.core)
         self.pest = Pest(self.core)
         # creating usedModules addin
@@ -46,13 +49,15 @@ class addin:
         self.core.dicaddin[name] = {}
         for mod in self.core.modelList:
             lmodules = self.dickword[mod].grpList;#print(lmodules)
-            if mod[:4] in ['Min3','Opge','Sutr','Pest']: val = [True]*len(lmodules) #,'Fipy'
+            if mod[:4] in ['Min3','Open','Pest']: val = [True]*len(lmodules) #,'Fipy'
             else : val = [False]*len(lmodules)
             for i in range(len(lmodules)):
                 if (mod=='Modflow') & (lmodules[i] in ['DIS','BAS6','LPF','WEL']): val[i]=True # OA 10/3/19 removed pcg
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
                 if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CSS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
+                if (mod=='OpenTrans') & (lmodules[i] in ['PORO','DSP','CONC']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
+                if (mod=='OpenChem') & (lmodules[i] in ['SOLU']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19
             self.structure['menu'][mod]={'name':name,'position': 0,
@@ -93,7 +98,7 @@ class addin:
         name = 'Particle' # create particles
         self.structure['button']['2.Flow'] = [{'name':name,'pos':1,'short':'P'}]
         
-        name = 'MtSpecies' # llow to select species for mt3d
+        name = 'MtSpecies' # allow to select species for mt3d
         self.core.dicaddin[name] = {'flag':'Mt3dms','species':[]}
         self.structure['button']['3.Transport'] = [{'name':name,'pos':0,'short':'Spc'}]
         name = 'MtReact' # values of parameters for each species
@@ -111,7 +116,6 @@ class addin:
         self.core.dicaddin['Pback1'] = {} # to choose the parameters
         self.core.dicaddin['Pback2'] = {} # to provide values
         self.structure['button']['5.Pest']=[{'name':name,'pos':0,'short':'Pbk'}]
-
         name = 'Pzones' # dict for the pest zoens parameters
         self.core.dicaddin['Pzones1'] = {}
         self.core.dicaddin['Pzones2'] = {}
@@ -177,8 +181,8 @@ class addin:
         self.gui.addMenu(502,'Modflow_modules',self.onUsedModules)   
         self.gui.addMenu(503,'Mt3dms_modules',self.onUsedModules)   
         self.gui.addMenu(504,'MfUsgTrans_modules',self.onUsedModules)  #OA 27/5/21 
+        self.gui.addMenu(505,'OpenTrans_modules',self.onUsedModules)  #OA 27/5/21 
         #self.gui.addMenu(504,'Interactive fitting',self.onInstantFit)   
-        #self.gui.addMenu(505,'MultiPlot',self.onMultiPlot)   #OA 28/11/18
         self.gui.addMenu(506,'Batch',self.onBatchDialog)   
         self.gui.addMenu(507,'Initial chemistry',self.onInitialChemistryDialog)   
         
@@ -198,8 +202,8 @@ class addin:
         
     def doaction(self,actionName):
         """the action to be done when an addin button is clicked"""
+        m = self.core.dicaddin['Model']
         if actionName == 'Ad_Model':
-            m = self.core.dicaddin['Model']
             if m['dimension']=='2D': # EV 22/07/2019 to transform 2D in 2D horizontal & free in Unconfined & confined in Confined in the existing model
                 m['dimension']='2D horizontal'
             if m['type']=='free':
@@ -207,8 +211,8 @@ class addin:
             if m['type']=='confined':
                 m['type']='Confined'
             data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
-                    ('Type','Choice',(m['type'],['Confined','Unconfined','Mix (for 3D model)'])),  #EV 22/07/2018 free -> Unconfined
-                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Opgeo'])),#EV 18.10.18 removed 'Sutra'
+                    ('Type','Choice',(m['type'],['Confined','Unconfined','Unsaturated','2phases'])),
+                    ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Openfoam'])),#EV 18.10.18 removed 'Sutra'
                     ('Use other flow model?','Check',self.checkFlowMod)] # EV 27/04/20
             dialg = self.dialogs.genericDialog(self.gui,'Model',data)
             retour = dialg.getValues()
@@ -216,13 +220,13 @@ class addin:
             if retour != None:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'],self.checkFlowMod = retour # EV 27/04/20
+                self.group = m['group']
                 self.core.mfUnstruct = False;self.setMfUnstruct() # OA 1/3/20 added cond
                 if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
-                    if self.core.getValueFromName('Modflow','MshType')>0: self.gui.onGridMesh('Mesh') # to chang the button
                     self.mesh = self.mfU # OA 22/8/19
                     self.setMfUnstruct()
-                    self.gui.onParticle(False) # EV 3/12/21
+                    self.gui.onParticle(False) # EV 3/12/2set1
                     self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',True)
                 else : 
                     self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
@@ -230,6 +234,8 @@ class addin:
                 mm,mval = self.core.dicaddin['usedM_Modflow']
                 if m['group'] == 'Min3p':
                     self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
+                elif m['group'] == 'Openfoam':
+                    self.mesh = self.opfoam;#print('model mesh',self.mesh)
                 else :
                     v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
                     if (v1==2 or v2==2) and (m['group']=='Modflow series'):
@@ -255,6 +261,10 @@ class addin:
                 self.gui.onSetMediaNb(nmed,getNlayers(self.core))  # OA 14/3/21
                 
         if actionName =='Ad_Grid':
+            if m['group'][:4]=='Modf':
+                self.MshType = self.core.getValueFromName('Modflow','MshType')
+            elif m['group'][:4]=='Open':
+                self.MshType = self.core.getValueFromName('OpenFlow','MshType')
             g = self.core.dicaddin['Grid']
             x0,x1,y0,y1 = g['x0'],g['x1'],g['y0'],g['y1'] # OA 6/11/18
             dicz = self.core.diczone['Modflow'].dic # OA 6/11/18
@@ -272,12 +282,12 @@ class addin:
             data = [('Xmin','Text',x0),(vert+'min','Text',y0),
                     ('Xmax','Text',x1),(vert+'max','Text',y1),
                     ('dx','Textlong',g['dx']),(dvert,'Textlong',g['dy'])]
-            if self.mesh == None or self.core.getValueFromName('Modflow','MshType')==0: #OA 21/3/20
+            if self.mesh == None or self.MshType==0: #OA 21/3/20
                 dialg = self.dialogs.genericDialog(self.gui,'Grid',data)
                 retour = dialg.getValues()
             else : #mesh case no dialog
                 self.setGridInModel('new')
-                self.gui.visu.initDomain() 
+                if self.gui!=None: self.gui.visu.initDomain() 
                 self.gui.onGridMesh('Mesh') # to chang the button # EV 27/04/20
                 retour = None               
             if retour != None:
@@ -286,7 +296,7 @@ class addin:
                     x0,x1,y0,y1 = float(g['x0']),float(g['x1']),float(g['y0']),float(g['y1']) # OA 14/11/18
                     dicz['dis.1']['coords'][0] = list(zip([x0,x1,x1,x0,x0],[y1,y1,y0,y0,y1])) # OA 14/11/18 set dis.1 domain new bdy
                 self.setGridInModel('new')
-                self.gui.visu.initDomain()
+                if self.gui!=None: self.gui.visu.initDomain()
 
         if actionName == 'Ad_3D':
             m = self.core.dicaddin['3D']
@@ -331,7 +341,9 @@ class addin:
                 
         if actionName == 'Ad_MtSpecies':
             m = self.core.dicaddin['MtSpecies']
-            data = [('Type','Choice',(m['flag'],['Mt3dms','Pht3d'])),
+            if self.group[:3]=='Mod': l0 = ['Mt3dms','Pht3d']
+            elif self.group[:4]=='Open': l0=['Transp','Chem']
+            data = [('Type','Choice',(m['flag'],l0)),
                     ('Species','Textlong',m['species'])
                     ]
             dialg = self.dialogs.genericDialog(self.gui,'Select Species',data)
@@ -350,7 +362,7 @@ class addin:
             #dialg.Destroy()  
 
         if actionName == 'Ad_ImpDb':
-            if self.core.dicaddin['Model']['group'] == 'Min3p':
+            if self.group == 'Min3p':
                 self.chem = self.min3p
                 self.chem.importDB(self.min3p.Base['MChemistry'])
                 self.callCheckDialog()
@@ -361,16 +373,23 @@ class addin:
 #                for name in ['comp','complex','gases']:
 #                    self.chem.readOtherDb(name,bs[name]['rows'])
 #                print bs
-                self.dialogs.onMessage(self.gui,'Database imported')
+            elif  self.group == 'Openfoam':
+                self.chem = self.pht3d
+                if 'phreeqc.dat' not in os.listdir(self.core.fileDir):
+                    self.dialogs.onMessage(self.gui,'phreeqc.dat file missing')
+                else : #EV 26/08/19
+                    fname = str(self.core.fileDir+os.sep+'phreeqc.dat')
+                    self.chem.tempDbase,self.chem.npk= self.chem.importDB(fname);
+                    self.chem.updateChemistry()
             else :
                 self.chem = self.pht3d
                 if 'pht3d_datab.dat' not in os.listdir(self.core.fileDir):
                     self.dialogs.onMessage(self.gui,'pht3d_datab.dat file missing')
                 else : #EV 26/08/19
                     fname = str(self.core.fileDir+os.sep+'pht3d_datab.dat')
-                    self.pht3d.tempDbase,self.pht3d.npk= self.pht3d.importDB(fname);
+                    self.chem.tempDbase,self.chem.npk= self.chem.importDB(fname);
                     self.chem.updateChemistry()
-                    self.dialogs.onMessage(self.gui,'Database imported')
+            self.dialogs.onMessage(self.gui,'Database imported')
             
         if actionName == 'Ad_Chemistry':
             if self.core.dicaddin['Model']['group'] == 'Min3p': 
@@ -455,7 +474,7 @@ class addin:
             for i in range(len(data[0])):
                 if data[1][i]: l0.append(data[0][i])
             self.gui.varBox.setChoiceList(item,l0)
-        mtm,mtval = self.core.dicaddin['usedM_Mt3dms']
+        mtm,mtval = self.core.dicaddin['usedM_'+modName]
         if 'DIS' in mtm: bDis = mtval[mtm.index('DIS')] # OA 02/20
         bool = False
         if 'RCT' in mtm : bool = mtval[mtm.index('RCT')]
@@ -465,7 +484,8 @@ class addin:
         mod=self.core.dicaddin['Model']['group']
         if (v1==2 or v2==2) and (mod =='Modflow series'):
             self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
-        else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True) # EV 3/12/21
+        else : 
+            self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True) # EV 3/12/21
         
     def callCheckDialog(self):
         dicIn = self.chem.temp['Dbase'].copy()
@@ -545,7 +565,8 @@ class addin:
             self.core.setValueFromName('Modflow','NROW',g['ny'])
         elif mgroup =='Modflow USG':
             self.core.lcellInterp = []  # OA 16/1/21
-            self.mfU.buildMesh(opt)
+            self.mesh = self.mfU
+            self.mesh.buildMesh(opt)
             ncell = self.mfU.ncell
             self.core.setValueFromName('Modflow','NCELL',int(ncell))
             self.core.setValueFromName('Modflow','NODELAY',self.mfU.ncell_lay)
@@ -557,24 +578,12 @@ class addin:
             self.core.dicval['Min3pFlow'][l2]=[1,g['ny'],g['y0'],g['y1']] 
             self.core.dicval['Min3pFlow'][l3]=[1,1,0.0,1.0] 
             self.min3p.buildMesh()
-        elif mgroup =='Sutra' :
-            nx,ny = int(g['nx']),int(g['ny'])
-            if self.getDim() == '2D': nbL,nbL1 = 1,1
-            else : 
-                nbL = getNlayers(self.core)
-                nbL1 = nbL + 1
-            nno,nel = (nx+1)*(ny+1)*nbL1, nx*ny*nbL
-            self.core.dicval['Sutra']['glob.2b'][2:] =[nx+1,ny+1,nbL1] 
-            self.core.dicval['Sutra']['glob.3'][:2] = [nno,nel]
-        elif mgroup =='Opgeo' : # OA 26/3/19 Added 5 next lines
-            nz = getNlayers(self.core)
-            nx,ny = int(g['nx']),int(g['ny'])
-            if self.xsect : 
-                nz = ny*1; ny = 1
-            self.core.dicval['OpgeoFlow']['domn.1'][1:4] = [nz,nx,ny]
-            self.core.dicval['OpgeoFlow']['domn.2']=list(g['dx']) 
-            self.core.dicval['OpgeoFlow']['domn.3']=list(g['dy'])   
-            self.opgeo.buildMesh()
+        elif mgroup == 'Openfoam': # oa 9/2/20 added rect, 29/2 removed
+            self.mesh= self.opfoam
+            self.core.dicval['OpenFlow']['dis.4']=list(g['dx']) # pb with setting list
+            self.core.dicval['OpenFlow']['dis.5']=list(g['dy'])
+            self.mesh.buildMesh(opt)
+        self.core.Zblock = makeZblock(self.core)
         
     def getModelType(self): return self.core.dicaddin['Model']['type']
     def getModelGroup(self): return self.core.dicaddin['Model']['group']
@@ -600,9 +609,9 @@ class addin:
         if self.getModelGroup()=='Modflow USG': 
             self.core.dicval['Modflow']['disu.7'] = med['topMedia']
             self.core.dicval['Modflow']['disu.8'] = botM
-        if self.getModelGroup()=='Opgeo': 
-            self.core.setValueFromName('OpgeoFlow','O_TOP',med['topMedia'])
-            self.core.setValueFromName('OpgeoFlow','O_BOTM',botM)
+        if self.getModelGroup()=='Openfoam': 
+            self.core.setValueFromName('OpenFlow','OTOP',med['topMedia'])
+            self.core.setValueFromName('OpenFlow','OBOTM',botM)
         self.core.setValueFromName('Modflow','NLAY',nbL)            
         self.core.setValueFromName('Modflow','UNLAY',nbL)            
             
@@ -635,13 +644,6 @@ class addin:
         elif mgroup [:3]=='Min':
             self.core.setValueFromName('Min3pFlow','Tfinal',tlist[-1])
             self.core.setValueFromName('Min3pFlow','Tmaxstep',tlist[-1]/100.)
-        elif mgroup [:3]=='Sut':        
-            tl2 = ' '.join([str(t) for t in tlist])
-            self.core.setValueFromName('Sutra','TLIST',tl2)
-            self.core.setValueFromName('Sutra','NTLIST',nper)
-            stepdiv = self.core.getValueFromName('Sutra','STEPDIV')
-            self.core.setValueFromName('Sutra','NCOLPR',stepdiv)
-            self.core.setValueFromName('Sutra','LCOLPR',stepdiv)
 
     def setMtSpecies(self,flag,species):
         rows = species

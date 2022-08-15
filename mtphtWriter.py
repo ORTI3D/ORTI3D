@@ -438,7 +438,7 @@ class mtphtWriter:
         dicSSM = {};lSSM = ['wel.1','drn.1','riv.1','ghb.1']
         dicz = self.core.diczone['Modflow']
         for n in lSSM :
-            dicSSM[n] = zeros((nlay,ny,nx))
+            dicSSM[n] = BC*0  # OA 8/7/22 nx,ny to BC*0
             for iz in range(dicz.getNbZones(n)): 
                 ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,n,iz)
                 dicSSM[n][ilay,irow,icol] = 1

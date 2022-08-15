@@ -25,6 +25,7 @@ from .min3pTransKeywords import m3T
 from .min3pChemKeywords import m3C
 from .opfoamKeywords import OpF
 from .opfoamKeywords import OpT
+from .opfoamKeywords import OpC
 from .obsKeywords import Obs
 from .pestKeywords import Pst
 
@@ -34,7 +35,7 @@ class Core:
     """
     def __init__(self,gui=None):
         self.modelList = ['Modflow','Mt3dms','MfUsgTrans','Pht3d','Min3pFlow', # OA 27/7/19 added MfUsgTrans
-            'Min3pTrans','Min3pChem','Opflow','Optrans','Observation','Pest']
+            'Min3pTrans','Min3pChem','OpenFlow','OpenTrans','OpenChem','Observation','Pest']
         self.gui = gui
         self.baseDir = os.getcwd(); # OA 11/9/18 2 lines below modfiied
         if gui!=None:
@@ -61,8 +62,9 @@ class Core:
         self.dickword['Min3pTrans'] = m3T()
         self.dickword['Min3pChem'] = m3C()
         self.dickword['Observation'] = Obs()
-        self.dickword['Opflow'] = OpF()
-        self.dickword['Optrans'] = OpT()
+        self.dickword['OpenFlow'] = OpF()
+        self.dickword['OpenTrans'] = OpT()
+        self.dickword['OpenChem'] = OpC()
         self.dickword['Pest'] = Pst()
         self.initAll()
         self.mfUnstruct = False # OA 17/9/17 made to work with modflow USG
@@ -193,25 +195,30 @@ class Core:
         if self.gui!=None: self.gui.onInitGui(self)
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
-        self.flgMesh = 0 #18/12/20                      
+        MshType = 0                    
         self.mfUnstruct = False  # OA 13/3/21
-        mtype = self.dicaddin['Model']['group']
-        if mtype == 'Modflow USG': # OA 02/20
+        group = self.dicaddin['Model']['group'];self.addin.group = group
+        if group == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
-            if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
-                self.flgMesh = 1 #18/12/20                      
-            #self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
-        if mtype[:5] == 'Modfl': #OA 02/20
+            MshType = self.getValueFromName('Modflow','MshType')
+            #if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
+            #    self.flgMesh = 1 #18/12/20                      
+        if group == 'Openfoam': # OA 02/20
+            self.addin.setGridInModel('old')
+            MshType = self.getValueFromName('OpenFlow','MshType')
+            self.flowReader = self.transReader = opfoamReader(self,self.addin.mesh)
+        if group[:5] == 'Modfl': #OA 02/20
             self.flowReader = modflowReader(fDir,fName)
-            if 'USG' in mtype: self.transReader = mtUsgReader(fDir,fName)
+            if 'USG' in group: self.transReader = mtUsgReader(fDir,fName)
             else : self.transReader = mtphtReader(fDir,fName)
-        elif mtype[:5] == 'Min3p' :
+        elif group[:5] == 'Min3p' :
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        if self.Zblock==None: self.Zblock = makeZblock(self)
+        #if self.Zblock==None: self.Zblock = makeZblock(self)
+        if self.gui != None and MshType>0: self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
         self.addin.setChemType()
         #self.usePostfix()
                         
@@ -231,11 +238,6 @@ class Core:
                     for k in list(dic.dic.keys()):
                         str1 += '<key><name>'+k+'</name><content>'+str(dic.dic[k])+\
                             '</content></key>\n'
-                #elif t=='array': #EV 07/02/20
-                    #for k in list(dic.keys()):
-                        #if dic[k] != None:
-                            #str1 += '<key><name>'+k+'</name><content>\'infile\'</content></key>\n'
-                            #darray[k]=dic[k] # consider only one array in that line
                 else :
                     for k in list(dic.keys()):
                         str1 += '<key><name>'+k+'</name><content>'+str(dic[k])+\
@@ -262,9 +264,6 @@ class Core:
             self.mfWriter = modflowWriter(self,self.fileDir,self.fileName)
             self.mfWriter.writeModflowFiles(self)
             self.flowReader = modflowReader(self.fileDir,self.fileName)
-            self.flgMesh = 0 #18/12/20                      
-            if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
-                self.flgMesh = 1 #18/12/20                      
         if modName in ['Mt3dms','MfUsgTrans','Pht3d']: # OA 28/7/19
             if 'USG' in mtype: #28/7/19 this and 2 below # oa modif 10/2/20
                 self.mtWriter = mtUsgWriter(self,self.fileDir,self.fileName)
@@ -283,6 +282,11 @@ class Core:
             self.m3pWriter = min3pWriter(self,self.fileDir,self.fileName)
             self.m3pWriter.writeMin3pFiles(self,modName[5:])
             self.transReader=self.flowReader = min3pReader(self,self.fileDir,self.fileName)
+        if modName  in ['OpenFlow','OpenTrans','OpenChem']:
+            self.opfWriter = opfoamWriter(self,self.addin.mesh,'z')
+            dicBC= {};options = {'group':modName[4:]}
+            self.opfWriter.writeFiles(self.fileDir,dicBC,options)
+            self.transReader=self.flowReader = opfoamReader(self,self.addin.mesh)
         if modName == 'Pest':
             info=self.addin.pest.writeFiles() #EV 11/12/19
         if info ==True :return 'Files written'
@@ -689,8 +693,8 @@ class Core:
         zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
         nx,ny,xvect,yvect = getXYvects(self) 
         grd = self.addin.getFullGrid()
-        mtype = self.dicaddin['Model']['group'][:3];flgMesh = 0 ## model type, modflow or other
-        if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0: flgMesh = 1 # OA 18/12/20
+        mtype = self.dicaddin['Model']['group'][:3]; ## model type, modflow or other
+        MshType = self.getValueFromName('Modflow','MshType') # OA 18/12/20
         ### Get a list of icol, irow, ilay
         if typ[0]=='X': ## XYplot
             ix=[];iy=[];typ='X0'
@@ -708,7 +712,7 @@ class Core:
         else:    ## TimeSerie & Profile
             izon = zlist['name'].index(zname)
             x,y = list(zip(*zlist['coords'][izon]))
-            if flgMesh==0: # OA 18/12/20
+            if MshType==0: # OA 18/12/20
                 ix,iy,a,asin,acos = zone2index(self,x,y,x*1,'angle') ## ix,iy are orti indices (not modflow)
                 if isclosed(self,x,y): # polygon
                     iy,ix = where(fillZone(nx,ny,ix,iy,a));
@@ -738,7 +742,7 @@ class Core:
         #if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
-        if mtype=='Mod' and self.mfUnstruct==False: iym = [ny-y-1 for y in iy2] # transform to modflow coords NOT for Usg #OA 6/11/21
+        if mtype=='Mod' and MshType==0: iym = [ny-y-1 for y in iy2] # transform to modflow coords NOT for Usg #OA 6/11/21
         else : iym =iy2
         ix2,iym,iz2 = array(ix2),array(iym),array(iz2) # OA 11/4/20 added to index later
     ### Get list of time and period 
@@ -853,7 +857,7 @@ class Core:
             return t2,p1,labels
        ## Profile
         elif typ[0]=='P':  
-            if flgMesh==0:
+            if MshType==0:
                 xzon=xvect[ix];yzon=yvect[iy];#print(xzon,yzon) #EV 20/04/20 ix2 -> ix & iy2 -> iy
                 d0=sqrt((xzon[1:]-xzon[:-1])**2.+(yzon[1:]-yzon[:-1])**2.)
             else :

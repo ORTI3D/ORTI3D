@@ -221,13 +221,15 @@ class qtVisualisation(FigureCanvasQTAgg):
         if type(self.core.Zblock) != type(array(5)): 
             self.core.Zblock = makeZblock(self.core)
         grp = self.core.addin.getModelGroup()
-        self.mesh=None;#print('in qtvisu unstr:',self.core.mfUnstruct)
-        if grp[:2]=='Op' and self.core.dicval[grp+'Flow']['domn.1'][0]>0:
-            self.mesh = self.core.addin.opgeo
+        self.mesh=None;self.mshType=0#print('in qtvisu unstr:',self.core.mfUnstruct)
+        if grp[:2]=='Op' and self.core.dicval['OpenFlow']['dis.1'][0]>0:
+            self.mesh = self.core.addin.opfoam
+            self.mshType = self.core.getValueFromName('OpenFlow','MshType')
         if grp[:2]=='Mi' and self.core.dicval[grp+'Flow']['spat.4'][0]>0:
             self.mesh = self.core.addin.min3p
         if self.core.mfUnstruct: 
             self.mesh = self.core.addin.mfU
+            self.mshType = self.core.getValueFromName('Modflow','MshType')
         self.createGrid()
         # add basic vector as a linecollection
         dep=rand(2,2)*0.;arr=dep*1.
@@ -263,7 +265,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.Grid[2]=col
         self.cnv.collections=[];self.mUnstruct = 0 #OA 17/12/20
 
-        if self.mesh != None and self.core.getValueFromName('Modflow','MshType')>0:# case irregular mesh (from matplotlib2dviewer)
+        if self.mesh != None and self.mshType>0:# case irregular mesh (from matplotlib2dviewer)
             self.mUnstruct = 1 #OA 17/12/20
             xcoo = self.mesh.elx
             ycoo = self.mesh.ely;ncell=len(ycoo)

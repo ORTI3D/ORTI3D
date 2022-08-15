@@ -1,6 +1,7 @@
 #import scipy.io.array_import as IOAscii
 from array import array as arr2
 import os,time
+from re import finditer
 from .modflowKeywords import Mf
 from .geometry import *
 from .timeperiod import *
@@ -846,7 +847,7 @@ class modflowReader:
         """ read .head file 
         in free flow Thksat from flo file must be added (not done)"""    
         nlay,ncol,nrow = self.getGeom(core)       #OA 4/3/20  
-        if core.flgMesh ==1 : #OA modif 18/12/20   
+        if core.addin.MshType>0 : #OA modif 18/12/20   
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements')
             hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
@@ -1049,7 +1050,7 @@ class modflowReader:
         """for typ=flux return fluxes for a series of obs cell
         for typ=head return the heads
         iper is a list of periods indices"""
-        if core.flgMesh==0: # OA 18/12/20
+        if core.addin.MshType==0: # OA 18/12/20
             try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
             except IOError : return None
         nper=len(iper);
@@ -1255,7 +1256,7 @@ class modflowReader:
         for ip in range(iper):
             pos = s[strt+1:].find(b'FLOW JA FACE')
             strt = pos
-        f1.seek(pos+13+4*4);data =arr2('f');data.fromfile(f1,3);delt,pertim,totim = data
+        f1.seek(pos+13+4*8);data =arr2('f');data.fromfile(f1,3);delt,pertim,totim = data
         data =arr2('f');data.fromfile(f1,nfc+nc);data=array(data)
         zb=core.Zblock;thk = zb[:-1]-zb[1:]
         vx = zeros((nlay,mesh.ncell_lay));vy=vx*1;vz=vx*1
@@ -1277,30 +1278,37 @@ class modflowReader:
                 vy[il,ic] = sum(flu[idx]*cos(mesh.angl[ic1][idx]))
         return vx,vy,vz
     
-    def readFlowFaces(self,core,flist):
+    def readFlowFaces(self,core,flist,zname):
         '''
         A reader of flow at specific faces (for all periods)
-        flist is a list of [cell1,cell2,face nb in cell1] in face only cell1 is used
+        flist is a list of [celli, iface, ilay] (one face/cell)
         '''
         nlay = getNmedia(core) ### !!! nlayer = nmedia
+        flist = array(flist)
+        dicz = core.diczone['Observation'].dic['obs.1']
+        lmedia = dicz['media'][dicz['name'].index(zname)]
+        if type(lmedia)!=type([5]): lmedia = [lmedia]
+        mesh=core.addin.mesh
         nfc = mesh.nconnect
         try : f1 = open(self.fDir+os.sep+self.fName+'.budget','rb')
         except IOError: return None
-        f1.seek(0);data =arr2('i');data.fromfile(f1,2);kstep,kper = data
-        f1.seek(24);data =arr2('i');data.fromfile(f1,3);nval,step,icode = data
-        nper=0
-        for ip in range(nper):
-            pos = s[strt+1:].find(b'FLOW JA FACE')
-            strt = pos
-        f1.seek(pos+13+4*4);data =arr2('f');data.fromfile(f1,3);delt,pertim,totim = data
-        data =arr2('f');data.fromfile(f1,nfc+nc);data=array(data)
-        icnt=0
-        for il in range(nlay):
-            for ic in range(mesh.ncell_lay):#): #
-                ic1 = ic+il*mesh.ncell_lay
-                nc = len(mesh.cneighb[ic1])
-                flu = data[icnt+1:icnt+nc+1]; icnt+= nc+1# flux per face
-                flu = flu/mesh.fahl[ic1] # divide by face area
+        s=f1.read()
+        #f1.seek(0);data =arr2('i');data.fromfile(f1,2);kstep,kper = data
+        #f1.seek(24);data =arr2('i');data.fromfile(f1,3);nval,step,icode = data
+        nper=len(core.ttable['tlist'])
+        lnf = [len(mesh.cneighb[i])+1 for i in range(mesh.ncell)] #nb of faces
+        slnf = r_[0,cumsum(lnf)]
+        flu,strt = zeros((len(flist),nper-1)),0
+        pos=[_.start() for _ in finditer(b'FLOW', s)]
+        #pos = [i for i in range(len(s)) if s.startswith(b'FLOW JA FACE', i)] very slow
+        for ip in range(nper-1):
+            cnt=0
+            for il in lmedia:
+                for ic in flist[:,0]:
+                    f1.seek(pos[ip]+61+slnf[il*mesh.ncell_lay+ic]*8)
+                    data =arr2('d');data.fromfile(f1,1)
+                    flu[cnt,ip]=data[0];cnt +=1
+        f1.close()
         return flu
         
 

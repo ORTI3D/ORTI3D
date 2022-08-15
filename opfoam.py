@@ -22,244 +22,323 @@ Increase that cell index counter.
 # owner file  al ist of the cell that owns the considered face nb (0 1 2 0)
 # neighbour 
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
-    amin,amax,mod
-from ilibq.geometry import *
+    amin,amax,mod,lexsort
+from .geometry import *
+from .geometryMesh import *
 
-import os
-from ilibq.core import dicZone
-from ilibq.opfoamKeywords import OpF
-from ilibq.opfoamKeywords import OpT
+import os,time
+from .opfoamKeywords import OpF
+from .opfoamKeywords import OpT
 
-class opfoam:
-    def __init__(self,md,mesh):
-        self.md,self.mesh = md,mesh
-        if md.getValueFromName('Modflow','MshType')>0:
-            self.ncell_lay = len(mesh.carea)
+class opfoam(unstructured):
+    
+    def __init__(self,core):
+        self.core = core
+        # unstructured provides the function buildMesh0 = usg
+        
+    def makeBC(self):
+        '''
+        create an array bcindx that gather the cell number and the 
+        '''
+        if self.core.getValueFromName('OpenFlow','MshType')>0:
+            self.ncell_lay = len(self.carea)
             lbc,lnb = [],[]
-            for k in mesh.dicFeats.keys():
+            for k in self.dicFeats.keys():
                 if k[:7]=='bc_cell':
-                    arr = mesh.dicFeats[k]
-                    lbc.extend(list(arr));lnb.extend([int(k[-1])]*len(arr))
+                    arr = self.dicFeats[k]
+                    lbc.extend(list(arr));lnb.extend([int(k[7:])]*len(arr))
             bcindx=zeros((len(lbc),2));bcindx[:,0]=lbc;bcindx[:,1]=array(lnb)+1
-            self.area = mesh.carea
-            self.nbc = len(unique(bcindx[:,-1]))
+            self.nbc = len(unique(bcindx[:,1]))
+            self.bcindx = bcindx  
         else: 
             bcindx = None
-            grd = md.addin.getFullGrid()
+            grd = self.core.addin.getFullGrid()
             nx,ny,dx,dy = grd['nx'],grd['ny'],grd['dx'],grd['dy']
             self.ncell_lay = nx*ny
             dxm,dym = meshgrid(dx,dy)
-            self.area = ravel(dxm*dym)
+            self.carea = ravel(dxm*dym)
             self.nbc = 4
-        self.bcindx = bcindx  
-        self.md.dickword['Opflow'] = OpF()
-        self.md.dickword['Optrans'] = OpT()
+       
+    def buildMesh(self,opt):
+        self.buildMesh0('OpenFlow',opt)
+        mshType = self.core.getValueFromName('OpenFlow','MshType')
+        if mshType == 0: # regular cells
+            self.opfRect()
+        if mshType == 1: # nested
+            #msh = myRect(self,nodes,elements)
+            #msh.calc()
+            pass
+        if mshType == 2: # triangle
+            pass
+        if mshType == 3: # voronoi
+            msh = myVor(self)
+            msh.transformVor(self.points,self.elts,self.dcoo1,self.dicD,self.dicFeats) # OA 15/8/20
+            xn,yn = self.nodes[:,0],self.nodes[:,1];print('voronoi made')
+            self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
+            self.makeBC()
+            self.opfMesh2Faces()
+        self.addMeshVects()
+        Zblock = makeZblock(self.core)
+        nlay = getNlayers(self.core)
+        if self.core.addin.getDim()=='3D': 
+            thick = Zblock[:-1]-Zblock[1:]
+            self.core.addin.get3D();print('start 3D')
+        else :
+            thick = Zblock[0]-Zblock[-1]
+            #self.fahl = [array(lg)*thick[i] for i,lg in enumerate(self.fahl)]
+
+    
+    def opfRect(self):
+        grd = self.core.addin.getFullGrid()
+        dx,dy = array(grd['dx']), array(grd['dy']);
+        nx,ny,x0,y0 = grd['nx'],grd['ny'],grd['x0'],grd['y0']
+        xv,yv = r_[x0,x0+cumsum(dx)],r_[y0,y0+cumsum(dy)]
+        npt = (nx+1)*(ny+1)
+        l = [];fc = [];cn=[]
+        # build the outside boundaries (faces without neighbour)
+        for i in range(nx): l.append([i,i+1,i,-3])# botm
+        for j in range(ny): l.append([j*(nx+1)+nx,(j+1)*(nx+1)+nx,(j+1)*nx-1,-2]);# right
+        for i in range(nx,0,-1): l.append([ny*(nx+1)+i,ny*(nx+1)+i-1,nx*(ny-1)+i-1,-1]);#top
+        for j in range(ny,0,-1): l.append([j*(nx+1),(j-1)*(nx+1),(j-1)*nx,-4]);# left
+        # then the faces in the center
+        for j in range(ny):
+            for i in range(nx-1):
+                ic=j*nx+i;
+                l.append([j*(nx+1)+i+1,(j+1)*(nx+1)+i+1,ic,ic+1]) # right
+        for j in range(ny-1):
+            for i in range(nx):      
+                ic=j*nx+i;
+                l.append([(j+1)*(nx+1)+i+1,(j+1)*(nx+1)+i,ic,ic+nx]) # top
+        # set the upper face for all cells
+        for j in range(ny):
+            for i in range(nx):
+                fc.append([j*(nx+1)+i,j*(nx+1)+i+1,(j+1)*(nx+1)+i+1,(j+1)*(nx+1)+i,j*(nx+1)+i])
+        fc0 = array(l,ndmin=2);fcup = array(fc,ndmin=2)
+        faces = fc0[fc0[:,3]>=0];bfaces = fc0[fc0[:,3]<0]
+        ag = argsort(bfaces[:,3])
+        self.bfaces = bfaces[ag[-1::-1]]
+        xm,ym = meshgrid(xv,yv)
+        points = c_[reshape(xm,(npt,1)),reshape(ym,(npt,1))]
+        dxm,dym = meshgrid(dx,dy)
+        self.carea = ravel(dxm*dym);self.nbc=4
+        self.points,self.faces,self.fcup = points,faces,fcup
+        self.elx,self.ely=points[fcup,0],points[fcup,1]
+        return points,faces,bfaces,fcup
+
+    def opfMesh2Faces(self):
+        '''
+        uses the "usg" type mesh to build the points and faces necessary for opf
+        in M :itriangle, icell, ineighb,x,y
+        '''
+        M = self.M
+        elx,ely,indx = self.elx,self.ely,self.indx
+        u,id0 = unique(M[:,0],return_index=True)
+        points = M[id0,3:5];npts = len(points);
+        self.points=points
+        nfc = len(M);nco = self.ncorn;nbc=int(amax(self.bcindx[:,0]))
+        faces,i0c,i,ic = [],0,0,0
+        fcup=[0]*self.ncell_lay
+        while ic<nbc+1: # corners+bdy we keep only the internal faces
+            ic = M[i,1]
+            if ic not in self.bcindx[:,0]: 
+                if M[i+1,1]>ic: i0c = i+1;
+                i += 1
+                continue
+            if M[i+1,1]>ic: # last face in cell
+                if M[i,2]>nbc:
+                    faces.append([M[i,0],M[i0c,0],M[i,1],M[i,2],M[i,-1]])
+                i0c = i+1;#print(ic,i0c)
+            else :
+                if M[i,2]>nbc:
+                    faces.append([M[i,0],M[i+1,0],M[i,1],M[i,2],M[i,-1]])
+            i += 1
+        # now all the faces        
+        i0c = i
+        for i in range(nfc-1):
+            ifc,ic,inb = M[i,:3].astype('int')
+            if ic in self.bcindx[:,0]: 
+                if M[i+1,1]>ic: i0c = i+1;
+                continue
+            if M[i+1,1]>ic : # last face of the current cell ic
+                if (inb>ic)&(ifc!=M[i0c,0]): # store last face only if not done already
+                    faces.append([M[i,0],M[i0c,0],ic,inb,M[i,-1]])
+                # store fcup
+                a = r_[M[i0c:i+1,0],M[i0c,0]]
+                fcup[ic] = a.astype('int')
+                i0c = i+1 # will be the starting point of th enext cell
+            else:
+                if (inb>ic)&(ifc!=M[i+1,0])&(inb>nbc): # store face only if not done already
+                    faces.append([M[i,0],M[i+1,0],ic,inb,M[i,-1]])
+        # last cell
+        i+=1;inb=M[i,2]
+        if (inb>ic)&(ifc!=M[i0c,0]): # store last face only if not done already
+            faces.append([M[i,0],M[i0c,0],ic,inb,M[i,-1]])
+        a = r_[M[i0c:i+1,0],M[i0c,0]]
+        fcup[-1] = a.astype('int')
+        faces = array(faces)
+        lastcpt=[];lastsz=0
+        #build the corners (from elx as they were done that way in voronoi)
+        for i in range(nco):
+            lc = self.bcindx[self.bcindx[:,1]==i+1,0].astype('int')
+            pt0 = npts*1
+            b = faces[faces[:,2]==i];
+            b =b[b[:,-1].argsort(),:2].astype('int') # to keep the angle trigo round
+            # a trick to get the pt where the loop is broken 
+            if lastsz==1: ipt1 = lastcpt[i-1]
+            else : ipt1 = pt0+2
+            il=-1;u=list(b[0])
+            for j in range(1,len(b)):
+                if b[j,0]!=b[j-1,1] : 
+                    il = j
+                    for k in range(3-lastsz):
+                        points = r_[points,c_[elx[i][j+1+k],ely[i][j+1+k]]];
+                        u.append(npts);npts+=1
+                    if lastsz==1: u.append(ipt1)
+                    u.extend(b[j])
+                else: u.append(b[j,1])
+            if il==-1: 
+                il=len(b)-1
+                istart=where((elx[i]==points[b[il,1],0])&(ely[i]==points[b[il,1],1]))[0][0]
+                for k in range(3-lastsz):
+                    points = r_[points,c_[elx[i][istart+1+k],ely[i][istart+1+k]]];
+                    u.append(npts);npts+=1
+                if lastsz==1: u.append(ipt1)
+                u.append(b[0,0])
+            fcup[i] = array(u)
+            if len(lc)>2: inb=lc[lc>nco-1][0]
+            else : inb=i+1
+            fc1 = array([u[u.index(pt0)-1],pt0,i,inb,0],ndmin=2)
+            fc2 = array([pt0,pt0+1,i,-i-1,0],ndmin=2)
+            if i==0: inb=-nco
+            else :inb = -i
+            fc3 = array([pt0+1,ipt1,i,inb,0],ndmin=2)
+            faces = r_[faces,fc1,fc2,fc3]
+            lastcpt.append(pt0)
+            if len(lc)==2:lastsz=1
+            else : lastsz=0
+                
+        # then bc lines
+        for i in range(nco):
+            lc = list(self.bcindx[self.bcindx[:,1]==i+1,0].astype('int'))
+            cnt = 0
+            for i0,j in enumerate(lc): # go along the boundary
+                if j<nco: continue
+                pt0 = npts*1
+                b = faces[faces[:,2]==j];
+                b =b[b[:,-1].argsort(),:2].astype('int') # to keep the angle trigo round
+                # a trick to get the pt where the loop is broken 
+                il=-1;u=list(b[0])
+                for j1 in range(1,len(b)):
+                    if b[j1,0]!=b[j1-1,1] : 
+                        il = j1;u.extend([-2,-1]);u.extend(b[j1])
+                        if i0!=len(lc)-1: 
+                            points = r_[points,c_[elx[j][j1+1],ely[j][j1+1]]]
+                            npts+=1
+                    else:
+                        u.append(b[j1,1])
+                if il==-1: 
+                    il=len(b)-1;u.extend([-2,-1]);u.append(b[0,0])
+                    istart=where((elx[j]==points[b[-1,1],0])&(ely[j]==points[b[-1,1],1]))[0][0]
+                    if i0!=len(lc)-1: 
+                        points = r_[points,c_[elx[j][istart+1],ely[j][istart+1]]]
+                        npts+=1
+                    
+                if (i0==len(lc)-1)&(i==nco-1): ipt1,inb1=lastcpt[0]+2,0 # the last cell back to 0
+                elif i0==len(lc)-1: ipt1,inb1=lastcpt[i+1]+2,i+1; # lat cell in the row
+                else: ipt1,inb1 = npts-1,j+1
+                if cnt == 0: ipt2 = lastcpt[i];cnt=1
+                else : ipt2 = pt0-1
+                    
+                fc1 = array([u[u.index(-2)-1],ipt1,j,inb1,0],ndmin=2)
+                fc2 = array([ipt1,ipt2,j,-i-1,0],ndmin=2)
+                faces = r_[faces,fc1,fc2]
+                u[u.index(-2)]=ipt1;u[u.index(-1)]=ipt2
+                fcup[j] = array(u)
+                cnt=1
+        #plot(points[fcup[j],0],points[fcup[j],1],'k')     
+        #sort faces to have BC at the end
+        faces = faces[:,:-1].astype('int')
+        face1 = faces[faces[:,3]>=0]
+        idr = where(face1[:,3]<face1[:,2])[0] # neighbour should not be smaller than owner
+        face1[idr,:2]=face1[idr,1::-1]
+        face1[idr,2:]=face1[idr,3:1:-1]
+        face1 = face1[lexsort((face1[:,3],face1[:,2]))] #in lexsort col in reverse
+        bfaces = faces[faces[:,3]<0]
+        bfaces = bfaces[lexsort((-bfaces[:,3],bfaces[:,2]))] #in lexsort col in reverse        
+        self.points,self.faces,self.bfaces,self.fcup = points,face1,bfaces,fcup
+        return points,face1,bfaces,fcup
+        '''
+        for i in range(len(faces)): 
+            plot(points[faces[i,:2],0],points[faces[i,:2],1])
+        ic=57;fc=faces[faces[:,2]==ic,:2] 
+        for a in fc: plot(points[a,0],points[a,1])
+        for j in range(len(fcup)): 
+            plot(points[fcup[j],0],points[fcup[j],1])
+        '''
             
     def opfDictFromUsg(self):
         '''get some values form usg to openfoam dicts'''
         l0 = ['disu.2','disu.3','disu.9','bas.5']
         l1 = ['dis.1','dis.2','dis.5','head.1']
         for i in range(len(l0)):
-            self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
-            self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
+            self.core.dicval['OpenFlow'][l1[i]] = self.core.dicval['Modflow'][l0[i]]
+            self.core.dictype['OpenFlow'][l1[i]] = self.core.dictype['Modflow'][l0[i]]
+        #domain
+        self.core.diczone['OpenFlow'].dic['dis.2'] = self.core.diczone['Modflow'].dic['disu.3']        
         # fixed heads are for the zones of bas.5
-        if 'bas.5' in self.md.diczone['Modflow'].dic.keys():
-            self.md.diczone['Opflow'].dic['head.2'] = self.md.diczone['Modflow'].dic['bas.5']        
+        if 'bas.5' in self.core.diczone['Modflow'].dic.keys():
+            self.core.diczone['OpenFlow'].dic['head.2'] = self.core.diczone['Modflow'].dic['bas.5']        
         l0 = ['disu.7','disu.8','lpf.8','lpf.9','wel.1','drn.1','ghb.1','rch.2']
-        l1 = ['dis.3','dis.4','khy.2','khy.3','wel.1','drn.1','ghb.1','rch.1']
+        l1 = ['dis.6','dis.7','khy.2','khy.3','wel','drn','ghb','rch']
         for i in range(len(l0)):
-            self.md.dicval['Opflow'][l1[i]] = self.md.dicval['Modflow'][l0[i]]
-            self.md.dictype['Opflow'][l1[i]] = self.md.dictype['Modflow'][l0[i]]
-            if l0[i] in self.md.diczone['Modflow'].dic.keys():
-                self.md.diczone['Opflow'].dic[l1[i]] = self.md.diczone['Modflow'].dic[l0[i]]
-            if l0[i] in self.md.dicarray['Modflow'].keys():
-                self.md.dicarray['Opflow'][l1[i]] = self.md.dicarray['Modflow'][l0[i]]
+            self.core.dicval['OpenFlow'][l1[i]] = self.core.dicval['Modflow'][l0[i]]
+            self.core.dictype['OpenFlow'][l1[i]] = self.core.dictype['Modflow'][l0[i]]
+            if l0[i] in self.core.diczone['Modflow'].dic.keys():
+                self.core.diczone['OpenFlow'].dic[l1[i]] = self.core.diczone['Modflow'].dic[l0[i]]
+            if l0[i] in self.core.dicarray['Modflow'].keys():
+                self.core.dicarray['OpenFlow'][l1[i]] = self.core.dicarray['Modflow'][l0[i]]
         # transport
-        self.md.dicval['Optrans'],self.md.dictype['Optrans'] = {},{}
-        self.md.diczone['Optrans'] = dicZone(self.md,'Optrans')
+        self.core.dicval['OpenTrans'],self.core.dictype['Optrans'] = {},{}
+        #self.core.diczone['OpenTrans'] = dicZone(self.core,'Optrans')
         l0 = ['bct.2','bct.3','bct.20','pcb.2']
-        l1 = ['conc.1','poro.1','conc.2','conc.3']
+        l1 = ['cactiv','poro','cinit','cfix']
         for i in range(len(l0)):
-            self.md.dicval['Optrans'][l1[i]] = self.md.dicval['MfUsgTrans'][l0[i]]
-            self.md.dictype['Optrans'][l1[i]] = self.md.dictype['MfUsgTrans'][l0[i]]
-            if l0[i] in self.md.diczone['MfUsgTrans'].dic.keys():
-                self.md.diczone['Optrans'].dic[l1[i]] = self.md.diczone['MfUsgTrans'].dic[l0[i]]
-       
-    def opfMeshFromUsg(self,md):
-        # determiner le num des bcs
-        mesh,bcindx,dim = self.mesh,self.bcindx,md.addin.getDim()
-        # creer un array de faces à partir des cells en conservant ds colonne 2 le num de cellule
-        # le num de cellule est -nb pour les line nb de BC
-        '''
-        for ic in mesh.dicFeats['bc_cell0']: plot(mesh.elx[ic],mesh.ely[ic],'g')
-        '''
-        lnghb=[];ncell=self.ncell_lay # we use only the first layer
-        #each array has columns first pt, 2nd pt, cell nb, neighbour, x, y 
-        for ic in range(ncell):
-            nf=len(mesh.elx[ic])-1
-            if ic in bcindx[:,0]: # in BC
-                cn1 = zeros(nf);idx=mesh.indx[ic]; # idx for BC
-                bcv=bcindx[bcindx[:,0]==ic,1] # for BC
-                try :
-                    len(idx)
-                    if ic==0:
-                        cn1[idx[0]],cn1[idx[1]] = -min(bcv),-max(bcv)
-                    else :
-                        cn1[idx[0]],cn1[idx[1]] = -max(bcv),-min(bcv)
-                except TypeError:
-                    cn1[idx] = -bcv
-                k = 0 # adding the neighb if it is not a bdy 
-                for j in range(nf):
-                    if cn1[j]==0: 
-                        cn1[j] = mesh.cneighb[ic][k];k+=1            
-            else :
-                if dim == '3D': cn1 = mesh.cneighb[ic][:-1] # dont take the bottom
-                else : cn1 = mesh.cneighb[ic]
-            lnghb.append(cn1)
+            self.core.dicval['OpenTrans'][l1[i]] = self.core.dicval['MfUsgTrans'][l0[i]]
+            self.core.dictype['OpenTrans'][l1[i]] = self.core.dictype['MfUsgTrans'][l0[i]]
+            if l0[i] in self.core.diczone['MfUsgTrans'].dic.keys():
+                self.core.diczone['OpenTrans'].dic[l1[i]] = self.core.diczone['MfUsgTrans'].dic[l0[i]]
 
-        # specific run for the first cell (no neighbour)
-        ic=0
-        nf = len(lnghb[0])
-        fc = zeros((nf,4))
-        fc[:,0],fc[:-1,1] = list(range(nf)),list(range(1,nf))
-        fc[:,2],fc[:,3] = [0]*nf,lnghb[0]
-        points = zeros((nf,2))
-        points[:,0],points[:,1] = mesh.elx[0][:-1],mesh.ely[0][:-1]
-        pcnt = nf-1
-        a = list(range(nf));a.append(0);fcup = [a]
-
-        for ic in range(1,ncell):
-            ng = lnghb[ic];nf = len(ng)
-            m=fc[fc[:,3]==ic]
-            lown = m[:,2];fup=[]
-            # look at the first point
-            if ng[-1] in lown:
-                p_prec = m[lown==ng[-1],0][0] # 0 becasue faces was done in reverse order
+    def findSpecies(self,core):
+        '''find the components and species for phreeqc'''
+        listE = core.addin.pht3d.getDictSpecies()
+        listS = listE['i'];listS.extend(listE['k']);listS.extend(listE['kim'])
+        listS.sort()
+        nbs,ncomp,lcomp,lspec,i = len(listS),0,[],[],0
+        while i<nbs:
+            if listE['i'][i] == 'O(0)': lspec.append('O(0)')
+            if listE['i'][i] in ['H(1)','H(+1)']: lspec.append('H(1)')
+            elif '(' in listE['i'][i]: 
+                lspec.append(listE['i'][i])
+                lcomp.append(listE['i'][i]);ncomp +=1
+                if '(' in listE['i'][i+1]: 
+                    lspec.append(listE['i'][i+1]);i +=1
             else :
-                if ng[0] not in lown: # don't add point if next face was done
-                    pcnt += 1; p_prec = pcnt;
-                    points = r_[points,array([mesh.elx[ic][0],mesh.ely[ic][0]],ndmin=2)]
-                else :
-                    p_prec = m[lown==ng[0],1][0]
-            fup.append(int(p_prec))
-            for jf in range(nf) : # loop on faces    
-                if ng[jf] in lown : # the face has been done
-                    p_prec = m[lown==ng[jf],0][0] # nothing else for faces
-                    fup.append(int(p_prec))
-                else :
-                    if jf<nf-1 and ng[jf+1] in lown: # next face has been done
-                        pt2 = m[lown==ng[jf+1],1][0];fup.append(int(pt2))
-                        addf = [p_prec,pt2,ic,ng[jf]]
-                        fc = r_[fc,array(addf,ndmin=2)]
-                    elif jf==nf-1: #next face (0) has been done
-                        if ng[0] in lown:
-                            pt2 = m[lown==ng[0],1][0];fup.append(int(pt2))
-                            addf = [p_prec,pt2,ic,ng[jf]]
-                            fc = r_[fc,array(addf,ndmin=2)]   
-                        else : # new face, the last one so don't add point
-                            addf = [p_prec,fup[0],ic,ng[jf]];fup.append(fup[0])
-                            fc = r_[fc,array(addf,ndmin=2)]   
-                            p_prec = fup[0]                             
-                    else : # fully new face, not the last one
-                        pcnt +=1
-                        addf = [p_prec,pcnt,ic,ng[jf]];fup.append(pcnt)
-                        fc = r_[fc,array(addf,ndmin=2)]            
-                        points = r_[points,array([mesh.elx[ic][jf+1],mesh.ely[ic][jf+1]],ndmin=2)]
-                        p_prec = pcnt
-            fcup.append(fup)
-            #print(ic,amax(faces[:,:2]),shape(points)[0])
-        #sort faces to have BC at the end
-        faces = fc[fc[:,3]>=0]
-        bfaces = fc[fc[:,3]<0]
-        ag = argsort(bfaces[:,3])
-        bfaces = bfaces[ag[-1::-1]]
-        '''
-        nf=shape(faces)[0]
-        for kf in range(nf): 
-            plot(points[faces[kf,:2].astype('int'),0],points[faces[kf,:2].astype('int'),1])
-        nf=shape(bfaces)[0]
-        for kf in range(nf): 
-            plot(points[bfaces[kf,:2].astype('int'),0],points[bfaces[kf,:2].astype('int'),1])
-        for ic in range(ncell):
-            plot(points[fcup[ic],0],points[fcup[ic],1])
-        '''
-        self.points,self.faces,self.fcup = points,faces,fcup
-        return points,faces,bfaces,fcup
-    
-    def opfMeshReg(self,md):
-        grd = md.addin.getFullGrid()
-        dx,dy = array(grd['dx']), array(grd['dy']);
-        nx,ny,x0,y0 = grd['nx'],grd['ny'],grd['x0'],grd['y0']
-        xv,yv = r_[x0,x0+cumsum(dx)],r_[y0,y0+cumsum(dy)]
-        npt = (nx+1)*(ny+1)
-        ic= 0
-        l = [];fc = []
-        for j in range(ny):
-            for i in range(nx):
-                if j==0: l.append([j*(nx+1)+i,j*(nx+1)+i+1,ic,-3]) # botm
-                if i<nx-1: l.append([j*(nx+1)+i+1,(j+1)*(nx+1)+i+1,ic,ic+1]) # right
-                if i==nx-1: l.append([j*(nx+1)+i+1,(j+1)*(nx+1)+i+1,ic,-2]) # right
-                if j<ny-1: l.append([(j+1)*(nx+1)+i+1,(j+1)*(nx+1)+i,ic,ic+nx]) # top
-                if j==ny-1: l.append([(j+1)*(nx+1)+i+1,(j+1)*(nx+1)+i,ic,-1]) # top
-                if i==0: l.append([(j+1)*(nx+1)+i,j*(nx+1)+i,ic,-4])
-                fc.append([j*(nx+1)+i,j*(nx+1)+i+1,(j+1)*(nx+1)+i+1,(j+1)*(nx+1)+i,j*(nx+1)+i])
-                ic += 1
-        fc0 = array(l,ndmin=2);fcup = array(fc,ndmin=2)
-        faces = fc0[fc0[:,3]>=0];bfaces = fc0[fc0[:,3]<0]
-        ag = argsort(bfaces[:,3])
-        bfaces = bfaces[ag[-1::-1]]
-        xm,ym = meshgrid(xv,yv)
-        points = c_[reshape(xm,(npt,1)),reshape(ym,(npt,1))]
-        return points,faces,bfaces,fcup
+                lcomp.append(listE['i'][i]);ncomp += 1
+            i += 1
+        ncomp += 2 # there is pH and pe but we need to have H20,H,0,charge and not pH,pe
+        if len(lspec)==0:
+            lspec = [listE['i'][0]] # we need at least one species for sel out
+        return ncomp,lcomp,lspec
     
 # **************** potential link with USG faces, not used
+    '''
     def facesLinkUsg(self):
-        '''here we make the link between faces of opfreak and Usg in order
-        to recover the fluxes if necessary, it needs to find the Usg face number
-        in the fcup freak list
-        '''
+        #here we make the link between faces of opfreak and Usg in order
+        #to recover the fluxes if necessary, it needs to find the Usg face number
+        #in the fcup freak list
         pts = self.points
         for ic in range(self.ncell):
             p0 = pts[fcup[ic]][0];#n,a = shape(p0)
             x,y = mesh.elx[ic],mesh.ely[ic]
             i0 = where((x==p0[0])&(y==p0[1]))[0][0]
-
-#***************************************************************
-#************************* in geometry  ***********************
-
-def cellsUnderPoly_new(core,dicz,media,iz):
-    ''' a new version fo cellunder poly because the old one was too slow
-    it starts from the first points of poly, search in the neighbouring cells
-    which one is under the currnet segment and followup to next segment
-    and then end of poly
     '''
-    mesh = core.addin.mesh
-    xc,yc,idcell = mesh.elcenters[:,0],mesh.elcenters[:,1],mesh.idc
-    elxa, elya = array(mesh.elxa),array(mesh.elya)
-    poly = dicz['coords'][iz]
-    if len(poly)==1: #OA 18/12/20
-        x,y = poly[0];dst=(x-xc)**2+(y-yc)**2
-        indx=where(dst==amin(dst))[0]
-        return indx,dicz['value'][iz]
-    lcoefs=lcoefsFromPoly(poly)
-    z = 0 # to bemodifiedfurther
-    x,y = zip(*coo)
-    d = sqrt((x[0]-xc)**2+(y[0]-yc)**2)
-    ic = where(amin(d)==d)[0][0]
-    iseg = 0 # index of the segments
-    # find in the neighb cells which one is below the segments
-    lpt = [ic]
-    while True:
-        print(iseg)
-        a,b = lcoefs[0,iseg],lcoefs[1,iseg]
-        cnb = list(mod(mesh.cneighb[ic],mesh.ncell_lay));cnb.remove(ic)
-        for ing in cnb:
-            pos = sign(a*mesh.elx[ing]+b*mesh.ely[ing]-1) # posit. vs the line
-            seg0 = sign(b*xc[ing] - a*yc[ing] - b*x[iseg] +a*y[iseg])#bx’-ay’-bx0+ay0
-            seg1 = sign(b*xc[ing] - a*yc[ing] - b*x[iseg+1] +a*y[iseg+1])#bx’-ay’-bx0+ay0
-            if (max(pos)!=min(pos))*(seg0 != seg1)*1: break
-        if ing==cnb[-1] : 
-            if iseg == len(x)-2: break
-            else : iseg += 1
-        else : 
-            lpt.append(ing) ;ic = ing

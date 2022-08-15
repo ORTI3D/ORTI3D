@@ -15,8 +15,8 @@ class BaseTop:
         
     def modlistFromGroup(self,categ):
         """find the list of models in a category"""
-        lshort = ['Sutra','Min3p','Opgeo']
-        lshort2 = ['Sutr','Min3','Opge']
+        lshort = ['Min3p','Openfoam']
+        lshort2 = ['Min3','Open']
         if categ in lshort:
             lmodels = [x for x in self.core.modelList if x[:4]==categ[:4]]
         else :

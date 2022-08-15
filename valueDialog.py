@@ -26,7 +26,8 @@ class valueDialog:
         self.blind=['DELR','DELC','TOP','BOTM','PERLEN','NROW','NCOL','NLAY','NPER','WELLS', # OA 24/5/19 removed al, trpt, trpv, dmcoef... 
                     'NCOMP','MCOMP','GCOMPN','KCOMPN','HTOP','DZ','PRSTY','ICBUND','SCONC','MTRECH',
                     'SP1','SP2','RC1','RC2','SWC','SDH','TLAYCON','LAYCBD', # EV 25/09/19 add TLAYCON EV 15/11/2019 add LAYCBD
-                    'NCELL','UNLAY','NJAG','IVSD','UNPER','ANGLEX'] # EV 3/12/21
+                    'NCELL','UNLAY','NJAG','IVSD','UNPER','ANGLEX',
+                    'ONROW','ONCOL','ONLAY','ODELR','ODELC','OSP1','OSP2','ORC1','ORC2'] 
         #print self.Mkword.lines
 
     def show(self):
@@ -144,10 +145,13 @@ class valueDialog:
                 elif set(values)=={'1'}:
                     self.core.dicaddin['Model']['type']='Unconfined'
                 else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21 
-            if self.currentLine == 'disu.2':
-                if values in [[3],[2]]:
-                    self.gui.onGridMesh('Mesh')
-                else : self.gui.onGridMesh('Grid')
+            if self.modName in ['Modflow','MfUsgTrans','Pht3d']: mdName = 'Modflow'
+            elif self.modName[:4]=='Open': mdName = 'OpenFlow'
+            val = self.core.getSingleValueFromName(mdName,'MshType',0)
+            if val>0:
+                self.gui.onGridMesh('Mesh')
+            else : 
+                self.gui.onGridMesh('Grid')
 
     def showBox(self,box,bool):
         box.setVisible(bool)    

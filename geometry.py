@@ -1,8 +1,7 @@
 from .config import *
-#from matplotlib import pylab as pl
 from .myInterpol import *
-import matplotlib.tri as mptri
 import numpy as np
+from scipy import pi
 
 """all geometrical operations are performed here
 all coordinates are in real world ones. so matrices have index 0 for rows
@@ -156,21 +155,21 @@ def makeZblock(core):
     #### choise of line depending the type of model # EV 10/02/20
     mgroup = core.dicaddin['Model']['group']
     modName,line = mgroup.split()[0],'dis.6'
-    if modName == 'Opgeo': modName += 'Flow'
     if mgroup in ['Modflow series']: lineTop='dis.6'; lineBot='dis.7' # oa 2/2/20 removed usg_rect
     elif mgroup == 'Modflow USG': lineTop='disu.7'; lineBot='disu.8' # OA 1/8/19 changed UNS to USG
     elif mgroup == 'Min3p': 
         modName = 'Min3pFlow'; lineTop='spat.7'; lineBot='spat.8'
-    elif mgroup == 'Opgeo': lineTop='domn.5' ; lineBot='domn.6'
+    elif mgroup == 'Openfoam': 
+        modName = 'OpenFlow'; lineTop='dis.6' ; lineBot='dis.7'
     #### stucture of Zblock
     if core.addin.getDim() not in ['Radial','Xsection']: # 2 or 3D case
         if core.addin.mesh==None: # OA 18/7/19 pb for min3p
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
-            if mgroup[0]=='M': #Min3p amd Modfow USG
-                Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
-            elif mgroup[0]=='O': # opengeosys
-                Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # opengoesys   
+            #if mgroup[0]=='M': #Min3p amd Modfow USG
+            Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
+            #elif mgroup[0]=='O': # openfoam
+            #Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # openfoam   
         #### extend the number of type at the number of media # EV 10/02/20
         vtypeTop=core.dictype[modName][lineTop]
         if len(vtypeTop)<nbM:vtypeTop.extend([vtypeTop[0]]*(nbM-len(vtypeTop)))
@@ -304,7 +303,7 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
     #print("block",core.addin.mesh)
     if core.addin.mesh == None : # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
-    elif core.getValueFromName('Modflow','MshType')==0:
+    elif core.getValueFromName(modName,'MshType')==0:
         m = blockRegular(core,modName,line,intp,opt,iper)
         (l,r,c) = shape(m)
         return reshape(m[:,::-1,:],(l,r*c)) # OA 22/2/22
@@ -322,18 +321,6 @@ def block1(core,modName,line,intp=False,opt=None,nvar=2):
         
 def blockUnstruct(core,modName,line,intp,opt,iper):
     '''returns data for a 3D unstructured block'''
-#    if 1 in intp : # OA 17/2/20
-#        parms = core.dicinterp[modName][line][0]
-#        m, mess = zone2interp(core,modName,line,0,parms,iper=iper);#print 'geom 282',amax(m) # EV 19/02/20
-#        m = array(m,ndmin=2) # OA 1/5/20 this and three below added
-#        for im in range(1,getNmedia(core)):
-#            m = r_[m,array(zone2interp(core,modName,line,0,parms,iper=iper),ndmin=2)]
-#        return m
-#    else: # changed from 0 to []
-#        m = array(zone2mesh(core,modName,line,0),ndmin=2) # just one layer
-#        for im in range(1,getNmedia(core)):
-#            m = r_[m,array(zone2mesh(core,modName,line,im),ndmin=2)]
-#        return m
     m0 = ones((getNlayers(core),core.addin.mesh.getNumber('elements')))
     nmedia = getNmedia(core)
     if type(intp) != type([5,6]) : intp=[0]*nmedia # OA added 28/10/20
@@ -657,275 +644,6 @@ def isclosed(core,x,y): # OA all modified 19/12/21
         ic1 = where(amin(dst)==dst)
         b = (ic0==ic1)
         return b
-    
-def facesZone1toZone2(self,zn0,zn1):
-    '''
-    this function takes two zones which must be in observation and finds
-    the faces that are shardeby the two zones
-    the output is a list composed of lists of three values : the cell nb in
-    zone0, the corresponding cell in zone2 and the index of the connected face
-    in cell1 of zone0
-    '''
-    dicz=md.diczone['Observation'].dic['obs.1']
-    iz0,iz1 = dicz['name'].index(zn0),dicz['name'].index(zn1)
-    indx0 = zmesh(md,dicz,0,iz0)[0][0]
-    indx1 = zmesh(md,dicz,0,iz1)[0][0]
-    # find connexion between 0 and 1
-    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
-    for ic0 in indx0:
-        for ic1 in mesh.cneighb[ic0]:
-            if ic1 in indx1:
-                connect.append([ic0,ic1,where(mesh.cneighb[ic0]==ic1)[0][0]]) 
-    return connect
-    
-def facesZoneLimit(self,zn):
-    '''
-    this function takes one zone which must be in observation and finds
-    the faces that are at the zone boundary
-    the output is a list composed of lists of two values : the cell nb in
-    zone and the index at boundary in celli of zone
-    '''
-    dicz=md.diczone['Observation'].dic['obs.1']
-    iz = dicz['name'].index(zn)
-    indx = zmesh(md,dicz,0,iz)[0][0]
-    # find connexion between 0 and 1
-    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
-    for ic0 in indx:
-        for ic1 in mesh.cneighb[ic0]:
-            if ic1 not in indx:
-                connect.append([ic0,ic1,where(mesh.cneighb[ic0]==ic1)[0][0]]) 
-    return connect
-##########################   GMESH    ########################
-##########################################################
-
-def gmeshString(core,dicD,dicM):
-    """creates a gmesh string to use in gmesh to generate the mesh
-    dicD is the domain zones, containing points, lines and domain
-    dicM is the media zones dict, they will be used to build the grid"""
-    s,p_list,p_link = '',[],[]
-    i_domn = dicD['name'].index('domain') # search for the line called domain
-    dcoords = dicD['coords'][i_domn][:-1]
-    ddens = float(dicD['value'][i_domn])
-    ddens = corrMeshDens(dcoords,ddens)
-    if isPolyTrigo(dcoords) : dcoords = dcoords[-1::-1] # poly mus tbe clockwise
-    mgroup = core.addin.getModelGroup()
-    if mgroup=='Opgeo': dens =  str(core.dicval[mgroup+'Flow']['domn.4'][0])
-    ldom=len(dcoords)
-    # domain points
-    for i,pt in enumerate(dcoords):
-        s+='Point('+str(i+1)+')={'+str(pt[0])+','+str(pt[1])+',0,'+str(ddens[i])+'}; \n'
-        p_list.append(pt)
-    npt = i+1;lli = list(range(i+1)) # OA 26/4
-    # domain lines
-    s+= stringLine(p_link,list(range(ldom)),1,opt='close')
-    #other points: present in domain, name shall start by point
-    indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='point']
-    p_coord = [dicD['coords'][iz][0] for iz in indx] # a list of all coords in zone points... aded [0]
-    p_dens = [dicD['value'][iz] for iz in indx] # same for densities
-    #add the fault points OA 16/8/20
-#    indx = [dicD['name'].index(b) for b in dicD['name'] if b[:5]=='fault']
-#    if len(indx)>0:
-#        for iz in indx:
-#            pts1,pts2 = ptForFaults(dicD['coords'][iz],float(dicD['value'][iz]))
-#            p_coord.extend(pts1);p_coord.extend(pts2)
-#            p_dens.extend([dicD['value'][iz]]*len(pts1)*2)
-    if len(p_coord)>0:
-        p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
-        s+=sa
-        npt += len(p_coord)
-    # other lines present in the domain
-    s1 = ''
-    for iz,n in enumerate(dicD['name']):
-        if n[:4] in ['line','faul']: # OA 16/8/20 correct for line
-            p_coord = dicD['coords'][iz]
-            p_dens = dicD['value'][iz]
-            p_list,p_link,spt,sa = stringPoints(p_list,p_coord,p_dens,npt)
-            s1+=sa
-            p_range = list(range(npt,npt+len(p_coord)))
-            s1+= stringLine(p_link,p_range,npt)
-            npt += len(p_coord)
-            lli.extend(p_range) # OA 26/4 npt->nli
-    # add the material zones (opgeo), but don't add points twice!!
-    isurf,s2 = 2,''
-    for iz in range(len(dicM['name'])):
-        if (dicM['name'][iz] == 'domain')  or (dicM['name'][iz][0]=='_'): continue
-        p_coord = dicM['coords'][iz];#print 'geom 517',iz,p_coord
-        x,y = list(zip(*p_coord)); x,y = array(x),array(y)
-        #dens = str(min(max(x)-min(x),max(y)-min(y))/1.5)[:6]
-        d = sqrt((x[1:]-x[:-1])**2+(y[1:]-y[:-1])**2)
-        dens = str(min(d)*2)[:6];#print 'geom 599 dens',dicM['name'],dens
-        if len(p_coord)>2: # don't take points, just lines
-            p_list,p_link,spt,ss = stringPoints(p_list,p_coord,dens,npt)
-            s2+=ss
-            p_range = list(range(npt,npt+len(p_coord)))
-            s2+= stringLine(p_link,p_range,isurf,'close')
-            npt += len(p_coord)
-            s2+='Plane Surface('+str(isurf)+')={'+str(isurf)+'}; \n';
-            isurf+=1
-    a=''
-    if isurf >2 : a = ','+','.join([str(x) for x in range(2,isurf)])
-    s = s+s1+s2+'Plane Surface(1)={1'+a+'}; \n';
-    #s+='Physical Surface(1)={1}; \n';
-    for ip in range(npt):
-        s+='Point{'+str(ip+1)+'} In Surface{1}; \n'
-    for il in lli: # OA 26/4
-        s+='Line{'+str(il+1)+'} In Surface{1}; \n'
-    return s#+'Recombine Surface{1}; \n'
-    
-def corrMeshDens(coord,dens): # OA added 28/9/19
-    npts=len(coord)
-    try: len(dens)
-    except TypeError: dens = [dens]*npts
-    coo,dns = array(coord,ndmin=2),array(dens)
-    dst = sqrt((coo[1:,0]-coo[:-1,0])**2+(coo[1:,1]-coo[:-1,1])**2)
-    dstmin = r_[dns[0],minimum(dst[:-1],dst[1:]),dns[-1]]
-    dns[dns>dstmin] = dstmin[dns>dstmin]
-    return dns
-                
-def stringPoints(p_list,p_coord,p_dens,istart):    
-    '''creates lines of points from coordinates and returns the point list'''
-    def isCooInList(coo,lst,eps):
-        x,y = list(zip(*lst));x,y = array(x),array(y)
-        #d = sqrt((x[1:]-x[:-1])**2+(y[1:]-y[:-1])**2)
-        #eps = min(d)/20
-        for i,c1 in enumerate(lst):
-            if abs(coo[0]-c1[0])<eps and abs(coo[1]-c1[1])<eps: return i
-        return -1
-        
-    s,spt,p_link='','',[]
-    x,y = list(zip(*p_list))
-    eps = min(max(x)-min(x),max(y)-min(y))/500
-    if type(p_dens) != type([5]): 
-        p_dens = [p_dens]*len(p_coord)
-    for ip,coo in enumerate(p_coord):
-        prf,idx ='',isCooInList(coo,p_list,eps)
-        if idx>=0: 
-            p_link.append([istart+ip,idx]) # make the link btw the present pt and the existing one with same coords
-            prf='//' # don't add twice the same point
-        p_list.append(coo) # store the point
-        if type(coo[0])==type((5,6)): coo = coo[0]
-        dens = p_dens[ip]
-        s+=prf+'Point('+str(istart+ip+1)+')={'+str(coo[0])+','+str(coo[1])+',0,'+dens+'}; \n'
-        spt+= str(istart+ip+1)+','
-    return p_list,p_link,spt,s
-    
-def stringLine(p_link,p_range,il,opt='None'):
-    '''creates a line string from a list of points number
-    it has to consider pre-existing points'''
-    s,pnew,pold='',[],[]
-    if len(p_link)>0: pnew,pold = list(zip(*p_link)) # get the new and old ref of the same points
-    s+='// p '+str(pnew)+'  '+str(pold)+'\n'
-    l_link = []
-    #print pnew,pold
-    for i in p_range[:-1]:
-        prf='';#print i
-        if (i in pnew) and (i+1 in pnew):
-            if pold[pnew.index(i+1)]==pold[pnew.index(i)]+1: # the line must be in the same order
-                l_link.append((i,pold[pnew.index(i)]))
-                prf='//' # don't write an existing line
-        a,b = ptreplace(pold,pnew,i,i+1)
-        s+=prf+'Line('+str(i+1)+')={'+str(a)+','+str(b)+'}; \n'
-    if opt=='close':
-        a,b = ptreplace(pold,pnew,p_range[-1],p_range[0])
-        s+='Line('+str(p_range[-1]+1)+')={'+str(a)+','+str(b)+'}; \n'
-    if opt=='None': p_range = p_range[:-1]
-    v,lnew,lold='',[],[]
-    if len(l_link)>0:lnew,lold = list(zip(*l_link))
-    s+='// l'+str(lnew)+'  '+str(lold)+'\n'
-    for ip in p_range:
-        if ip in lnew: v+=str(lold[lnew.index(ip)]+1)+','
-        else : v+=str(ip+1)+','
-    s+='Line Loop('+str(il)+')={'+v[:-1]+'};\n'
-    return s
-    
-def ptreplace(pold,pnew,i,j):
-    a = i+1
-    if i in pnew: a = pold[pnew.index(i)]+1
-    b = j+1
-    if j in pnew: b = pold[pnew.index(j)]+1
-    return a,b
-
-def ptForFaults(poly,dns): # !!! not used finally
-    '''create new points around a fault to build the fault later. form a poly
-    we create points in the perpendicular direction at a dens distance. In the middle
-    of the poly the points are at a dens distance of the two line. Then the interval
-    is divided on both sides to have the same nb of points
-    '''
-    x,y = zip(*poly)
-    lc0 = lcoefsFromPoly(poly);c=-1
-    a,b = lc0[:1,:],lc0[1:,:]
-    A = sqrt(dns**2/(1+a**2/b**2))
-    yn1 = y[:-1]-A;xn1=x[:-1]-a/b*A # starting point
-    yn1 = r_[yn1,y[:-1]+A];xn1=r_[xn1,x[:-1]+a/b*A]
-    yn2 = y[1:]-A;xn2=x[1:]-a/b*A # ending point
-    yn2 = r_[yn2,y[1:]+A];xn2=r_[xn2,x[1:]+a/b*A]
-    xn1 = c_[xn1,xn2[:,-1]];xn2=c_[xn1[:,0],xn2];xn=(xn1+xn2)/2 # mke the average
-    yn1 = c_[yn1,yn2[:,-1]];yn2=c_[yn1[:,0],yn2];yn=(yn1+yn2)/2
-    d1 = sqrt((x-xn)**2+(y-yn)**2) # correct for distance for pt sin the middle
-    xn=x+(xn-x)*dns/d1;yn=y+(yn-y)*dns/d1
-    pts0,pts1=[(xn[0,0],yn[0,0])],[(xn[1,0],yn[1,0])]
-    for i in range(len(x)-1):
-        d=sqrt((xn[:,i+1]-xn[:,i])**2+(yn[:,i+1]-yn[:,i])**2) # dst from 1 pt to the next
-        dv = int(around(mean(d)/dns))
-        lx,ly = linspace(xn[0,i],xn[0,i+1],dv),linspace(yn[0,i],yn[0,i+1],dv)
-        pts0.extend(zip(lx[1:],ly[1:]))
-        lx,ly = linspace(xn[1,i],xn[1,i+1],dv),linspace(yn[1,i],yn[1,i+1],dv)
-        pts1.extend(zip(lx[1:],ly[1:]))
-    return pts0,pts1
-        
-def readGmshOut(s,outline=False,nbdy=0,npts=0,liNames=[]): # OA 28/7/20 added nbdy
-    '''reads the inside of a gmesh mesh file from the string s
-    and returns nnod : nb of nodes, nodes : nodes coordinates, 
-    nel : nb of elements, el
-    '''
-    b = s.split('$Nodes')[1]
-    c = b.split('$EndNodes')[0]
-    c1 = c.split('\n')       
-    c2 = [x.split() for x in c1[2:-1]];#print len(c2)
-    nodes = array(c2,dtype='float')
-    nodes[:,0] = nodes[:,0]-1 # node number start from 0
-    # elements
-    b = s.split('$Elements')[1];#print len(b)
-    c = b.split('$EndElements')[0];#print len(c)
-    c1 = c.split('\n')
-    c2 = [x.split() for x in c1[2:] if len(x.split())==8];#elements have a length 8
-    elements = array(c2,dtype='int');#print 'ogModel 48',arr
-    elements = elements-1
-    elements = elements[:,[0,3,4,5,6,7]] # 2nd column is useless
-    if outline: 
-        dcout = {} # OA 15/8/20 modif to dict
-        c3 = array([x.split() for x in c1[2:] if len(x.split())==7],dtype='int') # OA 28/7/20
-        lines = unique(c3[:,4]); count=0;liout = []
-        for l in lines: 
-            if l<=nbdy: dcout['bc'+str(l-1)] = c3[c3[:,4]==l,-2:]-1
-            else : 
-                arr = c3[c3[:,4]==l,-2:]-1
-                if len(liout)==0: liout.append(arr)
-                else :
-                    if liout[-1][-1,1] == arr[0,0]: # this is the same poly
-                        liout[-1] = r_[liout[-1],arr]
-                    else :
-                        liout.append(arr)
-                        count += 1
-        for i in range(len(liout)):
-            dcout[liNames[i]] = liout[i]
-        return nodes,elements,dcout
-    else :
-        return nodes,elements
-
-def createTriangul(obj):
-    '''get the triangulation for matplotlib representation'''
-    xnds,ynds = obj.nodes[:,1],obj.nodes[:,2]
-    trg = mptri.Triangulation(xnds,ynds,triangles=obj.elements[:,-3:]) # be careful the numbering can be differnet from gmesh
-    obj.trg = trg
-    nel = len(trg.triangles)
-    obj.elx = trg.x[trg.triangles]
-    obj.ely = trg.y[trg.triangles]
-    obj.elcenters = zeros((nel,2))
-    obj.elcenters[:,0] = mean(obj.elx,axis=1)
-    obj.elcenters[:,1] = mean(obj.ely,axis=1)
-    return obj
-    
 ################################### mesh utilities ##########################
 #############################################################################    
 
@@ -1085,17 +803,6 @@ def cellsUnderPolyOrd(core,dicz,media,iz):
 def zptsIndices(core,dicz):
     '''finds the indices of the points in the zones'''
     mgroup = core.dicaddin['Model']['group']
-#    if core.getValueFromName('Modflow','MshType')<1: 
-#        nx,ny,xv,yv=getXYvects(core)
-#        lindx = []
-#        for iz in range(len(dicz['name'])):
-#            l0 = []
-#            for coo in dicz['coords'][iz]:
-#                ix = where(argsort(r_[xv,coo[0]])==nx+1)[0][0]-1
-#                iy = where(argsort(r_[yv,coo[1]])==ny+1)[0][0]-1
-#                l0.append((ix,iy))
-#            lindx.append(l0)
-#    else : # fully unstruct
     mesh = core.addin.mesh
     xc,yc = mesh.getCenters()
     lindx = []
@@ -1145,6 +852,46 @@ def writeVTKstruct(core,data):
     s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
     s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     return s
+    
+def facesZone1toZone2(core,zn0,zn1):
+    '''
+    this function takes two zones which must be in observation and finds
+    the faces that are shardeby the two zones
+    the output is a list composed of lists of three values : the cell nb in
+    zone0, the corresponding cell in zone2 and the index of the connected face
+    in cell1 of zone0
+    '''
+    mesh= core.addin.mesh
+    dicz=core.diczone['Observation'].dic['obs.1']
+    iz0,iz1 = dicz['name'].index(zn0),dicz['name'].index(zn1)
+    indx0 = zmesh(core,dicz,dicz['media'][iz0],iz0)[0]
+    indx1 = zmesh(core,dicz,dicz['media'][iz1],iz1)[0]
+    # find connexion between 0 and 1
+    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
+    for ic0 in indx0:
+        ngb = list(mesh.cneighb[ic0])
+        for ic1 in ngb:
+            if ic1 in indx1:
+                connect.append([ic0,ic1,ngb.index(ic1)]) 
+    return connect
+    
+def facesZoneLimit(self,zn):
+    '''
+    this function takes one zone which must be in observation and finds
+    the faces that are at the zone boundary
+    the output is a list composed of lists of two values : the cell nb in
+    zone and the index at boundary in celli of zone
+    '''
+    dicz=md.diczone['Observation'].dic['obs.1']
+    iz = dicz['name'].index(zn)
+    indx = zmesh(md,dicz,0,iz)[0][0]
+    # find connexion between 0 and 1
+    connect =[] # will contain icell zone0 then icell zone 1 and index of connection
+    for ic0 in indx:
+        for ic1 in mesh.cneighb[ic0]:
+            if ic1 not in indx:
+                connect.append([ic0,ic1,where(mesh.cneighb[ic0]==ic1)[0][0]]) 
+    return connect
 
 ###################### INTERPOLATION ####################
 

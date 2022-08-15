@@ -53,13 +53,10 @@ class BaseParms:
             action=action.replace('Modflow','Min3pFlow')
             action=action.replace('Mt3dms','Min3pTrans')
             action=action.replace('Pht3d','Min3pChem')
-        if mgroup =='Opgeo':
-            action=action.replace('Modflow','OpgeoFlow')
-            action=action.replace('Mt3dms','OpgeoTrans')
-            action=action.replace('Pht3d','OpgeoChem')
-        if mgroup =='Sutra':
-            action=action.replace('Modflow','Sutra')
-            action=action.replace('Mt3dms','Sutra')
+        if mgroup =='Openfoam':
+            action=action.replace('Modflow','OpenFlow')
+            action=action.replace('Mt3dms','OpenTrans')
+            action=action.replace('Pht3d','OpenChem')
         exec(action)
         
     def openMap(self):

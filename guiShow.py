@@ -54,13 +54,13 @@ class guiShow:
         self.userSpecies,self.data = {},None
         self.visu.Glist = self.Glist
         self.curVar, self.curVarView = {},None
-        modgroup = self.core.addin.getModelGroup()
-#        self.mesh = False
-#        if modgroup=='Opgeo' and self.core.getValueFromName('OpgeoFlow','O_GRID')!=0 :self.mesh=True
-#        if modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0 :self.mesh=True
-#        if modgroup=='Modflow USG': self.mesh=True # OA 24/2/20
+        modgroup = self.core.addin.getModelGroup();self.modgroup = modgroup
+        self.MshType = 0
+        if 'USG' in modgroup: self.MshType = self.core.getValueFromName('Modflow','MshType')
+        if modgroup == 'Openfoam': self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         
     def openModel(self):
+        self.init()
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
         else : self.setNames('Model_Plane_L',['Z'])
         if self.core.dicaddin['Model']['group'] == 'Min3p':
@@ -220,7 +220,7 @@ class guiShow:
         if group=='Transport':
             if name=='Tracer':
                 #print 'hello',self.core.transReader
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
@@ -232,7 +232,7 @@ class guiShow:
         
     def getArray2D(self,group,arr3,plane,section):
         '''uses the 3D array to and plane to return a 2D array'''
-        X,Y = getXYmeshSides(self.core,plane,section)# X,Y can be in Z for presention purpose
+        X,Y = getXYmeshCenters(self.core,plane,section)# X,Y can be in Z for presention purpose
         self.Umult, units = 1.,self.dicVisu['Chemistry']['Units']
         #print('guish l 206',shape(arr3))
         if group =='Chemistry':
@@ -240,23 +240,19 @@ class guiShow:
                 if units == 'mmol/L': self.Umult = 1000.
                 elif units == 'umol/L': self.Umult = 1e6
                 elif units == 'nmol/L': self.Umult = 1e9 
-        modgroup = self.core.addin.getModelGroup()
-        if self.swiImg =='Contour' and modgroup[:4] != 'Opge': # opgeo value at nodes
-            X=(X[:,:-1]+X[:,1:])/2;X=X[1:,:]
-            Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
         #print('guish 196',shape(arr3),self.mesh,self.core.getValueFromName('Modflow','MshType'))
-        if self.core.mfUnstruct and self.core.getValueFromName('Modflow','MshType')>0: # OA 24/10/20 mfUnstruct
+        if self.MshType>0: # OA 24/10/20 mfUnstruct
             return None,None,arr3[section,:]*self.Umult # OA 7/12/21
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:
-                if modgroup[:4]=='Modf': 
+                if self.modgroup[:4]=='Modf': 
                     if self.core.addin.getModelType()=='free' and self.curName=='Head':
                         Y = self.getXyHeadFree(arr3,Y)
                     data = (X,Y,arr3[::-1,0,:]*self.Umult)
                 else : 
                     data = (X,Y,arr3[:,0,:]*self.Umult)
             else : # 2 or 3D
-                if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult) #-1 for different orientation in modflow and real world
+                if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult); #-1 for different orientation in modflow and real world
                 elif plane=='Y': data = (X,Y,arr3[:,section,:]*self.Umult)
                 elif plane=='X': data = (X,Y,arr3[:,:,section]*self.Umult)
             #☻print('getA2',shape(X),shape(Y),shape(data[2]))
@@ -268,7 +264,7 @@ class guiShow:
         or """
         if self.data == None or x==None or y==None: #OA 24/10/20 removed mesh
             return ' '
-        if self.core.mfUnstruct and self.core.getValueFromName('Modflow','MshType')>0:
+        if self.MshType>0:
             c = self.core.addin.mesh.elcenters
             xc,yc = c[:,0],c[:,1]
             d = sqrt((x-xc)**2+(y-yc)**2);
