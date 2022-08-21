@@ -177,10 +177,9 @@ def makeZblock(core):
         if len(vtypeBot)<nbM:vtypeBot.extend([vtypeBot[0]]*(nbM-len(vtypeBot)))
         #### get the type of model parameter for each media # EV 10/02/20
         intp=[]
-        for im in range(nbM): ## im is the media number
-            if im<nbM-1:line=lineTop
-            else : line=lineBot
-            vtype=core.dictype[modName][line][im] ## get the type of entrance data (zone, array, interpolation...) 
+        for im in range(nbM+1): ## im is the media number (added one for the bottom)
+            if im<nbM: vtype=core.dictype[modName][lineTop][im] ## get the type of entrance data (zone, array, interpolation...) 
+            else : vtype=core.dictype[modName][lineBot][im-1]
             if vtype=='importArray': intp.append(4) 
             elif vtype in ['one_value','zone']: intp.append(3)
             elif vtype=='interpolate' : 
@@ -189,6 +188,7 @@ def makeZblock(core):
                 formula = core.dicformula[modName][line][im]
                 value=core.formExec(formula)
                 return value
+        intb = intp[-1]
         #### creates the first media
         i= 0
         top = getTopBotm(core,modName,lineTop,intp[0],0,refer=None,mat='top') # EV 10/02/20 # EV 19/02/20
@@ -197,11 +197,9 @@ def makeZblock(core):
         #### create the other media and the layers
         for im in range(nbM):
             if im<nbM-1: ## bottom is in top matrix
-                line=lineTop
-                botm = getTopBotm(core,modName,line,intp[im+1],im+1,refer=top,mat='top')# EV 19/02/20
+                botm = getTopBotm(core,modName,lineTop,intp[im+1],im+1,refer=top,mat='top')# EV 19/02/20
             else : ## last one, we take the bottom
-                line=lineBot
-                botm = getTopBotm(core,modName,line,intp[im],im,refer=top,mat='botm') # EV 19/02/20
+                botm = getTopBotm(core,modName,lineBot,intb,im,refer=top,mat='botm') # EV 19/02/20
             ## creates the sublayers
             if lilay[im]==1: ## just one sublayer
                 dff = top-botm;#print(top,botm,dff)
