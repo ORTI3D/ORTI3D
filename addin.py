@@ -206,10 +206,9 @@ class addin:
         if actionName == 'Ad_Model':
             if m['dimension']=='2D': # EV 22/07/2019 to transform 2D in 2D horizontal & free in Unconfined & confined in Confined in the existing model
                 m['dimension']='2D horizontal'
-            if m['type']=='free':
-                m['type']='Unconfined' 
-            if m['type']=='confined':
-                m['type']='Confined'
+            if m['type']=='free': m['type']='Unconfined' 
+            if m['type']=='confined': m['type']='Confined'
+            if m['type']=='Mix (for 3D only)' : m['type']='Unconfined' 
             data = [('Dimension','Choice',(m['dimension'],['2D horizontal','3D','Radial','Xsection'])), #EV 22/07/2018 2D -> 2D horizontal
                     ('Type','Choice',(m['type'],['Confined','Unconfined','Unsaturated','2phases'])),
                     ('Group','Choice',(m['group'],['Modflow series','Modflow USG','Min3p','Openfoam'])),#EV 18.10.18 removed 'Sutra'

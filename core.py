@@ -217,8 +217,9 @@ class Core:
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        #if self.Zblock==None: self.Zblock = makeZblock(self)
+        self.addin.MshType = MshType
         if self.gui != None and MshType>0: self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
+        if type(self.Zblock)!=type(ones(3)): self.Zblock = makeZblock(self)
         self.addin.setChemType()
         #self.usePostfix()
                         
