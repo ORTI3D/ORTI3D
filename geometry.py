@@ -1062,7 +1062,7 @@ def zone2array(core,modName,line,im):
     else : #if ext == 'txt' or ext == 'dat' :
         print(fDir+os.sep+fNameExt)
         try : arr=loadtxt(fDir+os.sep+fNameExt)  # OA 6/6/20 changed file did not exist
-        except OSError :onMessage(core,txt1) 
+        except OSError :onMessage1(core,txt1) 
         except : onMessage1(core,txt2) 
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
