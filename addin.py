@@ -57,7 +57,7 @@ class addin:
                 if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CSS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
                 if (mod=='OpenTrans') & (lmodules[i] in ['PORO','DSP','CONC']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
-                if (mod=='OpenChem') & (lmodules[i] in ['SOLU']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
+                if (mod=='OpenChem') & (lmodules[i] in ['SOLU','GAS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19
             self.structure['menu'][mod]={'name':name,'position': 0,
@@ -361,6 +361,8 @@ class addin:
             #dialg.Destroy()  
 
         if actionName == 'Ad_ImpDb':
+            dbnam = 'pht3d_datab.dat'
+            if  self.group == 'Openfoam': dbnam = 'phreeqc.dat'
             if self.group == 'Min3p':
                 self.chem = self.min3p
                 self.chem.importDB(self.min3p.Base['MChemistry'])
@@ -372,20 +374,12 @@ class addin:
 #                for name in ['comp','complex','gases']:
 #                    self.chem.readOtherDb(name,bs[name]['rows'])
 #                print bs
-            elif  self.group == 'Openfoam':
+            else : # pht3d or openfoam : same dbase
                 self.chem = self.pht3d
-                if 'phreeqc.dat' not in os.listdir(self.core.fileDir):
-                    self.dialogs.onMessage(self.gui,'phreeqc.dat file missing')
+                if dbnam not in os.listdir(self.core.fileDir):
+                    self.dialogs.onMessage(self.gui,dbnam+' file missing')
                 else : #EV 26/08/19
-                    fname = str(self.core.fileDir+os.sep+'phreeqc.dat')
-                    self.chem.tempDbase,self.chem.npk= self.chem.importDB(fname);
-                    self.chem.updateChemistry()
-            else :
-                self.chem = self.pht3d
-                if 'pht3d_datab.dat' not in os.listdir(self.core.fileDir):
-                    self.dialogs.onMessage(self.gui,'pht3d_datab.dat file missing')
-                else : #EV 26/08/19
-                    fname = str(self.core.fileDir+os.sep+'pht3d_datab.dat')
+                    fname = str(self.core.fileDir+os.sep+dbnam)
                     self.chem.tempDbase,self.chem.npk= self.chem.importDB(fname);
                     self.chem.updateChemistry()
             self.dialogs.onMessage(self.gui,'Database imported')

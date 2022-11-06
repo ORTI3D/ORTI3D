@@ -304,7 +304,7 @@ class modflowWriter:
         exceptDict = {'sms.1a':''}
         a = self.core.dicval['Modflow']['sms.1a'][0];# print 'mfw 168',s, type(s)
         if a!= 0: 
-            exceptDict['sms.1a'] = self.Fkey.lines['sms.1a']['kw'][i]
+            exceptDict['sms.1a'] = self.Fkey.lines['sms.1a']['kw'][0]
         self.writeOneFile('SMS',exceptDict)
         
     def writeUZF(self):

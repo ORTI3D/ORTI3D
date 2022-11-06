@@ -7,25 +7,26 @@ Created on Wed Sep  8 07:10:49 2021
 
 class  OpF:
     def __init__(self):
-        self.grpList=['FPRM','DIS','HEAD','KHY','WEL','RCH','GHB','RIV','DRN','UNS','FSLV']
+        self.grpList=['FPRM','DIS','HorP','KHY','WEL','RCH','GHB','RIV','DRN','UNS','FSLV']
         self.groups={
         'FPRM':['fprm.1'],
         'DIS':['dis.'+str(i) for i in range(1,9)],
-        'HEAD':['head.1','head.2'],
+        'HorP':['head.1','head.2','press.1','press.2'],
         'KHY':['khy.'+str(i) for i in range(1,4)],
         'WEL':['wel'],
         'RCH':['rch'],
         'GHB':['ghb'],
         'RIV':['riv'],
         'DRN':['drn'],
-        'UNS':['uns.1','uns.2','uns.3'], # unsaturated
-        'FSLV':['fslv.1'], # solver
+        'UNS':['uns.'+str(i) for i in range(1,6)], # unsaturated
+        'FSLV':['fslv.'+str(i) for i in range(1,4)] # solver
         }
         self.lines={
-        'fprm.1':{'comm':'Flow parameters','cond':'','kw':['OFP1'],
-                'detail':[['unsaturated','no','yes']],
-                'type':['choice'],
-                'default':[0]},
+        'fprm.1':{'comm':'Flow parameters','cond':'','kw':['OFPMS','OFPMEQ'],
+                'detail':[['type of flow','saturated','unsaturated','2phase'],
+                    ['pressure equilibrium','no','yes']],
+                'type':['choice','choice'],
+                'default':[0,0]},
         'dis.1':{'comm':'Type of mesh','cond':'','kw':['MshType'],
                 'detail':[['','Rectangle','Nested','Triangle','Voronoi']],
                 'type':['choice'],'default':[0]},
@@ -47,10 +48,14 @@ class  OpF:
                 'detail':['Period length','internal steps','multiplier',['type','Steady state','transient']],
                 'type':['float','int','float','choice'],
                 'default':[1.,1,1.,0],'units':['T','','','']},
-        'head.1':{'comm':'Initial heads','cond':'','kw':['OIH'],
+        'head.1':{'comm':'Initial heads','cond':'OFPMS<2','kw':['OIH'],
                  'detail':[],'type':['arrfloat'],'default':[10.]},
-        'head.2':{'comm':'Fixed heads','cond':'','kw':['OFH'],
+        'head.2':{'comm':'Fixed heads','cond':'OFPMS<2','kw':['OFH'],
                  'detail':[],'type':['arrfloat'],'default':[10.]},
+        'press.1':{'comm':'Initial pressure','cond':'OFPMS==2','kw':['OIP'],
+                 'detail':[],'type':['arrfloat'],'default':[0.]},
+        'press.2':{'comm':'Fixed pressure','cond':'OFPMS==2','kw':['OFPR'],
+                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'khy.1':{'comm':'Hydraulic cond. parms','cond':'','kw':['OKTYP'],
                  'detail':[['','Kv type','ratio','value']],
                 'type':['choice'],'default':[0]},
@@ -72,10 +77,15 @@ class  OpF:
                  'names':['Elevation','Conductance'],
                  'detail':[],'type':['arrfloat'],'default':[0.]},
         'uns.1':{'comm':'Unsat parameters','cond':'','kw':['OUNPR'],
-                 'detail':[],'type':['arrfloat'],'default':[0.]},
-        'uns.2':{'comm':'alpha_vg','cond':'','kw':['OAVG'],
+                 'detail':['capill type','van Genuchten'],
+                 'type':['choice'],'default':[0]},
+        'uns.2':{'comm':'sw_min','cond':'','kw':['OSWMIN'],
+                 'detail':[],'type':['arrfloat'],'default':[0.1]},
+        'uns.3':{'comm':'alpha_vg','cond':'','kw':['OAVG'],
                  'detail':[],'type':['arrfloat'],'default':[1.]},
-        'uns.3':{'comm':'n_vg','cond':'','kw':['ONVG'],
+        'uns.4':{'comm':'n_vg','cond':'','kw':['ONVG'],
+                 'detail':[],'type':['arrfloat'],'default':[1.5]},
+        'uns.5':{'comm':'sw_init','cond':'','kw':['OSWINI'],
                  'detail':[],'type':['arrfloat'],'default':[1.]},
         'fslv.1':{'comm':'solver for h','cond':'','kw':['SOFH'],
                  'detail':[['solver','PBiCGStab'],['preconditioner','DIC','DILU'],
@@ -84,7 +94,10 @@ class  OpF:
         'fslv.2':{'comm':'Picard','cond':'','kw':['SOFPI'],
                  'detail':['tolerance','minIter','maxIter','nIterStability'],
                  'type':['float','int','int','int'],'default':[0.01,3,10,5]},
-                  
+        'fslv.3':{'comm':'Timing','cond':'','kw':['SODT0','SOMXDT','SOMXCO','SODCM','SODCR'],
+                'detail':['deltaT0','maxDeltaT','maxCo','dCmax','dCresidual'],
+                'type':['float','float','float','float','float'],
+                'default':[1,100,0.75,0.01,1e-3]}
         }
 
 #Transport
@@ -118,7 +131,7 @@ class  OpT:
         'crch':{'comm':'Recharge conc','cond':'','kw':['ORCONC'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'tschm':{'comm':'scheme for Cw','cond':'','kw':['OTSCH'],
-                 'detail':[['scheme','VanLeer','limitedLinear01 1']],
+                 'detail':[['scheme','Gauss vanLeer','Gauss limitedLinear01 1']],
                  'type':['choice'],'default':[0]},
         #RCT
         'rct.1':{'comm':'major flags','cond':'','kw':['OISOTH','OIREAC','OIGETSC'],
@@ -152,10 +165,11 @@ class  OpT:
 #Chemistry
 class  OpC:
     def __init__(self):
-        self.grpList=['CHPRM','SOLU','CHSLV']
+        self.grpList=['CHPRM','SOLU','GAS','CHSLV']
         self.groups={
         'CHPRM':['chprm'],
         'SOLU':['sactiv','sinit','sfix','swel','srch'],
+        'GAS':['ginit','gfix','gwel'],
         'CHSLV':['chslv'],
         }
         self.lines={
@@ -171,6 +185,12 @@ class  OpC:
         'swel':{'comm':'well solutions','cond':'','kw':['OWSOL'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'srch':{'comm':'Recharge solu','cond':'','kw':['ORSOL'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'ginit':{'comm':'Initial gas','cond':'','kw':['OIGAS'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'gfix':{'comm':'fixed gas','cond':'','kw':['OSGAS'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'gwel':{'comm':'well gas','cond':'','kw':['OWGAS'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'chslv':{'comm':'solver for Cwi','cond':'','kw':['OCHSO'],
                  'detail':[['solver','PBiCG'],['preconditioner','DIC','DILU'],

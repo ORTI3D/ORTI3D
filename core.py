@@ -189,7 +189,8 @@ class Core:
                 self.dicformula[model].update(dict1)
             elif typ=='interp': 
                 self.dicinterp[model].update(dict1) # EV 20/02/20
-            elif typ=='addin': self.addin.update1(dict1)
+            elif typ=='addin': 
+                self.addin.update1(dict1)
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         if self.gui!=None: self.gui.onInitGui(self)
@@ -284,7 +285,7 @@ class Core:
             self.m3pWriter.writeMin3pFiles(self,modName[5:])
             self.transReader=self.flowReader = min3pReader(self,self.fileDir,self.fileName)
         if modName  in ['OpenFlow','OpenTrans','OpenChem']:
-            self.opfWriter = opfoamWriter(self,self.addin.mesh,'z')
+            self.opfWriter = opfoamWriter(self,self.addin.mesh)
             dicBC= {};options = {'group':modName[4:]}
             self.opfWriter.writeFiles(self.fileDir,dicBC,options)
             self.transReader=self.flowReader = opfoamReader(self,self.addin.mesh)
@@ -932,7 +933,7 @@ class dicZone:
             if len(self.dicLines[g])==0 : 
                 self.dicLines.pop(g,None)
                 self.dicLinesComm.pop(g,None)
-        #print 'core zones',modName,self.dicLines
+        #print('core zones',modName,self.dicLines)
                 
     def setDic(self,dic) :
         self.dic = dic           

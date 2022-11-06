@@ -310,10 +310,10 @@ class opfoam(unstructured):
 
     def findSpecies(self,core):
         '''find the components and species for phreeqc'''
-        listE = core.addin.pht3d.getDictSpecies()
+        listE = core.addin.chem.getDictSpecies()
         listS = listE['i'];listS.extend(listE['k']);listS.extend(listE['kim'])
         listS.sort()
-        nbs,ncomp,lcomp,lspec,i = len(listS),0,[],[],0
+        nbs,ncomp,gcomp,lcomp,lspec,i = len(listS),0,len(listE['g']),[],[],0
         while i<nbs:
             if listE['i'][i] == 'O(0)': lspec.append('O(0)')
             if listE['i'][i] in ['H(1)','H(+1)']: lspec.append('H(1)')
@@ -328,7 +328,7 @@ class opfoam(unstructured):
         ncomp += 2 # there is pH and pe but we need to have H20,H,0,charge and not pH,pe
         if len(lspec)==0:
             lspec = [listE['i'][0]] # we need at least one species for sel out
-        return ncomp,lcomp,lspec
+        return ncomp,gcomp,lcomp,lspec
     
 # **************** potential link with USG faces, not used
     '''

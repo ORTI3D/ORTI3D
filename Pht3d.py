@@ -245,6 +245,7 @@ class PHT3D:
         
     def importDB(self,fname):
         """to import a phreeqc database and returns a dictionnary in ipht3d format"""
+        print(fname)
         dicDB={'GASES':None}
         keyw=['SOLUTION_MASTER_SPECIES','SOLUTION_SPECIES','PHASES','RATES',
               'EXCHANGE_MASTER_SPECIES','EXCHANGE_SPECIES','SURFACE_MASTER_SPECIES',
@@ -280,9 +281,9 @@ class PHT3D:
 
             if curkw=='PHASES': # minerals and gases
                 li3 = li2.split();
-                lstk = ['-analytic','delta_h','-Vm','-P_c','-T_c','-Omega']
+                lstk = ['-analytic','-delta_h','-Vm','-P_c','-T_c','-Omega']
                 if len(li2.split('='))>1: bufr = li2
-                elif li3[0]=='log_k': # get logk and stores data
+                elif 'log_k' in li3[0]: # get logk and stores data
                     logk = li3[1]
                     if '(g)' in curPhase: #gases
                         dicDB['GASES'][curPhase]= [bufr,logk]
