@@ -76,9 +76,9 @@ class  OpF:
         'drn':{'comm':'Drain','cond':'','kw':['ODRN'],
                  'names':['Elevation','Conductance'],
                  'detail':[],'type':['arrfloat'],'default':[0.]},
-        'uns.1':{'comm':'Unsat parameters','cond':'','kw':['OUNPR'],
-                 'detail':['capill type','van Genuchten'],
-                 'type':['choice'],'default':[0]},
+        'uns.1':{'comm':'Unsat parameters','cond':'','kw':['OUNPR','OSWMAX'],
+                 'detail':[['capillary type','van Genuchten'],'Sw_max'],
+                 'type':['choice','float'],'default':[0,0.999]},
         'uns.2':{'comm':'sw_min','cond':'','kw':['OSWMIN'],
                  'detail':[],'type':['arrfloat'],'default':[0.1]},
         'uns.3':{'comm':'alpha_vg','cond':'','kw':['OAVG'],
@@ -103,23 +103,27 @@ class  OpF:
 #Transport
 class  OpT:
     def __init__(self):
-        self.grpList=['TPRM','PORO','DSP','CONC','RCT','TSLV']
+        self.grpList=['TPRM','PORO','DSP','DIFFU','CONC','RCT','TSLV']
         self.groups={
         'TPRM':['tprm'],
         'PORO':['poro'],
         'DSP':['dsp'],
+        'DIFFU':['diffu'],
         'CONC':['cactiv','cinit','cfix','cwel','crch'],
         'RCT':['rct.1','rct.2a','rct.2b','rct.2c','rct.3','rct.4','rct.5','rct.6'],
         'TSLV':['tschm','tslv'],
         }
         self.lines={
-        'tprm':{'comm':'Transp parameters','cond':'','kw':['OTSTDY'],
-                'detail':[['transp. steady','no','yes']],
-                'type':['choice'],'default':[0]},
+        'tprm':{'comm':'Transp parameters','cond':'','kw':['OTSTDY','OMILLI'],
+                'detail':[['transp. steady','no','yes'],
+                    ['diffusion model','milling10','milling7']],
+                'type':['choice','choice'],'default':[0,0]},
         'poro':{'comm':'Porosity','cond':'','kw':['EPS'],
                 'detail':[],'type':['arrfloat'],'default':[0.3]},
         'dsp':{'comm':'Dispersion','cond':'','kw':['ALPHL','ALPHT'],
                 'detail':[],'type':['float','float'],'default':[1.,0.1]},
+        'diffu':{'comm':'Diffusion','cond':'','kw':['ODFFW','ODFFG'],
+                'detail':[],'type':['float','float'],'default':[1e-10,1e-6]},
         'cactiv':{'comm':'active zone','cond':'','kw':['OCACT'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'cinit':{'comm':'Initial conc','cond':'','kw':['OICONC'],
@@ -173,9 +177,9 @@ class  OpC:
         'CHSLV':['chslv'],
         }
         self.lines={
-        'chprm':{'comm':'Chem parameters','cond':'','kw':['OCH1'],
-                'detail':[''],
-                'type':['int'],'default':[0]},
+        'chprm':{'comm':'Chem parameters','cond':'','kw':['OCHNSTP'],
+                'detail':['reaction stp interval'],
+                'type':['int'],'default':[10]},
         'sactiv':{'comm':'active zone','cond':'','kw':['OSACT'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'sinit':{'comm':'Initial solutions','cond':'','kw':['OISOL'],

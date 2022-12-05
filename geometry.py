@@ -227,7 +227,7 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         parms = core.dicinterp[modName][line][im] # EV 19/02/20
         z, mess = zone2interp(core,modName,line,im,parms,refer,iper=0) # EV 19/02/20
     elif intp==3 :# EV 11/02/20
-        if  core.addin.mesh==None: # OA 19/4/20
+        if  core.addin.mesh==None or core.getValueFromName(modName,'MshType')==0: # OA 19/4/20
             z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
             if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
