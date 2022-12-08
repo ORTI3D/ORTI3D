@@ -34,11 +34,11 @@ class modflowUsg(unstructured):
             self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
         self.addMeshVects()
         Zblock = makeZblock(self.core)
-        nlay = getNlayers(self.core)
+        self.nlay = getNlayers(self.core)
         if self.core.addin.getDim()=='3D': 
             thick = Zblock[:-1]-Zblock[1:]
             self.core.addin.get3D();print('start 3D')
-            self.add3d(nlay,thick);print('3D done')
+            self.add3d(self.nlay,thick);print('3D done')
         else :
             thick = Zblock[0]-Zblock[-1]
             self.fahl = [array(lg)*thick[i] for i,lg in enumerate(self.fahl)]

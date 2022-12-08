@@ -214,7 +214,10 @@ class IntpDialog(QDialog):
      ## Get and plot interpolation result
         value,mess,extent=self.core.runInterp(model,line,media,self.allOpt)
         self._ax=self.figure.add_subplot(1,1,1)
-        myplot=self._ax.imshow(value,extent=extent)
+        if self.core.addin.mesh == None or self.core.getValueFromName(model,'MshType')==0 :
+            myplot=self._ax.imshow(value,extent=extent)
+        else :
+            myplot=self._ax.tricontourf(self.core.addin.mesh.trg,value)
         self.figure.colorbar(myplot, ax=self._ax)
         self._ax.figure.canvas.draw()
         self.figure.clf() 

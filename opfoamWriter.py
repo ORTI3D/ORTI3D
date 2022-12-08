@@ -70,13 +70,14 @@ class opfoamWriter:
         '''
         core is the model,fDir the major openfoam folder
         '''
+        modName= 'OpenFlow'
         core,mesh,nlay = self.core,self.mesh,self.nlay
         nplay = shape(points)[0] # nb of points for each layer
         ncell = len(fcup) # nb of cells per layer
         # below approximative, just for flat layers
         if core.addin.getDim()=='3D':
-            if 'importArray' in core.dictype['OpenFlow']['dis.6']:
-                zlist = self.getZfromPoints(points)
+            if 'importArray' in core.dictype[modName]['dis.6']:
+                zlist = self.getZfromPoints(points,modName)
             else :
                 zlist = [float(a) for a in core.addin.get3D()['topMedia']]
                 zlist.append(float(core.addin.get3D()['zmin']))
@@ -89,7 +90,7 @@ class opfoamWriter:
         elif self.orientation == 'Xsection': # x section case
             zlist = [0,1]
         else : 
-            zlist = [core.dicval['OpenFlow']['dis.7'][0],core.dicval['OpenFlow']['dis.6'][0]]
+            zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
         nf0=shape(faces)[0];nfb=shape(bfaces)[0];nf=nf0+nfb
         # points now same height for layer top
         sp = 'FoamFile \n{ version 2.0;\n format ascii;\n class vectorField;\n'
@@ -184,37 +185,6 @@ class opfoamWriter:
         f1=open(fDir+os.sep+'boundary','w');f1.write(sp+')');f1.close()
         ####### il faut faire renumberMesh apres ??? pas sur
         
-    def getZfromPoints(self,points):
-        '''
-        get the z coords of the points grid, cannot be done through getValueLong or zblock
-        as the points are not at the center of the cell
-        this is called only when arrays are present (interpolated case not treated)
-        as z will be reversed, here the list of points for each layer starts at the top
-        '''
-        core = self.core;lzout=[];zb=core.Zblock;dzmin=(amax(zb)-amin(zb))/500
-        core.lcellInterp = [] # to reset the values where to search (default cell centers)
-        grd = core.addin.getFullGrid();intp,ysign,zdx,zdy=False,0,None,None
-        fName0 = core.dicarray['OpenFlow']['dis.6'][0] #top 
-        xx,yy,intp,z0 = points[:,0],points[:,1],False,1e6
-        for i in range(self.nlay): 
-            fNameExt = core.dicarray['OpenFlow']['dis.6'][i] #tops
-            if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign
-            else : zgrd = loadtxt(self.core.fileDir+fNameExt)
-            if ysign == -1 : 
-                zgrd = zgrd[-1::-1];zdy = zdy[-1::-1]
-            z1 = linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)
-            lzout.append(minimum(z1,z0-dzmin)) # to avoid negative thickness
-            z0 = z1*1
-        fNameExt = core.dicarray['OpenFlow']['dis.7'][-1] #bottom
-        if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign
-        else : zgrd = loadtxt(self.core.fileDir+fNameExt)
-        if ysign == -1 : 
-            zgrd = zgrd[-1::-1];zdy = zdy[-1::-1]
-        z1 =linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)
-        lzout.append(minimum(z1,z0-dzmin))# removed [::-1]
-        core.lcellInterp = [] # to reset the values where to search (default cell centers)
-        return lzout
-    
     def writeCtrlDict(self):
         ''' we still have simple definition of maxDeltaT'''
         tunit = self.core.dicval['Modflow']['dis.2'][4]

@@ -842,22 +842,29 @@ def findSideNodes(core,nodes):
     return indx
     
 def writeVTKstruct(core,data):
-    a,b,xv1,yv1 = getXYvects(core);#print 'geom l 141',plane,layer
-    nlay = getNlayers(core)
-    ym,zm,xm = meshgrid(yv1,ones(nlay+1),xv1)
-    zb = core.Zblock
-    zb1 = concatenate([zb[:,:,:1],(zb[:,:,:-1]+zb[:,:,1:])/2, zb[:,:,-1:]],axis=2)
-    zm = concatenate([zb1[:,:1,:],(zb1[:,:-1,:]+zb1[:,1:,:])/2, zb1[:,-1:,:]],axis=1)
-    #print 'geom 210',shape(xm),shape(zb),shape(zm),shape(data)
-    s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
-    nz,ny,nx = shape(xm)
-    x,y,z,data = ravel(xm),ravel(ym),ravel(zm),ravel(data)
-    npts,ndata = len(x),len(data);#print 'foem', npts,ndata
-    s += 'DATASET STRUCTURED_GRID \nDIMENSIONS '+str(nx)+' '+str(ny)+' '+str(nz)+'\n'
-    s += 'POINTS '+str(npts)+' float \n'
-    s += ' '.join([str(x[i])+' '+str(y[i])+' '+str(z[i])+'\n' for i in range(npts)])
-    s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
-    s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
+    mesh = core.addin.mesh
+    if mesh==None or core.getValueFromName(modName,'MshType')==0:
+        a,b,xv1,yv1 = getXYvects(core);#print 'geom l 141',plane,layer
+        nlay = getNlayers(core)
+        ym,zm,xm = meshgrid(yv1,ones(nlay+1),xv1)
+        zb = core.Zblock
+        zb1 = concatenate([zb[:,:,:1],(zb[:,:,:-1]+zb[:,:,1:])/2, zb[:,:,-1:]],axis=2)
+        zm = concatenate([zb1[:,:1,:],(zb1[:,:-1,:]+zb1[:,1:,:])/2, zb1[:,-1:,:]],axis=1)
+        #print 'geom 210',shape(xm),shape(zb),shape(zm),shape(data)
+        s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
+        nz,ny,nx = shape(xm)
+        x,y,z,data = ravel(xm),ravel(ym),ravel(zm),ravel(data)
+        npts,ndata = len(x),len(data);#print 'foem', npts,ndata
+        s += 'DATASET STRUCTURED_GRID \nDIMENSIONS '+str(nx)+' '+str(ny)+' '+str(nz)+'\n'
+        s += 'POINTS '+str(npts)+' float \n'
+        s += ' '.join([str(x[i])+' '+str(y[i])+' '+str(z[i])+'\n' for i in range(npts)])
+        s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
+        s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
+    else : # unstructured
+        points,fc,bfc,fcup = mesh.getPointsFaces()
+        np,sp,nh,sh = mesh.pointsHexaForVTK('Modflow',points,fcup)
+        s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
+        
     return s
     
 def facesZone1toZone2(core,zn0,zn1):
@@ -922,15 +929,15 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     
     #### create the vector of points on which interpolation will be done
     mess = None
-    if modName[:5] == 'Opgeo' or core.addin.mesh != None: # OA 1/5/20
-        mesh = core.addin.mesh  # OA 1/5/20
-        xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
-    else :
+    if core.addin.mesh == None or core.getValueFromName(modName,'MshType')==0 :
         nx,ny,xv,yv = getXYvects(core);nz=0
         xv,yv = (xv[1:]+xv[:-1])/2.,(yv[1:]+yv[:-1])/2.;#print 'xv',xv,yv
         xm,ym = meshgrid(xv,yv)
         xc, yc = ravel(xm),ravel(ym)
         if type(refer) == type(zeros(5)) : refer = ravel(refer) # OA 21/8/20 
+    else: # OA 1/5/20
+        mesh = core.addin.mesh  # OA 1/5/20
+        xc, yc = mesh.elcenters[:,0],mesh.elcenters[:,1]
     m = zeros(len(xc)) + float(vbase)
     if line in list(core.diczone[modName].dic.keys()):
         diczone = core.diczone[modName].dic[line]

@@ -10,6 +10,8 @@ import matplotlib.tri as mptri
 import numpy as np
 from numpy import pi,in1d,nonzero,insert
 from .geometry import *
+from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
+    amin,amax,mod,lexsort
 
 
 ##########################   GMESH    ########################
@@ -294,6 +296,7 @@ class unstructured:
         return dcout
         
     def addMeshVects(self):
+        ''' add elxa and elya, a long list format for elx and ely '''
         self.ncell,self.ncell_lay = len(self.elx),len(self.elx)
         ic,self.idc=0,[]
         for a in self.elx: self.idc.append([ic,ic+len(a)]);ic+=len(a)
@@ -301,6 +304,239 @@ class unstructured:
         for a in self.elx: self.elxa.extend(a)
         for a in self.ely: self.elya.extend(a)
         
+    def makeBC(self,modName):
+        '''
+        create an array bcindx that gather the cell number and the 
+        '''
+        if self.core.getValueFromName(modName,'MshType')>0:
+            self.ncell_lay = len(self.carea)
+            lbc,lnb = [],[]
+            for k in self.dicFeats.keys():
+                if k[:7]=='bc_cell':
+                    arr = self.dicFeats[k]
+                    lbc.extend(list(arr));lnb.extend([int(k[7:])]*len(arr))
+            bcindx=zeros((len(lbc),2));bcindx[:,0]=lbc;bcindx[:,1]=array(lnb)+1
+            self.nbc = len(unique(bcindx[:,1]))
+            self.bcindx = bcindx  
+        else: 
+            bcindx = None
+            grd = self.core.addin.getFullGrid()
+            nx,ny,dx,dy = grd['nx'],grd['ny'],grd['dx'],grd['dy']
+            self.ncell_lay = nx*ny
+            dxm,dym = meshgrid(dx,dy)
+            self.carea = ravel(dxm*dym)
+            self.nbc = 4
+        
+    def getPointsFaces(self):
+        '''
+        uses the "usg" type mesh to build the points and faces necessary for opf
+        in M :itriangle, icell, ineighb,x,y
+        '''
+        M = self.M
+        elx,ely,indx = self.elx,self.ely,self.indx
+        u,id0 = unique(M[:,0],return_index=True)
+        points = M[id0,3:5];npts = len(points);
+        self.points=points
+        nfc = len(M);nco = self.ncorn;nbc=int(amax(self.bcindx[:,0]))
+        faces,i0c,i,ic = [],0,0,0
+        fcup=[0]*self.ncell_lay
+        while ic<nbc+1: # corners+bdy we keep only the internal faces
+            ic = M[i,1]
+            if ic not in self.bcindx[:,0]: 
+                if M[i+1,1]>ic: i0c = i+1;
+                i += 1
+                continue
+            if M[i+1,1]>ic: # last face in cell
+                if M[i,2]>nbc:
+                    faces.append([M[i,0],M[i0c,0],M[i,1],M[i,2],M[i,-1]])
+                i0c = i+1;#print(ic,i0c)
+            else :
+                if M[i,2]>nbc:
+                    faces.append([M[i,0],M[i+1,0],M[i,1],M[i,2],M[i,-1]])
+            i += 1
+        # now all the faces        
+        i0c = i
+        for i in range(nfc-1):
+            ifc,ic,inb = M[i,:3].astype('int')
+            if ic in self.bcindx[:,0]: 
+                if M[i+1,1]>ic: i0c = i+1;
+                continue
+            if M[i+1,1]>ic : # last face of the current cell ic
+                if (inb>ic)&(ifc!=M[i0c,0]): # store last face only if not done already
+                    faces.append([M[i,0],M[i0c,0],ic,inb,M[i,-1]])
+                # store fcup
+                a = r_[M[i0c:i+1,0],M[i0c,0]]
+                fcup[ic] = a.astype('int')
+                i0c = i+1 # will be the starting point of th enext cell
+            else:
+                if (inb>ic)&(ifc!=M[i+1,0])&(inb>nbc): # store face only if not done already
+                    faces.append([M[i,0],M[i+1,0],ic,inb,M[i,-1]])
+        # last cell
+        i+=1;inb=M[i,2]
+        if (inb>ic)&(ifc!=M[i0c,0]): # store last face only if not done already
+            faces.append([M[i,0],M[i0c,0],ic,inb,M[i,-1]])
+        a = r_[M[i0c:i+1,0],M[i0c,0]]
+        fcup[-1] = a.astype('int')
+        faces = array(faces)
+        lastcpt=[];lastsz=0
+        #build the corners (from elx as they were done that way in voronoi)
+        for i in range(nco):
+            lc = self.bcindx[self.bcindx[:,1]==i+1,0].astype('int')
+            pt0 = npts*1
+            b = faces[faces[:,2]==i];
+            b =b[b[:,-1].argsort(),:2].astype('int') # to keep the angle trigo round
+            # a trick to get the pt where the loop is broken 
+            if lastsz==1: ipt1 = lastcpt[i-1]
+            else : ipt1 = pt0+2
+            il=-1;u=list(b[0])
+            for j in range(1,len(b)):
+                if b[j,0]!=b[j-1,1] : 
+                    il = j
+                    for k in range(3-lastsz):
+                        points = r_[points,c_[elx[i][j+1+k],ely[i][j+1+k]]];
+                        u.append(npts);npts+=1
+                    if lastsz==1: u.append(ipt1)
+                    u.extend(b[j])
+                else: u.append(b[j,1])
+            if il==-1: 
+                il=len(b)-1
+                istart=where((elx[i]==points[b[il,1],0])&(ely[i]==points[b[il,1],1]))[0][0]
+                for k in range(3-lastsz):
+                    points = r_[points,c_[elx[i][istart+1+k],ely[i][istart+1+k]]];
+                    u.append(npts);npts+=1
+                if lastsz==1: u.append(ipt1)
+                u.append(b[0,0])
+            fcup[i] = array(u)
+            if len(lc)>2: inb=lc[lc>nco-1][0]
+            else : inb=i+1
+            fc1 = array([u[u.index(pt0)-1],pt0,i,inb,0],ndmin=2)
+            fc2 = array([pt0,pt0+1,i,-i-1,0],ndmin=2)
+            if i==0: inb=-nco
+            else :inb = -i
+            fc3 = array([pt0+1,ipt1,i,inb,0],ndmin=2)
+            faces = r_[faces,fc1,fc2,fc3]
+            lastcpt.append(pt0)
+            if len(lc)==2:lastsz=1
+            else : lastsz=0
+                
+        # then bc lines
+        for i in range(nco):
+            lc = list(self.bcindx[self.bcindx[:,1]==i+1,0].astype('int'))
+            cnt = 0
+            for i0,j in enumerate(lc): # go along the boundary
+                if j<nco: continue
+                pt0 = npts*1
+                b = faces[faces[:,2]==j];
+                b =b[b[:,-1].argsort(),:2].astype('int') # to keep the angle trigo round
+                # a trick to get the pt where the loop is broken 
+                il=-1;u=list(b[0])
+                for j1 in range(1,len(b)):
+                    if b[j1,0]!=b[j1-1,1] : 
+                        il = j1;u.extend([-2,-1]);u.extend(b[j1])
+                        if i0!=len(lc)-1: 
+                            points = r_[points,c_[elx[j][j1+1],ely[j][j1+1]]]
+                            npts+=1
+                    else:
+                        u.append(b[j1,1])
+                if il==-1: 
+                    il=len(b)-1;u.extend([-2,-1]);u.append(b[0,0])
+                    istart=where((elx[j]==points[b[-1,1],0])&(ely[j]==points[b[-1,1],1]))[0][0]
+                    if i0!=len(lc)-1: 
+                        points = r_[points,c_[elx[j][istart+1],ely[j][istart+1]]]
+                        npts+=1
+                    
+                if (i0==len(lc)-1)&(i==nco-1): ipt1,inb1=lastcpt[0]+2,0 # the last cell back to 0
+                elif i0==len(lc)-1: ipt1,inb1=lastcpt[i+1]+2,i+1; # lat cell in the row
+                else: ipt1,inb1 = npts-1,j+1
+                if cnt == 0: ipt2 = lastcpt[i];cnt=1
+                else : ipt2 = pt0-1
+                    
+                fc1 = array([u[u.index(-2)-1],ipt1,j,inb1,0],ndmin=2)
+                fc2 = array([ipt1,ipt2,j,-i-1,0],ndmin=2)
+                faces = r_[faces,fc1,fc2]
+                u[u.index(-2)]=ipt1;u[u.index(-1)]=ipt2
+                fcup[j] = array(u)
+                cnt=1
+        #plot(points[fcup[j],0],points[fcup[j],1],'k')     
+        #sort faces to have BC at the end
+        faces = faces[:,:-1].astype('int')
+        face1 = faces[faces[:,3]>=0]
+        idr = where(face1[:,3]<face1[:,2])[0] # neighbour should not be smaller than owner
+        face1[idr,:2]=face1[idr,1::-1]
+        face1[idr,2:]=face1[idr,3:1:-1]
+        face1 = face1[lexsort((face1[:,3],face1[:,2]))] #in lexsort col in reverse
+        bfaces = faces[faces[:,3]<0]
+        bfaces = bfaces[lexsort((-bfaces[:,3],bfaces[:,2]))] #in lexsort col in reverse        
+        self.points,self.faces,self.bfaces,self.fcup = points,face1,bfaces,fcup
+        return points,face1,bfaces,fcup 
+    
+    def pointsHexaForVTK(self,modName,points,fcup):
+        '''
+        core is the model,fDir the major openfoam folder
+        '''
+        core,mesh,nlay = self.core,self,self.nlay
+        nplay = shape(points)[0] # nb of points for each layer
+        ncell = len(fcup) # nb of cells per layer
+        # below approximative, just for flat layers
+        if core.addin.getDim()=='3D':
+            if 'importArray' in core.dictype[modName]['dis.6']:
+                zlist = self.getZfromPoints(points,modName)
+            else :
+                zlist = [float(a) for a in core.addin.get3D()['topMedia']]
+                zlist.append(float(core.addin.get3D()['zmin']))
+            zlist = zlist[-1::-1] # layers are reversed, start from 0 in OpF
+        else : 
+            zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
+        # points 
+        nbp = shape(points)[0]*(nlay+1)
+        sp = ''
+        x0,y0 = amin(points[:,0]),amin(points[:,1])
+        strt = 0
+        for i,z in enumerate(zlist):
+            if type(z)==type(0.): z = [z]*nplay
+            coo = zeros((shape(points)[0],3))
+            coo[:,0],coo[:,1],coo[:,2] = points[:,0]-x0,points[:,1]-y0,z
+            sp += '\n'.join([' '.join(x) for x in coo.astype('str')]) 
+            sp += '\n'
+        
+        sh = ''
+        # internal faces for 1st nlay-1 # This part is quite slow!! because top face added there
+        for il in range(nlay): 
+            for i in range(ncell):
+                sh += str(len(fcup[i])-1)+'('+' '.join([str(ip+nplay*(il+1)) for ip in fcup[i][:-1]])+ ')\n'
+        return nlay*nplay,sp,nlay*len(fcup),sh
+    
+    def getZfromPoints(self,modName,points):
+        '''
+        get the z coords of the points grid, cannot be done through getValueLong or zblock
+        as the points are not at the center of the cell
+        this is called only when arrays are present (interpolated case not treated)
+        as z will be reversed, here the list of points for each layer starts at the top
+        '''
+        core = self.core;lzout=[];zb=core.Zblock;dzmin=(amax(zb)-amin(zb))/500
+        core.lcellInterp = [] # to reset the values where to search (default cell centers)
+        grd = core.addin.getFullGrid();intp,ysign,zdx,zdy=False,0,None,None
+        fName0 = core.dicarray[modName]['dis.6'][0] #top 
+        xx,yy,intp,z0 = points[:,0],points[:,1],False,1e6
+        for i in range(self.nlay): 
+            fNameExt = core.dicarray[modName]['dis.6'][i] #tops
+            if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign
+            else : zgrd = loadtxt(self.core.fileDir+fNameExt)
+            if ysign == -1 : 
+                zgrd = zgrd[-1::-1];zdy = zdy[-1::-1]
+            z1 = linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)
+            lzout.append(minimum(z1,z0-dzmin)) # to avoid negative thickness
+            z0 = z1*1
+        fNameExt = core.dicarray[modName]['dis.7'][-1] #bottom
+        if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign
+        else : zgrd = loadtxt(self.core.fileDir+fNameExt)
+        if ysign == -1 : 
+            zgrd = zgrd[-1::-1];zdy = zdy[-1::-1]
+        z1 =linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)
+        lzout.append(minimum(z1,z0-dzmin))# removed [::-1]
+        core.lcellInterp = [] # to reset the values where to search (default cell centers)
+        return lzout
+    
                         
 class myVor:
     def __init__(self,parent):
@@ -560,3 +796,4 @@ class myVor:
         # centers
         xc = (b2-b1)/(a1-a2);yc = a1*xc+b1
         return xc,yc
+    
