@@ -499,12 +499,23 @@ class unstructured:
             sp += '\n'.join([' '.join(x) for x in coo.astype('str')]) 
             sp += '\n'
         
-        sh = ''
+        lh = [];lnh=[];idx=[];cnt=0
         # internal faces for 1st nlay-1 # This part is quite slow!! because top face added there
         for il in range(nlay): 
             for i in range(ncell):
-                sh += str(len(fcup[i])-1)+'('+' '.join([str(ip+nplay*(il+1)) for ip in fcup[i][:-1]])+ ')\n'
-        return nlay*nplay,sp,nlay*len(fcup),sh
+                #sh += str(len(fcup[i])-1)+'('+' '.join([str(ip+nplay*(il+1)) for ip in fcup[i][:-1]])+ ')\n'
+                #lh.append([ip+nplay*(il+1) for ip in fcup[i][:-1]])
+                f = fcup[i]
+                if len(fcup[i])<8: 
+                    lh.append(r_[nplay*il+f[:-1],nplay*(il+1)+f[:-1]])
+                    lnh.append((len(f)-1)*2)
+                    idx.append(cnt);cnt+=1
+                else : # we need to make two poly (VTK does not support more than 6 points)
+                    lh.append(r_[nplay*il+f[:5],nplay*(il+1)+f[:5]])
+                    lh.append(r_[nplay*il+f[4:],nplay*(il+1)+f[4:]])
+                    lnh.extend([10,(len(fcup[i])-4)*2])
+                    idx.extend([cnt,cnt]);cnt+=1
+        return (nlay+1)*nplay,sp,len(lnh),lnh,lh,idx
     
     def getZfromPoints(self,modName,points):
         '''
@@ -537,6 +548,50 @@ class unstructured:
         core.lcellInterp = [] # to reset the values where to search (default cell centers)
         return lzout
     
+    def writeVTKgeom(self,npt,sp,nh,lnh,lh):
+        ''' returns a string for the geometry part of the VTK file'''
+        def fmtlist(a):
+            return str(a).replace('[','').replace(']','').replace(',','')
+        #4 pts/fcup: 12; 3:13; 5: 15; 6: 16
+        lnh2=array(lnh)
+        lnh2[lnh2==12]=16;lnh2[lnh2==6]=13;lnh2[lnh2==8]=12;lnh2[lnh2==10]=15;
+            
+        s='# vtk DataFile Version 2.0\n'
+        s+='Unstructured Grid Example\nASCII\nDATASET UNSTRUCTURED_GRID\n'
+        s+='POINTS '+str(npt)+' float\n'+sp
+        s+='\nCELLS '+str(nh)+' '+str(sum(lnh)+nh)+'\n'
+        for i in range(nh):
+            s+=str(len(lh[i]))+' '+fmtlist(lh[i])+'\n'
+        s += '\nCELL_TYPES '+str(nh)+'\n' 
+        for i in range(nh): 
+            s+= str(lnh2[i])+' '
+        s+='\n'
+        return s
+
+    def writeVTKgeomXML(self):
+        pass
+        '''
+        s='<?xml version="1.0"?>\n'
+        s+='<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" header_type="UInt32" compressor="vtkZLibDataCompressor">\n'
+        s+='<UnstructuredGrid><Piece NumberOfPoints="'+str(np*2)+'" NumberOfCells="'+str(nh)+'\">\n'
+        #s+= <PointData></PointData><CellData></CellData>
+        s += '<Points>\n<DataArray type="Int32" Name="Points" NumberOfComponents="3" format="ascii" >\n'
+        s += sp
+        s += '</DataArray>\n  </Points>\n  <Cells>\n  '
+        s += '<DataArray type="Int64" Name="connectivity" format="ascii" >\n'
+        s += '\n'.join([fmtlist(a) for a in lh2])
+        s += '</DataArray>\n'
+        s += '<DataArray type="Int64" Name="offsets" format="ascii">\n'
+        csum = cumsum(lnh)
+        s += ' '.join([str(a*2)+' ' for a in csum])+'\n'
+        s += '</DataArray>\n'
+        s += '<DataArray type="UInt8" Name="types" format="ascii" RangeMin="5" RangeMax="7">\n'
+        # 5 faces 15 penta prism, 6 faces 16 hexa prism
+        s += ' '.join([str(a+10)+' ' for a in lnh])+'\n'
+        s += '</DataArray>\n </Cells>\n </Piece>\n </UnstructuredGrid>\n </VTKFile>'
+        f1=open('test.vtu','w');f1.write(s);f1.close()
+        '''
+        
                         
 class myVor:
     def __init__(self,parent):

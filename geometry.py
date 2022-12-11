@@ -841,7 +841,7 @@ def findSideNodes(core,nodes):
     indx[(y>grd['y1']-eps)&(x<grd['y1']+eps)]=1
     return indx
     
-def writeVTKstruct(core,data):
+def writeVTKstruct(core,modName,data):
     mesh = core.addin.mesh
     if mesh==None or core.getValueFromName(modName,'MshType')==0:
         a,b,xv1,yv1 = getXYvects(core);#print 'geom l 141',plane,layer
@@ -853,18 +853,21 @@ def writeVTKstruct(core,data):
         #print 'geom 210',shape(xm),shape(zb),shape(zm),shape(data)
         s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
         nz,ny,nx = shape(xm)
+        npts,ndata = len(x),len(data)
         x,y,z,data = ravel(xm),ravel(ym),ravel(zm),ravel(data)
-        npts,ndata = len(x),len(data);#print 'foem', npts,ndata
         s += 'DATASET STRUCTURED_GRID \nDIMENSIONS '+str(nx)+' '+str(ny)+' '+str(nz)+'\n'
         s += 'POINTS '+str(npts)+' float \n'
         s += ' '.join([str(x[i])+' '+str(y[i])+' '+str(z[i])+'\n' for i in range(npts)])
         s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
         s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     else : # unstructured
+        mesh.makeBC('Modflow')
         points,fc,bfc,fcup = mesh.getPointsFaces()
-        np,sp,nh,sh = mesh.pointsHexaForVTK('Modflow',points,fcup)
-        s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
-        
+        npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
+        s = mesh.writeVTKgeom(npt,sp,nh,lnh,lh)
+        data = ravel(data)[idx] # add cells that have been divided
+        s += 'CELL_DATA '+str(nh)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
+        s += ' '.join([str(data[i])+'\n' for i in range(nh)])
     return s
     
 def facesZone1toZone2(core,zn0,zn1):

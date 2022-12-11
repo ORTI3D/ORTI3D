@@ -195,11 +195,12 @@ class Menus:
         if fName : 
             name = line.replace('.','')
             data = self.core.getValueLong(model,line,0)
-            s = writeVTKstruct(self.core,data)
+            s = writeVTKstruct(self.core,model,data)
             f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
             self.dialogs.onMessage(self.gui,'File '+fName+' saved')
         
     def OnExportResuVtk(self,evt=None): # modif 28/3/17 oa for correct name
+        model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
         data = self.gui.guiShow.arr3#;print('menu 151',shape(data))
         if not shape(data) : #EV 11/12/19
             self.dialogs.onMessage(self.gui,'Select a result to export')
@@ -207,7 +208,7 @@ class Menus:
         dlg = self.dialogs.myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
         if fName :
-            s = writeVTKstruct(self.core,data)
+            s = writeVTKstruct(self.core,model,data)
             f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
             self.dialogs.onMessage(self.gui,'file '+fName+' saved')
             
