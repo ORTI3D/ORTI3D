@@ -220,7 +220,7 @@ class guiShow:
         if group=='Transport':
             if name=='Tracer':
                 #print 'hello',self.core.transReader
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
@@ -262,28 +262,36 @@ class guiShow:
         """using a coordinate get the value of the current variable at
         this coordinates, using self.data which is a 2D array
         or """
-        if self.data == None or x==None or y==None: #OA 24/10/20 removed mesh
+        if x==None or y==None: #OA 24/10/20 removed mesh
             return ' '
+        vbox=self.gui.varBox
+        var = vbox.choiceV.currentIndex()
+        if vbox.chkView.isChecked(): 
+            X,Y,mat = vbox.base.getCurVariable(var)
         if self.MshType>0:
             c = self.core.addin.mesh.elcenters
             xc,yc = c[:,0],c[:,1]
             d = sqrt((x-xc)**2+(y-yc)**2);
             inod = where(d==amin(d))[0][0];# print(self.curVarView )
-            if self.curVarView != None: # !!! does not work curVarView is not used in fact (it is all in topbar)
-                return '%g, node nb : %i, parm value : %g'%(self.data[2][inod],inod,self.curVarView[inod])
+            if self.data == None: zval = 0
+            else : zval = self.data[2][inod]
+            if vbox.chkView.isChecked(): 
+                return '%g, node nb : %i, parm value : %g'%(zval,inod,mat[inod])
             else :
-                return '%g, node nb : %i'%(self.data[2][inod],inod)
+                return '%g, node nb : %i'%(zval,inod)
         else :
-            x0,y0 = self.data[0][0,:],self.data [1][:,0]
-            d=x-x0; d1=d[d>0.]
-            if len(d1)==0 : return ' '
-            ix=where(d==amin(d1))[0][0]
-            d=y-y0; d1=d[d>0.]
-            if len(d1)==0 : return ' '
-            iy=where(d==amin(d1))[0][0] 
-            zval = self.data[2][iy,ix]
-            if self.curVarView != None:
-                return '%g, parm value %g'%(zval,self.curVarView[iy,ix])
+            if self.data == None: zval = 0
+            else : 
+                zval = self.data[2][iy,ix]
+                x0,y0 = self.data[0][0,:],self.data [1][:,0]
+                d=x-x0; d1=d[d>0.]
+                if len(d1)==0 : return ' '
+                ix=where(d==amin(d1))[0][0]
+                d=y-y0; d1=d[d>0.]
+                if len(d1)==0 : return ' '
+                iy=where(d==amin(d1))[0][0] 
+            if vbox.chkView.isChecked():
+                return '%g, parm value %g'%(zval,mat[iy,ix])
             else :
                 return '%g'%zval # OA 6/11/18
             
