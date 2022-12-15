@@ -253,6 +253,7 @@ class unstructured:
     def buildMesh0(self,modName,opt):
         '''opt=old the .msh file is used if it is found, new : it is rewritten'''
         self.core.addin.mesh = self
+        self.nlay = getNlayers(self.core)
         dct = self.core.diczone[modName].dic
         mshType = self.core.getValueFromName(modName,'MshType')
         if mshType >1: # case of true unstructured grid built through gmesh
@@ -527,7 +528,6 @@ class unstructured:
         core = self.core;lzout=[];zb=core.Zblock;dzmin=(amax(zb)-amin(zb))/500
         core.lcellInterp = [] # to reset the values where to search (default cell centers)
         grd = core.addin.getFullGrid();intp,ysign,zdx,zdy=False,0,None,None
-        fName0 = core.dicarray[modName]['dis.6'][0] #top 
         xx,yy,intp,z0 = points[:,0],points[:,1],False,1e6
         for i in range(self.nlay): 
             fNameExt = core.dicarray[modName]['dis.6'][i] #tops

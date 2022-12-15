@@ -853,8 +853,8 @@ def writeVTKstruct(core,modName,data):
         #print 'geom 210',shape(xm),shape(zb),shape(zm),shape(data)
         s= '# vtk DataFile Version 3.0 \n scalar \nASCII \n'
         nz,ny,nx = shape(xm)
-        npts,ndata = len(x),len(data)
         x,y,z,data = ravel(xm),ravel(ym),ravel(zm),ravel(data)
+        npts,ndata = len(x),len(data)
         s += 'DATASET STRUCTURED_GRID \nDIMENSIONS '+str(nx)+' '+str(ny)+' '+str(nz)+'\n'
         s += 'POINTS '+str(npts)+' float \n'
         s += ' '.join([str(x[i])+' '+str(y[i])+' '+str(z[i])+'\n' for i in range(npts)])
