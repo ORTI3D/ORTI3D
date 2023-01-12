@@ -35,8 +35,10 @@ class modflowUsg(unstructured):
         self.addMeshVects()
         Zblock = makeZblock(self.core)
         self.nlay = getNlayers(self.core)
+        thick=[0]*self.nlay
         if self.core.addin.getDim()=='3D': 
-            thick = Zblock[:-1]-Zblock[1:]
+            for i in range(self.nlay): thick[i] = ravel(Zblock[i]-Zblock[i+1])
+            thick = array(thick)
             self.core.addin.get3D();print('start 3D')
             self.add3d(self.nlay,thick);print('3D done')
         else :

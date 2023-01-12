@@ -45,7 +45,7 @@ class opfoamWriter:
             if self.MshType == 0:
                 points,faces,bfaces,fcup = self.opf.opfRect()
             else :
-                points,faces,bfaces,fcup = self.opf.opfMesh2Faces();print('got geom from usg')  
+                points,faces,bfaces,fcup = self.opf.getPointsFaces();print('got geom from usg')  
             self.writeGeom(fDir1,points,faces,bfaces,fcup);print("geom written")
         self.writeCtrlDict()
         self.writeFvSchemes()
@@ -62,7 +62,10 @@ class opfoamWriter:
             self.ncomp,self.gcomp,self.lcomp,self.lspec = self.opf.findSpecies(self.core)
         self.writeOptions()
         if self.group=='Trans': 
-            self.writeTransport()
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
+                self.writeTransport()
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+                self.writeThermal()
         if self.group=='Chem': 
             self.writeChemistry()
         
@@ -77,7 +80,7 @@ class opfoamWriter:
         # below approximative, just for flat layers
         if core.addin.getDim()=='3D':
             if 'importArray' in core.dictype[modName]['dis.6']:
-                zlist = self.getZfromPoints(points,modName)
+                zlist = mesh.getZfromPoints(modName,points)
             else :
                 zlist = [float(a) for a in core.addin.get3D()['topMedia']]
                 zlist.append(float(core.addin.get3D()['zmin']))
@@ -201,10 +204,10 @@ class opfoamWriter:
         nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(fslt[0]),'maxDeltaT':int(fslt[1]),
-                  'maxCo':fslt[2],'dCmax':fslt[3],'dCresidual':fslt[4]}
+                  'deltaT':int(fslt[0]), 
+                  'maxCo':fslt[2],'dCmax':fslt[3],'dCresidual':fslt[4]} #'maxDeltaT':int(fslt[1]),
                 
-        if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
+        if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(self.fDir+os.sep+'endSteadyF');s=f1.read();f1.close()
             ctrlDict['startTime'] = s
         solv = 'gwaterFoam'
@@ -224,37 +227,47 @@ class opfoamWriter:
         s += '     writeControl timeStep;\n'
         s += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
         s += '     timeVsFile \n    (\n'
-        t_old,dt_old = -1,-1
+        t_old,dt_old,sb = -1,-1,''
         for i,t in enumerate(self.tlist):
             dt = t-t_old
             #if dt != dt_old:
             s1 = str(int(t_old*86400))
             s += '    ('+s1+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
+            sb += '    ('+s1+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
             f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
-            s1 = str(int(t*86400))  #dt*86400
-            f1.write('writeInterval '+s1+';')
-            f1.close()
+            s1 = str(int(t*86400));f1.write('writeInterval '+s1+';');f1.close()
+            f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
+            s2 = str(int(max(t*86400,100)));f2.write('maxDeltaT '+s2+';');f2.close()
             t_old,dt_old = t*1,dt*1
-        s += '    );\n    }\n }'
-        f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');f1.write(s);f1.close()
+        s += '    );\n    }\n }\n'
+        #the maxdeltat function
+        s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
+        s += 'functions \n { \n    fileUpdate2\n    {\n'
+        s += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
+        s += '     writeControl timeStep;\n'
+        s += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
+        s += '     timeVsFile \n    (\n'+sb+'    );\n    }\n }'
         f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
-        f1.write('writeInterval 100;')
-        f1.close()
+        f1.write('writeInterval 100;');f1.close()
+        f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
+        f1.write('maxDeltaT 100;');f1.close()
+        f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');f1.write(s);f1.close()
 
     def writeFvSchemes(self):
         schemeDict = {'ddtSchemes':{'default':'Euler'},
         'gradSchemes':{'default':'Gauss linear'},
-        'divSchemes':{'default':'none','div(phiw,Cw)':'Gauss vanLeer','div(phiw,Cwi)':'Gauss vanLeer',
-                     'div(phig,Cg)':'Gauss vanLeer','div(phig,Cgi)':'Gauss vanLeer' }, #vanLeer,SuperBee
+        'divSchemes':{'default':'none','div(phiw,T)':'Gauss vanLeer','div(phiw,C)':'Gauss vanLeer',
+            'div(phiw,Cwi)':'Gauss vanLeer','div(phig,Cgi)':'Gauss vanLeer' }, #vanLeer,SuperBee
         'laplacianSchemes':{'default':'Gauss linear corrected'},
         'interpolationSchemes':{'default':'linear','M': 'vanLeer phiw','krg':'upwind phig','krw':'upwind phiw'},
         'snGradSchemes':{'default':'corrected'},
         'fluxRequired':{'default':'no','h':' ','hp':' ','p':' '}
         }
-        n=self.Tkey.lines['tschm']['detail'][0][self.core.getValueFromName('OpenTrans','OTSCH',0)+1]
-        schemeDict['divSchemes']['div(phiw,Cw)'] = n
-        if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
-            schemeDict['divSchemes']['div(phiw,Cw)'] = 'Gauss limitedLinear01 1'
+        if self.group=='Trans':
+            n=self.Tkey.lines['tschm']['detail'][0][self.core.getValueFromName('OpenTrans','OTSCH',0)+1]
+            schemeDict['divSchemes']['div(phiw,Cw)'] = n
+            if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
+                schemeDict['divSchemes']['div(phiw,Cw)'] = 'Gauss limitedLinear01 1'
         s = 'FoamFile\n{\n version 2.0;\n format ascii;\n class dictionary;\n'
         s += ' location \"system\";\n object fvSchemes;\n}\n'
         for k in schemeDict.keys():
@@ -265,15 +278,15 @@ class opfoamWriter:
         f1=open(self.fDir+os.sep+'system'+os.sep+'fvSchemes','w');f1.write(s);f1.close()
         
     def writeFvSolutions(self):# writing fvsolution
-        s = 'FoamFile{version 2.0;format ascii;class  dictionary;location \"system\";object fvSolution;}'
+        s = 'FoamFile{version 2.0;format ascii;class  dictionary;location \"system\";object fvSolution;}\n'
         s += 'solvers \n{ \n'
         s += 'h{solver PBiCGStab;preconditioner  DIC;tolerance 1e-12;relTol 0;}\n'
         s += 'hp{solver PBiCGStab;preconditioner  DIC;tolerance 1e-12;relTol 0;}\n'
         s += 'p{solver PBiCGStab;preconditioner  DIC;tolerance 1e-12;relTol 0;}\n'
         s += 'sw{solver PBiCGStab;preconditioner  DIC;tolerance 1e-12;relTol 0;}\n'
-        s += 'Cw{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
+        s += 'C{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
+        s += 'T{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
         s += '\"Cw.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
-        s += 'Cg{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
         s += '\"Cg.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n}'
         s += '\nPicard {tolerance 0.01;maxIter 10;minIter 3;nIterStability  5;}'
         s += '\nSIMPLE {residualControl {h 1e-7;Cw 1e-12;} }\n'
@@ -318,6 +331,8 @@ class opfoamWriter:
         self.writeScalField('constant','zbot',zbot,self.bcD0,dim='[0 1 0 0 0 0 0]')
         # VG parms
         if self.core.dicaddin['Model']['type'] in ['Unsaturated','2phases']: 
+            swm = self.getVariable('OpenFlow','uns.2')
+            self.writeScalField('constant','sw_min',swm,self.dicBC,dim='[0 0 0 0 0 0 0]')            
             a_vg = self.getVariable('OpenFlow','uns.3')
             self.writeScalField('constant','alpha_vg',a_vg,self.dicBC,dim='[0 -1 0 0 0 0 0]')            
             n_vg = self.getVariable('OpenFlow','uns.4')
@@ -330,8 +345,8 @@ class opfoamWriter:
         mType= ['Confined','Unconfined','Unsaturated','2phases'].index(mt0)
         if mType>=2:
             s += 'activateCapillarity 1;\n'
-            s += 'sw_min '+str(core.dicval['OpenFlow']['uns.2'][0])+';'
-            s += 'sw_max '+str(core.dicval['OpenFlow']['uns.2'][1])+';\n'
+            #s += 'sw_min '+str(core.dicval['OpenFlow']['uns.2'][0])+';'
+            s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
         s += 'phase.w{rho	rho [1 -3 0 0 0 0 0] 1e3;mu mu [1 -1 -1 0 0 0 0] 1e-3;}\n'
@@ -339,17 +354,22 @@ class opfoamWriter:
         if self.group in ['Chem','Trans']:
             s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0])+';\n'
             s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1])+';\n'
-            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu'][0])+';\n'
-            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu'][1])+';\n'            
-            s += 'diffusionEqn '+str(core.dicval['OpenTrans']['tprm'][1])+';\n'
+            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.3'][0])+';\n'
+            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.3'][1])+';\n'            
+            s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
         if self.group == 'Chem':
             s += 'reactionSteps '+str(core.dicval['OpenChem']['chprm'][0])+';\n'
-        if core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
+        if self.group=='Trans' and core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             s += 'flowType 0;\ntransportSteady 1;\n'
         else :
             s += 'flowType '+ str(mType+1)+';\n'
-        if core.getValueFromName('OpenTrans','OIREAC',0):
-            s += 'lbdaw ldaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
+        if self.group=='Trans':
+            if core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
+                s += 'activateTransport 1;\n'
+            if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+                s += 'activateThermal 1;\n'
+            if core.getValueFromName('OpenTrans','OIREAC',0):
+                s += 'lbdaw ldaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
         f1=open(self.fDir+'constant\\transportProperties','w');f1.write(s);f1.close()
     
@@ -413,6 +433,18 @@ class opfoamWriter:
             self.cactiv = cactiv.astype('int')
         s = '\n'.join(self.cactiv.astype('str'))
         f1=open(self.fDir+'constant\\options\\cactive','w');f1.write(s);f1.close()
+
+    def writeThermal(self):
+        T0 = self.getVariable('OpenTrans','tinit') # initial concentrations
+        self.writeScalField('0','T',T0,self.bcD0,dim='[0 0 0 1 0 0 0]')
+        tactiv  = arange(self.ncell) #cell number but -1 for inactive cells
+        if 'tactiv' in self.core.diczone['OpenTrans'].dic.keys(): # active zone
+            t_bc = maximum(self.getVariable('OpenTrans','tactiv'),0)
+            self.tactiv = tactiv[t_bc==1];
+        else :
+            self.tactiv = tactiv.astype('int')
+        s = '\n'.join(self.tactiv.astype('str'))
+        f1=open(self.fDir+'constant\\options\\tactive','w');f1.write(s);f1.close()
         
     def writeChemistry(self):
         self.writePhreeqc(self.core,self.fDir)
@@ -502,60 +534,69 @@ class opfoamWriter:
                 for iz in range(len(lcell)) : 
                     if len(lcell[iz])==0:
                         mult.append([]);mult2.append([]);continue
-                    #zarea = sum(self.area[mod(lcell[iz],ncl)])
-                    #if flgAr : ar = self.area[mod(lcell[iz],ncl)]/zarea# conducatnace already given by zone
-                    #else : ar=1
+                    zarea = sum(self.carea[mod(lcell[iz],ncl)])
+                    if flgAr : ar = self.carea[mod(lcell[iz],ncl)]/zarea# conducatnace already given by zone
+                    else : ar=1
                     a = dicz['value'][iz].split('$')[1].split('\n')
                     zz,hcond = float(a[0]),float(a[1])
                     #if zcell[iz]==0: zcell[iz]=[zz]*ncell[iz]
-                    mult.append(-hcond)
-                    mult2.append(hcond) #
+                    mult.append(-hcond*ar)
+                    mult2.append(hcond*ar) #
                 self.writeOptionData(mat,lcell,ncell,zcell,'h'+n,mult=mult,mult2=mult2)
         if self.group == 'Trans':
-            if 'cfix' in self.ttable.keys():
-                so += 'cfix {type scalarmyFixedValueConstraint; active true;'
-                so += 'selectionMode cellSet; cellSet cfix; volumeMode absolute;'
-                so += 'fieldValues {Cw 1;}}\n'
-                lcell,ncell,zcell = self.writeOptionCells('cfix','cfix')
-                mat = self.ttable['cfix']
-                self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
-            if 'wel' in self.ttable.keys():# pumping or injection
-                so += 'cwel {type scalarmySemiImplicitSource; active true;'
-                so += 'selectionMode cellSet; cellSet cwel; volumeMode absolute;'
-                so += 'injectionRateSuSp {sw (1 0); Cw (1 1);}}\n'
-                lcell,ncell,zcell = self.writeOptionCells('wel','cwel')
-                mat = self.ttable['wel']
-                mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
-                if 'cwel' in self.ttable.keys(): # find the injecting wells with conc
-                    mat1 = self.ttable['cwel']
-                    lcell1,ncell1,zcell1 = self.writeOptionCells('cwel','dum')
-                    for iw,w in enumerate(lcell1):
-                        if w in lcell: 
-                            mat[:,lcell.index(w)] = mat1[:,iw]
-                self.writeOptionData(mat,lcell,ncell,zcell,'cwel',formt='int')
-            if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
-                so += 'crch {type scalarmySemiImplicitSource; active true;'
-                so += 'selectionMode cellSet; cellSet crch; volumeMode absolute;'
-                so += 'injectionRateSuSp {sw (1 0); Cw (1 0);}}\n'
-                lcell,ncell,zcell = self.writeOptionCells('crch','crch')
-                vbase = self.core.dicval['OpenTrans']['crch'][0]
-                if 'crch' in self.ttable.keys():
-                    rmat = self.ttable['crch'].astype(float);nr,nc = shape(rmat)
-                    rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
-                else :
-                    rmat  = ones((nr,1))*vbase# for the background                
-                self.writeOptionData(rmat,lcell,ncell,zcell,'crch',formt='float')
-            for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
-                n0 = n[:3]
-                if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                    so += 'c'+n0+' {type scalarmyFixedValueConstraint; active true;'
-                    so += 'selectionMode cellSet; cellSet c'+n0+'; volumeMode absolute;'
-                    so += 'fieldValues {Cw 1;}}\n'
-                    lcell,ncell,zcell = self.writeOptionCells(n,'c'+n0)
-                    mat = self.ttable[n]
-                    mult = [0]*len(lcell)
-                    for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
-                    self.writeOptionData(mat,lcell,ncell,zcell,'c'+n0,mult=mult,formt='float')
+            lct=[]
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
+                lct.append('c')
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+                lct.append('t')
+            for typ in lct:
+                if typ+'fix' in self.ttable.keys():
+                    a = typ+'fix'
+                    so += a+' {type scalarmyFixedValueConstraint; active true;'
+                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                    so += 'fieldValues {'+typ.upper()+' 1;}}\n'
+                    lcell,ncell,zcell = self.writeOptionCells(a,a)
+                    mat = self.ttable[a]
+                    self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
+                if 'wel' in self.ttable.keys():# pumping or injection
+                    a= typ+'wel'
+                    so += a+' {type scalarmySemiImplicitSource; active true;'
+                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                    so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 1);}}\n'
+                    lcell,ncell,zcell = self.writeOptionCells('wel',a)
+                    mat = self.ttable['wel']
+                    mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
+                    if a in self.ttable.keys(): # find the injecting wells with conc
+                        mat1 = self.ttable[a]
+                        lcell1,ncell1,zcell1 = self.writeOptionCells(a,'dum')
+                        for iw,w in enumerate(lcell1):
+                            if w in lcell: 
+                                mat[:,lcell.index(w)] = mat1[:,iw]
+                    self.writeOptionData(mat,lcell,ncell,zcell,a,formt='int')
+                if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
+                    a = typ+'rch'
+                    so += a+' {type scalarmySemiImplicitSource; active true;'
+                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                    so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 0);}}\n'
+                    lcell,ncell,zcell = self.writeOptionCells('crch','crch')
+                    vbase = self.core.dicval['OpenTrans'][a][0]
+                    if a in self.ttable.keys():
+                        rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
+                        rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
+                    else :
+                        rmat  = ones((nr,1))*vbase# for the background                
+                    self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
+                for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
+                    a=typ+n
+                    if n in self.ttable.keys():# if flow ghb cells put 0 at conc
+                        so += a+' {type scalarmyFixedValueConstraint; active true;'
+                        so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                        so += 'fieldValues {'+typ.upper()+' 1;}}\n'
+                        lcell,ncell,zcell = self.writeOptionCells(n,a)
+                        mat = self.ttable[n]
+                        mult = [0]*len(lcell)
+                        for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
+                        self.writeOptionData(mat,lcell,ncell,zcell,a,mult=mult,formt='float')
 
         if self.group == 'Chem':
             ## need to know if ph.4 is at a flow bc or at a well
@@ -627,14 +668,9 @@ class opfoamWriter:
         for each considered zone, ncell the nb of these cells
         lcell is ordered in opf order, i.e. highest nb is higher layer
         '''
-        #if fname[:1]=='h': modName = 'Modflow'
-        #if fname[:1]=='c' : modName = 'MfUsgTrans'
-        #if line[:3] in ['bas','wel','rch','ghb','riv','drn']: modName = 'Modflow'
-        #if line[:3] in ['bct','pcb','cwe','crc','cgh','cri']: modName = 'MfUsgTrans'
-        #if line[:2]=='ph': modName = 'Pht3d'
         if line[:3] in ['hea','pre','wel','rch','ghb','riv','drn']: modName = 'OpenFlow'
-        if line[0]=='c': modName = 'OpenTrans'
-        if line[0] in ['s','g']: modName = 'OpenChem'
+        if line[0] in ['c','t']: modName = 'OpenTrans'
+        if len(line)==4 and line[0] in ['s','g']: modName = 'OpenChem'
         d0 = self.core.diczone[modName].dic
         if line in d0.keys(): dicz = d0[line]
         else : dicz={'name':[]}
@@ -655,9 +691,9 @@ class opfoamWriter:
                     idx = where(m1==iz) # id0 layer, id1 cell
                     lcell[iz-1].extend(list(idx[0]*nx+idx[1]))
                     ncell[iz-1] += len(idx[0])
-                if len(dicz['coords'][iz-1][0])>2: zv1 = list(m[idx[0],idx[1]])
-                else : zv1 = [0]*(idx[1]-idx[0])
-                zcell[iz-1].extend(zv1)
+                    if len(dicz['coords'][iz-1][0])>2: zv1 = list(m[idx[0],idx[1]])
+                    else : zv1 = [0]*(idx[1]-idx[0])
+                    zcell[iz-1].extend(zv1)
         else :#unstructured
             lcell,ncell,zcell = [],[],[]
             for iz in range(len(dicz['name'])):
@@ -854,6 +890,8 @@ class opfoamWriter:
         dicz = core.diczone['OpenChem']
         if 'sfix' in dicz.dic.keys():
             lsolu = list(unique([int(a) for a in dicz.dic['sfix']['value']]))
+        if 'swel' in dicz.dic.keys():
+            lsolu = list(unique([int(a) for a in dicz.dic['swel']['value']]))
         if 'sinit' in dicz.dic.keys():
             self.linit = unique([a.strip() for a in dicz.dic['sinit']['value']]) # all cell types
             lsinit = unique([int(a.strip()[:-3]) for a in dicz.dic['sinit']['value']]) # solutions
@@ -909,11 +947,12 @@ class opfoamWriter:
         gases=chem['Gases'];
         #nbg = len(unique(dInd['Gases']))
         for ig in range(self.nsolu):
-            if len(listE['g'])>0 : s += '\nGas_Phase '+str(ig)+'\n'
-            if ig==int(dicz.dic['gfix']['value'][0]):
-                s+= '-fixed_pressure  1 \n'
-            else :
-                s+= '-fixed_volume \n -volume 1.0\n'
+            if len(listE['g'])>0 : 
+                s += '\nGas_Phase '+str(ig)+'\n'
+                if ig==int(dicz.dic['gfix']['value'][0]):
+                    s+= '-fixed_pressure  1 \n'
+                else :
+                    s+= '-fixed_volume \n -volume 1.0\n'
             for esp in listE['g']: # go through phase list
                 ie = gases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = gases['data'][ie][ig+2] #backgr SI and concentration of phase
@@ -996,7 +1035,10 @@ class opfoamWriter:
             indx = shortn.index(sp)
             val = ravel(dInd[longn[indx]]);
             if sp=='g': # there is at least one speces in this group
-                s += '-1 '+' '.join([str(int(a)) for a in self.lsolu])+'\n'
+                if len(listE[sp])>0:
+                    s += '-1 '+' '.join([str(int(a)) for a in self.lsolu])+'\n'
+                else:
+                    s += '0  -1 \n'
             else:
                 s += '0  -1 \n'
         s += '0  -1 \n'  # solid solutions

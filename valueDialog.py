@@ -145,10 +145,7 @@ class valueDialog:
                 elif set(values)=={'1'}:
                     self.core.dicaddin['Model']['type']='Unconfined'
                 else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21 
-            if self.modName in ['Modflow','MfUsgTrans','Pht3d']: mdName = 'Modflow'
-            elif self.modName[:4]=='Open': mdName = 'OpenFlow'
-            val = self.core.getSingleValueFromName(mdName,'MshType',0)
-            if val>0:
+            if self.core.addin.MshType>0:
                 self.gui.onGridMesh('Mesh')
             else : 
                 self.gui.onGridMesh('Grid')

@@ -255,8 +255,11 @@ class unstructured:
         self.core.addin.mesh = self
         self.nlay = getNlayers(self.core)
         dct = self.core.diczone[modName].dic
+        if modName=='OpenFlow' and 'dis.2' not in dct.keys(): 
+            self.core.dicval[modName]['dis.1'][0]=0;
+            #self.points,self.elts,self.dicD,self.dcoo1,self.dicFeats = [],[],{},[],{}
         mshType = self.core.getValueFromName(modName,'MshType')
-        if mshType >1: # case of true unstructured grid built through gmesh
+        if mshType>1: # case of true unstructured grid built through gmesh
             fmsh = self.core.fileName+'_out.msh'
             os.chdir(self.core.fileDir)
             if fmsh not in os.listdir(os.getcwd()): opt = 'new'

@@ -442,7 +442,7 @@ class mtphtWriter:
             for iz in range(dicz.getNbZones(n)): 
                 ilay,irow,icol,zvect = self.mfloW.xyzone2Mflow(core,n,iz)
                 dicSSM[n][ilay,irow,icol] = 1
-                dicSSM[n] = dicSSM[n][:,::-1,:]
+            dicSSM[n] = dicSSM[n][:,::-1,:]
         nwells,nBC = sum(ravel(dicSSM['wel.1'])),sum(ravel(BC)==-1)
         mxpts = (nBC+nwells)*self.nper;#print type(BC),nBC,mxpts,self.nper
         if opt=='Pht3d' : self.createConcStrings()
@@ -468,8 +468,8 @@ class mtphtWriter:
         
         typ = list(range(nzones));npts=0
         for iz in range(nzones):
-            #print "mfw transient",core.diczone
-            xy = zones['coords'][iz];s='';lpts.append([])
+            lpts.append([])
+            xy = zones['coords'][iz];s='';
             x,y = list(zip(*xy))
             z=x*1 # dummy value for zone2index
             icol,irow,a = zone2index(core,x,y,z);
