@@ -212,9 +212,12 @@ class Menus:
             f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
             self.dialogs.onMessage(self.gui,'file '+fName+' saved')
             
-    def OnHelp(self,evt=None): #,lang):
+    def OnHelpI(self,evt=None): #,lang):
         """calling help file"""
-        os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"iPht3dDoc_En.chm")
+        os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"interfaceHelp.chm")
+    def OnHelpM(self,evt=None): #,lang):
+        """calling help file"""
+        os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"modelsHelp.chm")
             
     def OnDownloadLast(self,evt=None):
         self.onDownload('master')

@@ -337,7 +337,14 @@ class opfoamWriter:
             self.writeScalField('constant','alpha_vg',a_vg,self.dicBC,dim='[0 -1 0 0 0 0 0]')            
             n_vg = self.getVariable('OpenFlow','uns.4')
             self.writeScalField('constant','n_vg',n_vg,self.dicBC,dim='[0 0 0 0 0 0 0]')            
-        # transport properties
+        # thermal
+        if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+            cps = self.getVariable('OpenTrans','tcps')
+            self.writeScalField('constant','cps',cps,self.dicBC,dim='[0 2 -2 -1 0 0 0]')            
+            lbds = self.getVariable('OpenTrans','tlbds')
+            self.writeScalField('constant','lbds',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
+            
+        # transport properties dict
         s = 'FoamFile{version 2.0;format ascii;class dictionary;location "constant";object transportProperties;}\n'
         if core.dicval['OpenFlow']['dis.8'][3] == 0: s += 'flowStartSteady 1;\n'
         else :s += 'flowStartSteady 0;\n'
@@ -368,8 +375,9 @@ class opfoamWriter:
                 s += 'activateTransport 1;\n'
             if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 s += 'activateThermal 1;\n'
+                s += 'lbdaTw lbdaTw [1 1 -3 -1 0 0 0] '+str(core.dicval['OpenTrans']['tlbds'][0])+';\n'
             if core.getValueFromName('OpenTrans','OIREAC',0):
-                s += 'lbdaw ldaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
+                s += 'lbdaw lbdaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
         f1=open(self.fDir+'constant\\transportProperties','w');f1.write(s);f1.close()
     
@@ -544,59 +552,59 @@ class opfoamWriter:
                     mult2.append(hcond*ar) #
                 self.writeOptionData(mat,lcell,ncell,zcell,'h'+n,mult=mult,mult2=mult2)
         if self.group == 'Trans':
-            lct=[]
-            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
-                lct.append('c')
-            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
-                lct.append('t')
-            for typ in lct:
-                if typ+'fix' in self.ttable.keys():
-                    a = typ+'fix'
+#            lct=[]
+#            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
+#                lct.append('c')
+#            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+#                lct.append('t')
+            typ = 'c'
+            if typ+'fix' in self.ttable.keys():
+                a = typ+'fix'
+                so += a+' {type scalarmyFixedValueConstraint; active true;'
+                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                so += 'fieldValues {'+typ.upper()+' 1;}}\n'
+                lcell,ncell,zcell = self.writeOptionCells(a,a)
+                mat = self.ttable[a]
+                self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
+            if 'wel' in self.ttable.keys():# pumping or injection
+                a= typ+'wel'
+                so += a+' {type scalarmySemiImplicitSource; active true;'
+                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 1);}}\n'
+                lcell,ncell,zcell = self.writeOptionCells('wel',a)
+                mat = self.ttable['wel']
+                mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
+                if a in self.ttable.keys(): # find the injecting wells with conc
+                    mat1 = self.ttable[a]
+                    lcell1,ncell1,zcell1 = self.writeOptionCells(a,'dum')
+                    for iw,w in enumerate(lcell1):
+                        if w in lcell: 
+                            mat[:,lcell.index(w)] = mat1[:,iw]
+                self.writeOptionData(mat,lcell,ncell,zcell,a,formt='int')
+            if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
+                a = typ+'rch'
+                so += a+' {type scalarmySemiImplicitSource; active true;'
+                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
+                so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 0);}}\n'
+                lcell,ncell,zcell = self.writeOptionCells('crch','crch')
+                vbase = self.core.dicval['OpenTrans'][a][0]
+                if a in self.ttable.keys():
+                    rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
+                    rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
+                else :
+                    rmat  = ones((nr,1))*vbase# for the background                
+                self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
+            for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
+                a=typ+n
+                if n in self.ttable.keys():# if flow ghb cells put 0 at conc
                     so += a+' {type scalarmyFixedValueConstraint; active true;'
                     so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
                     so += 'fieldValues {'+typ.upper()+' 1;}}\n'
-                    lcell,ncell,zcell = self.writeOptionCells(a,a)
-                    mat = self.ttable[a]
-                    self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
-                if 'wel' in self.ttable.keys():# pumping or injection
-                    a= typ+'wel'
-                    so += a+' {type scalarmySemiImplicitSource; active true;'
-                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                    so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 1);}}\n'
-                    lcell,ncell,zcell = self.writeOptionCells('wel',a)
-                    mat = self.ttable['wel']
-                    mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
-                    if a in self.ttable.keys(): # find the injecting wells with conc
-                        mat1 = self.ttable[a]
-                        lcell1,ncell1,zcell1 = self.writeOptionCells(a,'dum')
-                        for iw,w in enumerate(lcell1):
-                            if w in lcell: 
-                                mat[:,lcell.index(w)] = mat1[:,iw]
-                    self.writeOptionData(mat,lcell,ncell,zcell,a,formt='int')
-                if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
-                    a = typ+'rch'
-                    so += a+' {type scalarmySemiImplicitSource; active true;'
-                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                    so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 0);}}\n'
-                    lcell,ncell,zcell = self.writeOptionCells('crch','crch')
-                    vbase = self.core.dicval['OpenTrans'][a][0]
-                    if a in self.ttable.keys():
-                        rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
-                        rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
-                    else :
-                        rmat  = ones((nr,1))*vbase# for the background                
-                    self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
-                for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
-                    a=typ+n
-                    if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                        so += a+' {type scalarmyFixedValueConstraint; active true;'
-                        so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                        so += 'fieldValues {'+typ.upper()+' 1;}}\n'
-                        lcell,ncell,zcell = self.writeOptionCells(n,a)
-                        mat = self.ttable[n]
-                        mult = [0]*len(lcell)
-                        for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
-                        self.writeOptionData(mat,lcell,ncell,zcell,a,mult=mult,formt='float')
+                    lcell,ncell,zcell = self.writeOptionCells(n,a)
+                    mat = self.ttable[n]
+                    mult = [0]*len(lcell)
+                    for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
+                    self.writeOptionData(mat,lcell,ncell,zcell,a,mult=mult,formt='float')
 
         if self.group == 'Chem':
             ## need to know if ph.4 is at a flow bc or at a well

@@ -184,9 +184,12 @@ class orti3dGui(QMainWindow):
 
         #Help
         menuHelp = self.menuBar().addMenu("&Help")
-        hAction = QAction("&Help", self,
+        hActionI = QAction("&Help interface", self,
                 statusTip="Help file",
-                triggered=self.menus.OnHelp)
+                triggered=self.menus.OnHelpI)
+        hActionM = QAction("&Help models", self,
+                statusTip="Help file",
+                triggered=self.menus.OnHelpM)
         dwnsAction = QAction("&Download stable", self, 
                 statusTip="download stable version from github",
                 triggered=self.menus.OnDownloadLast)
@@ -196,7 +199,8 @@ class orti3dGui(QMainWindow):
         #dwnlAction = QAction("&Download local", self, #EV 11/12/19
                 #statusTip="download any version from local file",
                 #triggered=self.menus.OnDownloadLocal)
-        menuHelp.addAction(hAction)
+        menuHelp.addAction(hActionI)
+        menuHelp.addAction(hActionM)
         menuHelp.addAction(dwnsAction)
         #menuHelp.addAction(dwndAction) #EV 11/12/19
         #menuHelp.addAction(dwnlAction)
