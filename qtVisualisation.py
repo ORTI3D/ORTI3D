@@ -891,7 +891,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         #if evt.button==3: self.finMoveZone(evt) # removed OA 6/2/13
         d=sqrt((evt.xdata-self.xstart)**2+(evt.ydata-self.ystart)**2)
         xmn,xmx=self.xlim;ymn,ymx=self.ylim
-        dmax=sqrt((xmx-xmn)**2+(ymx-ymn)**2)/1000;
+        dmax=sqrt((xmx-xmn)**2+(ymx-ymn)**2)/500;
         if d>dmax: return
         self.m2 = self.mpl_connect('motion_notify_event', self.zone_motion)
         self.m3 = self.mpl_connect('button_release_event', self.finMoveZone)

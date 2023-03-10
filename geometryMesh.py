@@ -484,7 +484,7 @@ class unstructured:
         # below approximative, just for flat layers
         if core.addin.getDim()=='3D':
             if 'importArray' in core.dictype[modName]['dis.6']:
-                zlist = self.getZfromPoints(points,modName)
+                zlist = self.getZfromPoints(modName,points)
             else :
                 zlist = [float(a) for a in core.addin.get3D()['topMedia']]
                 zlist.append(float(core.addin.get3D()['zmin']))

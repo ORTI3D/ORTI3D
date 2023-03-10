@@ -25,14 +25,13 @@ class multiPlot(QDialog):
         self.setModal(False)
         self.setWindowTitle('Plot of results')
         screenShape = QtWidgets.QDesktopWidget().screenGeometry()
-        self.setGeometry(QRect(5, 5, screenShape.width()*.75, 
-                               screenShape.height()*.7))
+        w0,h0 = screenShape.width(),screenShape.height()
+        self.setGeometry(QRect(25, 50, w0*.7, h0*.6))
     ## main horizontal layout
         self.horizontalLayout = QHBoxLayout(self)
         self.horizontalLayout.setContentsMargins(10, 20, 10, 10)
     ## the left panel vertical layout  
         self.verticalLayout = QVBoxLayout()
-        #self.verticalLayout.setGeometry(QRect(5,5,250,screenShape.height()*.68))
     ## title
         if self.typ == 'B' : title = 'Time-series graph'
         if self.typ == 'P' : title = 'Horizontal profile graph'
@@ -40,7 +39,7 @@ class multiPlot(QDialog):
         if self.typ == 'X' : title = 'Calibration graph'
         label = str(title +' - '+self.res)
         self.label = QtWidgets.QLabel(self)
-        self.label.setMaximumSize(250, 24)
+        self.label.setMaximumSize(QtCore.QSize(w0*0.11, h0*.04)) # notebook cannot have fix size it seems
         self.label.setText(label)
         font = QFont()
         font.setPointSize(9)
@@ -51,12 +50,16 @@ class multiPlot(QDialog):
         self.tlist = self.core.getTlist2()
     ## frame 
         self.frame = QtWidgets.QFrame(self)
-        self.frame.setMaximumSize(QtCore.QSize(250, 60)) 
+        self.frame.setMaximumSize(QtCore.QSize(w0*0.11, h0*.1)) 
         self.gl = QGridLayout(self.frame)
+        self.gl.setContentsMargins(0,0,0,0)
+        self.gl.setSpacing(0)
+        #self.gl.setGeometry(QRect(5, 5, w0*.2, h0*.03))
+
     ## type of result 
         if self.res != 'W content':
             self.label_0 = QtWidgets.QLabel(self.frame)
-            #self.label_0.setMaximumSize(QtCore.QSize(40, 20))
+            #self.label_0.setMaximumSize(QtCore.QSize(60, 20))
             self.label_0.setText("Type of result")
             self.gl.addWidget(self.label_0,0,0,1,1)
             self.rgroup = QComboBox(self)
@@ -86,13 +89,8 @@ class multiPlot(QDialog):
             #!self.verticalLayout.addWidget(self.plgroup) 
     ## Time combo box for profile and calibration graph
         if self.typ in ['P','V','X']:#=='P' or self.typ=='X':
-            #!self.frame = QtWidgets.QFrame(self)
-            #!self.frame.setMaximumSize(QtCore.QSize(120, 38))
-            #!self.horizontalLayout2 = QHBoxLayout(self.frame)
-            #!self.horizontalLayout2.setContentsMargins(0, 0, 0, 0)
-            #!self.horizontalLayout2.setSpacing(0)
             self.label_2 = QtWidgets.QLabel(self.frame)
-            self.label_2.setMaximumSize(QtCore.QSize(40, 20))
+            #self.label_2.setMaximumSize(QtCore.QSize(40, 40))
             self.label_2.setText("Time")
             self.gl.addWidget(self.label_2,1,0,1,1)
             #!self.horizontalLayout2.addWidget(self.label_2)
@@ -117,7 +115,8 @@ class multiPlot(QDialog):
         self.nb.layout.removeWidget(self.nb.buttonBox) #EV 06/12
         self.nb.buttonBox.deleteLater()
         del self.nb.buttonBox
-        #self.nb.setGeometry(QRect(5, 5, 250,270))
+        self.nb.layout.setGeometry(QRect(1, 1, 250,270)) #does not work
+        #self.nb.setMinimumSize(QtCore.QSize(250, 120)) #does not work
         self.verticalLayout.addWidget(self.nb)
         self.nb.apply()
     ## Apply button
@@ -133,9 +132,7 @@ class multiPlot(QDialog):
      ## the matplotlib figure 
         self.figure = Figure(tight_layout=True,figsize=(7.8, 3), dpi=100) # EV 04/02/20 
         self.cnv = FigureCanvas(self.figure) 
-        #self._ax = self.cnv.figure.subplots()#.add_axes([0.1, 0.15, 0.7, 0.8])
     ## add matplotlib figure
-        #self.horizontalLayout.addWidget(self.cnv)
         self.verticalLayout2.addWidget(self.cnv)
         self.toolbar = NavigationToolbar(self.cnv, self) # EV 04/02/20 
         self.verticalLayout2.addWidget(self.toolbar, alignment=Qt.AlignHCenter) # EV 04/02/20 

@@ -282,14 +282,14 @@ class guiShow:
         else :
             if self.data == None: zval = 0
             else : 
-                zval = self.data[2][iy,ix]
-                x0,y0 = self.data[0][0,:],self.data [1][:,0]
+                x0,y0 = self.data[0][0,:],self.data[1][:,0]
                 d=x-x0; d1=d[d>0.]
                 if len(d1)==0 : return ' '
                 ix=where(d==amin(d1))[0][0]
                 d=y-y0; d1=d[d>0.]
                 if len(d1)==0 : return ' '
                 iy=where(d==amin(d1))[0][0] 
+                zval = self.data[2][iy,ix]
             if vbox.chkView.isChecked():
                 return '%g, parm value %g'%(zval,mat[iy,ix])
             else :

@@ -862,7 +862,7 @@ def writeVTKstruct(core,modName,data):
         s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     else : # unstructured
         mesh.makeBC('Modflow')
-        points,fc,bfc,fcup = mesh.getPointsFaces()
+        points,fc,bfc,fcup = mesh.getPointsFaces();print(type(points),mesh)
         npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
         s = mesh.writeVTKgeom(npt,sp,nh,lnh,lh)
         data = ravel(data)[idx] # add cells that have been divided
