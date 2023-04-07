@@ -204,7 +204,7 @@ class opfoamWriter:
         nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(fslt[0]), 
+                  'deltaT':int(fslt[0]*86400), 
                   'maxCo':fslt[2],'dCmax':fslt[3],'dCresidual':fslt[4]} #'maxDeltaT':int(fslt[1]),
                 
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
@@ -237,7 +237,7 @@ class opfoamWriter:
             f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
             s1 = str(int(t*86400));f1.write('writeInterval '+s1+';');f1.close()
             f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-            s2 = str(int(max(t*86400,100)));f2.write('maxDeltaT '+s2+';');f2.close()
+            s2 = str(int(max(dt*86400/20,100)));f2.write('maxDeltaT '+s2+';');f2.close()
             t_old,dt_old = t*1,dt*1
         s += '    );\n    }\n }\n'
         #the maxdeltat function
@@ -365,6 +365,8 @@ class opfoamWriter:
             s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.3'][1])+';\n'            
             s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
         if self.group == 'Chem':
+            s += 'activateTransport 1;\n'
+            s += 'activateReaction 1;\n'
             s += 'reactionSteps '+str(core.dicval['OpenChem']['chprm'][0])+';\n'
         if self.group=='Trans' and core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             s += 'flowType 0;\ntransportSteady 1;\n'
