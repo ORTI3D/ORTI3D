@@ -57,7 +57,9 @@ class opfoamWriter:
         self.writeConstantFields();print('constant field written')
         self.writeInitFields();print('init field written')
         if 'options' not in os.listdir(fDir+'constant'): os.mkdir(fDir+'constant\\options')
-        if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
+        # cleaning the constant/option folder
+        os.system('del /Q '+self.fDir+'constant\\options\\*')
+        #if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
         if self.group in ['Chem']: #'Transport',
             self.ncomp,self.gcomp,self.lcomp,self.lspec = self.opf.findSpecies(self.core)
         self.writeOptions()
@@ -204,13 +206,14 @@ class opfoamWriter:
         nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(fslt[0]*86400), 
-                  'maxCo':fslt[2],'dCmax':fslt[3],'dCresidual':fslt[4]} #'maxDeltaT':int(fslt[1]),
-                
+                  'deltaT':int(round(fslt[0]*86400/200,0)*100), 
+                  'maxCo':fslt[2]} #'maxDeltaT':int(fslt[1]),
+        tslv = self.core.dicval['OpenTrans']['tslv']
+        if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(self.fDir+os.sep+'endSteadyF');s=f1.read();f1.close()
             ctrlDict['startTime'] = s
-        solv = 'gwaterFoam'
+        solv = 'muFlowRT'
         s = 'FoamFile\n{\n version 2.0;\n format ascii;\n class dictionary;\n'
         s += ' location \"system\";\n object controlDict;\n}\n'
         s += 'application '+solv+';\n'
@@ -220,6 +223,7 @@ class opfoamWriter:
         s += ' runTimeModifiable yes;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
+        
         # write the function for variable times
         s += '#include "$FOAM_CASE/system/writeInterval"\n'
         s += 'functions \n { \n    fileUpdate1\n    {\n'
@@ -237,7 +241,8 @@ class opfoamWriter:
             f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
             s1 = str(int(t*86400));f1.write('writeInterval '+s1+';');f1.close()
             f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-            s2 = str(int(max(dt*86400/20,100)));f2.write('maxDeltaT '+s2+';');f2.close()
+            maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
+            s2 = str(int(maxdt));f2.write('maxDeltaT '+s2+';');f2.close()
             t_old,dt_old = t*1,dt*1
         s += '    );\n    }\n }\n'
         #the maxdeltat function
@@ -254,7 +259,7 @@ class opfoamWriter:
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');f1.write(s);f1.close()
 
     def writeFvSchemes(self):
-        schemeDict = {'ddtSchemes':{'default':'Euler'},
+        schemeDict = {'ddtSchemes':{'default':'backward'},
         'gradSchemes':{'default':'Gauss linear'},
         'divSchemes':{'default':'none','div(phiw,T)':'Gauss vanLeer','div(phiw,C)':'Gauss vanLeer',
             'div(phiw,Cwi)':'Gauss vanLeer','div(phig,Cgi)':'Gauss vanLeer' }, #vanLeer,SuperBee
@@ -288,9 +293,12 @@ class opfoamWriter:
         s += 'T{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
         s += '\"Cw.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
         s += '\"Cg.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n}'
-        s += '\nPicard {tolerance 0.01;maxIter 10;minIter 3;nIterStability  5;}'
-        s += '\nSIMPLE {residualControl {h 1e-7;Cw 1e-12;} }\n'
-        s += 'relaxationFactors { fields { h 0.5;} }\n'
+        fsl1 = self.core.dicval['OpenFlow']['fslv.1']
+        s += '\nSIMPLE {residualControl {h '+str(fsl1[4])+';Cw 1e-12;} }\n'
+        fsl2 = self.core.dicval['OpenFlow']['fslv.2']
+        s += '\nPicard {tolerance '+str(fsl2[0])+';maxIter '+str(fsl2[1])
+        s += ';minIter '+str(fsl2[2])+';nIterStability  '+str(fsl2[3])+';}'
+        s += '\nrelaxationFactors { fields { h 0.5;} }\n'
         f1=open(self.fDir+'system\\fvSolution','w');f1.write(s);f1.close()
         
     def getVariable(self,modName,line):
@@ -471,9 +479,7 @@ class opfoamWriter:
     def writeOptions(self):
         '''
         '''
-        # writing the fvOption file
         ncl = self.ncell_lay
-        so ='FoamFile{version 2.0;format ascii;class dictionary;location \"constant\";object fvOptions;}\n'
         if self.core.dicaddin['Model']['type'] == '2phases': 
             vr = 'p';vr1 = 'p';vfix='press.2'
         elif self.core.dicaddin['Model']['type'] == 'Unsaturated': 
@@ -481,11 +487,7 @@ class opfoamWriter:
         else : 
             vr = 'h';vr1='h';vfix='head.2'
         if vfix in self.core.diczone['OpenFlow'].dic.keys():
-            so += vr+'Fix \n{type scalarmyFixedValueConstraint;\nactive true;\n'
-            so += 'selectionMode cellSet;\ncellSet '+vr+'fix;\nvolumeMode absolute;\n'
-            so += 'fieldValues {'+vr1+' 1;}\n}\n'
             add=[]
-            # writing the hfix file in cellSet (cells) and data in options
             lcell,ncell,zcell = self.writeOptionCells(vfix,vr+'fix')
             if vr=='p' and self.core.dicval['OpenFlow']['fprm.1'][1]==1: # need to equilibrate pressure
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
@@ -496,25 +498,18 @@ class opfoamWriter:
             for iz in range(len(lcell)) : 
                 mult.append([1]*ncell[iz])
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
+
         if 'wel' in self.core.diczone['OpenFlow'].dic.keys():
-            so += vr+'Souwel \n{type scalarmySemiImplicitSource;\nactive true;\n'
-            so += 'selectionMode cellSet;\ncellSet '+vr+'wel;\nvolumeMode absolute;\n'
-            so += 'injectionRateSuSp {sw (1 0);'+vr1+' (1 0);}\n}\n'
-            # writing the hWel file in cellSet (cells) and data in options
             lcell,ncell,zcell = self.writeOptionCells('wel',vr+'wel')
             qmat = self.ttable['wel'];nr,nz = shape(qmat)
-            mult = [];eps=0.25
+            mult = [];
             for iz in range(nz) : 
                 kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
                 #area = self.area[mod(lcell[iz],ncl)]
                 mult.append(kr) #/area/self.thk[lcell[iz]])
             self.writeOptionData(qmat,lcell,ncell,zcell,vr+'wel',mult=mult)
             
-            # can be replaced by change of top bc in Uw
         if ('rch' in self.core.diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
-            so += 'hSourch \n{type scalarmySemiImplicitSource;\nactive true;\n'
-            so += 'selectionMode cellSet;\ncellSet hrch;\nvolumeMode absolute;\n'
-            so += 'injectionRateSuSp {sw (1 0);h (1 0);}\n}\n'
             lcell,ncell,zcell = self.writeOptionCells('rch','hrch')
             vbase = self.core.dicval['OpenFlow']['rch'][0]
             if 'rch' in self.ttable.keys():
@@ -527,16 +522,12 @@ class opfoamWriter:
                 if len(lcell[iz])>0:
                     mult[iz] = self.carea[mod(lcell[iz],ncl)]# thickness will be calc in fvOptions
             self.writeOptionData(rmat,lcell,ncell,zcell,'hrch',mult=mult)
-            # write thk in constant/options
 
         for n in ['riv','drn','ghb']:
             flgAr = False # classical case, conductance given by cell
             if 'conductance' in self.core.dicaddin['Model'].keys():
                 if self.core.dicaddin['Model']['conductance'] == 'byZone': flgAr = True
             if n in self.ttable.keys():
-                so += 'hSou'+n+' \n{type scalarmySemiImplicitSource;\nactive true;\n'
-                so += 'selectionMode cellSet;\ncellSet h'+n+';volumeMode absolute;\n'
-                so += 'injectionRateSuSp {sw (1 0);h (1 1);}\n}\n'
                 lcell,ncell,zcell = self.writeOptionCells(n,'h'+n)
                 mat = self.ttable[n];nr,nz = shape(mat);
                 mult, mult2 = [],[]
@@ -550,7 +541,7 @@ class opfoamWriter:
                     a = dicz['value'][iz].split('$')[1].split('\n')
                     zz,hcond = float(a[0]),float(a[1])
                     #if zcell[iz]==0: zcell[iz]=[zz]*ncell[iz]
-                    mult.append(-hcond*ar)
+                    mult.append(hcond*ar)
                     mult2.append(hcond*ar) #
                 self.writeOptionData(mat,lcell,ncell,zcell,'h'+n,mult=mult,mult2=mult2)
         if self.group == 'Trans':
@@ -562,17 +553,11 @@ class opfoamWriter:
             typ = 'c'
             if typ+'fix' in self.ttable.keys():
                 a = typ+'fix'
-                so += a+' {type scalarmyFixedValueConstraint; active true;'
-                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                so += 'fieldValues {'+typ.upper()+' 1;}}\n'
                 lcell,ncell,zcell = self.writeOptionCells(a,a)
                 mat = self.ttable[a]
                 self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
             if 'wel' in self.ttable.keys():# pumping or injection
                 a= typ+'wel'
-                so += a+' {type scalarmySemiImplicitSource; active true;'
-                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 1);}}\n'
                 lcell,ncell,zcell = self.writeOptionCells('wel',a)
                 mat = self.ttable['wel']
                 mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
@@ -585,9 +570,6 @@ class opfoamWriter:
                 self.writeOptionData(mat,lcell,ncell,zcell,a,formt='int')
             if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
                 a = typ+'rch'
-                so += a+' {type scalarmySemiImplicitSource; active true;'
-                so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                so += 'injectionRateSuSp {sw (1 0); '+typ.upper()+' (1 0);}}\n'
                 lcell,ncell,zcell = self.writeOptionCells('crch','crch')
                 vbase = self.core.dicval['OpenTrans'][a][0]
                 if a in self.ttable.keys():
@@ -596,47 +578,32 @@ class opfoamWriter:
                 else :
                     rmat  = ones((nr,1))*vbase# for the background                
                 self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
+            '''
             for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
                 a=typ+n
                 if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                    so += a+' {type scalarmyFixedValueConstraint; active true;'
-                    so += 'selectionMode cellSet; cellSet '+a+'; volumeMode absolute;'
-                    so += 'fieldValues {'+typ.upper()+' 1;}}\n'
                     lcell,ncell,zcell = self.writeOptionCells(n,a)
-                    mat = self.ttable[n]
-                    mult = [0]*len(lcell)
-                    for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
-                    self.writeOptionData(mat,lcell,ncell,zcell,a,mult=mult,formt='float')
-
+                    mat = self.ttable[a]
+                    #mult = [1]*len(lcell)
+                    #for iz in range(len(lcell)): mult[iz] = [1]*len(lcell[iz])
+                    self.writeOptionData(mat,lcell,ncell,zcell,a,formt='float')
+            '''
         if self.group == 'Chem':
             ## need to know if ph.4 is at a flow bc or at a well
             self.solucell=[] # solucell conaint the list of fixed chem cells
             if 'sfix' in self.ttable.keys():
-                for i in range(self.ncomp):
-                    so += 'cfix'+str(i)+' {type scalarmyFixedValueConstraint; active true;'
-                    so += 'selectionMode cellSet; cellSet cfix; volumeMode absolute;'
-                    so += 'fieldValues {Cw'+str(i)+' 1;}}\n'
-                lcell,ncell,zcell = self.writeOptionCells('sfix','cfix')
+                lcell,ncell,zcell = self.writeOptionCells('sfix','sfix')
                 self.solucell,self.solunb = lcell,zcell
                 mat = self.ttable['sfix']
-                self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='int')
+                self.writeOptionData(mat,lcell,ncell,zcell,'sfix',formt='int')
             if 'srch' in self.ttable.keys():# ph recharge
-                for i in range(self.ncomp):
-                    so += 'crch'+str(i)+' {type scalarmySemiImplicitSource; active true;'
-                    so += 'selectionMode cellSet; cellSet crch; volumeMode absolute;'
-                    so += 'injectionRateSuSp {sw (1 0); Cw'+str(i)+' (1 0);}}\n'
                 lcell,ncell,zcell = self.writeOptionCells('srch','crch')
                 nz = len(lcell)
                 vbase = self.core.dicval['OpenChem']['srch'][0]
                 rmat = self.ttable['srch'].astype(float);nr,nc = shape(rmat)
                 rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
-                self.writeOptionData(rmat,lcell,ncell,'crch',formt='int')
+                self.writeOptionData(rmat,lcell,ncell,zcell,'srch',formt='int')
             if 'wel' in self.ttable.keys():# pumping or injection
-                for i in range(self.ncomp):
-                    so += 'cwel'+str(i)+' {type scalarmySemiImplicitSource; active true;'
-                    so += 'selectionMode cellSet; cellSet cwel; volumeMode absolute;'
-                    #so += 'fieldValues {Cw'+str(i)+' 1;}}\n'
-                    so += 'injectionRateSuSp {sw (1 0); Cw'+str(i)+' (1 1);}}\n'
                 lcell,ncell,zcell = self.writeOptionCells('wel','cwel')
                 mat = self.ttable['wel']
                 mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
@@ -648,30 +615,20 @@ class opfoamWriter:
                             mat[:,lcell.index(w)] = mat1[:,iw]
                 self.writeOptionData(mat,lcell,ncell,zcell,'cwel',formt='int')
             if 'gfix' in self.ttable.keys():
-                for i in range(self.gcomp):
-                    so += 'gfix'+str(i)+' {type scalarmyFixedValueConstraint; active true;'
-                    so += 'selectionMode cellSet; cellSet gfix; volumeMode absolute;'
-                    so += 'fieldValues {Cg'+str(i)+' 1;}}\n'
                 lcell,ncell,zcell = self.writeOptionCells('gfix','gfix')
-                self.solucell,self.solunb = lcell,zcell
                 mat = self.ttable['gfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'gfix',formt='int')
 
+            '''
             for n in ['ghb','drn','riv']: #,'head.2' removed 7/8/22
                 n0 = n[:3]
                 if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                    for i in range(self.ncomp):
-                        so += 'c'+n0+str(i)+' {type scalarmyFixedValueConstraint; active true;'
-                        so += 'selectionMode cellSet; cellSet c'+n0+'; volumeMode absolute;'
-                        so += 'fieldValues {Cw'+str(i)+' 1;}}\n'
-                    lcell,ncell,zcell = self.writeOptionCells(n,'c'+n0)
+                    lcell,ncell,zcell = self.writeOptionCells(n,'s'+n0)
                     mat = self.ttable[n]
-                    mult = [0]*len(lcell)
-                    for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
-                    self.writeOptionData(mat,lcell,ncell,zcell,'c'+n0,mult=mult,formt='float')
-                
-        f1=open(self.fDir+'constant\\fvOptions','w');f1.write(so);f1.close()
-
+                    #mult = [0]*len(lcell)
+                    #for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
+                    self.writeOptionData(mat,lcell,ncell,zcell,'s'+n0,formt='int')
+            '''
     def writeOptionCells(self,line,fname):
         '''
         writes the cell numbers in constant/polyMesh/sets, lcell is the list of cells
@@ -736,19 +693,21 @@ class opfoamWriter:
                 '''
                 
         if fname in ['hrch','crch']: # to add the base value
-            lc_toplay = set(list(range(nclay*(nlay-1),nclay*nlay)))
-            lctot = []
-            for lc in lcell: lctot.extend(lc)
-            lc_toplay.difference_update(lctot)
-            lcell.append(list(lc_toplay))
-            ncell.append(len(lc_toplay))
-            zcell.append(0)
-        s ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
-        s += '\n'+str(sum(ncell))+'\n(\n'
-        s += '\n'.join([str(a) for lc1 in lcell for a in lc1])+'\n)'
-        fD1 = self.fDir+'constant\\polyMesh\\'
-        if 'sets' not in os.listdir(fD1): os.mkdir(fD1+'sets')
-        f1=open(self.fDir+'constant\\polyMesh\\sets\\'+fname,'w');f1.write(s);f1.close()
+            rch_base = self.core.dicval['OpenFlow']['rch'][0]
+            if rch_base>0:
+                lc_toplay = set(list(range(nclay*(nlay-1),nclay*nlay)))
+                lctot = []
+                for lc in lcell: lctot.extend(lc)
+                lc_toplay.difference_update(lctot)
+                lcell.append(list(lc_toplay))
+                ncell.append(len(lc_toplay))
+                zcell.append(0)
+#        s ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
+#        s += '\n'+str(sum(ncell))+'\n(\n'
+#        s += '\n'.join([str(a) for lc1 in lcell for a in lc1])+'\n)'
+#        fD1 = self.fDir+'constant\\polyMesh\\'
+#        if 'sets' not in os.listdir(fD1): os.mkdir(fD1+'sets')
+#        f1=open(self.fDir+'constant\\polyMesh\\sets\\'+fname,'w');f1.write(s);f1.close()
         return lcell,ncell,zcell
     
     def writeOptionData(self,mat,lcell,ncell,zcell,fname,mult=None,mult2=None,formt='float',add=[]): 
@@ -782,6 +741,16 @@ class opfoamWriter:
         val1 =val[ag]*1
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
         s += '\n'
+        
+        #writes the base cell list in sets
+        s1 ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
+        s1 += '\n'+str(sum(ncell))+'\n(\n'
+        s1 += '\n'.join([str(int(a)) for a in val1[:,1]])+'\n)'
+        fD1 = self.fDir+'constant\\polyMesh\\'
+        if 'sets' not in os.listdir(fD1): os.mkdir(fD1+'sets')
+        f1=open(self.fDir+'constant\\polyMesh\\sets\\'+fname,'w');f1.write(s1);f1.close()
+
+        # now the next steps
         for it in range(1,nr):
             if all(mat[it] == mat[it-1]): continue
             for iz in range(nzo):
@@ -793,9 +762,9 @@ class opfoamWriter:
             val1 =val[ag]*1
             s += '\n'.join([' '.join(x) for x in val1.astype('str')])
             s+='\n'
-        val[:,0] = self.tlist[-1]+0.01
-        val[:,1:3] = 0
-        s += '\n'.join([' '.join(x) for x in val.astype('str')])
+        val1[:,0] = self.tlist[-1]+0.01
+        val1[:,2:4] = 0
+        s += '\n'.join([' '.join(x) for x in val1.astype('str')])
         fD1 = self.fDir+'constant\\'
         if 'options' not in os.listdir(fD1): os.mkdir(fD1+'options')
         f1=open(self.fDir+'constant\\options\\'+fname,'w');f1.write(s);f1.close()
@@ -1128,7 +1097,7 @@ class opfoamReader:
 
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
         '''reads the concentrations iesp=-1 for tracer
-        if opt==Cw conc in water, if Cg conc in gas'''
+        if opt==C conc in water, if Cg conc in gas'''
         fDir = self.core.fileDir
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
@@ -1136,20 +1105,20 @@ class opfoamReader:
             dname = str(int(self.tlist[1]*86400))
             if dname not in os.listdir(fDir):
                 os.mkdir(fDir+os.sep+dname)
-            os.system('copy '+fDir+os.sep+s+os.sep+'Cw '+fDir+os.sep+dname)
+            os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
             tstep = 1
         if iesp==-1: # tracer
-            return self.readScalar(opt,tstep)
+            return self.readScalar('C',tstep)
         ncomp,gcomp,lcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
         if specname in lesp1: #search in species file
-            return self.readScalar('dum',tstep,iesp=lesp1.index(specname))
+            return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
         else : #chem species
-            #iesp = lcomp.index(specname)+4
-            return self.readScalar(opt+str(iesp),tstep)
+            iesp = lcomp.index(specname)+4
+            return self.readScalar('Cw'+str(iesp),tstep)
         
-    def readScalar(self,name,iper=None,iesp=-1):
+    def readScalar(self,name,iper=None,iesp=-1,spc=0):
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period'''
         def rd1(t,n): # read classical
@@ -1182,12 +1151,12 @@ class opfoamReader:
         if iper==None:
             data = np.zeros((ntime,self.ncell))
             for i,t in enumerate(self.tlist[1:]):
-                if iesp==-1: data[i+1,:]= rd1(t*86400,name)
+                if spc==0: data[i+1,:]= rd1(t*86400,name)
                 else : data[i+1,:]= rd2(t*86400,iesp)
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if iesp==-1: data = rd1(self.tlist[iper]*86400,name)
+            if spc==0: data = rd1(self.tlist[iper]*86400,name)
             else : data = rd2(self.tlist[iper]*86400,iesp)
             V = reshape(data,shp1)            
             V = V[-1::-1] # layers are bottom to top in opf

@@ -87,17 +87,18 @@ class  OpF:
                  'detail':[],'type':['arrfloat'],'default':[1.5]},
         'uns.5':{'comm':'sw_init','cond':'','kw':['OSWINI'],
                  'detail':[],'type':['arrfloat'],'default':[1.]},
-        'fslv.1':{'comm':'solver for h','cond':'','kw':['SOFH'],
+        'fslv.1':{'comm':'solver for h','cond':'','kw':['SOFS','SOFPRE','SOFTOL','SOFRTOL','SOFSIMP'],
                  'detail':[['solver','PBiCGStab'],['preconditioner','DIC','DILU'],
-                           'tolerance','relTol'],
-                 'type':['choice','choice','float','float'],'default':[0,0,1e-12,0]},
+                           'tolerance','relTol','SteadyTol'],
+                 'type':['choice','choice','float','float','float'],
+                 'default':[0,0,1e-12,0,1e-6]},
         'fslv.2':{'comm':'Picard','cond':'','kw':['SOFPI'],
                  'detail':['tolerance','minIter','maxIter','nIterStability'],
                  'type':['float','int','int','int'],'default':[0.01,3,10,5]},
-        'fslv.3':{'comm':'Timing','cond':'','kw':['SODT0','SOMXDT','SOMXCO','SODCM','SODCR'],
-                'detail':['deltaT0','maxDeltaT','maxCo','dCmax','dCresidual'],
-                'type':['float','float','float','float','float'],
-                'default':[1,100,0.75,0.01,1e-3]}
+        'fslv.3':{'comm':'Timing','cond':'','kw':['SODT0','SOMXDT','SOMXCO'],
+                'detail':['deltaT0','maxDeltaT','maxCourant'],
+                'type':['float','float','float'],
+                'default':[1,100,0.75]}
         }
 
 #Transport
@@ -188,10 +189,11 @@ class  OpT:
         'rct.6':{'comm':'1st rate sorbed','cond':'OIREAC>0','kw':['ORC2'],
                  'detail':[''],'type':['float'],'default':[0.]},
         #Solver
-        'tslv':{'comm':'solver for C','cond':'','kw':['OSSO'],
+        'tslv':{'comm':'solver for C','cond':'','kw':['OSTSO','OSTPRE','OSTTOL','OSTRTOL','OSTDCMX'],
                  'detail':[['solver','PBiCG'],['preconditioner','DIC','DILU'],
-                           'tolerance','relTol'],
-                 'type':['choice','choice','float','float'],'default':[0,1,1e-12,0]},
+                           'tolerance','relTol','dCmax'],
+                 'type':['choice','choice','float','float','float'],
+                 'default':[0,1,1e-12,0,0.02]},
         }
     
 #Chemistry
@@ -200,7 +202,7 @@ class  OpC:
         self.grpList=['CHPRM','SOLU','GAS','CHSLV']
         self.groups={
         'CHPRM':['chprm'],
-        'SOLU':['sactiv','sinit','sfix','swel','srch'],
+        'SOLU':['sactiv','sinit','sfix','swel','srch','sghb','sriv'],
         'GAS':['ginit','gfix','gwel'],
         'CHSLV':['chslv'],
         }
@@ -215,6 +217,10 @@ class  OpC:
         'sfix':{'comm':'Sources','cond':'','kw':['OSSOL'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'swel':{'comm':'well solutions','cond':'','kw':['OWSOL'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'sghb':{'comm':'ghb solutions','cond':'','kw':['OWSOL'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'sriv':{'comm':'river solutions','cond':'','kw':['OWSOL'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'srch':{'comm':'Recharge solu','cond':'','kw':['ORSOL'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},

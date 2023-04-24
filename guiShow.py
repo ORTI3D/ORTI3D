@@ -63,6 +63,7 @@ class guiShow:
         self.init()
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
         else : self.setNames('Model_Plane_L',['Z'])
+        '''
         if self.core.dicaddin['Model']['group'] == 'Min3p':
             self.dlgShow.getBoxNames('Flow_Wcontent_B',False)
         else : 
@@ -72,6 +73,7 @@ class guiShow:
             if (v1==2 or v2==2) and (mod =='Modflow series'):
                 self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
             else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True)
+        '''
         if self.core.dicaddin['Model']['group'] == 'Modflow USG':
             self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',True)
             self.gui.onParticle(False) 
@@ -220,7 +222,7 @@ class guiShow:
         if group=='Transport':
             if name=='Tracer':
                 #print 'hello',self.core.transReader
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
