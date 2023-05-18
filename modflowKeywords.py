@@ -4,7 +4,7 @@ class Mf:
         'UPW','NWT','UZF','MNWT','SMS','GMG','HFB6'] # CHD written in auto mode
         self.groups={
         'DIS':['dis.'+str(i) for i in range(1,9)],
-        'DISU':['disu.'+str(i) for i in range(1,10)],
+        'DISU':['disu.'+str(i) for i in range(1,11)],
         'BAS6':['bas.1','bas.2','bas.3','bas.4','bas.5'],
         'BCF6':['bcf.1','bcf.2','bcf.3','bcf.4','bcf.5','bcf.6','bcf.7','bcf.8','bcf.9'],
         'LPF':['lpf.'+str(i) for i in range(1,14)],
@@ -79,6 +79,9 @@ class Mf:
                 'detail':['Period length','internal steps','multiplier',['type','Steady state','transient']],
                 'type':['float','int','float','choice'],
                 'default':[1.,1,1.,0],'units':['T','','','']},
+        'disu.10':{'comm':'model run','cond':'','kw':['UMDBIN'],
+                'detail':[['','MfUsg','PhtUsg']],
+                'type':['choice'],'default':[1]},
         #BA6
         'bas.1':{'comm':'Bas title 1','cond':'','kw':['title'],'detail':[],'type':['title']},
         'bas.2':{'comm':'Bas options','cond':'','kw':['bas_opt'],'detail':[],
@@ -208,8 +211,8 @@ class Mf:
                 'kw':['sTHETA','sAKAPPA','sGAMMA','sAMOMENTUM','sNUMTRACK','sBTOL','sBREDUC','sRESLIM'],
                 'detail':['Reduc fact DbD','Increment DbD','Memory term','Fraction of memory','Max bactracking',
                           'Residual reduction tol','Reuction step size','limit for resid backtrack'],
-               'type':['float','float','float','float','int','float','float','int'],
-               'default':[0.7,0.1,0.2,0.001,10,1e4,0.2,100]},
+               'type':['float','float','float','float','int','float','float','float'],
+               'default':[0.7,0.1,0.2,0.001,10,1e4,0.2,0]},
         #If LINMTH = 1 and OPTIONS is not specified then read item 3 for the XMD solver
         'sms.3':{'comm':'XMD solver','cond':'sLINMTH==1 and SMS_opt==0',
                  'kw':['sIACL','sNORDER','sLEVEL','sNORTH','sIREDSYS','sRRCTOL','sIDROPTOL','sEPSRN'],

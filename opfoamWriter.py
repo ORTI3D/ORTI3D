@@ -61,8 +61,8 @@ class opfoamWriter:
         os.system('del /Q '+self.fDir+'constant\\options\\*')
         #if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
         if self.group in ['Chem']: #'Transport',
-            self.ncomp,self.gcomp,self.lcomp,self.lspec = self.opf.findSpecies(self.core)
-        self.writeOptions()
+            self.ncomp,self.gcomp,self.lcomp,self.lgcomp,self.lspec = self.opf.findSpecies(self.core)
+        self.getConditions()
         if self.group=='Trans': 
             if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
                 self.writeTransport()
@@ -270,9 +270,9 @@ class opfoamWriter:
         }
         if self.group=='Trans':
             n=self.Tkey.lines['tschm']['detail'][0][self.core.getValueFromName('OpenTrans','OTSCH',0)+1]
-            schemeDict['divSchemes']['div(phiw,Cw)'] = n
+            schemeDict['divSchemes']['div(phiw,C)'] = n
             if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
-                schemeDict['divSchemes']['div(phiw,Cw)'] = 'Gauss limitedLinear01 1'
+                schemeDict['divSchemes']['div(phiw,C)'] = 'Gauss limitedLinear01 1'
         s = 'FoamFile\n{\n version 2.0;\n format ascii;\n class dictionary;\n'
         s += ' location \"system\";\n object fvSchemes;\n}\n'
         for k in schemeDict.keys():
@@ -291,10 +291,10 @@ class opfoamWriter:
         s += 'sw{solver PBiCGStab;preconditioner  DIC;tolerance 1e-12;relTol 0;}\n'
         s += 'C{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
         s += 'T{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
-        s += '\"Cw.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
-        s += '\"Cg.*\"{solver PBiCG;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n}'
+        s += '\"Cw.*\"{solver PBiCGStab;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n'
+        s += '\"Cg.*\"{solver PBiCGStab;preconditioner  DILU;tolerance 1e-12;relTol 0;}\n}'
         fsl1 = self.core.dicval['OpenFlow']['fslv.1']
-        s += '\nSIMPLE {residualControl {h '+str(fsl1[4])+';Cw 1e-12;} }\n'
+        s += '\nSIMPLE {residualControl {h '+str(fsl1[4])+';C 1e-12;} }\n'
         fsl2 = self.core.dicval['OpenFlow']['fslv.2']
         s += '\nPicard {tolerance '+str(fsl2[0])+';maxIter '+str(fsl2[1])
         s += ';minIter '+str(fsl2[2])+';nIterStability  '+str(fsl2[3])+';}'
@@ -442,7 +442,7 @@ class opfoamWriter:
             
     def writeTransport(self):
         C0 = self.getVariable('OpenTrans','cinit') # initial concentrations
-        self.writeScalField('0','Cw',C0,self.bcD0,dim='[1 -3 0 0 0 0 0]')
+        self.writeScalField('0','C',C0,self.bcD0,dim='[1 -3 0 0 0 0 0]')
         cactiv  = arange(self.ncell) #cell number but -1 for inactive cells
         if 'cactiv' in self.core.diczone['OpenTrans'].dic.keys(): # active zone
             c_bc = maximum(self.getVariable('OpenTrans','cactiv'),0)
@@ -476,8 +476,9 @@ class opfoamWriter:
         f1=open(self.fDir+'constant\\options\\ractive','w');f1.write(s);f1.close()
         self.writePhqFoam()
         
-    def writeOptions(self):
+    def getConditions(self):
         '''
+        it is used to get the cells where conditions are set
         '''
         ncl = self.ncell_lay
         if self.core.dicaddin['Model']['type'] == '2phases': 
@@ -544,50 +545,45 @@ class opfoamWriter:
                     mult.append(hcond*ar)
                     mult2.append(hcond*ar) #
                 self.writeOptionData(mat,lcell,ncell,zcell,'h'+n,mult=mult,mult2=mult2)
-        if self.group == 'Trans':
-#            lct=[]
-#            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
-#                lct.append('c')
-#            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
-#                lct.append('t')
-            typ = 'c'
-            if typ+'fix' in self.ttable.keys():
+
+        if self.group in ['Chem','Trans']: #temperature can be needed for chemistry
+            lct=[]
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]: # c or c and t
+                lct.append('c')
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:# t or c and t
+                lct.append('t')
+            if self.group == 'Chem' and self.core.getValueFromName('OpenTrans','OTTYP',0)==1: lct=['t'] # if chem only temperature can be used
+            for typ in lct:
                 a = typ+'fix'
-                lcell,ncell,zcell = self.writeOptionCells(a,a)
-                mat = self.ttable[a]
-                self.writeOptionData(mat,lcell,ncell,zcell,'cfix',formt='float')
-            if 'wel' in self.ttable.keys():# pumping or injection
-                a= typ+'wel'
-                lcell,ncell,zcell = self.writeOptionCells('wel',a)
-                mat = self.ttable['wel']
-                mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
-                if a in self.ttable.keys(): # find the injecting wells with conc
-                    mat1 = self.ttable[a]
-                    lcell1,ncell1,zcell1 = self.writeOptionCells(a,'dum')
-                    for iw,w in enumerate(lcell1):
-                        if w in lcell: 
-                            mat[:,lcell.index(w)] = mat1[:,iw]
-                self.writeOptionData(mat,lcell,ncell,zcell,a,formt='int')
-            if ('crch' in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
-                a = typ+'rch'
-                lcell,ncell,zcell = self.writeOptionCells('crch','crch')
-                vbase = self.core.dicval['OpenTrans'][a][0]
                 if a in self.ttable.keys():
-                    rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
-                    rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
-                else :
-                    rmat  = ones((nr,1))*vbase# for the background                
-                self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
-            '''
-            for n in ['ghb','drn','riv']: #head.2 removed 7/8/22
-                a=typ+n
-                if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                    lcell,ncell,zcell = self.writeOptionCells(n,a)
+                    lcell,ncell,zcell = self.writeOptionCells(a,a)
                     mat = self.ttable[a]
-                    #mult = [1]*len(lcell)
-                    #for iz in range(len(lcell)): mult[iz] = [1]*len(lcell[iz])
                     self.writeOptionData(mat,lcell,ncell,zcell,a,formt='float')
-            '''
+
+                for n in ['wel','ghb','riv']:
+                    if n in self.ttable.keys():# pumping or injection
+                        lcell,ncell,zcell = self.writeOptionCells(n,typ+n)
+                        mat = self.ttable[n]
+                        mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
+                        if typ+n in self.ttable.keys(): # find the injecting wells with conc
+                            mat1 = self.ttable[typ+n]
+                            lcell1,ncell1,zcell1 = self.writeOptionCells(typ+n,typ+n)
+                            for iw,w in enumerate(lcell1):
+                                if w in lcell: 
+                                    mat[:,lcell.index(w)] = mat1[:,iw]
+                        self.writeOptionData(mat,lcell,ncell,zcell,typ+n,formt='int')
+
+                a = typ+'rch'
+                if (a in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
+                    lcell,ncell,zcell = self.writeOptionCells(a,a)
+                    vbase = self.core.dicval['OpenTrans'][a][0]
+                    if a in self.ttable.keys():
+                        rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
+                        rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
+                    else :
+                        rmat  = ones((nr,1))*vbase# for the background                
+                    self.writeOptionData(rmat,lcell,ncell,zcell,a,formt='float')
+
         if self.group == 'Chem':
             ## need to know if ph.4 is at a flow bc or at a well
             self.solucell=[] # solucell conaint the list of fixed chem cells
@@ -596,39 +592,34 @@ class opfoamWriter:
                 self.solucell,self.solunb = lcell,zcell
                 mat = self.ttable['sfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'sfix',formt='int')
+
             if 'srch' in self.ttable.keys():# ph recharge
-                lcell,ncell,zcell = self.writeOptionCells('srch','crch')
+                lcell,ncell,zcell = self.writeOptionCells('srch','srch')
                 nz = len(lcell)
                 vbase = self.core.dicval['OpenChem']['srch'][0]
                 rmat = self.ttable['srch'].astype(float);nr,nc = shape(rmat)
                 rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
                 self.writeOptionData(rmat,lcell,ncell,zcell,'srch',formt='int')
-            if 'wel' in self.ttable.keys():# pumping or injection
-                lcell,ncell,zcell = self.writeOptionCells('wel','cwel')
-                mat = self.ttable['wel']
-                mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
-                if 'swel' in self.ttable.keys(): # find the injecting wells with conc
-                    mat1 = self.ttable['swel']
-                    lcell1,ncell1,zcell1 = self.writeOptionCells('swel','dum')
-                    for iw,w in enumerate(lcell1):
-                        if w in lcell: 
-                            mat[:,lcell.index(w)] = mat1[:,iw]
-                self.writeOptionData(mat,lcell,ncell,zcell,'cwel',formt='int')
+
+            for n in ['wel','ghb','riv']:
+                if n in self.ttable.keys():# pumping or injection
+                    lcell,ncell,zcell = self.writeOptionCells(n,'s'+n)
+                    mat = self.ttable[n]
+                    mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
+                    if 's'+n in self.ttable.keys(): # find the injecting wells with conc
+                        mat1 = self.ttable['s'+n]
+                        lcell1,ncell1,zcell1 = self.writeOptionCells('s'+n,'s'+n)
+                        for iw,w in enumerate(lcell1):
+                            if w in lcell: 
+                                mat[:,lcell.index(w)] = mat1[:,iw]
+                    self.writeOptionData(mat,lcell,ncell,zcell,'s'+n,formt='int')
+
             if 'gfix' in self.ttable.keys():
                 lcell,ncell,zcell = self.writeOptionCells('gfix','gfix')
                 mat = self.ttable['gfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'gfix',formt='int')
 
-            '''
-            for n in ['ghb','drn','riv']: #,'head.2' removed 7/8/22
-                n0 = n[:3]
-                if n in self.ttable.keys():# if flow ghb cells put 0 at conc
-                    lcell,ncell,zcell = self.writeOptionCells(n,'s'+n0)
-                    mat = self.ttable[n]
-                    #mult = [0]*len(lcell)
-                    #for iz in range(len(lcell)): mult[iz] = [0]*len(lcell[iz])
-                    self.writeOptionData(mat,lcell,ncell,zcell,'s'+n0,formt='int')
-            '''
+
     def writeOptionCells(self,line,fname):
         '''
         writes the cell numbers in constant/polyMesh/sets, lcell is the list of cells
@@ -651,12 +642,13 @@ class opfoamWriter:
             for media in range(self.nlay):
                 m = zone2grid(self.core,modName,line,media) 
                 m1 = zone2grid(self.core,modName,line,media,opt='zon')
-                lzon = unique(m1).nonzero()[0]
+                lzon = unique(m1);lzon=lzon[lzon>0].astype('int')
                 for iz in lzon:
                     if iz>len(lcell): 
                         lcell.append([]);zcell.append([]);ncell.append(0)
-                    idx = where(m1==iz) # id0 layer, id1 cell
-                    lcell[iz-1].extend(list(idx[0]*nx+idx[1]))
+                    idx = where(m1==iz);# id0 layer, id1 cell
+                    nl1=self.nlay-media-1
+                    lcell[iz-1].extend(list(nl1*nx*ny+idx[0]*nx+idx[1]))
                     ncell[iz-1] += len(idx[0])
                     if len(dicz['coords'][iz-1][0])>2: zv1 = list(m[idx[0],idx[1]])
                     else : zv1 = [0]*(idx[1]-idx[0])
@@ -712,7 +704,7 @@ class opfoamWriter:
     
     def writeOptionData(self,mat,lcell,ncell,zcell,fname,mult=None,mult2=None,formt='float',add=[]): 
         '''
-        write the option semiImplcit for one variable, mult is a list of vector (for well)
+        write the option for one variable, mult is a list of vector (for well)
         mat contains the values for each zone, then it is applied to each cell of lcell
         it also takes into account the transient variation of the variable in the zone
         add is used for pressure, size of lcell
@@ -1109,11 +1101,14 @@ class opfoamReader:
             tstep = 1
         if iesp==-1: # tracer
             return self.readScalar('C',tstep)
-        ncomp,gcomp,lcomp,lesp = self.opf.findSpecies(core)
+        ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
+        elif '(g)' in specname: #gas species
+            iesp = lgcomp.index(specname)
+            return self.readScalar('Cg'+str(iesp),tstep)
         else : #chem species
             iesp = lcomp.index(specname)+4
             return self.readScalar('Cw'+str(iesp),tstep)
@@ -1150,14 +1145,14 @@ class opfoamReader:
             shp1 = (self.nlay,self.ncell_lay)
         if iper==None:
             data = np.zeros((ntime,self.ncell))
-            for i,t in enumerate(self.tlist[1:]):
+            for i,t in enumerate(self.tlist):
                 if spc==0: data[i+1,:]= rd1(t*86400,name)
                 else : data[i+1,:]= rd2(t*86400,iesp)
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if spc==0: data = rd1(self.tlist[iper]*86400,name)
-            else : data = rd2(self.tlist[iper]*86400,iesp)
+            if spc==0: data = rd1(self.tlist[iper+1]*86400,name)
+            else : data = rd2(self.tlist[iper+1]*86400,iesp)
             V = reshape(data,shp1)            
             V = V[-1::-1] # layers are bottom to top in opf
         return V

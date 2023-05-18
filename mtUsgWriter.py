@@ -564,11 +564,14 @@ class mtUsgReader:
         self.fName = fName
         self.flag,self.conc = 0,None
 
-    def readUCN(self,core,opt,iper,iesp,specname='',double=True): 
+    def readUCN(self,core,opt,iper,iesp,specname=''): 
         """ read .conc file, here opt, iesp, specname are not used
         in free flow Thksat from flo file must be added (not done)""" 
         #if core.dicval['MfUsgTrans']['uoc.1'][0]==0: # ascii                                                 
         #    return self.readConc(core,opt,iper,iesp,specname)
+        double=False
+        if 'USG' in core.dicaddin['Model']['group'] and core.getValueFromName('Modflow','UMDBIN')>0:
+            double = True
         if opt=='Pht3d': # OA 20/5/21
             lSpec = core.addin.chem.getListSpecies();
             nspec=len(lSpec)+3;iesp+=3; # 3 species added by usg/pht3d OA 3/11/21

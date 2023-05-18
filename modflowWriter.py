@@ -855,7 +855,7 @@ class modflowReader:
             hd=zeros((nlay,nrow,ncol))
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
-        if 'USG' in core.dicaddin['Model']['group']: # OA 12/10 removed self.
+        if 'USG' in core.dicaddin['Model']['group'] and core.getValueFromName('Modflow','UMDBIN')>0: # OA 12/10 removed self.
             bk0,nb0,ftyp = 52,8,'d'
         else :
             bk0,nb0,ftyp = 44,4,'f'        
@@ -1090,7 +1090,7 @@ class modflowReader:
         nper=len(iper)
         hd = zeros((nper,len(irow)))
         f1.seek(32);data=arr2('i');
-        if 'USG' in core.dicaddin['Model']['group']:
+        if 'USG' in core.dicaddin['Model']['group'] and core.getValueFromName('Modflow','UMDBIN')>0:
             bk0,nb0,ftyp = 52,8,'d'
         else :
             bk0,nb0,ftyp = 44,4,'f'        
