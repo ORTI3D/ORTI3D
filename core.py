@@ -793,7 +793,7 @@ class Core:
         elif group=='Chemistry': 
             iesp,lesp = 0,self.addin.chem.getListSpecies()
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
-            elif mtype in ['Min']: opt = 'Chemistry'
+            else : opt = 'Chemistry'
             for e in esp:
                 if e in lesp: iesp = lesp.index(e) 
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)

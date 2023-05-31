@@ -167,8 +167,8 @@ class  OpT:
         'trch':{'comm':'Recharge temp','cond':'','kw':['ORTMP'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
                 
-        'tschm':{'comm':'scheme for Cw','cond':'','kw':['OTSCH'],
-                 'detail':[['scheme','Gauss vanLeer','Gauss limitedLinear01 1']],
+        'tschm':{'comm':'scheme for C or T','cond':'','kw':['OTSCH'],
+                 'detail':[['scheme','Gauss vanLeer','Gauss limitedLinear01 1','Gauss SuperBee']],
                  'type':['choice'],'default':[0]},
         #RCT
         'rct.1':{'comm':'major flags','cond':'','kw':['OISOTH','OIREAC','OIGETSC'],

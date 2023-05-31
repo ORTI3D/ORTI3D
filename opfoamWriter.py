@@ -70,7 +70,8 @@ class opfoamWriter:
                 self.writeThermal()
         if self.group=='Chem': 
             self.writeChemistry()
-        
+            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
+                self.writeThermal()
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
         core is the model,fDir the major openfoam folder
@@ -224,39 +225,46 @@ class opfoamWriter:
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
         
-        # write the function for variable times
         s += '#include "$FOAM_CASE/system/writeInterval"\n'
-        s += 'functions \n { \n    fileUpdate1\n    {\n'
-        s += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-        s += '     writeControl timeStep;\n'
-        s += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
-        s += '     timeVsFile \n    (\n'
-        t_old,dt_old,sb = -1,-1,''
-        for i,t in enumerate(self.tlist):
-            dt = t-t_old
-            #if dt != dt_old:
-            s1 = str(int(t_old*86400))
-            s += '    ('+s1+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
-            sb += '    ('+s1+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
-            f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
-            s1 = str(int(t*86400));f1.write('writeInterval '+s1+';');f1.close()
-            f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-            maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
-            s2 = str(int(maxdt));f2.write('maxDeltaT '+s2+';');f2.close()
-            t_old,dt_old = t*1,dt*1
-        s += '    );\n    }\n }\n'
-        #the maxdeltat function
         s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
-        s += 'functions \n { \n    fileUpdate2\n    {\n'
-        s += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-        s += '     writeControl timeStep;\n'
-        s += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
-        s += '     timeVsFile \n    (\n'+sb+'    );\n    }\n }'
+        s += 'functions \n { \n include "fileUpdate1" \n include "fileUpdate2"\n}'
         f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
         f1.write('writeInterval 100;');f1.close()
         f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
         f1.write('maxDeltaT 100;');f1.close()
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');f1.write(s);f1.close()
+
+        # write the function for variable times
+        s1 = 'fileUpdate1 \n{\n'
+        s1 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
+        s1 += '     writeControl timeStep;\n'
+        s1 += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
+        s1 += '     timeVsFile \n    (\n '
+        # write the deltaT
+        s2 = 'fileUpdate2 \n{\n'
+        s2 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
+        s2 += '     writeControl timeStep;\n'
+        s2 += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
+        s2 += '     timeVsFile \n    (\n'
+        t_old,dt_old = -1,-1
+        for i,t in enumerate(self.tlist):
+            dt = t-t_old
+            #if dt != dt_old:
+            s0 = str(int(t_old*86400))
+            s1 += '    ('+s0+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
+            s2 += '    ('+s0+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
+            f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
+            s0 = str(int(t*86400));f1.write('writeInterval '+s0+';');f1.close()
+            f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
+            maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
+            s0 = str(int(maxdt));f2.write('maxDeltaT '+s0+';');f2.close()
+            t_old,dt_old = t*1,dt*1
+        s1 += '    );\n    }\n }\n'
+        f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate1','w')
+        f1.write(s1);f1.close()
+        s2 += '    );\n    }\n }\n'
+        f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate2','w')
+        f1.write(s2);f1.close()
 
     def writeFvSchemes(self):
         schemeDict = {'ddtSchemes':{'default':'backward'},
@@ -380,7 +388,7 @@ class opfoamWriter:
             s += 'flowType 0;\ntransportSteady 1;\n'
         else :
             s += 'flowType '+ str(mType+1)+';\n'
-        if self.group=='Trans':
+        if self.group in ['Trans','Chem']:
             if core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
                 s += 'activateTransport 1;\n'
             if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
@@ -1156,6 +1164,41 @@ class opfoamReader:
             V = reshape(data,shp1)            
             V = V[-1::-1] # layers are bottom to top in opf
         return V
+
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
+        """a function to values of one variable at given point or points.
+        irow, icol and ilay must be lists of the same length. iper is also
+        a list containing the periods for which data are needed. opt is not used
+        , iesp is a list containing the indice of the species 
+        ss is for solute ('') or sorbed ('S' ) species. 
+        """
+        grd = self.core.addin.getFullGrid()
+            
+        def getPtsInArray(A,irow,icol,ilay):
+            if self.MshType==0:
+                return A[ilay,irow,icol]
+            else :
+                return A[ilay,icol]
+        
+        npts=len(irow)
+        pobs=zeros((len(iper),npts))+0.;
+        #fDir = self.core.fileDir
+        if iesp !=-1: 
+            ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
+            lesp1 = ['pH','pe']
+            lesp1.extend(lesp)
+        for i in range(len(iper)):
+            ip = iper[i]
+            if iesp==-1: # tracer
+                A = self.readScalar('C',ip)
+            if '(g)' in specname: #gas species
+                iesp = lgcomp.index(specname)
+                A = self.readScalar('Cg'+str(iesp),ip)
+            else : #chem species
+                iesp = lcomp.index(specname)+4
+                A = self.readScalar('Cw'+str(iesp),ip)
+            pobs[i,:] = getPtsInArray(A,irow,icol,ilay)
+        return pobs
 
 #################   utilities for openfoam
 '''
