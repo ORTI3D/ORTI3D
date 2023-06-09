@@ -11,7 +11,7 @@ class guiShow:
             'Model':[0,['Plane',['Z','X','Y']],['Layer',['___']], #OA 20/11/19  order
                 ['Tstep',['_____']],'Grid','Map'], #,'Variable'],
             'Flow':[1,'Head','Wcontent','Veloc-vect','Veloc-magn','Particles'],
-            'Transport':[2,'Tracer'],
+            'Transport':[2,'Tracer','Temperature'],
             'Chemistry':[3,['Species',['_______']],
                      ['Units',['mol/L','mmol/L','umol/L','nmol/L']],
                      ['User',['_______']]],
@@ -26,7 +26,7 @@ class guiShow:
                                  'Grid':False,'Map':False,'Variable':False},
                 'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,
                         'Veloc-magn':False,'Particles':False},
-                'Transport':{'Tracer':False},
+                'Transport':{'Tracer':False,'Temperature':False},
                 'Chemistry':{'Species':False,'Units':'mmol/L','User':False},
                 #'Observation':{'Type':'Profile','Zone':' '}}
                 'Observation':{'Type':'Time-series Graphs','Result':'Head'}}
@@ -126,6 +126,7 @@ class guiShow:
         variable (?), contour(group,name):True/false, types in Vtypes
         """
         #current visu data are stored (by wx dialog) in dicVisu
+        self.currentGroup = group
         listSpecies = self.getNames('Chemistry_Species_L')
         opt,bool = 'contour',False
         # set the first steps GRID, MAP, VARIABLE, PARTICLE
@@ -144,9 +145,9 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour();#print('quishow 117',Cname,species)
+        Cgroup,Cname,species = self.getCurrentContour();print('quishow 147',Cname,species)
         self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
-        self.curName,self.curSpecies = Cname,species;# OA 10/5/17
+        self.curGroup,self.curName,self.curSpecies = Cgroup,Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
             #if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
             if name=='Result': self.dlgShow.onPlot()
@@ -220,8 +221,9 @@ class guiShow:
                     #arr=arr[0] #EV 14/06/21
                 else : return None
         if group=='Transport':
-            if name=='Tracer':
-                #print 'hello',self.core.transReader
+            if name=='Temperature':
+                arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Tracer');#print shape(arr),arr                
+            else:
                 arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
