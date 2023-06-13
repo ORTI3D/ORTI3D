@@ -179,14 +179,15 @@ class Menus:
         else :
             if self.gui.guiShow.curSpecies != True :
                 name = self.gui.guiShow.curName+self.gui.guiShow.curSpecies;# OA modified 10/5/17
-            else : name = self.gui.guiShow.curName
+            else : 
+                name = self.gui.guiShow.curName
             fname = self.core.fileDir+os.sep+ name
             data = self.gui.guiShow.data[-1]
             savetxt(fname+'.txt',data)  
             self.dialogs.onMessage(self.gui,'File '+name+' saved')
         
     def OnExportParmVtk(self,evt=None): # added 28/3/17 oa
-        model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
+        model,line = self.gui.currentModel,self.gui.currentLine
         if not line : #EV 11/12/19
             self.dialogs.onMessage(self.gui,'Select a parameter to export')
             return
@@ -200,7 +201,7 @@ class Menus:
             self.dialogs.onMessage(self.gui,'File '+fName+' saved')
         
     def OnExportResuVtk(self,evt=None): # modif 28/3/17 oa for correct name
-        model,line,media = self.gui.currentModel,self.gui.currentLine,self.gui.currentMedia
+        model = self.gui.currentModel
         data = self.gui.guiShow.arr3#;print('menu 151',shape(data))
         if not shape(data) : #EV 11/12/19
             self.dialogs.onMessage(self.gui,'Select a result to export')
@@ -211,6 +212,27 @@ class Menus:
             s = writeVTKstruct(self.core,model,data)
             f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
             self.dialogs.onMessage(self.gui,'file '+fName+' saved')
+
+    def OnExportResuVtkAll(self,evt=None): # modif 28/3/17 oa for correct name
+        model,g = self.gui.currentModel,self.gui.guiShow
+        name = g.curName
+        dlg = self.dialogs.myFileDialog('Save')
+        fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
+        tlist = self.core.getTlist2()
+        if fName :
+            for it in range(len(tlist)):
+                data = self.gui.guiShow.getArray3D(g.curGroup,name,it,g.curSpecies)
+                s = writeVTKstruct(self.core,model,data)
+                f1=open(fDir+os.sep+fName+str(it)+'.vtk','w')
+                f1.write(s);f1.close()
+            s = '{"file-series-version" : "1.0",\n "files" : \n [ \n'
+            for it in range(len(tlist)):
+                t = tlist[it]
+                s += '{ "name" : "'+name+str(it)+'.vtk", "time" : '+str(t)+'},\n'
+            s += '] \n }'
+            f1=open(fDir+os.sep+fName+'.series','w');f1.write(s);f1.close()
+        self.dialogs.onMessage(self.gui,'file '+fName+' saved')
+
             
     def OnHelpI(self,evt=None): #,lang):
         """calling help file"""

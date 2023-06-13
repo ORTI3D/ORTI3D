@@ -171,13 +171,17 @@ class orti3dGui(QMainWindow):
         eparmVAction = QAction("&Current Parameter Vtk", self, 
                 statusTip="export current parameter as text file",
                 triggered=self.menus.OnExportParmVtk)
-        eresuVAction = QAction("&Current Results Vtk", self, 
+        eresuVAction = QAction("&Current Result Vtk", self, 
                 statusTip="export current results as text file",
                 triggered=self.menus.OnExportResuVtk)
+        eresuVaAction = QAction("&Current Result Vtk, all times", self, 
+                statusTip="export current results as text file",
+                triggered=self.menus.OnExportResuVtkAll)
         menuExport.addAction(eparmAction)
         menuExport.addAction(eresuAction)
         menuExport.addAction(eparmVAction)
         menuExport.addAction(eresuVAction)
+        menuExport.addAction(eresuVaAction)
        
        #Add-ins
         self.menuAddin = self.menuBar().addMenu("&Addin")

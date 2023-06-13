@@ -85,8 +85,7 @@ class opfoamWriter:
             if 'importArray' in core.dictype[modName]['dis.6']:
                 zlist = mesh.getZfromPoints(modName,points)
             else :
-                zlist = [float(a) for a in core.addin.get3D()['topMedia']]
-                zlist.append(float(core.addin.get3D()['zmin']))
+                zlist= [unique(z) for z in core.Zblock]
             zlist = zlist[-1::-1] # layers are reversed, start from 0 in OpF
         elif self.orientation == 'Radial': # radial case
             zlist = [-points[:,0]/100,points[:,0]/100] # z_radial = x/100
@@ -227,7 +226,7 @@ class opfoamWriter:
         
         s += '#include "$FOAM_CASE/system/writeInterval"\n'
         s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
-        s += 'functions \n { \n include "fileUpdate1" \n include "fileUpdate2"\n}'
+        s += 'functions \n { \n #include "fileUpdate1" \n #include "fileUpdate2"\n}'
         f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
         f1.write('writeInterval 100;');f1.close()
         f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
@@ -247,7 +246,7 @@ class opfoamWriter:
         s2 += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
         s2 += '     timeVsFile \n    (\n'
         t_old,dt_old = -1,-1
-        for i,t in enumerate(self.tlist):
+        for i,t in enumerate(self.tlist[1:]):
             dt = t-t_old
             #if dt != dt_old:
             s0 = str(int(t_old*86400))
