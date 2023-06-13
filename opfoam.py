@@ -52,7 +52,7 @@ class opfoam(unstructured):
             msh.transformVor(self.points,self.elts,self.dcoo1,self.dicD,self.dicFeats) # OA 15/8/20
             xn,yn = self.nodes[:,0],self.nodes[:,1];print('voronoi made')
             self.trg = mptri.Triangulation(xn,yn) #,triangles=elts) 
-            self.makeBC()
+            self.makeBC('OpenFlow')
             self.getPointsFaces()
         self.addMeshVects()
         Zblock = makeZblock(self.core)
@@ -163,7 +163,7 @@ class opfoam(unstructured):
         ncomp += 2 # there is pH and pe but we need to have H20,H,0,charge and not pH,pe
         if len(lspec)==0:
             lspec = [listE['i'][0]] # we need at least one species for sel out
-        return ncomp,gcomp,lcomp,lspec
+        return ncomp,gcomp,lcomp,listE['g'],lspec
     
 # **************** potential link with USG faces, not used
     '''
