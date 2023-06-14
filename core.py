@@ -612,11 +612,14 @@ class Core:
             elif vtype[i] in ['one_value','zone'] : intp.append(3) 
             elif vtype[i]=='interpolate' : intp.append(1)  
             else: intp.append(0)
+
+        value = block(self,modName,line,intp,iper=iper)
         if 'formula' in vtype : # case of a formula  
-            f = self.dicformula[modName][line][0]
-            value = array(self.formExec(f),ndmin=3) ; # modif OA 3/10/18
-        else : 
-            value = block(self,modName,line,intp,iper=iper)
+            for i in range(nmedia):
+                f = self.dicformula[modName][line][i]
+                if f != 'None':
+                    value[i] = array(self.formExec(f)) ; # modif OA 3/10/18
+        
         value = value.astype(numtype[3:]) # OA re-added line, it is necessary for int
         return value
 
