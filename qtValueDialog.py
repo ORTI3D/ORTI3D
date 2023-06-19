@@ -126,13 +126,13 @@ class qtBoxKeys:
                 but = self.lValBut[i]
                 val = self.values[i]
                 if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
-                    self.values[i] = but.currentIndex()
+                    val = but.currentIndex()
                     continue
                 elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
-                    self.values = self.vect
+                    val = self.vect
                     continue
                 elif self.types[i]=='textlong': # added 21/11/19
-                    self.values = [but.document().toPlainText()]
+                    val = [but.document().toPlainText()]
                     continue
                 if but.text() not in ['formula','zone','array']:
                     if self.types[i] in ['int','vecint','arrint']:

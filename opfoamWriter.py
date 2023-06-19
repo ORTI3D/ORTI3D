@@ -946,6 +946,8 @@ class opfoamWriter:
             for ip in range(parmk[nom]):
                 s += str(rates['data'][iek][ip+2])+' '
             s += '\n-formula '+rates['data'][iek][-1] +'\n' # formula
+        if len(lkin)>0 :s += '\n'+str(core.getValueFromName('OpenChem','OCKOPT'))+'\n'
+        
         rates = chem['Kinetic_Minerals'];
         if len(listE['kp'])>0 :s += '\nKinetics 1\n'
         for nom in listE['kp']:
@@ -1120,6 +1122,14 @@ class opfoamReader:
             iesp = lcomp.index(specname)+4
             return self.readScalar('Cw'+str(iesp),tstep)
         
+    def getGeom(self,core):
+        grd = core.addin.getFullGrid()
+        ncol, nrow = grd['nx'], grd['ny']
+        nlay=getNlayers(core);#print iper, nlay,ncol,nrow
+        if core.addin.getDim() in ['Xsection','Radial']:
+            nlay=nrow;nrow=1
+        return nlay,ncol,nrow
+        
     def readScalar(self,name,iper=None,iesp=-1,spc=0):
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period'''
@@ -1143,10 +1153,9 @@ class opfoamReader:
         #dt = int((self.tlist[-1]-self.tlist[-2])*86400);
         ntime=len(self.tlist)
         if self.MshType==0:
-            grd = self.core.addin.getFullGrid()
-            nx,ny = grd['nx'],grd['ny']
-            shp0 = (ntime,self.nlay,ny,nx)
-            shp1 = (self.nlay,ny,nx)
+            nlay,nx,ny = self.getGeom(self.core)
+            shp0 = (ntime,nlay,ny,nx)
+            shp1 = (nlay,ny,nx)
         else :
             shp0 = (ntime,self.nlay,self.ncell_lay)
             shp1 = (self.nlay,self.ncell_lay)
@@ -1161,7 +1170,8 @@ class opfoamReader:
             if spc==0: data = rd1(self.tlist[iper+1]*86400,name)
             else : data = rd2(self.tlist[iper+1]*86400,iesp)
             V = reshape(data,shp1)            
-            V = V[-1::-1] # layers are bottom to top in opf
+            if self.core.addin.getDim() not in ['Xsection','Radial']:
+                V = V[-1::-1] # layers are bottom to top in opf
         return V
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
