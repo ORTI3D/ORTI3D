@@ -927,8 +927,11 @@ class opfoamWriter:
         for ig in range(self.nsolu):
             if len(listE['g'])>0 : 
                 s += '\nGas_Phase '+str(ig)+'\n'
-                if ig==int(dicz.dic['gfix']['value'][0]):
-                    s+= '-fixed_pressure  1 \n'
+                if 'gfix' in dicz.dic.keys():
+                    if ig==int(dicz.dic['gfix']['value'][0]):
+                        s+= '-fixed_pressure  1 \n'
+                    else :
+                        s+= '-fixed_volume \n -volume 1.0\n'
                 else :
                     s+= '-fixed_volume \n -volume 1.0\n'
             for esp in listE['g']: # go through phase list

@@ -411,10 +411,12 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : # cas automatique
             n=11;V = linspace(Zmin,Zmax,n)
         # ONE DIMENSIONAL
-        if self.mesh==None:
+        if self.mshType==0:
             r,c=shape(X);
             if r==1: 
-                X=concatenate([X,X]);Y=concatenate([Y-Y*.45,Y+Y*.45]);Z=concatenate([Z,Z])
+                X=r_[X,X];Y=r_[Y-Y*.45,Y+Y*.45];Z=r_[Z,Z]
+            if c==1: 
+                X=c_[X-X*.45,X+X*.45];Y=c_[Y,Y];Z=c_[Z,Z]
         #Z2=ma.masked_where(Z.copy()>1e5,Z.copy());#print value,n,V
         Z[Z>1e7]=0 ; Z2= Z;#np.nan_to_num(Z,nan=0) #EV 07/04/21
         # definir les couleurs des contours
