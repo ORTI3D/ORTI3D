@@ -14,7 +14,7 @@ from numpy import in1d
 from .opfoamKeywords import OpF,OpT
 from ilibq.geometry import *
 
-import os
+import os,shutil
 
 class opfoamWriter:
     def __init__(self,core,opfoam):
@@ -39,7 +39,7 @@ class opfoamWriter:
         self.ncell = self.nlay*self.ncell_lay
         self.carea,self.nbc = self.opf.carea,self.opf.nbc
         if 'polyMesh' not in os.listdir(fDir+'constant'): os.mkdir(fDir+'constant\\polyMesh')
-        fDir1 = self.fDir +'constant\\polyMesh\\'
+        fDir1 = fDir +'constant\\polyMesh\\'
         self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         if wriGeom:
             if self.MshType == 0:
@@ -56,9 +56,9 @@ class opfoamWriter:
             self.bcD0['bc'+str(i)] = {'type':'zeroGradient'}
         self.writeConstantFields();print('constant field written')
         self.writeInitFields();print('init field written')
-        if 'options' not in os.listdir(fDir+'constant'): os.mkdir(fDir+'constant\\options')
+        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+'constant\\options')
+        os.mkdir(fDir+'constant\\options')
         # cleaning the constant/option folder
-        os.system('del /Q '+self.fDir+'constant\\options\\*')
         #if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
         if self.group in ['Chem']: #'Transport',
             self.ncomp,self.gcomp,self.lcomp,self.lgcomp,self.lspec = self.opf.findSpecies(self.core)
@@ -72,6 +72,7 @@ class opfoamWriter:
             self.writeChemistry()
             if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 self.writeThermal()
+                
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
         core is the model,fDir the major openfoam folder
@@ -206,7 +207,7 @@ class opfoamWriter:
         nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(round(fslt[0]*86400/200,0)*100), 
+                  'deltaT':int(max(round(fslt[0]*86400/200,0)*100,1)), 
                   'maxCo':fslt[2]} #'maxDeltaT':int(fslt[1]),
         tslv = self.core.dicval['OpenTrans']['tslv']
         if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
@@ -626,6 +627,11 @@ class opfoamWriter:
                 mat = self.ttable['gfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'gfix',formt='int')
 
+            if 'gwel' in self.ttable.keys():# pumping or injection
+                lcell,ncell,zcell = self.writeOptionCells('gwel','gwel')
+                mat = self.ttable['gwel']
+                self.writeOptionData(mat,lcell,ncell,zcell,'gwel',formt='int')
+
 
     def writeOptionCells(self,line,fname):
         '''
@@ -866,6 +872,7 @@ class opfoamWriter:
         ncell = self.ncell_lay
         solu = chem['Solutions'];
         dicz = core.diczone['OpenChem']
+        lsolu=[]
         if 'sfix' in dicz.dic.keys():
             lsolu = list(unique([int(a) for a in dicz.dic['sfix']['value']]))
         if 'swel' in dicz.dic.keys():
@@ -882,10 +889,11 @@ class opfoamWriter:
         #listS.sort()
         for isol in range(self.nsolu):
             s += '\nSolution '+str(isol)+' \n units mol/L \n'
-            for esp in listS: # go through phase list
-                ie=solu['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
-                conc=solu['data'][ie][isol+1] #backgr concentration of species
-                s += esp+' '+str(conc)+'\n'
+            for esp in listS: # go through species list
+                if esp in solu['rows']:
+                    ie=solu['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
+                    conc=solu['data'][ie][isol+1] #backgr concentration of species
+                    s += esp+' '+str(conc)+'\n'
         pht = self.getVariable('OpenChem','sinit') #this is a vector ncell
         dInd={'Solutions':pht/1000.,
               'Phases':mod(pht,1000)/100,'Gases':mod(pht,1000)/100,
@@ -949,7 +957,8 @@ class opfoamWriter:
             for ip in range(parmk[nom]):
                 s += str(rates['data'][iek][ip+2])+' '
             s += '\n-formula '+rates['data'][iek][-1] +'\n' # formula
-        if len(lkin)>0 :s += '\n'+str(core.getValueFromName('OpenChem','OCKOPT'))+'\n'
+        if len(lkin)>0 :
+            s += '\n'+str(core.getValueFromName('OpenChem','OCKOPT')[0])+'\n'
         
         rates = chem['Kinetic_Minerals'];
         if len(listE['kp'])>0 :s += '\nKinetics 1\n'
@@ -1086,11 +1095,11 @@ class opfoamReader:
         self.ttable = core.makeTtable()
         self.tlist = self.ttable['tlist']
         self.nlay = getNlayers(core)
-        self.ncell = self.ncell_lay*self.nlay
         self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         self.orientation = self.core.addin.getDim() # 'z' or 'y' for xsect or 'r' for radial
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
         else : self.nlay = 1
+        self.ncell = self.ncell_lay*self.nlay
         
     def readHeadFile(self,core,iper):
         '''reads h as the head'''
@@ -1135,7 +1144,8 @@ class opfoamReader:
         
     def readScalar(self,name,iper=None,iesp=-1,spc=0):
         ''' returns a scalar for all the times reshapes in layers
-        if iper =None if one value just one period'''
+        if iper =None if one value just one period
+        iesp=-1 : tracer, '''
         def rd1(t,n): # read classical
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
             s = f1.read();f1.close()

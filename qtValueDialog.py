@@ -123,16 +123,16 @@ class qtBoxKeys:
         #nb = len(self.values) # OA 23/9/19 removed
         if self.nb : # EV 3/12/21
             for i in range(self.nb):
-                but = self.lValBut[i]
+                but = self.lValBut[i];print(self.types[i])
                 val = self.values[i]
                 if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
-                    val = but.currentIndex()
+                    self.values[i] = but.currentIndex()
                     continue
                 elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
-                    val = self.vect
+                    self.values[i] = self.vect
                     continue
                 elif self.types[i]=='textlong': # added 21/11/19
-                    val = [but.document().toPlainText()]
+                    self.values[i] = [but.document().toPlainText()]
                     continue
                 if but.text() not in ['formula','zone','array']:
                     if self.types[i] in ['int','vecint','arrint']:
