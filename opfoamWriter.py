@@ -200,7 +200,7 @@ class opfoamWriter:
         if tunit== 3: dt = 3600
         if tunit== 2: dt = 60
         if tunit== 1 : dt = 1
-        self.maxT = int(float(self.core.dicaddin['Time']['final'][0])*dt)
+        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*dt)
         self.ttable = self.core.makeTtable()
         self.tlist = self.ttable['tlist']
         intv = int(float(self.core.dicaddin['Time']['steps'][0])*dt)
@@ -866,8 +866,9 @@ class opfoamWriter:
         3 write them in phreeqc format"""
         #s = 'Database '+fDir+'\pht3d_datab.dat \n'
         s = ''
-        s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n\n'
+        s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
+        s += '-p '+' '.join(listE['p'])+'\n\n'
         chem = core.addin.pht3d.Base['Chemistry'];print(chem.keys())
         ncell = self.ncell_lay
         solu = chem['Solutions'];
@@ -1100,6 +1101,7 @@ class opfoamReader:
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
         else : self.nlay = 1
         self.ncell = self.ncell_lay*self.nlay
+        self.listE = core.addin.pht3d.getDictSpecies();
         
     def readHeadFile(self,core,iper):
         '''reads h as the head'''
@@ -1109,8 +1111,8 @@ class opfoamReader:
         return self.readScalar('sw',iper)
 
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
-        '''reads the concentrations iesp=-1 for tracer
-        if opt==C conc in water, if Cg conc in gas'''
+        '''reads the concentrations iesp=-1 for tracer (not used for others)
+        opt not used'''
         fDir = self.core.fileDir
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
@@ -1125,6 +1127,7 @@ class opfoamReader:
         ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
+        lesp1.extend(self.listE['p'])
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
         elif '(g)' in specname: #gas species
