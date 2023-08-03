@@ -331,13 +331,16 @@ class guiShow:
         return self.getArray2D('Chemistry',arr3,plane,layer)        
         
     def get3Dvectors(self,tstep):
-        mod = self.gui.currentModel
-        qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep);
+        mod = self.core.dicaddin['Model']['group']
+        mesh = self.core.addin.mesh
         if mod=="Modflow":
+            qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep);
             qx = qx[:,:,1:]/2+qx[:,:,:-1]/2
             qy = qy[:,1:,:]/2+qy[:,:-1,:]/2
             if qz is None: pass # EV 19/07/19
             else : qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
+        elif "USG"in mod:
+            qx,qy,qz=self.core.flowReader.readFlowMesh(self.core,mesh,tstep)
         return qx,qy,qz
         
     def getVectors(self,plane,layer,tstep):

@@ -186,7 +186,7 @@ class qtVisualisation(FigureCanvasQTAgg):
                 self.createImage(dataM)
                 self.drawContour(True) # OA 22/8/19
         if dataV == None : self.drawVector(False)
-        else : self.createVector(dataV)
+        else : self.createVector(dataV,value,color)
         
     def drawObject(self,typObj,bool):
         if typObj not in ['Particles','Grid']: #EV 15.2.21
@@ -473,27 +473,29 @@ class qtVisualisation(FigureCanvasQTAgg):
     #####################################################################
     """vector has been created as the first item of lincollection list
     during domain intialization"""
-    def createVector(self,data):
+    def createVector(self,data,scale,color):
         X,Y,U,V = data
         if self.mesh !=None :
-            X,Y = self.mesh.nodes[:,1],self.mesh.nodes[:,2]; #print X,Y,U,V
-        """ modifie les values de vectors existants"""
-        if self.Vector.data[3] == None: #first vector no color
-            a=ravel(X);ech =( max(a)-min(a))/40;col=(0,0,1)
+            X,Y = self.mesh.elcenters[:,0],self.mesh.elcenters[:,1]; #print X,Y,U,V
+        """ modifie les values de vectors existants
+        if U == None: #first vector no color
+            a=ravel(U);ech =( max(a)-min(a))/40;col=(0,0,1)
         else : 
             a,b,ech,col = self.Vector.data
-            self.drawVector(False)
+            self.drawVector(False) """
+        if scale ==None: # no scale provided
+            scale = 1
         l=len(ravel(X))
         dep=concatenate([X.reshape((l,1)),Y.reshape((l,1))],axis=1)
-        b=X+U*ech;c=Y+V*ech;
+        b=X+U*scale;c=Y+V*scale;
         arr=concatenate([b.reshape((l,1)),c.reshape((l,1))],axis=1)
         self.Vector = LineCollection(list(zip(dep,arr)))
         self.Vector.set_transform(self.transform)
-        self.Vector.set_color(col);
+        self.Vector.set_color(color);
         if len(self.cnv.collections)>2:self.cnv.collections[2]=self.Vector
         else : self.cnv.collections.append(self.Vector)
         self.Vector.set_visible(True)
-        self.Vector.data = [dep,arr,ech,col];#print self.Vector.data
+        self.Vector.data = [dep,arr,scale,color];#print self.Vector.data
         self.redraw()
 
     def drawVector(self, bool):
@@ -502,13 +504,13 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Vector.set_visible(bool);#print self.Vector
         self.redraw()
         
-    def changeVector(self,ech,col=(0,0,255)):
+    def changeVector(self,scale,col=(0,0,255)):
         """ modifie les values de vectors existants"""
         #self.drawVector(False)
-        ech = float(ech)
+        scale = float(scale)
         #change coordinates
-        dep,arr_old,ech_old,col_old = self.Vector.data;#print shape(dep),shape(arr_old),ech,ech_old
-        arr=dep+(arr_old-dep)*ech/ech_old
+        dep,arr_old,sca_old,col_old = self.Vector.data;#print shape(dep),shape(arr_old),ech,ech_old
+        arr=dep+(arr_old-dep)*scale/sca_old
         # new object
         #self.Vector = LineCollection(zip(dep,arr))
         self.Vector.set_segments(list(zip(dep,arr)))

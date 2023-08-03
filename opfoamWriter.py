@@ -377,8 +377,8 @@ class opfoamWriter:
         if self.group in ['Chem','Trans']:
             s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0])+';\n'
             s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1])+';\n'
-            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.3'][0])+';\n'
-            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.3'][1])+';\n'            
+            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][0])+';\n'
+            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][1])+';\n'            
             s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
         if self.group == 'Chem':
             s += 'activateTransport 1;\n'
@@ -436,11 +436,13 @@ class opfoamWriter:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 p0 += ravel(dzm[-1::-1])*9.81*1e3 #♦ opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            pBC={}
-            if len(self.zb)>2: # more than one layer
-                lp=unique(amax(self.zb)-self.zb[-1])[0]*9.81*1e3
-                pBC={'bottom':{'type':'fixedValue','value':'uniform '+str(lp)}}
-            self.writeScalField('0','p',p0,pBC,dim='[1 -1 -2 0 0 0 0]')
+            # seems to create pbs
+            # pBC={}
+            # if len(self.zb)>2: # more than one layer
+            #     lp=unique(amax(self.zb)-self.zb[-1])[0]*9.81*1e3
+            #     pBC={'bottom':{'type':'fixedValue','value':'uniform '+str(lp)}}
+            # self.writeScalField('0','p',p0,pBC,dim='[1 -1 -2 0 0 0 0]')
+            self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :
             h0 = self.getVariable('OpenFlow','head.1')
@@ -1105,7 +1107,10 @@ class opfoamReader:
         
     def readHeadFile(self,core,iper):
         '''reads h as the head'''
-        return self.readScalar('h',iper)
+        if self.core.dicaddin['Model']['type'] == '2phases':
+            return self.readScalar('p',iper)/9.8e4
+        else:
+            return self.readScalar('h',iper)
     def readWcontent(self,core,iper):
         '''reads sw as the water content'''
         return self.readScalar('sw',iper)

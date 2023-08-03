@@ -1252,7 +1252,7 @@ class modflowReader:
         '''
         #8 269 188;a=int(8269188/4)
         #where(d==nfc+nc): 8540, 1097263
-        s=f1.read();strt = 0
+        s=f1.read();strt = 0;nc=mesh.ncell
         for ip in range(iper):
             pos = s[strt+1:].find(b'FLOW JA FACE')
             strt = pos
