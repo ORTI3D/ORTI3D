@@ -142,6 +142,13 @@ class opfoam(unstructured):
             self.core.dictype['OpenTrans'][l1[i]] = self.core.dictype['MfUsgTrans'][l0[i]]
             if l0[i] in self.core.diczone['MfUsgTrans'].dic.keys():
                 self.core.diczone['OpenTrans'].dic[l1[i]] = self.core.diczone['MfUsgTrans'].dic[l0[i]]
+        l0=['ph.3','ph.4','ph.5']
+        l1=['sinit','sfix','srch']
+        for i in range(len(l0)):
+            self.core.dicval['OpenChem'][l1[i]] = self.core.dicval['Pht3d'][l0[i]]
+            self.core.dictype['OpenChem'][l1[i]] = self.core.dictype['Pht3d'][l0[i]]
+            if l0[i] in self.core.diczone['MfUsgTrans'].dic.keys():
+                self.core.diczone['OpenChem'].dic[l1[i]] = self.core.diczone['Pht3d'].dic[l0[i]]
 
     def findSpecies(self,core):
         '''find the components and species for phreeqc'''

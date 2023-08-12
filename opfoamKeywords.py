@@ -57,7 +57,7 @@ class  OpF:
         'press.2':{'comm':'Fixed pressure','cond':'OFPMS==2','kw':['OFPR'],
                  'detail':[],'type':['arrfloat'],'default':[0.]},
         'khy.1':{'comm':'Hydraulic cond. parms','cond':'','kw':['OKTYP'],
-                 'detail':[['','Kv type','ratio','value']],
+                 'detail':[['','ratio','value']],
                 'type':['choice'],'default':[0]},
         'khy.2':{'comm':'Hor hydraulic cond.','cond':'','kw':['OKH'],
                  'detail':[],'type':['arrfloat'],'default':[10.]},

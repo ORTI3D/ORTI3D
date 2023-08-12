@@ -334,7 +334,7 @@ class opfoamWriter:
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
         for il in range(self.nlay):
             r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
-            if self.core.dicval['OpenFlow']['khy.1'][0] == 0:  # Kv type
+            if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
                 kv[r] = vrt[r]/86400/9.81e6
             else : # ratio
                 kv[r] = K[r]/vrt[r]
@@ -687,10 +687,11 @@ class opfoamWriter:
         for i in range(nl-1,-1,-1):
             #l0 = lcell[i]
             for j in range(i-1,-1,-1):
-                ind=arange(ncell[i])[in1d(lcell[i], lcell[j])]
+                ind=where(in1d(lcell[j], lcell[i]))[0]
                 ncell[j] -= len(ind)
-                for k in range(len(ind)):
-                    lcell[j].pop(ind[k]-k);zcell[j].pop(ind[k]-k)
+                lcell[j] = list(delete(array(lcell[j]),ind))
+                zcell[j] = list(delete(array(zcell[j]),ind))
+
                 '''
                 a = set(lcell[j])
                 a.difference_update(l0)
@@ -935,16 +936,19 @@ class opfoamWriter:
         # gas phase
         gases=chem['Gases'];
         #nbg = len(unique(dInd['Gases']))
+        back_p = self.core.dicval['OpenFlow']['press.1'][0] #!! only backg of lay 0
         for ig in range(self.nsolu):
             if len(listE['g'])>0 : 
                 s += '\nGas_Phase '+str(ig)+'\n'
-                if 'gfix' in dicz.dic.keys():
-                    if ig==int(dicz.dic['gfix']['value'][0]):
-                        s+= '-fixed_pressure  1 \n'
-                    else :
-                        s+= '-fixed_volume \n -volume 1.0\n'
-                else :
-                    s+= '-fixed_volume \n -volume 1.0\n'
+                # if 'gfix' in dicz.dic.keys():
+                #     if ig==int(dicz.dic['gfix']['value'][0]):
+                #         s+= '-fixed_pressure  1 \n'
+                #     else :
+                #         s+= '-fixed_volume \n -volume 1.0\n'
+                # else :
+                #     s+= '-fixed_volume \n -volume 1.0\n'
+                if back_p==0: s+= '-fixed_pressure \n -pressure 1 \n'
+                else : s+= '-fixed_pressure \n -pressure '+str(back_p/101325) +'\n'
             for esp in listE['g']: # go through phase list
                 ie = gases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = gases['data'][ie][ig+2] #backgr SI and concentration of phase
