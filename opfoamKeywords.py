@@ -121,7 +121,7 @@ class  OpT:
                 'detail':[['transp type','Concentration','Temperature','both'],
                         ['transp. steady','no','yes'],
                         ['De vary with T','no','linear'],['De f(T) fact.']],
-                'type':['choice','choice','choice','textlong'],'default':[0,0,0,'']},
+                'type':['choice','choice','choice','Textlong'],'default':[0,0,0,['']]},
         'poro':{'comm':'Porosity','cond':'','kw':['EPS'],
                 'detail':[],'type':['arrfloat'],'default':[0.3]},
         'dsp':{'comm':'Dispersion','cond':'','kw':['ALPHL','ALPHT'],
@@ -212,7 +212,7 @@ class  OpC:
         self.lines={
         'chprm':{'comm':'Chem parameters','cond':'','kw':['OCHNSTP','OCKOPT'],
                 'detail':['reaction stp interval','kinet options'],
-                'type':['int','textlong'],'default':[10,'-tol 1e-8']},
+                'type':['int','Textlong'],'default':[10,['-tol 1e-8']]},
         'sactiv':{'comm':'active zone','cond':'','kw':['OSACT'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'sinit':{'comm':'Initial solutions','cond':'','kw':['OISOL'],

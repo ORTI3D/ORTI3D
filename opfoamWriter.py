@@ -224,47 +224,54 @@ class opfoamWriter:
         s += ' runTimeModifiable yes;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
-        
-        s += '#include "$FOAM_CASE/system/writeInterval"\n'
-        s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
-        s += 'functions \n { \n #include "fileUpdate1" \n #include "fileUpdate2"\n}'
-        f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
-        f1.write('writeInterval 100;');f1.close()
-        f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
-        f1.write('maxDeltaT 100;');f1.close()
-        f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');f1.write(s);f1.close()
-
-        # write the function for variable times
-        s1 = 'fileUpdate1 \n{\n'
-        s1 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-        s1 += '     writeControl timeStep;\n'
-        s1 += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
-        s1 += '     timeVsFile \n    (\n '
-        # write the deltaT
-        s2 = 'fileUpdate2 \n{\n'
-        s2 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-        s2 += '     writeControl timeStep;\n'
-        s2 += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
-        s2 += '     timeVsFile \n    (\n'
-        t_old,dt_old = -1,-1
-        for i,t in enumerate(self.tlist[1:]):
-            dt = t-t_old
-            #if dt != dt_old:
-            s0 = str(int(t_old*86400))
-            s1 += '    ('+s0+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
-            s2 += '    ('+s0+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
-            f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
-            s0 = str(int(t*86400));f1.write('writeInterval '+s0+';');f1.close()
-            f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-            maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
-            s0 = str(int(maxdt));f2.write('maxDeltaT '+s0+';');f2.close()
-            t_old,dt_old = t*1,dt*1
-        s1 += '    );\n    }\n }\n'
-        f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate1','w')
-        f1.write(s1);f1.close()
-        s2 += '    );\n    }\n }\n'
-        f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate2','w')
-        f1.write(s2);f1.close()
+        # ---case with variable times
+        tt = self.core.dicaddin['Time']
+        if len(tt['final'])==1: # all time steps are the same
+            tstp = float(tt['steps'][0])*86400
+            s += 'writeInterval '+str(int(tstp))+ ';\n'
+            s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
+        else:
+            s += '#include "$FOAM_CASE/system/writeInterval"\n'
+            s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
+            s += 'functions \n { \n #include "fileUpdate1" \n #include "fileUpdate2"\n}'
+            f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
+            f1.write('writeInterval 10;');f1.close()
+            f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
+            f1.write('maxDeltaT 10;');f1.close()
+    
+            # write the function for variable times
+            s1 = 'fileUpdate1 \n{\n'
+            s1 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
+            s1 += '     writeControl timeStep;\n'
+            s1 += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
+            s1 += '     timeVsFile \n    (\n '
+            # write the deltaT
+            s2 = 'fileUpdate2 \n{\n'
+            s2 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
+            s2 += '     writeControl timeStep;\n'
+            s2 += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
+            s2 += '     timeVsFile \n    (\n'
+            t_old,dt_old = -1,-1
+            for i,t in enumerate(self.tlist[1:]):
+                dt = t-t_old
+                #if dt != dt_old:
+                s0 = str(int(t_old*86400))
+                s1 += '    ('+s0+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
+                s2 += '    ('+s0+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
+                f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
+                s0 = str(int(t*86400));f1.write('writeInterval '+s0+';');f1.close()
+                f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
+                maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
+                s0 = str(int(maxdt));f2.write('maxDeltaT '+s0+';');f2.close()
+                t_old,dt_old = t*1,dt*1
+            s1 += '    );\n    }\n }\n'
+            f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate1','w')
+            f1.write(s1);f1.close()
+            s2 += '    );\n    }\n }\n'
+            f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate2','w')
+            f1.write(s2);f1.close()
+        f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
+        f1.write(s);f1.close()
 
     def writeFvSchemes(self):
         schemeDict = {'ddtSchemes':{'default':'backward'},
@@ -314,8 +321,7 @@ class opfoamWriter:
         return ravel(self.core.getValueLong(modName,line,0)[-1::-1])
     
     def writeConstantFields(self):
-        '''
-        !!!now eps comes from mt3dms and K from modflow (and Kh/Kv)
+        '''write all constant fields
         '''
         core = self.core
         # gravity field g
