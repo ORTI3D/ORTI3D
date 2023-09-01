@@ -1114,6 +1114,8 @@ class opfoamReader:
         else : self.nlay = 1
         self.ncell = self.ncell_lay*self.nlay
         self.listE = core.addin.pht3d.getDictSpecies();
+        a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+'ractive')
+        self.phmask = a.astype('int')
         
     def readHeadFile(self,core,iper):
         '''reads h as the head'''
@@ -1164,6 +1166,7 @@ class opfoamReader:
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period
         iesp=-1 : tracer, '''
+        
         def rd1(t,n): # read classical
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
             s = f1.read();f1.close()
@@ -1173,11 +1176,13 @@ class opfoamReader:
             else :
                 data = 0
             return data
+        
         def rd2(t,iesp): #read in Species
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species','r')
             s = f1.read();f1.close()
-            s1 = s.split('\n')
-            data = np.array(s1[self.ncell*iesp:self.ncell*(iesp+1)]).astype('float')
+            s1 = s.split('\n');ncell = self.ncell;nmask = len(self.phmask)
+            data = zeros(ncell)
+            data[self.phmask] = np.array(s1[nmask*iesp:nmask*(iesp+1)]).astype('float')
             if iesp==0: data[data>1e+29]=7 # for pH
             else : data[data>1e+29]=0
             return data
