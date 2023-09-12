@@ -13,6 +13,7 @@ from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,whe
 from numpy import in1d
 from .opfoamKeywords import OpF,OpT
 from ilibq.geometry import *
+import struct 
 
 import os,shutil
 
@@ -51,13 +52,13 @@ class opfoamWriter:
         self.writeFvSchemes()
         self.writeFvSolutions()
         # write variables
+        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+'constant\\options')
+        os.mkdir(fDir+'constant\\options')
         self.bcD0={'top':{'type':'zeroGradient'},'bottom':{'type':'zeroGradient'}}
         for i in range(self.nbc):
             self.bcD0['bc'+str(i)] = {'type':'zeroGradient'}
         self.writeConstantFields();print('constant field written')
         self.writeInitFields();print('init field written')
-        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+'constant\\options')
-        os.mkdir(fDir+'constant\\options')
         # cleaning the constant/option folder
         #if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
         if self.group in ['Chem']: #'Transport',
@@ -731,6 +732,8 @@ class opfoamWriter:
         it also takes into account the transient variation of the variable in the zone
         add is used for pressure, size of lcell
         '''
+        fD1 = self.fDir+'constant\\'
+        if 'options' not in os.listdir(fD1): os.mkdir(fD1+'options')
         nr,a = shape(mat);nzo=len(lcell);#dt = 86400
         if mult==None: mult = [[1]*nc for nc in ncell]
         if mult2==None: mult2 = [[0]*nc for nc in ncell]
@@ -738,7 +741,11 @@ class opfoamWriter:
         if len(zcell)==0: zcell= [[0]*nc for nc in ncell]
         #if formt == 'float': fmt0 = '0 %9i %e %e\n';fmt1='%9i %9i %e %e\n'
         #elif formt == 'int': fmt0 = '0 %9i %9i %9i\n';fmt1='%9i %9i %9i %9i\n'
-        s = '%5i %8i \n'%(self.nlay,self.ncell_lay)
+        #s = '%5i %8i \n'%(self.nlay,self.ncell_lay) #11/9/23 removed two first values : useless now
+        s = '';
+        fb = open(fD1+'options\\'+fname, "wb");
+        #floatlist=array([self.nlay,self.ncell_lay]).astype('float')
+        #fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
         val = zeros((sum(ncell),4))
         #float_formatter = "{:.3e}".format
         #out ='\n'.join(map('{:.3e}'.format, val[:5]))
@@ -755,14 +762,16 @@ class opfoamWriter:
         val1 =val[ag]*1
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
         s += '\n'
+        floatlist=ravel(val1.astype('float'));
+        fb.write(struct.pack('%sf' % len(floatlist), *floatlist))        
         
         #writes the base cell list in sets
         s1 ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
         s1 += '\n'+str(sum(ncell))+'\n(\n'
         s1 += '\n'.join([str(int(a)) for a in val1[:,1]])+'\n)'
-        fD1 = self.fDir+'constant\\polyMesh\\'
-        if 'sets' not in os.listdir(fD1): os.mkdir(fD1+'sets')
-        f1=open(self.fDir+'constant\\polyMesh\\sets\\'+fname,'w');f1.write(s1);f1.close()
+        fD2 = self.fDir+'constant\\polyMesh\\'
+        if 'sets' not in os.listdir(fD2): os.mkdir(fD1+'sets')
+        f1=open(fD2+'\\sets\\'+fname,'w');f1.write(s1);f1.close()
 
         # now the next steps
         for it in range(1,nr):
@@ -773,15 +782,17 @@ class opfoamWriter:
                 val[sc0[iz]:sc1[iz],2] = zz*array(mult[iz])
                 val[sc0[iz]:sc1[iz],3] = array(mult2[iz])
             val[:,0] = self.tlist[it]+0.001
-            val1 =val[ag]*1
+            val1 = val[ag]*1
             s += '\n'.join([' '.join(x) for x in val1.astype('str')])
             s+='\n'
+            floatlist=ravel(val1.astype('float'));
+            fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
         val1[:,0] = self.tlist[-1]+0.01
         val1[:,2:4] = 0
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
-        fD1 = self.fDir+'constant\\'
-        if 'options' not in os.listdir(fD1): os.mkdir(fD1+'options')
-        f1=open(self.fDir+'constant\\options\\'+fname,'w');f1.write(s);f1.close()
+        f1=open(fD1+'options\\'+fname+'_a','w');f1.write(s);f1.close()
+        floatlist=ravel(val1.astype('float'));#print(floatlist)
+        fb.write(struct.pack('%sf' % len(floatlist), *floatlist));fb.close()
         print('option '+fname+' written')
         
     def getPermScaled(self,lcel):
@@ -1114,6 +1125,9 @@ class opfoamReader:
         else : self.nlay = 1
         self.ncell = self.ncell_lay*self.nlay
         self.listE = core.addin.pht3d.getDictSpecies();
+        self.flagMask=0;
+        
+    def readMask(self):
         a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+'ractive')
         self.phmask = a.astype('int')
         
@@ -1131,6 +1145,8 @@ class opfoamReader:
         '''reads the concentrations iesp=-1 for tracer (not used for others)
         opt not used'''
         fDir = self.core.fileDir
+        if self.flagMask==0: 
+            self.readMask();self.flagMask=1
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
             s = s.split()[0] # to remove \n
