@@ -487,7 +487,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             scale = 1
         l=len(ravel(X))
         dep=concatenate([X.reshape((l,1)),Y.reshape((l,1))],axis=1)
-        b=X+U*scale;c=Y+V*scale;
+        b=X+U*scale;c=Y+V*scale;print(X,Y,b,c)
         arr=concatenate([b.reshape((l,1)),c.reshape((l,1))],axis=1)
         self.Vector = LineCollection(list(zip(dep,arr)))
         self.Vector.set_transform(self.transform)
@@ -519,7 +519,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Vector.set_color(col);
         self.Vector.set_visible(True)
         #self.cnv.collections[2]=self.Vector
-        self.Vector.data = [dep,arr,ech,col]
+        self.Vector.data = [dep,arr,scale,col]
         self.redraw()
     
     #####################################################################

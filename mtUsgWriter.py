@@ -310,7 +310,7 @@ class mtUsgWriter:
         data,rows = chm['data'],chm['rows']
         ncol=len(data[0]);rcol=list(range(2,ncol)) # the range of columns to be read
         pht = block(self.core,'Pht3d',line,False,None,iper)[0].astype('int') # solution number
-        for kw in['k','i','kim']: # OA 17/8/21
+        for kw in['k','i']: # OA 25/9 kim removed
             for e in listE[kw]:
                 names.append(e)
                 inde = rows.index(e) # finds the index of the species e
@@ -663,9 +663,12 @@ class mtUsgReader:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now
             dc,blok,styp = 52,52+ncell*8,'d';                                               
             for i,ip in enumerate(iper):  # OA 2/11
+                #print(ip)
                 for j in range(len(irow)): # OA 2/11
                     il= ilay[j]
-                    f1.seek(ip*nspec*nlay*blok+iesp*nlay*blok+blok*il+dc+icol[j]*8)
+                    a=int(ip)*int(nspec)*int(nlay)*int(blok)
+                    #print(ip,nspec,nlay,blok,"produit:",a)
+                    f1.seek(a+iesp*nlay*blok+blok*il+dc+icol[j]*8)
                     data = arr2(styp)
                     data.fromfile(f1,1)
                     c[i,j] = data[0];#plot(data)#1)

@@ -18,7 +18,7 @@ class Observer(object):
     def bind_to(self, callback): self._observers.append(callback)
     def set_obs(self, value):
         self._obs_value = value
-        for callback in self._observers:
+        for callback in self._observers:vers
             callback(self._obs_value)
     obs_value = property(get_obs, set_obs)
 
@@ -341,7 +341,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 1/9/2023 ")
+        version = QLabel("       version 4/10/2023 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

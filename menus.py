@@ -213,6 +213,19 @@ class Menus:
             f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
             self.dialogs.onMessage(self.gui,'file '+fName+' saved')
 
+    def OnExportVectorVtk(self,evt=None): # modif 28/3/17 oa for correct name
+        model = self.gui.currentModel;print(model)
+        data = self.gui.guiShow.vect3;print('menu 218',len(data));print(shape(data[0]))
+        if not shape(data) : #EV 11/12/19
+            self.dialogs.onMessage(self.gui,'Select a result to export')
+            return
+        dlg = self.dialogs.myFileDialog('Save')
+        fDir,fName = dlg.getsetFile(self.gui,'Save vtk',"*.vtk")
+        if fName :
+            s = writeVTKstruct(self.core,model,data,'vectors')
+            f1=open(fDir+os.sep+fName+'.vtk','w');f1.write(s);f1.close()
+            self.dialogs.onMessage(self.gui,'file '+fName+' saved')
+
     def OnExportResuVtkAll(self,evt=None): # modif 28/3/17 oa for correct name
         model,g = self.gui.currentModel,self.gui.guiShow
         name = g.curName

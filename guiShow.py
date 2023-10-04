@@ -171,7 +171,7 @@ class guiShow:
         dataV = None
         if self.dicVisu['Flow']['Veloc-vect']: 
             dataV = self.getVectors(plane,layer,tstep)
-            opt = 'vector'
+            opt = 'vector';
         #print self.dicVisu
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
@@ -331,16 +331,19 @@ class guiShow:
         return self.getArray2D('Chemistry',arr3,plane,layer)        
         
     def get3Dvectors(self,tstep):
-        mod = self.core.dicaddin['Model']['group']
+        grp = self.core.dicaddin['Model']['group']
         mesh = self.core.addin.mesh
-        if mod=="Modflow":
+        if grp=="Modflow":
             qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep);
             qx = qx[:,:,1:]/2+qx[:,:,:-1]/2
             qy = qy[:,1:,:]/2+qy[:,:-1,:]/2
             if qz is None: pass # EV 19/07/19
             else : qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
-        elif "USG"in mod:
+        elif "USG"in grp:
             qx,qy,qz=self.core.flowReader.readFlowMesh(self.core,mesh,tstep)
+        elif "foam"in grp:
+            qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep)
+        self.vect3 = [qx,qy,qz]
         return qx,qy,qz
         
     def getVectors(self,plane,layer,tstep):

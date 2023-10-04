@@ -199,6 +199,7 @@ class Core:
         MshType = 0                    
         self.mfUnstruct = False  # OA 13/3/21
         group = self.dicaddin['Model']['group'];self.addin.group = group
+        if self.gui!=None: self.gui.currentModel = 'Modflow'
         if group == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
@@ -207,6 +208,7 @@ class Core:
             #if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
             #    self.flgMesh = 1 #18/12/20                      
         if group == 'Openfoam': # OA 02/20
+            if self.gui!=None: self.gui.currentModel = 'OpenFlow'
             self.addin.setGridInModel('old')
             MshType = self.getValueFromName('OpenFlow','MshType')
             self.flowReader = self.transReader = opfoamReader(self,self.addin.mesh)

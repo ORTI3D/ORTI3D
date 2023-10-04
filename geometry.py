@@ -841,7 +841,10 @@ def findSideNodes(core,nodes):
     indx[(y>grd['y1']-eps)&(x<grd['y1']+eps)]=1
     return indx
     
-def writeVTKstruct(core,modName,data):
+def writeVTKstruct(core,modName,data,opt='scalars'):
+    '''
+    if scalars data is an array, if vector, data is a lsit of three arrays
+    '''
     mesh = core.addin.mesh
     if mesh==None or core.getValueFromName(modName,'MshType')==0:
         a,b,xv1,yv1 = getXYvects(core);#print 'geom l 141',plane,layer
@@ -858,16 +861,23 @@ def writeVTKstruct(core,modName,data):
         s += 'DATASET STRUCTURED_GRID \nDIMENSIONS '+str(nx)+' '+str(ny)+' '+str(nz)+'\n'
         s += 'POINTS '+str(npts)+' float \n'
         s += ' '.join([str(x[i])+' '+str(y[i])+' '+str(z[i])+'\n' for i in range(npts)])
-        s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
-        s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
+        if opt=='scalars':
+            s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
+            s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     else : # unstructured
-        mesh.makeBC('Modflow')
-        points,fc,bfc,fcup = mesh.getPointsFaces();print(type(points),mesh)
+        mesh.makeBC(modName)
+        points,fc,bfc,fcup = mesh.getPointsFaces();print(mesh.ncell,len(fcup))
         npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
         s = mesh.writeVTKgeom(npt,sp,nh,lnh,lh)
-        data = ravel(data)[idx] # add cells that have been divided
-        s += 'CELL_DATA '+str(nh)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
-        s += ' '.join([str(data[i])+'\n' for i in range(nh)])
+        if opt=='scalars':
+            data = ravel(data)[idx] # add cells that have been divided
+            s += 'CELL_DATA '+str(nh)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
+            s += ' '.join([str(data[i])+'\n' for i in range(nh)])
+        elif opt=='vectors':
+            s += 'CELL_DATA '+str(nh)+'\nVECTORS cellData float\nLOOKUP_TABLE default\n'
+            vx,vy,vz = data;
+            vx,vy,vz=ravel(vx)[idx],ravel(vy)[idx],ravel(vz)[idx]
+            s += ' '.join([str(vx[i])+' '+str(vy[i])+' '+str(vz[i])+'\n' for i in range(nh)])
     return s
     
 def facesZone1toZone2(core,zn0,zn1):

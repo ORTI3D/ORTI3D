@@ -60,7 +60,7 @@ class opfoamWriter:
         self.writeConstantFields();print('constant field written')
         self.writeInitFields();print('init field written')
         # cleaning the constant/option folder
-        #if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
+        if 'sets' not in os.listdir(fDir1): os.mkdir(fDir1+'sets')
         if self.group in ['Chem']: #'Transport',
             self.ncomp,self.gcomp,self.lcomp,self.lgcomp,self.lspec = self.opf.findSpecies(self.core)
         self.getConditions()
@@ -905,7 +905,7 @@ class opfoamWriter:
                 if lsinit[i] not in lsolu: lsolu.append(lsinit[i])
         if 0 not in lsolu: lsolu.append(0)
         lsolu.sort()
-        self.lsolu,self.nsolu = lsolu,len(lsolu)
+        self.lsolu,self.nsolu = lsolu,max(lsolu)+1
         listS = listE['i'];listS.extend(listE['k']);listS.extend(listE['kim'])
         #listS.sort()
         for isol in range(self.nsolu):
@@ -1046,7 +1046,7 @@ class opfoamWriter:
         
         '''now write the phinit.txt file which makes one cell for each solution'''
         s = str(self.nsolu)+' '+str(self.ncomp)+' '+str(self.gcomp)+' '+str(self.nsolu)+' 1\n' # solid-units=1 mol/l here
-        s += '-1 '+' '.join([str(int(a)) for a in self.lsolu])+'\n'
+        s += '-1 '+' '.join([str(int(a)) for a in range(self.nsolu)])+'\n'
         for sp in ['p','e','s','g']: # the solids will be considered in phqfoam and initphreeqc
             indx = shortn.index(sp)
             val = ravel(dInd[longn[indx]]);
@@ -1141,6 +1141,9 @@ class opfoamReader:
         '''reads sw as the water content'''
         return self.readScalar('sw',iper)
 
+    def readFloFile(self,core,iper):
+        return self.readVector(iper)        
+
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
         '''reads the concentrations iesp=-1 for tracer (not used for others)
         opt not used'''
@@ -1225,6 +1228,34 @@ class opfoamReader:
             if self.core.addin.getDim() not in ['Xsection','Radial']:
                 V = V[-1::-1] # layers are bottom to top in opf
         return V
+    
+    def readVector(self,iper=0,opt='w'):
+        '''
+        reads velocity vector at a given time, w for water, g for gas
+        '''
+        def rd1(t,n):
+            f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
+            s = f1.read();f1.close()
+            if 'nonuniform' in s:
+                s1=s.replace('(','').replace(')','')
+                s1 = s1.split('<vector>')[1].split(';')[0].replace(',',' ')
+                s1 = s1.split()[1:]
+                data = np.array(s1).astype('float')
+                n=len(data)
+                data = reshape(data,(int(n/3),3))
+                vx,vy,vz = data[:,0],data[:,1],data[:,2]
+            else :
+                vx,vy,vz = 0,0,0
+            return vx,vy,vz
+
+        ntime=len(self.tlist)
+        vx,vy,vz = rd1(self.tlist[iper+1]*86400,'U'+opt)
+        vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1]*86400
+        vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]*86400
+        vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]*86400
+        #print("vector 0",vx[0,0],vy[0,0],vz[0,0])
+        return vx,vy,vz
+
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
         """a function to values of one variable at given point or points.
