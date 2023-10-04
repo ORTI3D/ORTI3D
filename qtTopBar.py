@@ -18,7 +18,7 @@ class Observer(object):
     def bind_to(self, callback): self._observers.append(callback)
     def set_obs(self, value):
         self._obs_value = value
-        for callback in self._observers:vers
+        for callback in self._observers:
             callback(self._obs_value)
     obs_value = property(get_obs, set_obs)
 
