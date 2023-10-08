@@ -9,13 +9,13 @@ from .Pest import *
 from .instantFit import *
 from .modflowWriter import *
 from .opfoamWriter import *
-from .multiPlot import * # oa 28/11/18
+#from .multiPlot import * # oa 28/11/18
 
 #from matplotlib.tri import CubicTriInterpolator
-from PyQt5.QtGui import *
-from PyQt5 import Qt
-from PyQt5.QtWidgets import *
-def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
+#from PyQt5.QtGui import *
+#from PyQt5 import Qt
+#from PyQt5.QtWidgets import *
+#def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 
 class addin:
     """the addin class is used to add buttons or menus inmesh the interface to
@@ -55,7 +55,7 @@ class addin:
                 if (mod=='Mt3dms') & (lmodules[i] in ['BTN','ADV','DSP','GCG']): val[i]=True
                 if (mod=='MfUsgTrans') & (lmodules[i] in ['BCT','PCB','CSS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Pht3d') & (lmodules[i] in ['PH']): val[i]=True
-                if (mod=='OpenTrans') & (lmodules[i] in ['PORO','DSP','CONC']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
+                if (mod=='OpenTrans') & (lmodules[i] in ['PORO','DSP','CONC','TEMP']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='OpenChem') & (lmodules[i] in ['SOLU','GAS']): val[i]=True # OA 3/11/21 EV 8/12/21 remove 'CRCH'
                 if (mod=='Observation') & (lmodules[i] in ['OBS']): val[i]=True
             if mod=='Modflow': val = self.addSolver(lmodules,val) # OA 10/3/19

@@ -1,7 +1,7 @@
 from .config import *
-from .myInterpol import *
 import numpy as np
 from scipy import pi
+from .myInterpol import *
 
 """all geometrical operations are performed here
 all coordinates are in real world ones. so matrices have index 0 for rows
@@ -1078,7 +1078,7 @@ def zone2array(core,modName,line,im):
     if ext == 'asc':
         try : 
             arr=core.importAscii(fDir,fNameExt)
-            arr=arr.astype(np.float)
+            arr=arr.astype('float')
         except OSError : onMessage1(core,txt1) 
         except : onMessage1(core,txt2) 
     elif ext == 'var' :
@@ -1101,7 +1101,7 @@ def zone2array(core,modName,line,im):
         if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
         else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20
         if ysign==-1: # OA 13/6/20 added this and below
-            arr = arr[-1::-1,:]*1
+            arr = arr[-1::-1,:]
             if zdy != None: zdy = zdy[-1::-1]*1 #OA 26/7/20 added condition
         arr2 = linIntpFromGrid(core,grd,arr,xx,yy,intp,zdx,zdy) # removed [::-1]
         return arr2

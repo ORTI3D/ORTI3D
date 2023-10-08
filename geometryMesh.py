@@ -567,7 +567,7 @@ class unstructured:
             s+=str(len(lh[i]))+' '+fmtlist(lh[i])+'\n'
         s += '\nCELL_TYPES '+str(nh)+'\n' 
         for i in range(nh): 
-            s+= str(lnh2[i])+' '
+            s+= str(lnh2[i])+'\n'
         s+='\n'
         return s
 

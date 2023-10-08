@@ -697,6 +697,347 @@ class zonePanel(QWidget):
         if row ==self.valBox.rowCount()-1:
             self.valBox.insertRow(row+1);self.valBox.rowString.append('')
         #evt.Skip()
+#//////////////////////////// interpolation dialog /////////////
+class IntpDialog(QDialog):
+    '''This dialog provide different interpolation tools, options and 
+    interpolation result'''
+    def __init__(self,gui,core,opt):
+        self.gui,self.core,self.opt= gui,core,opt
+        QDialog.__init__(self,gui) 
+        self.state = None
+        self.setModal(False)
+        self.setWindowTitle('Interpolation')
+        screenShape = QtWidgets.QDesktopWidget().screenGeometry()
+        #self.setGeometry(QRect(5, 5, screenShape.width()*.65, screenShape.height()*.5))
+    ## main horizontal layout
+        self.horizontalLayout = QHBoxLayout(self)
+        self.horizontalLayout.setContentsMargins(10, 20, 10, 10)
+    ## the left panel vertical layout vH1 
+        self.verticalLayout = QVBoxLayout()
+    ## choise of media 
+        #txt = QLabel(self)
+        #txt.setText('Media') 
+        #self.gl.addWidget(txt,0,0,1,1)
+        #self.line = QLineEdit(self)
+        #self.line.setText('test')
+        #self.gl.addWidget(self.line,0,1,1,1)
+    ## getData 
+        self.ch,self.mth, self.data = self.getData(self.opt)
+    ## Interpolation method layout vH1.1
+        txtMhd = QLabel()
+        txtMhd.setText('Interpolation method') 
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        txtMhd.setFont(font)
+        self.verticalLayout.addWidget(txtMhd)
+        self.plgroup = QComboBox()
+        self.plgroup.addItems(['Kriging','Inverse distance',
+                               'Thiessen polygons'])
+        self.plgroup.setCurrentIndex(self.mth)
+        self.plgroup.activated['QString'].connect(self.onChoiceOption)
+        self.verticalLayout.addWidget(self.plgroup)
+    ## spacer 1 vH1 
+        self.verticalLayout.addSpacerItem(QSpacerItem(
+                20, 50, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+    ## Interpolation parameters vH1.2
+        title2 = QLabel(self)
+        title2.setText('Interpolation parameters') 
+        font2 = QFont()
+        font2.setPointSize(9)
+        font2.setBold(True)
+        title2.setFont(font2)
+        self.verticalLayout.addWidget(title2)
+        self.hlayout=QHBoxLayout()
+        self.dialg = genericDialog(self.gui,'3D',self.data)
+        self.hlayout.addWidget(self.dialg)
+        self.dialg.gl2.removeWidget(self.dialg.buttonBox)
+        self.dialg.buttonBox.close()
+       ## Draw button
+        self.drawButton = QPushButton(self)
+        self.drawButton.setText('Show result')
+        self.dialg.gl2.addWidget(self.drawButton)
+        self.drawButton.clicked.connect(self.plotResult)
+        self.verticalLayout.addLayout(self.hlayout,3)
+    ## Save or recalculate layout vH1.3
+        title3 = QLabel(self)
+        title3.setText('Save options') 
+        font3 = QFont()
+        font3.setPointSize(9)
+        font3.setBold(True)
+        title3.setFont(font3)
+        self.verticalLayout.addWidget(title3)
+       ## choise save or recalculate
+        self.choise = QComboBox(self)
+        self.choise.addItems(['Save results as array',
+                              'Recalculate each time files are written'])
+        self.choise.setCurrentIndex(self.ch)
+        self.verticalLayout.addWidget(self.choise) 
+    ## spacer 2 vH1 
+        self.verticalLayout.addSpacerItem(
+                QSpacerItem(20, 50, QSizePolicy.MinimumExpanding,
+                            QSizePolicy.Minimum))
+       ## save button
+        self.saveButton = QDialogButtonBox(self)
+        self.saveButton.setOrientation(Qt.Horizontal)
+        self.saveButton.setStandardButtons(QDialogButtonBox.Cancel|
+                QDialogButtonBox.Save)
+        self.verticalLayout.addWidget(self.saveButton, 
+                                      alignment=Qt.AlignHCenter)
+        self.saveButton.accepted.connect(self.accept1)
+        self.saveButton.rejected.connect(self.reject1)
+    ## add vertical layout vH1  
+        self.horizontalLayout.addLayout(self.verticalLayout,2)
+        self.horizontalLayout.addSpacerItem(QSpacerItem(
+                20, 20, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+    ## the right panel vertical layout
+        self.verticalLayout2 = QVBoxLayout()
+    ## parameter of variogram
+        self.frame = QFrame()
+        self.HLayout2 = QHBoxLayout()
+        self.txt = QLabel(self)
+        self.HLayout2.addWidget(self.txt,1)
+    ## variogram matplotlib figure
+        self.vario = Figure(tight_layout=True)
+        self.cnv2 = FigureCanvas(self.vario)
+        self.HLayout2.addWidget(self.cnv2,2)
+        self.frame.setLayout(self.HLayout2)
+        if self.plgroup.currentIndex() != 0:
+            self.frame.hide()
+    ## add variogram figure
+        self.verticalLayout2.addWidget(self.frame,1)
+    ## result matplotlib figure 
+        self.figure = Figure(tight_layout=True,figsize=(4, 5), dpi=100) # EV 04/02/20 
+        self.cnv = FigureCanvas(self.figure) 
+    ## add matplotlib figure
+        self.verticalLayout2.addWidget(self.cnv,3)
+    ## add vertical layout 2
+        self.horizontalLayout.addLayout(self.verticalLayout2,3)
+        QMetaObject.connectSlotsByName(self)  #OA 1/6/19
+    
+    def getData(self,opt):
+        if opt :
+            val=opt
+        else : val=[0,True,True,False,6,'spherical',1e-3,50,0,0]
+        self.mth=val[0]
+        self.ch=val[-1] 
+        if self.mth == 0:
+            self.data = [('Automatic parameter','Check',val[1]),
+                        ('Log Values','Check',val[2]),
+                        ('Plot Variogram','Check',val[3]),
+                        ('nlags','Text',val[4]),
+                        ('Variogram model','Choice',(val[5],['power','gaussian',
+                                    'spherical','exponential'])),
+                        ('Sill / Scale*','Text',val[6]),
+                        ('Range / Exponent*','Text',val[7]),
+                        ('Nugget','Text',val[8])
+                        ]
+        if self.mth==1:
+            self.data = [('Power','Text',val[1])]
+        if self.mth==2 :
+            self.data = [('Smoothing number','Text',val[1])]
+        return self.ch, self.mth, self.data
+    
+    def onChoiceOption(self):
+        intpMtd=int(self.plgroup.currentIndex())
+        try : self.dialg 
+        except: pass 
+        else : self.dialg.setVisible(False) 
+        if intpMtd == 0 :
+            data = [('Automatic parameter','Check',True),
+                            ('Log Values','Check',True),
+                            ('Plot Variogram','Check',False),
+                            ('nlags','Text',6),
+                            ('Variogram model','Choice',
+                             ('spherical',['power','gaussian',
+                                           'spherical','exponential'])),
+                            ('Sill / Scale*','Text',1e-4),
+                            ('Range / Exponent*','Text',30),
+                            ('Nugget','Text',0)
+                            ]
+            self.frame.show()
+        if intpMtd == 1 :
+            data = [('Power','Text',1)]
+            self.frame.hide()
+        if intpMtd == 2 :
+            data = [('Smoothing number','Text',1)]
+            self.frame.hide()
+        self.dialg = genericDialog(self.gui,'3D',data)
+        self.hlayout.addWidget(self.dialg)
+        self.dialg.gl2.removeWidget(self.dialg.buttonBox)
+        self.dialg.buttonBox.deleteLater()
+        del self.dialg.buttonBox 
+        self.dialg.gl2.addWidget(self.drawButton)  
+        
+    def getParms(self):
+        nb = len(self.dialg.data)
+        parms = [0]*nb
+        intpMtd = int(self.plgroup.currentIndex())
+        for i in range(nb):
+            typ = self.dialg.data[i][1]
+            if typ == 'Choice': parms[i]= str(self.dialg.item[i].currentText())
+            if typ == 'Text': parms[i] = str(self.dialg.item[i].text())
+            if typ == 'Check': 
+                if self.dialg.item[i].isChecked() : parms[i] = 1
+                else : parms[i] = 0
+            if typ == 'Textlong': 
+                v0 = str(self.dialg.item[i].document().toPlainText())
+                parms[i] = v0.split('\n')   
+        parms.insert(0,intpMtd)
+        return parms
+        
+    def plotResult(self):
+        self.allOpt=self.getParms(); #print(self.allOpt)
+        line = self.gui.currentLine
+        media = self.gui.currentMedia 
+        model = self.gui.currentModel
+     ## Get and plot interpolation result
+        value,mess,extent=self.core.runInterp(model,line,media,self.allOpt)
+        self._ax=self.figure.add_subplot(1,1,1)
+        if self.core.addin.mesh == None or self.core.getValueFromName(model,'MshType')==0 :
+            myplot=self._ax.imshow(value,extent=extent)
+        else :
+            myplot=self._ax.tricontourf(self.core.addin.mesh.trg,value)
+        self.figure.colorbar(myplot, ax=self._ax)
+        self._ax.figure.canvas.draw()
+        self.figure.clf() 
+     ## Plot variogram
+        if mess :
+            if self.allOpt[0] == 0 :
+                self._axv=self.vario.add_subplot(1,1,1)
+                self.vario.clf()
+                self._axv.figure.canvas.draw()
+                if self.allOpt[3] == 1 :
+                    lags=mess[1]
+                    sem =mess[2]
+                    var =mess[3]
+                    self._axv=self.vario.add_subplot(1,1,1)
+                    self._axv.plot(lags, sem, 'r*')
+                    self._axv.plot(lags, var, 'k-')
+                    self._axv.figure.canvas.draw()
+                    self.vario.clf()
+                self.txt.setText(mess[0])
+            
+    def saveResult(self):
+        self.exec_()
+        parms=self.getParms()
+        ch=self.choise.currentIndex()
+        parms.append(ch)
+        if self.state != 'accept': parms=None
+        return parms
+
+    def accept1(self): 
+        self.close(); self.state = 'accept' 
+        
+    def reject1(self): 
+        self.close(); self.state = 'reject'
+
+#///////////////////////////// import observation data /////////////
+class impObsData(QDialog) :
+    def __init__(self,gui,core,option):
+        self.gui,self.core= gui,core
+        self.option = option
+        QDialog.__init__(self,gui) 
+        self.setModal(False)
+        self.setWindowTitle(self.option+' observation data')
+        self.screenShape = QDesktopWidget().screenGeometry()
+        self.setGeometry(QRect(40, 60, self.screenShape.width()*.42,self.screenShape.height()*.6))
+    ## main vertical layout
+        self.verticalLayout = QVBoxLayout(self)
+        self.verticalLayout.setContentsMargins(10, 20, 10, 10)
+    ## label for instruction
+        label = str('Set or copy paste here your '+self.option+' observation data')
+        self.label = QtWidgets.QLabel(self)
+        self.label.setMaximumSize(500, 24)
+        self.label.setText(label)
+        self.verticalLayout.addWidget(self.label)#, alignment=Qt.AlignHCenter)
+    ## grid for paste data
+        dicIn=self.getDicObs(self.option)
+        self.nbg = myNBpanelGrid(self.gui,self,dicIn)
+        #dicOut=self.setDicObs(self.option)
+        self.verticalLayout.addWidget(self.nbg)
+    ## button ok and cancel
+        buttonBox = QDialogButtonBox(self)
+        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
+        buttonBox.accepted.connect(partial(self.setDicObs,self.option))
+        buttonBox.rejected.connect(self.reject1)
+        self.verticalLayout.addWidget(buttonBox)
+        #QMetaObject.connectSlotsByName(self)
+        
+    def getDicObs(self,option):
+        dicName=str('obs'+option)
+        dic = self.core.dicaddin[dicName]
+        if dic != {}:
+            if option == 'Chemistry':
+                dic=self.updateChem(dicName)
+            return dic
+        else :
+            if option == 'Head':
+                dicIn = {'cols':['\tWell\t','\tLayer\t','\tTime\t','\tHead\t'],'rows':['1','2','3'],'data':{}}
+            if option == 'Tracer':
+                dicIn = {'cols':['\tWell\t','\tLayer\t','\tTime\t','\tTracer\t'],'rows':['1','2','3'],'data':{}}
+            if option == 'Chemistry':
+                lname=self.getChemSol()
+                cols=['\tWell\t','\tLayer\t','\tTime\t']+lname
+                dicIn = {'cols':cols,'rows':['1','2','3'],'data':{}}   
+            self.core.dicaddin[dicName]=dicIn
+            return dicIn
+    
+    def getChemSol(self):
+        lname=[]
+        zchem=self.core.dicaddin['Chemistry']
+        zname=zchem['Chemistry']['Solutions']['rows']
+        for i in range(len(zname)) :
+            if (zchem['Chemistry']['Solutions']['data'][i][0])!=False :
+                lname.append(zname[i])
+        return lname
+    
+    def updateChem(self,dicName):
+        lname=self.getChemSol() 
+        lname2=self.core.dicaddin[dicName]['cols'][3:] 
+        if len(lname)>len(lname2):
+            for i in range(len(lname)):
+                if lname[i] not in lname2:
+                    self.core.dicaddin[dicName]['cols'].insert(i+3,lname[i])
+                    [self.core.dicaddin[dicName]['data'][x].insert(i+3,'') 
+                    for x in range(len(self.core.dicaddin[dicName]['data']))]
+        else :
+            for i in range(len(lname2)): #EV 05/03/2019
+                if lname2[i] not in lname:
+                    self.core.dicaddin[dicName]['cols'].pop(i+3)
+                    [self.core.dicaddin[dicName]['data'][x].pop(i+3) 
+                    for x in range(len(self.core.dicaddin[dicName]['data']))]  
+        return self.core.dicaddin[dicName]
+        
+    def setDicObs(self,option):
+        dic2=self.nbg.getValues()
+        dicName=str('obs'+option)
+        nrow = len(dic2['data'])
+        dic2['rows']=[str(x+1) for x in range(nrow)]
+        if dic2 != None:
+                self.core.dicaddin[dicName] = dic2
+        else : return
+        check=self.checkObs(dic2)
+        if check == 'No': self.close()
+
+    def reject1(self): 
+        self.close()
+        
+    def checkObs(self,dic):
+        #print('test',dic['data'])
+        #if any(dic['data']) != False : #11/04/19
+        zname=self.core.diczone['Observation'].dic['obs.1']['name']
+        zobs=[dic['data'][i][0] for i in range(len(dic['data']))]
+        m=''
+        for i in range(len(zobs)):
+            if zobs[i] not in zname: 
+                m+= str(zobs[i])+' is not a model observation well\n'
+        if m!='' :
+            m2='Warning\n'+m+'\nDo you want modify your data?'
+            resp=onQuestion(self.gui,m2)
+            return resp
+        else : self.close()
+        #else : self.close()
 
 #//////////////////////////////////////////////////////////////////////
 class dialogContour(QDialog):

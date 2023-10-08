@@ -7,6 +7,7 @@ from .geometry import *
 from .core import *
 from .config import *
 from .topBar import BaseTop
+from .myInterpol import *
 
 class Observer(object):
     '''this tool serve to observe what happens somewhere and when some object

@@ -2,7 +2,6 @@ from os import sep
 from .geometry import *
 from .qtDialogs import *
 from .config import *
-from .myInterpol import IntpDialog # EV 19/02/20
     
 class BaseTop:
     def __init__(self,gui,core):

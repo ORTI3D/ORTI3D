@@ -1,6 +1,6 @@
 #
 import os,subprocess,time,base64,types # OA 25/10/18 add types
-from subprocess import Popen, CREATE_NEW_CONSOLE # OA 8/6/19
+from subprocess import Popen #, CREATE_NEW_CONSOLE # OA 8/6/19
 from numpy import frombuffer,float64
 from scipy.interpolate import griddata
 from .modflowWriter import *
