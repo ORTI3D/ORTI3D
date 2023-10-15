@@ -1,6 +1,6 @@
 #
 import os,subprocess,time,base64,types # OA 25/10/18 add types
-from subprocess import Popen #, CREATE_NEW_CONSOLE # OA 8/6/19
+from subprocess import Popen # OA 8/6/19
 from numpy import frombuffer,float64
 from scipy.interpolate import griddata
 from .modflowWriter import *
@@ -319,7 +319,7 @@ class Core:
                 exec_name = self.baseDir+sep+'mf2k '
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();#os.system(s) OA 8/6/19
+            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();#os.system(s) OA 8/6/19
             if info !=False :
                 try :  # EV 13/11 "show model fail to converge"
                     if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
@@ -342,7 +342,7 @@ class Core:
                 mod1,mod2 ='swt_v4','Mt3dms'
             s=self.baseDir+sep+'bin'+sep+mod1+'.exe '+mod2+'.nam'
             os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = Popen(s).wait() #,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 try : # EV 13/11 "show model fail to converge"
                     line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
@@ -354,7 +354,7 @@ class Core:
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName #EV 19/03/21
             os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait();
+            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();
             try :  # EV 3/12/21
                 time_model=self.dicval['Modflow']['disu.4'][5]
                 if time_model==0 : 
@@ -376,7 +376,7 @@ class Core:
                     s='mpiexec -n '+ str(N) +' '+ self.baseDir+sep+'bin'+sep+'pht3dv217_mpi_fett.exe Pht3d.nam'
                 else : s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 if self.dicaddin['Model']['group'] != 'Modflow USG': 
                     try : # EV 13/11 "show model fail to converge"
@@ -411,7 +411,7 @@ class Core:
             #pop = subprocess.Popen(s,stdin = subprocess.PIPE,stdout = subprocess.PIPE)
             #time.sleep(0.1)
             #outp = pop.communicate(self.fileName+'\n')[0]
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 return self.getTxtFileLastLine(self.fileName+'.log',5)
         if modName[:5] == 'Pest': #EV 07/11
@@ -422,7 +422,7 @@ class Core:
                 s=self.baseDir+sep+'bin'+sep+'pestpp-glm.exe '+self.fileName
                 #s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' #; print(s)
             os.chdir(self.fileDir)
-            p = Popen(s,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
             if info !=False :
                 if self.dicval['Pest']['ctd.1'][1]==0:
@@ -450,7 +450,7 @@ class Core:
         else : s += 'zonbud.exe'
         myinput = open(self.fileDir+os.sep+'zonbud.in')
         os.chdir(self.fileDir)
-        p = Popen(s,stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()
+        p = Popen(s).wait() #),stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()
         
 #********************** import and export functions *****************
     def importData(self,fileDir,fileName):

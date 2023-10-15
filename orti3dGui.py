@@ -15,6 +15,7 @@ from .menus import *
 from .core import *
 from .addin import *
 from . import config
+#from subprocess import CREATE_NEW_CONSOLE
 
 class sendMessage: # OA added 13/12/19
     def __init__(self,gui): self.gui=gui
