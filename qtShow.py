@@ -15,6 +15,7 @@ from .core import *
 from .config import *
 from .guiShow import guiShow
 from .myBudget import myBudget
+from .multiPlot import multiPlot
         
 def selectComboValue(wdow,comboName,txt): #OA 6/9/19
     combo = wdow.findChild(QComboBox,comboName)
@@ -24,7 +25,6 @@ def selectComboValue(wdow,comboName,txt): #OA 6/9/19
 
 class Ui_Show(object):
     def setupUi(self,Show,gui,core):
-        from .multiPlot import multiPlot
         self.Show = Show
         self.gui,self.core = gui,core
         self.guiShow = guiShow(gui,core)
