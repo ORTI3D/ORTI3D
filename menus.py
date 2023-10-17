@@ -3,6 +3,7 @@
 import os, sys
 from .config import *
 from .importExport import *
+from .qtPyConsole import *
 import zipfile as zp
 import requests # OA 1/10
 import shutil
@@ -265,6 +266,11 @@ class Menus:
         fDir,fName =dlg.getsetFile(self.gui,'Open','*.zip');#print fDir,fName
         self.onDownload(fDir+os.sep+fName,'local')
         
+    def OnHelpPy(self,evt=None):
+        """starting a python console"""
+        console=pyConsole(self.core,self.gui)
+        console.exec_()
+
     def onDownload(self,fname,opt='web'):
         maindir=self.gui.mainDir
         dirdoc=maindir+os.sep+'doc'

@@ -340,7 +340,9 @@ class addin:
         if actionName == 'Ad_MtSpecies':
             m = self.core.dicaddin['MtSpecies']
             if self.group[:3]=='Mod': l0 = ['Mt3dms','Pht3d']
-            elif self.group[:4]=='Open': l0=['Transp','Chem']
+            elif self.group[:4]=='Open': 
+                m={'flag': 'Trans', 'species': []}
+                l0=['Trans','Chem']
             data = [('Type','Choice',(m['flag'],l0)),
                     ('Species','Textlong',m['species'])
                     ]

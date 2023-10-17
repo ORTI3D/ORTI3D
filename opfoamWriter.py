@@ -1127,8 +1127,10 @@ class opfoamReader:
         self.listE = core.addin.pht3d.getDictSpecies();
         self.flagMask=0;
         
-    def readMask(self):
-        a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+'ractive')
+    def readMask(self,iesp):
+        if iesp==-1: fn = 'cactive'
+        else : fn='ractive'
+        a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+fn)
         self.phmask = a.astype('int')
         
     def readHeadFile(self,core,iper):
@@ -1149,7 +1151,7 @@ class opfoamReader:
         opt not used'''
         fDir = self.core.fileDir
         if self.flagMask==0: 
-            self.readMask();self.flagMask=1
+            self.readMask(iesp);self.flagMask=1
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
             s = s.split()[0] # to remove \n
