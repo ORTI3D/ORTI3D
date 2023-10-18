@@ -2,11 +2,12 @@
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 from PyQt5.Qt import QFrame
 #import qwt
 from .config import *
 from .geometry import *
-from PyQt5.QtWidgets import *
+
 from functools import partial
 #from scipy import * #OA 2/4/19
 

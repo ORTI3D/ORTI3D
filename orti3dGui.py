@@ -15,6 +15,7 @@ from .menus import *
 from .core import *
 from .addin import *
 from . import config
+#from pyqtconsole.console import PythonConsole # does not work, pyqt console is nto present
 #from subprocess import CREATE_NEW_CONSOLE
 
 class sendMessage: # OA added 13/12/19
@@ -208,9 +209,13 @@ class orti3dGui(QMainWindow):
         #dwnlAction = QAction("&Download local", self, #EV 11/12/19
                 #statusTip="download any version from local file",
                 #triggered=self.menus.OnDownloadLocal)
+        hActionPy = QAction("&Python console", self,
+                statusTip="py console",
+                triggered=self.menus.OnHelpPy)
         menuHelp.addAction(hActionI)
         menuHelp.addAction(hActionM)
         menuHelp.addAction(dwnsAction)
+        menuHelp.addAction(hActionPy)
         #menuHelp.addAction(dwndAction) #EV 11/12/19
         #menuHelp.addAction(dwnlAction)
 
