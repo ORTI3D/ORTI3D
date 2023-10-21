@@ -888,7 +888,7 @@ class opfoamWriter:
         s = ''
         s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
-        s += '-p '+' '.join(listE['p'])+'\n\n'
+        if len(listE['p'])>0:s += '-p '+' '.join(listE['p'])+'\n\n'
         chem = core.addin.pht3d.Base['Chemistry'];print(chem.keys())
         ncell = self.ncell_lay
         solu = chem['Solutions'];
