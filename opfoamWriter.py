@@ -888,7 +888,7 @@ class opfoamWriter:
         s = ''
         s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
-        if len(listE['p'])>0:s += '-p '+' '.join(listE['p'])+'\n\n'
+        s += '-p '+' '.join(listE['p'])+'\n\n'
         chem = core.addin.pht3d.Base['Chemistry'];print(chem.keys())
         ncell = self.ncell_lay
         solu = chem['Solutions'];
@@ -927,7 +927,8 @@ class opfoamWriter:
             if len(listE['p'])>0 : s += '\nEquilibrium_Phases '+str(ip)+'\n'
             for esp in listE['p']: # go through phase list
                 ie = phases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
-                IS,conc = phases['data'][ie][ip+1:ip+3] #backgr SI and concentration of phase
+                IS = phases['data'][ie][1] #backgr SI and concentration of phase
+                conc = phases['data'][ie][ip+2] #backgr SI and concentration of phase
                 s += esp+' '+str(IS)+' '+str(float(conc)/unique(self.eps)[0])+'\n' #
         # exchanger
         exc=chem['Exchange'];

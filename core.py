@@ -814,7 +814,7 @@ class Core:
                         labels.append(str(e)+'_lay'+str1)
         else : pt=[1.] ## for flux
        ## For Darcy flux
-        if typ[1]!='0' or esp[0]=='Flux': ## to get the flux, shall be a matrix (nper,nrow)
+        if esp[0]=='Flux': ## to get the flux, shall be a matrix (nper,nrow)
             #print('iper',iper)
             disx,disy = self.flowReader.getPtObs(self,iym,ix2,llay,iper,'flux'); ## provides the total flux from each cell [L3.T-1]  #EV 19/03/20 llay and not iz2
             disch = disx+disy # OA 19/3/20 modified

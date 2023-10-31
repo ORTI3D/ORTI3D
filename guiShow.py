@@ -1,5 +1,6 @@
 from .config import *
 from .geometry import *
+from .qtDialogs import *
 
 class guiShow:
     def __init__(self,gui,core):
@@ -224,7 +225,7 @@ class guiShow:
             if name=='Temperature':
                 arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Tracer');#print shape(arr),arr                
             else:
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
