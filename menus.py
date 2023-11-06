@@ -4,6 +4,7 @@ import os, sys
 from .config import *
 from .importExport import *
 from .qtPyConsole import *
+from .qtDialogs import *
 import zipfile as zp
 import requests # OA 1/10
 import shutil

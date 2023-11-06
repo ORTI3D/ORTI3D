@@ -39,8 +39,8 @@ class opfoamWriter:
         self.ncell_lay = self.opf.ncell_lay
         self.ncell = self.nlay*self.ncell_lay
         self.carea,self.nbc = self.opf.carea,self.opf.nbc
-        if 'polyMesh' not in os.listdir(fDir+'constant'): os.mkdir(fDir+'constant\\polyMesh')
-        fDir1 = fDir +'constant\\polyMesh\\'
+        if 'polyMesh' not in os.listdir(fDir+'constant'): os.mkdir(fDir+r'constant/polyMesh')
+        fDir1 = fDir +r'constant/polyMesh/'
         self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         if wriGeom:
             if self.MshType == 0:
@@ -52,8 +52,8 @@ class opfoamWriter:
         self.writeFvSchemes()
         self.writeFvSolutions()
         # write variables
-        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+'constant\\options')
-        os.mkdir(fDir+'constant\\options')
+        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+r'constant/options')
+        os.mkdir(fDir+r'constant/options')
         self.bcD0={'top':{'type':'zeroGradient'},'bottom':{'type':'zeroGradient'}}
         for i in range(self.nbc):
             self.bcD0['bc'+str(i)] = {'type':'zeroGradient'}
@@ -315,7 +315,7 @@ class opfoamWriter:
         s += '\nPicard {tolerance '+str(fsl2[0])+';maxIter '+str(fsl2[1])
         s += ';minIter '+str(fsl2[2])+';nIterStability  '+str(fsl2[3])+';}'
         s += '\nrelaxationFactors { fields { h 0.5;} }\n'
-        f1=open(self.fDir+'system\\fvSolution','w');f1.write(s);f1.close()
+        f1=open(self.fDir+r'system/fvSolution','w');f1.write(s);f1.close()
         
     def getVariable(self,modName,line):
         '''returns a variable, ordered in opf order (high nb higher z)'''
@@ -404,7 +404,7 @@ class opfoamWriter:
             if core.getValueFromName('OpenTrans','OIREAC',0):
                 s += 'lbdaw lbdaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
-        f1=open(self.fDir+'constant\\transportProperties','w');f1.write(s);f1.close()
+        f1=open(self.fDir+r'constant/transportProperties','w');f1.write(s);f1.close()
     
     def writeInitFields(self):
         # Uw 
@@ -467,7 +467,7 @@ class opfoamWriter:
         else :
             self.cactiv = cactiv.astype('int')
         s = '\n'.join(self.cactiv.astype('str'))
-        f1=open(self.fDir+'constant\\options\\cactive','w');f1.write(s);f1.close()
+        f1=open(self.fDir+r'constant/options/cactive','w');f1.write(s);f1.close()
 
     def writeThermal(self):
         T0 = self.getVariable('OpenTrans','tinit') # initial concentrations
@@ -479,7 +479,7 @@ class opfoamWriter:
         else :
             self.tactiv = tactiv.astype('int')
         s = '\n'.join(self.tactiv.astype('str'))
-        f1=open(self.fDir+'constant\\options\\tactive','w');f1.write(s);f1.close()
+        f1=open(self.fDir+r'constant/options/tactive','w');f1.write(s);f1.close()
         
     def writeChemistry(self):
         self.writePhreeqc(self.core,self.fDir)
@@ -490,7 +490,7 @@ class opfoamWriter:
         else :
             self.ractiv = ractiv.astype('int')
         s = '\n'.join(self.ractiv.astype('str'))
-        f1=open(self.fDir+'constant\\options\\ractive','w');f1.write(s);f1.close()
+        f1=open(self.fDir+r'constant/options/ractive','w');f1.write(s);f1.close()
         self.writePhqFoam()
         
     def getConditions(self):
@@ -732,7 +732,7 @@ class opfoamWriter:
         it also takes into account the transient variation of the variable in the zone
         add is used for pressure, size of lcell
         '''
-        fD1 = self.fDir+'constant\\'
+        fD1 = self.fDir+r'constant/'
         if 'options' not in os.listdir(fD1): os.mkdir(fD1+'options')
         nr,a = shape(mat);nzo=len(lcell);#dt = 86400
         if mult==None: mult = [[1]*nc for nc in ncell]
@@ -743,7 +743,7 @@ class opfoamWriter:
         #elif formt == 'int': fmt0 = '0 %9i %9i %9i\n';fmt1='%9i %9i %9i %9i\n'
         #s = '%5i %8i \n'%(self.nlay,self.ncell_lay) #11/9/23 removed two first values : useless now
         s = '';
-        fb = open(fD1+'options\\'+fname, "wb");
+        fb = open(fD1+r'options/'+fname, "wb");
         #floatlist=array([self.nlay,self.ncell_lay]).astype('float')
         #fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
         val = zeros((sum(ncell),4))
@@ -769,9 +769,9 @@ class opfoamWriter:
         s1 ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
         s1 += '\n'+str(sum(ncell))+'\n(\n'
         s1 += '\n'.join([str(int(a)) for a in val1[:,1]])+'\n)'
-        fD2 = self.fDir+'constant\\polyMesh\\'
+        fD2 = self.fDir+r'constant/polyMesh/'
         if 'sets' not in os.listdir(fD2): os.mkdir(fD1+'sets')
-        f1=open(fD2+'\\sets\\'+fname,'w');f1.write(s1);f1.close()
+        f1=open(fD2+r'/sets/'+fname,'w');f1.write(s1);f1.close()
 
         # now the next steps
         for it in range(1,nr):
@@ -790,7 +790,7 @@ class opfoamWriter:
         val1[:,0] = self.tlist[-1]+0.01
         val1[:,2:4] = 0
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
-        f1=open(fD1+'options\\'+fname+'_a','w');f1.write(s);f1.close()
+        f1=open(fD1+r'options/'+fname+'_a','w');f1.write(s);f1.close()
         floatlist=ravel(val1.astype('float'));#print(floatlist)
         fb.write(struct.pack('%sf' % len(floatlist), *floatlist));fb.close()
         print('option '+fname+' written')
@@ -1128,8 +1128,8 @@ class opfoamReader:
         self.listE = core.addin.pht3d.getDictSpecies();
         self.flagMask=0;
         
-    def readMask(self,iesp):
-        if iesp==-1: fn = 'cactive'
+    def readMask(self,iesp,specname):
+        if iesp==0 and specname=='Tracer': fn = 'cactive'
         else : fn='ractive'
         a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+fn)
         self.phmask = a.astype('int')
@@ -1152,7 +1152,7 @@ class opfoamReader:
         opt not used'''
         fDir = self.core.fileDir
         if self.flagMask==0: 
-            self.readMask(iesp);self.flagMask=1
+            self.readMask(iesp,specname);self.flagMask=1
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
             s = s.split()[0] # to remove \n
@@ -1161,7 +1161,7 @@ class opfoamReader:
                 os.mkdir(fDir+os.sep+dname)
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
             tstep = 1
-        if iesp==-1: # tracer
+        if iesp==0 and specname=='Tracer': # tracer
             return self.readScalar('C',tstep)
         ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
