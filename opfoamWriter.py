@@ -209,7 +209,7 @@ class opfoamWriter:
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
                   'deltaT':int(max(round(fslt[0]*86400/200,0)*100,1)), 
-                  'maxCo':fslt[2]} #'maxDeltaT':int(fslt[1]),
+                  'maxCo':fslt[2],'maxDeltaT':int(fslt[1]*86400)}
         tslv = self.core.dicval['OpenTrans']['tslv']
         if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
@@ -230,7 +230,7 @@ class opfoamWriter:
         if len(tt['final'])==1: # all time steps are the same
             tstp = float(tt['steps'][0])*86400
             s += 'writeInterval '+str(int(tstp))+ ';\n'
-            s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
+            #s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
         else:
             s += '#include "$FOAM_CASE/system/writeInterval"\n'
             s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
