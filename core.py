@@ -194,6 +194,7 @@ class Core:
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         if self.gui!=None: self.gui.onInitGui(self)
+        print('in open')
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         MshType = 0                    
@@ -319,7 +320,8 @@ class Core:
                 exec_name = self.baseDir+sep+'mf2k '
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
-            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();#os.system(s) OA 8/6/19
+            #p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();#
+            os.system(s) #OA 8/6/19
             if info !=False :
                 try :  # EV 13/11 "show model fail to converge"
                     if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
@@ -342,7 +344,8 @@ class Core:
                 mod1,mod2 ='swt_v4','Mt3dms'
             s=self.baseDir+sep+'bin'+sep+mod1+'.exe '+mod2+'.nam'
             os.chdir(self.fileDir)
-            p = Popen(s).wait() #,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            #p = Popen(s).wait() #,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            os.system(s)
             if info !=False :
                 try : # EV 13/11 "show model fail to converge"
                     line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
@@ -779,10 +782,11 @@ class Core:
         elif group=='Transport':
             if mtype == 'Mod': 
                 opt ='Mt3dms';ss=''
-            elif mtype in ['Sut','Min','Opg']: 
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,0,'',ss)
+            else: 
                 ss=''
                 opt = 'Tracer' # OA 19/3/19
-            m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,0,'',ss)
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,'',ss) #tracer -1
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')

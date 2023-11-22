@@ -1,6 +1,7 @@
 from .config import *
 from .geometry import *
 from .qtDialogs import *
+#from mayavi import mlab
 
 class guiShow:
     def __init__(self,gui,core):

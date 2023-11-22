@@ -1260,8 +1260,8 @@ class opfoamReader:
         return vx,vy,vz
 
 
-    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
-        """a function to values of one variable at given point or points.
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''):
+        """a function to get values of one variable at given point or points.
         irow, icol and ilay must be lists of the same length. iper is also
         a list containing the periods for which data are needed. opt is not used
         , iesp is a list containing the indice of the species 
@@ -1286,7 +1286,7 @@ class opfoamReader:
             ip = iper[i]
             if iesp==-1: # tracer
                 A = self.readScalar('C',ip)
-            if '(g)' in specname: #gas species
+            elif '(g)' in specname: #gas species
                 iesp = lgcomp.index(specname)
                 A = self.readScalar('Cg'+str(iesp),ip)
             else : #chem species
