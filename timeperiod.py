@@ -31,9 +31,10 @@ def makeTransientTable(core):
     #tmode = core.dicaddin['Time']['mode'] # EV 18/02/19
     if type(tf) != type([4,5]): tf,step = [tf],[step]
     t0,tflow = 0.,[]
+    ndec=max(0,int(1-log10(float(step[0]))))
     for i in range(len(tf)):
         t1,st = float(tf[i]),float(step[i])
-        tflow.extend(list(arange(t0,t1,st))) # EV 18/02/19
+        tflow.extend(list(around(arange(t0,t1,st),ndec))) # EV 18/02/19
         #if tmode == 'linear': tflow.extend(list(arange(t0,t1,st))) 
         #elif tmode == 'log':
             #t0 = float(st) # OA 9/6/17
