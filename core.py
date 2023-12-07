@@ -657,16 +657,19 @@ class Core:
     def getUnits(self,modName,line,ik):   
         '''returns the units for a given line and keyword index'''
         s = ''
+        tlist = ['-','sec','min','hours','days','years']
+        llist = ['-','ft','m','cm']
         if modName in ['Modflow','Mt3dms']:
-            tlist = ['-','sec','min','hours','days','years']
-            llist = ['-','ft','m','cm']
             tunit = tlist[self.dicval['Modflow']['dis.2'][4]]
             lunit = llist[self.dicval['Modflow']['dis.2'][5]]
-            d0 = self.dickword[modName].lines[line]#;print ('d0',d0)
-            if 'units' in d0: 
-                s = d0['units'][ik];#print s
-                s = s.replace('T',tunit)
-                s = s.replace('L',lunit)
+        if modName[:4]=='Open':
+            tunit = tlist[self.dicval['OpenFlow']['dis.3'][4]]
+            lunit = llist[self.dicval['OpenFlow']['dis.3'][5]]            
+        d0 = self.dickword[modName].lines[line]#;print ('d0',d0)
+        if 'units' in d0: 
+            s = d0['units'][ik];#print s
+            s = s.replace('T',tunit)
+            s = s.replace('L',lunit)
         return s
     
     def getPorosity(self,modName,line,iy,ix,iz): # OA 11/4/20 modified to consider Xsection

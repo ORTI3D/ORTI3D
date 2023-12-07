@@ -194,22 +194,21 @@ class opfoamWriter:
         
     def writeCtrlDict(self):
         ''' we still have simple definition of maxDeltaT'''
-        tunit = self.core.dicval['Modflow']['dis.2'][4]
-        tunit=4 # not done corectly on modlfow files!!
-        if tunit== 5 : dt = 86400*365
-        if tunit== 4 : dt = 86400
-        if tunit== 3: dt = 3600
-        if tunit== 2: dt = 60
-        if tunit== 1 : dt = 1
-        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*dt)
+        tunit = self.core.dicval['OpenFlow']['dis.3'][4]
+        if tunit== 5 : self.dtu = 86400*365
+        if tunit== 4 : self.dtu = 86400
+        if tunit== 3: self.dtu = 3600
+        if tunit== 2: self.dtu = 60
+        if tunit== 1 : self.dtu = 1
+        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*self.dtu)
         self.ttable = self.core.makeTtable()
         self.tlist = self.ttable['tlist']
-        intv = int(float(self.core.dicaddin['Time']['steps'][0])*dt)
+        intv = int(float(self.core.dicaddin['Time']['steps'][0])*self.dtu)
         nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(max(round(fslt[0]*86400/200,0)*100,1)), 
-                  'maxCo':fslt[2],'maxDeltaT':int(fslt[1]*86400)}
+                  'deltaT':int(max(round(fslt[0]*self.dtu/200,0)*100,1)), 
+                  'maxCo':fslt[2],'maxDeltaT':int(fslt[1]*self.dtu)}
         tslv = self.core.dicval['OpenTrans']['tslv']
         if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
@@ -228,7 +227,7 @@ class opfoamWriter:
         # ---case with variable times
         tt = self.core.dicaddin['Time']
         if len(tt['final'])==1: # all time steps are the same
-            tstp = float(tt['steps'][0])*86400
+            tstp = float(tt['steps'][0])*self.dtu
             s += 'writeInterval '+str(int(tstp))+ ';\n'
             #s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
         else:
@@ -256,13 +255,13 @@ class opfoamWriter:
             for i,t in enumerate(self.tlist[1:]):
                 dt = t-t_old
                 #if dt != dt_old:
-                s0 = str(int(t_old*86400))
+                s0 = str(int(t_old*self.dtu))
                 s1 += '    ('+s0+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
                 s2 += '    ('+s0+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
                 f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
-                s0 = str(int(t*86400));f1.write('writeInterval '+s0+';');f1.close()
+                s0 = str(int(t*self.dtu));f1.write('writeInterval '+s0+';');f1.close()
                 f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-                maxdt=min(max(dt*86400/100,10)*10,fslt[1]*86400)
+                maxdt=min(max(dt*self.dtu/100,10)*10,fslt[1]*self.dtu)
                 s0 = str(int(maxdt));f2.write('maxDeltaT '+s0+';');f2.close()
                 t_old,dt_old = t*1,dt*1
             s1 += '    );\n    }\n }\n'
@@ -336,13 +335,13 @@ class opfoamWriter:
         self.eps = self.getVariable('OpenTrans','poro')
         self.writeScalField('constant','eps',self.eps,self.bcD0)
         # permeability
-        K = self.getVariable('OpenFlow','khy.2')/86400/9.81e6;self.K=K
+        K = self.getVariable('OpenFlow','khy.2')/self.dtu/9.81e6;self.K=K
         self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
         for il in range(self.nlay):
             r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
             if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
-                kv[r] = vrt[r]/86400/9.81e6
+                kv[r] = vrt[r]/self.dtu/9.81e6
             else : # ratio
                 kv[r] = K[r]/vrt[r]
         self.writeScalField('constant','Kv',kv,self.bcD0,dim='[0 2 0 0 0 0 0]')
@@ -1127,6 +1126,13 @@ class opfoamReader:
         self.ncell = self.ncell_lay*self.nlay
         self.listE = core.addin.pht3d.getDictSpecies();
         self.flagMask=0;
+        tunit = self.core.dicval['OpenFlow']['dis.3'][4]
+        if tunit== 5 : self.dtu = 86400*365
+        if tunit== 4 : self.dtu = 86400
+        if tunit== 3: self.dtu = 3600
+        if tunit== 2: self.dtu = 60
+        if tunit== 1 : self.dtu = 1
+
         
     def readMask(self,iesp,specname):
         if iesp==0 and specname=='Tracer': fn = 'cactive'
@@ -1156,7 +1162,7 @@ class opfoamReader:
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
             s = s.split()[0] # to remove \n
-            dname = str(int(self.tlist[1]*86400))
+            dname = str(int(self.tlist[1]*self.dtu))
             if dname not in os.listdir(fDir):
                 os.mkdir(fDir+os.sep+dname)
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
@@ -1220,13 +1226,13 @@ class opfoamReader:
         if iper==None:
             data = np.zeros((ntime,self.ncell))
             for i,t in enumerate(self.tlist):
-                if spc==0: data[i+1,:]= rd1(t*86400,name)
-                else : data[i+1,:]= rd2(t*86400,iesp)
+                if spc==0: data[i+1,:]= rd1(t*self.dtu,name)
+                else : data[i+1,:]= rd2(t*self.dtu,iesp)
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if spc==0: data = rd1(self.tlist[iper+1]*86400,name)
-            else : data = rd2(self.tlist[iper+1]*86400,iesp)
+            if spc==0: data = rd1(self.tlist[iper+1]*self.dtu,name)
+            else : data = rd2(self.tlist[iper+1]*self.dtu,iesp)
             V = reshape(data,shp1)            
             if self.core.addin.getDim() not in ['Xsection','Radial']:
                 V = V[-1::-1] # layers are bottom to top in opf
@@ -1252,10 +1258,10 @@ class opfoamReader:
             return vx,vy,vz
 
         ntime=len(self.tlist)
-        vx,vy,vz = rd1(self.tlist[iper+1]*86400,'U'+opt)
-        vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1]*86400
-        vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]*86400
-        vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]*86400
+        vx,vy,vz = rd1(self.tlist[iper+1]*self.dtu,'U'+opt)
+        vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
+        vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
+        vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
         #print("vector 0",vx[0,0],vy[0,0],vz[0,0])
         return vx,vy,vz
 

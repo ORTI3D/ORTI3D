@@ -313,9 +313,15 @@ class addin:
             self.gui.onSetMediaNb(getNmedia(self.core),getNlayers(self.core))  # OA 14/3/21
                 
         if actionName == 'Ad_Time':
+            m = self.core.dicaddin['Model']['group']
+            tlist=['','s','min','hour','day','year']
+            if m in ['Modflow','Mt3dms']:
+                tunit = tlist[self.core.dicval['Modflow']['dis.2'][4]]
+            if m[:4]=='Open':
+                tunit = tlist[self.core.dicval['OpenFlow']['dis.3'][4]]
             t = self.core.dicaddin['Time']
-            data = [('Total simulation time','Textlong',t['final']),
-                    ('Step size','Textlong',t['steps'])] # EV 18/02/19 remove 'mode'
+            data = [('Total simulation time\n'+tunit,'Textlong',t['final']),
+                    ('Step size\n'+tunit,'Textlong',t['steps'])] # EV 18/02/19 remove 'mode'
                     #('Step mode','Choice',(t['mode'],['linear','log']))]
             dialg = self.dialogs.genericDialog(self.gui,'Time',data)
             retour = dialg.getValues()
