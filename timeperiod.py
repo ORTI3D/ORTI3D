@@ -35,6 +35,7 @@ def makeTransientTable(core):
     for i in range(len(tf)):
         t1,st = float(tf[i]),float(step[i])
         tflow.extend(list(around(arange(t0,t1,st),ndec))) # EV 18/02/19
+        #tflow.extend(list(arange(t0,t1,st)))
         #if tmode == 'linear': tflow.extend(list(arange(t0,t1,st))) 
         #elif tmode == 'log':
             #t0 = float(st) # OA 9/6/17

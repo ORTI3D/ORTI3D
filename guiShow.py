@@ -36,7 +36,7 @@ class guiShow:
             'Particles':['time',10.],
             'Visible':['size',10]} # change that are not contours
         self.Vtypes = {'Modif':['Plane','Layer','Tstep','Units'],
-            'Array' : ['Head','Wcontent','Veloc-magn','Tracer','Species','User'],
+            'Array' : ['Head','Wcontent','Veloc-magn','Tracer','Temperature','Species','User'],
             'Image': ['Variable','Map'],'Grid':['Grid'],'Particles':['Particles'],
             'Vector' : ['Veloc-vect']}
         self.gui,self.visu,self.Tstep = gui,gui.visu,0  # OA 20/11/19 added tstep
@@ -60,7 +60,7 @@ class guiShow:
         self.MshType = 0
         if 'USG' in modgroup: self.MshType = self.core.getValueFromName('Modflow','MshType')
         if modgroup == 'Openfoam': self.MshType = self.core.getValueFromName('OpenFlow','MshType')
-        
+      
     def openModel(self):
         self.init()
         if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
@@ -147,7 +147,7 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour();print('quishow 147',Cname,species)
+        Cgroup,Cname,species = self.getCurrentContour();print('quishow 150',Cname,species)
         self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
         self.curGroup,self.curName,self.curSpecies = Cgroup,Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
@@ -156,7 +156,7 @@ class guiShow:
             return
         # get the data for contours
         dataM = None
-        #print 'guish 116', name,species,self.userSpecies
+        print('guish 159',Cgroup,Cname,tstep,species)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
             if self.arr3 is None : # EV 8/12/21
@@ -224,9 +224,9 @@ class guiShow:
                 else : return None
         if group=='Transport':
             if name=='Temperature':
-                arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Tracer');#print shape(arr),arr                
+                arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Temperature');#print shape(arr),arr                
             else:
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)

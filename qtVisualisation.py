@@ -127,10 +127,10 @@ class qtVisualisation(FigureCanvasQTAgg):
         for v in self.listeZone:
             self.listeZone[v]=[]
             self.listeZoneText[v]=[]                
-        self.cnv.lines=[]
-        self.cnv.collections = [None,None]
-        self.cnv.artists = []
-        self.cnv.images = []
+        #self.cnv.lines=[]
+        #self.cnv.collections = [None,None]
+        #self.cnv.artists = []
+        #self.cnv.images = []
         self.cnv.cla()
         self.draw()
         
@@ -237,7 +237,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Vector.set_transform(self.transform)
         self.Vector.set_visible(False)
         #pl.setp(lc,linewidth=.5);
-        self.cnv.collections.append(self.Vector)
+        self.cnv.add_collection(self.Vector)
         self.Vector.data = [0,0,None,None]
 
 #    def changeDomain(self):
@@ -263,7 +263,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             for i in range(2): self.Grid[i].set_visible(False)
         if col == None: col=self.Grid[2]
         else : self.Grid[2]=col
-        self.cnv.collections=[];self.mUnstruct = 0 #OA 17/12/20
+        self.mUnstruct = 0;#self.cnv.collections=[]; #=[]
 
         if self.mesh != None and self.mshType>0:# case irregular mesh (from matplotlib2dviewer)
             self.mUnstruct = 1 #OA 17/12/20
@@ -391,8 +391,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         [1] : max, [2] nb contours, [3] decimals, [4] : 'lin', log' or 'fix',
         if [4]:fix, then [5] is the series of contours"""
         X,Y,Z = data; #print 'visu controu',value,col
-        self.cnv.collections=self.cnv.collections[:3]
-        self.cnv.artists = []
+        #self.cnv.collections=self.cnv.collections[:3]
+        self.cnv.clear();#self.cnv.artists = []
         V = 11;Zmin=amin(amin(Z));Zmax=amax(amax(Z*(Z<1e5)));
         if Zmax==Zmin : # test min=max -> pas de contour
             onMessage(self.gui,' values all equal to '+str(Zmin))
@@ -529,9 +529,11 @@ class qtVisualisation(FigureCanvasQTAgg):
         if self.Particles != None:
             self.partVisible(False)
         self.Particles = {'line':[],'txt':[],'data':[],'color':(255,0,0)}
+        '''
         self.mpl_disconnect(self.toolbar._idPress)
         self.mpl_disconnect(self.toolbar._idRelease)
         self.mpl_disconnect(self.toolbar._idDrag)
+        '''
         # on capte le clic gauche de la souris
         self.m3 = self.mpl_connect('button_press_event', self.mouseParticles)
         self.stop = False
@@ -655,9 +657,11 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.curVar = curVar
         self.tempZoneVal = []
         # on deconnecte la toolbar pour activer la formaiton de zones
+        '''
         self.mpl_disconnect(self.toolbar._idPress)
         self.mpl_disconnect(self.toolbar._idRelease)
         self.mpl_disconnect(self.toolbar._idDrag)
+        '''
         # on capte le clic gauche de la souris
         self.m1 = self.mpl_connect('button_press_event', self.mouse_clic)
         

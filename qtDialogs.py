@@ -56,7 +56,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             if typ=='Textlong': y0+=1
         nb = len(self.data)
         self.screenShape = QDesktopWidget().screenGeometry()
-        self.glWidget.setGeometry(QRect(5, 5, self.screenShape.width()*.15, nb*20+y0*160+30))
+        self.glWidget.setGeometry(QRect(5, 5, int(self.screenShape.width()*.15), nb*20+y0*160+30))
         #self.glWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gl = QGridLayout(self.glWidget)
         self.gl.setContentsMargins(1,1,1,1) # OA 3/10/18
@@ -90,7 +90,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             elif typ=='Textlong':
                 scrollArea = QScrollArea(self.glWidget)
                 #scrollArea.setGeometry(QRect(50, y0, 100, 50))
-                scrollArea.setMaximumWidth(self.screenShape.width()*.08) #EV 05/08/19 0.05 -> 0.08
+                scrollArea.setMaximumWidth(int(self.screenShape.width()*.08)) #EV 05/08/19 0.05 -> 0.08
                 scrollArea.setFixedHeight(160)
                 self.item[i] = QTextEdit(scrollArea)
                 #y0 += 30
@@ -116,7 +116,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
         self.glWidget2 = QWidget(self)
-        self.glWidget2.setGeometry(QRect(5, nb*20+y0*160+30, self.screenShape.width()*.15, 40))
+        self.glWidget2.setGeometry(QRect(5, nb*20+y0*160+30, int(self.screenShape.width()*.15), 40))
         self.gl2 = QGridLayout(self.glWidget2)
         self.gl2.setContentsMargins(0,0,0,0)
         self.gl2.addWidget(self.buttonBox) #,nb,1,2,1)
@@ -204,7 +204,7 @@ class myNoteBookCheck(QDialog): # Dialog to choose variable, used for Pest
             self.dwidget[n] = [0]*nbChk
             #if opt=='sort': dicIn[n] = self.sortList1(dicIn[n]) # OA modif 3/4 # EV 10/1/22
             for i in range(nbChk):
-                ic = mod(i,1);il = i/1
+                ic = mod(i,1);il = int(i/1)
                 ch = QCheckBox(nb); self.dwidget[n][i] = ch
                 ch.setText(str(dicIn[n][i][0])) # OA modif 2/4
                 s =(dicIn[n][i][1] in [1,2]) #EV 26/08/19 replaced "True" by True
@@ -279,10 +279,10 @@ class myNoteBook(QDialog): # Dialog used for add chemistry and pest parameters
         self.dicOut = self.dicIn.copy()
         layout = QVBoxLayout(self)
         self.screenShape = QDesktopWidget().screenGeometry()
-        self.setGeometry(QRect(40, 60, self.screenShape.width()*.42,self.screenShape.height()*.6))
+        self.setGeometry(QRect(40, 60, int(self.screenShape.width()*.42),int(self.screenShape.height()*.6)))
         glWidget = QWidget(self)
         nb = QTabWidget(glWidget)
-        nb.setGeometry(QRect(5, 20, self.screenShape.width()*.4,self.screenShape.height()*.50))
+        nb.setGeometry(QRect(5, 20, int(self.screenShape.width()*.4),int(self.screenShape.height()*.50)))
         for n in list(dicIn.keys()):
             if dicIn[n]==None:continue
             if len(dicIn[n]['rows'])==0 and n!='Species': continue
@@ -323,7 +323,7 @@ class myNBpanelGrid(QTableWidget):
         self.setFont(QFont('Arial',pointSize=9))
         self.type = ['Text']*len(cols)
         for il,line in enumerate(data):
-            self.setRowHeight(il,self.screenShape.height()*.03)
+            self.setRowHeight(il,int(self.screenShape.height()*.03))
             for ic,item in enumerate(line): #print il,ic,item
                 #onMessage(gui,str(item)+str(type(item)))
                 if type(item) == type(True):
@@ -394,7 +394,7 @@ class zoneDialog(QDialog): # Dialog for zone
         self.nb = nb
         self.glWidget = QWidget(self)
         self.screenShape = QDesktopWidget().screenGeometry()
-        self.glWidget.setGeometry(QRect(5, 5, self.screenShape.width()*0.4,self.screenShape.height()*.5))
+        self.glWidget.setGeometry(QRect(5, 5, int(self.screenShape.width()*0.4),int(self.screenShape.height()*.5)))
         self.gl = QGridLayout(self.glWidget)
         if 'names' in list(core.dickword[model].lines[line].keys()): self.typO=1 # several values
         else : self.typO = 0
@@ -567,7 +567,7 @@ class zonePanel(QWidget):
         cols = [' X ',' Y ']
         if len(data[0])==3: cols = ['   X   ','  Y   ','Z']
         dicCoo = {'cols':cols,'rows':['']*nrow,'data':data}
-        self.coords = myNBpanelGrid(self.core.gui,self,dicCoo,size=(200,self.screenShape.height()*.3))
+        self.coords = myNBpanelGrid(self.core.gui,self,dicCoo,size=(200,int(self.screenShape.height()*.3)))
         self.mLayout.addWidget(txtCoords,3,0)
         self.mLayout.addWidget(self.coords,3,1)
         ##################" zone value
@@ -942,7 +942,7 @@ class impObsData(QDialog) :
         self.setModal(False)
         self.setWindowTitle(self.option+' observation data')
         self.screenShape = QDesktopWidget().screenGeometry()
-        self.setGeometry(QRect(40, 60, self.screenShape.width()*.42,self.screenShape.height()*.6))
+        self.setGeometry(QRect(40, 60, int(self.screenShape.width()*.42),int(self.screenShape.height()*.6)))
     ## main vertical layout
         self.verticalLayout = QVBoxLayout(self)
         self.verticalLayout.setContentsMargins(10, 20, 10, 10)

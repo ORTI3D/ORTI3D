@@ -785,11 +785,10 @@ class Core:
         elif group=='Transport':
             if mtype == 'Mod': 
                 opt ='Mt3dms';ss=''
-                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,0,'',ss)
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss)
             else: 
-                ss=''
-                opt = 'Tracer' # OA 19/3/19
-                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,'',ss) #tracer -1
+                opt = esp[0];ss='' # OA 19/3/19
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss) #tracer -1
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')

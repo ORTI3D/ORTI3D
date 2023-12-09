@@ -730,6 +730,7 @@ class opfoamWriter:
         mat contains the values for each zone, then it is applied to each cell of lcell
         it also takes into account the transient variation of the variable in the zone
         add is used for pressure, size of lcell
+        here time is in days (stored in hard in muFlow)
         '''
         fD1 = self.fDir+r'constant/'
         if 'options' not in os.listdir(fD1): os.mkdir(fD1+'options')
@@ -780,13 +781,13 @@ class opfoamWriter:
                 else : zz = float(mat[it,iz].split()[0])
                 val[sc0[iz]:sc1[iz],2] = zz*array(mult[iz])
                 val[sc0[iz]:sc1[iz],3] = array(mult2[iz])
-            val[:,0] = self.tlist[it]+0.001
+            val[:,0] = self.tlist[it]*self.dtu/86400+0.001
             val1 = val[ag]*1
             s += '\n'.join([' '.join(x) for x in val1.astype('str')])
             s+='\n'
             floatlist=ravel(val1.astype('float'));
             fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
-        val1[:,0] = self.tlist[-1]+0.01
+        val1[:,0] = self.tlist[-1]*self.dtu/86400+0.01
         val1[:,2:4] = 0
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
         f1=open(fD1+r'options/'+fname+'_a','w');f1.write(s);f1.close()
@@ -1135,10 +1136,13 @@ class opfoamReader:
 
         
     def readMask(self,iesp,specname):
+        self.phmask = list(range(self.ncell))
         if iesp==0 and specname=='Tracer': fn = 'cactive'
         else : fn='ractive'
-        a=loadtxt(self.core.fileDir+os.sep+'constant'+os.sep+'options'+os.sep+fn)
-        self.phmask = a.astype('int')
+        dr=self.core.fileDir+os.sep+'constant'+os.sep+'options'; 
+        fname=dr+os.sep+fn
+        if fname in os.listdir(dr):
+            a=loadtxt(fname);self.phmask = a.astype('int')
         
     def readHeadFile(self,core,iper):
         '''reads h as the head'''
@@ -1167,8 +1171,8 @@ class opfoamReader:
                 os.mkdir(fDir+os.sep+dname)
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
             tstep = 1
-        if iesp==0 and specname=='Tracer': # tracer
-            return self.readScalar('C',tstep)
+        if iesp==-1: # tracer or temp 1st letter
+            return self.readScalar(specname[:1],tstep)
         ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
@@ -1290,8 +1294,8 @@ class opfoamReader:
             lesp1.extend(lesp)
         for i in range(len(iper)):
             ip = iper[i]
-            if iesp==-1: # tracer
-                A = self.readScalar('C',ip)
+            if iesp==-1: # transport
+                A = self.readScalar(specname[:1],ip)
             elif '(g)' in specname: #gas species
                 iesp = lgcomp.index(specname)
                 A = self.readScalar('Cg'+str(iesp),ip)

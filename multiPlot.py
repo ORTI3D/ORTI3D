@@ -14,7 +14,7 @@ class multiPlot(QDialog):
     - Horizontal profiles
     - Calibration graph
     The result that can be represented are flow (head, Wcontent, Darcy flux), 
-    Transport (Tracer concentration, flux and mass), Chemistry (chemical 
+    Transport (Tracer concentration, temperature, flux and mass), Chemistry (chemical 
     species concentrations, flux and mass).
     They can also be compared to data.
     '''
@@ -26,7 +26,7 @@ class multiPlot(QDialog):
         self.setWindowTitle('Plot of results')
         screenShape = QtWidgets.QDesktopWidget().screenGeometry()
         w0,h0 = screenShape.width(),screenShape.height()
-        self.setGeometry(QRect(25, 50, w0*.7, h0*.6))
+        self.setGeometry(QRect(25, 50, int(w0*.7), int(h0*.6)))
     ## main horizontal layout
         self.horizontalLayout = QHBoxLayout(self)
         self.horizontalLayout.setContentsMargins(10, 20, 10, 10)
@@ -39,7 +39,7 @@ class multiPlot(QDialog):
         if self.typ == 'X' : title = 'Calibration graph'
         label = str(title +' - '+self.res)
         self.label = QtWidgets.QLabel(self)
-        self.label.setMaximumSize(QtCore.QSize(w0*0.11, h0*.04)) # notebook cannot have fix size it seems
+        self.label.setMaximumSize(QtCore.QSize(int(w0*0.11), int(h0*.04))) # notebook cannot have fix size it seems
         self.label.setText(label)
         font = QFont()
         font.setPointSize(9)
@@ -50,7 +50,7 @@ class multiPlot(QDialog):
         self.tlist = self.core.getTlist2()
     ## frame 
         self.frame = QtWidgets.QFrame(self)
-        self.frame.setMaximumSize(QtCore.QSize(w0*0.11, h0*.1)) 
+        self.frame.setMaximumSize(QtCore.QSize(int(w0*0.11), int(h0*.1))) 
         self.gl = QGridLayout(self.frame)
         self.gl.setContentsMargins(0,0,0,0)
         self.gl.setSpacing(0)
@@ -72,12 +72,12 @@ class multiPlot(QDialog):
                 else : self.rgroup.addItems(['Head'])
             if self.res in ['Transport','Chemistry'] : 
                 self.rgroup.addItems(
-                        ['Concentration','Weighted concentration',
+                        ['Value','Weighted concentration',
                          'Mass discharge','Mass Flux'])
             self.rgroup.setCurrentIndex(0)
             self.gl.addWidget(self.rgroup,0,1,1,1)
     ## Plot order combo box for chemistry
-        if self.res=='Chemistry' and self.typ=='B':
+        if self.res in ['Transport','Chemistry'] and self.typ=='B':
             self.label_1 = QtWidgets.QLabel(self.frame)
             #self.label_1.setMaximumSize(QtCore.QSize(40, 20))
             self.label_1.setText("Plot order")
@@ -165,9 +165,8 @@ class multiPlot(QDialog):
         
     def getSpecies(self):
     ## get the names of model chemical species
-        dic={'Species':{}} 
         species = self.core.addin.chem.getListSpecies() 
-        dic['Species']=list(zip(species,[False]*len(species)))
+        dic={'Species':list(zip(species,[False]*len(species)))}
         return dic
     
     def getChoices(self,res,typ):
@@ -176,6 +175,11 @@ class multiPlot(QDialog):
         dicLayers=self.getLayers()
         if res =='Chemistry': 
             dicSpecies=self.getSpecies()
+            if typ=='X' or len(dicLayers['Layers'])==1: 
+                dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
+            else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
+        elif res =='Transport': 
+            dicSpecies={'Species':[('Tracer',False),('Temperature',False)]}
             if typ=='X' or len(dicLayers['Layers'])==1: 
                 dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
             else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
@@ -211,7 +215,8 @@ class multiPlot(QDialog):
         if self.rgroup.currentText() in ['W content']:#,'Flux']: 
             dicIn['ptyp']=ptyp+'0'
             dicIn['splist']=['Wcontent']
-        elif self.res=='Transport' :dicIn['splist']=['Tracer']
+        elif self.res=='Transport' :
+            dicIn['splist']=[self.rgroup.currentText()]
         else:dicIn['splist']=[self.rgroup.currentText()]
         #if ptyp=='B' : dicIn['ptyp']='B0'
         #if ptyp=='P' : dicIn['ptyp']='P0'
@@ -226,7 +231,7 @@ class multiPlot(QDialog):
             lylist=[dic['Layers'][i][0] for i in range(
                     len(dic['Layers'])) if dic['Layers'][i][1]==2]
             dicIn['lylist']=','.join(lylist)
-        if self.res=='Chemistry' :
+        if self.res in ['Transport','Chemistry']:
             if ptyp in ['X','P','V']: dicIn['plotOrder']='Zones'
             else :
                 plotOrder=int(self.plgroup.currentIndex())
@@ -269,7 +274,7 @@ class multiPlot(QDialog):
         iper, self.axlabel, self.aylabel, group= self.getUnitLab(
                 self.ptyp,self.splist)
     ## build the plots
-        self.figure.clf()
+        self.figure.clf();print("multip",self.splist)
     ## Calibration graph
         if self.ptyp[0] == 'X':
             ptypXY='P0' ; self.llabel=[] ; time=[]
@@ -384,7 +389,7 @@ class multiPlot(QDialog):
             iper = curTime ; axlabel='Distance '+'('+ulength+')' 
         if 'Head' in splist: group='Flow'; aylabel='Head '+'('+ulength+')'
         elif 'W content' in splist : group = 'Flow' ; aylabel = 'W content' # OA 21/2/2019
-        elif 'Tracer' in splist : 
+        elif ('Tracer' in splist) or ('Temperature' in splist) : 
             group = 'Transport' 
             #print('ptyp[1]',ptyp[1],len(ptyp[1]))
             if ptyp[1]=='2': aylabel = 'Mass discharge (kg/'+utime+')'
@@ -396,7 +401,7 @@ class multiPlot(QDialog):
             if ptyp[1]=='2': aylabel = 'Mass discharge (mol/'+utime+')'
             elif ptyp[1]=='3': 
                 aylabel = 'Mass flux (mol/'+utime+'/'+ulength+'\u00b2)' 
-            else: aylabel = 'Concentration (mol/'+ulength+'\u00b3)'
+            else: aylabel = 'Concentration (mol/L)'
         if ptyp[0]=='V':
             axlabel, aylabel = aylabel,axlabel
         return iper, axlabel, aylabel, group

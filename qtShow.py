@@ -16,6 +16,7 @@ from .config import *
 from .guiShow import guiShow
 from .myBudget import myBudget
 from .multiPlot import multiPlot
+from .mayavi import *
         
 def selectComboValue(wdow,comboName,txt): #OA 6/9/19
     combo = wdow.findChild(QComboBox,comboName)
@@ -32,7 +33,7 @@ class Ui_Show(object):
         Show.setObjectName("Show")
         self.tWidget = QWidget(Show)
         self.screenShape = QDesktopWidget().screenGeometry()
-        self.tWidget.setGeometry(QRect(0, 0, self.screenShape.width()*0.105, 45)) 
+        self.tWidget.setGeometry(QRect(0, 0, int(self.screenShape.width()*0.105), 45)) 
         self.dictBox={}
         wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
         if gui.gtyp =='qgis': pos=0  # ifelse added 1/6/19 to use this in qgis too
@@ -71,6 +72,13 @@ class Ui_Show(object):
         self.swiCont.setMaximumWidth(25)
         self.swiCont.setFlat(True)   
         topHBox.addWidget(self.swiCont)
+        self.maya = QPushButton()
+        self.maya.setIcon(QIcon(gui.u_dir+os.sep+'mayavi.png'))
+        self.maya.setIconSize(QSize(25, 25))
+        self.swiCont.clicked.connect(parent.mayavi) 
+        self.maya.setMaximumWidth(25)        
+        self.maya.setFlat(True)   
+        topHBox.addWidget(self.maya)
         topHBox.addStretch(0)
         return topHBox
         
@@ -90,6 +98,9 @@ class Ui_Show(object):
             self.swiCont.setIcon(self.icCont)
             self.guiShow.swiImg='Contour'
         self.guiShow.redraw() # OA 22/8/19
+        
+    def mayavi(self):
+        startMayavi()  
 
     def getCurrentTime(self):
         combo = self.Show.findChild(QComboBox,'Model_Tstep_L')
@@ -150,6 +161,7 @@ class Ui_Show(object):
             if retour =='Y' : self.setNames('Model_Layer_L',list(range(ny-1)))
             if retour =='X' : self.setNames('Model_Layer_L',list(range(nx-1)))
             self.guiShow.dicVisu['Model']['Layer']=0
+        print("qtshow",group,name,retour)
         self.guiShow.onClick2(group,name,retour)
             
     def OnChange(self):
@@ -274,9 +286,9 @@ class showBox:
         self.group.setTitle(str(ig+1)+'.'+gr)
         ln = len(names)
         wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
-        self.group.setGeometry(QRect(10, pos, wd0*10.5, wd0*2.4+ln*wd0*1.3)) # OA 23/2/19 to see it on laptop
+        self.group.setGeometry(QRect(10, int(pos), int(wd0*10.5), int(wd0*2.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
         self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(3,15 ,wd0*10, wd0*1.4+ln*wd0*1.3)) # OA 23/2/19 to see it on laptop
+        self.hlWidget.setGeometry(QRect(3,15 ,int(wd0*10), int(wd0*1.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
         boxGrid = QGridLayout(self.hlWidget)
         boxGrid.alignment()
         boxGrid.setContentsMargins(0,0,0,0)
