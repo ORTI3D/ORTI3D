@@ -16,7 +16,7 @@ from .config import *
 from .guiShow import guiShow
 from .myBudget import myBudget
 from .multiPlot import multiPlot
-from .mayavi import *
+#from .mayavi import *
         
 def selectComboValue(wdow,comboName,txt): #OA 6/9/19
     combo = wdow.findChild(QComboBox,comboName)
