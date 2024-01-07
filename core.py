@@ -2,7 +2,7 @@
 import os,subprocess,time,base64,types # OA 25/10/18 add types
 from subprocess import Popen # OA 8/6/19
 from numpy import frombuffer,float64
-from scipy.interpolate import griddata
+#from scipy.interpolate import griddata
 from .modflowWriter import *
 from .mtphtWriter import *
 from .mtUsgWriter import *
@@ -28,6 +28,7 @@ from .opfoamKeywords import OpT
 from .opfoamKeywords import OpC
 from .obsKeywords import Obs
 from .pestKeywords import Pst
+from .plugins import *
 
 class Core:
     """this is the central class that makes the link between all objects
@@ -46,7 +47,8 @@ class Core:
         self.dickword = {}
         self.dicarray = {}
         self.dicformula = {}
-        self.dicinterp = {} # EV 20/02/20
+        self.dicinterp = {}
+        self.dicplugins = {}
         for mod in self.modelList:
             self.dicval[mod] = {}
             self.dictype[mod] = {}
@@ -66,6 +68,7 @@ class Core:
         self.dickword['OpenTrans'] = OpT()
         self.dickword['OpenChem'] = OpC()
         self.dickword['Pest'] = Pst()
+        self.plugins = plugins(self)
         self.initAll()
         self.mfUnstruct = False # OA 17/9/17 made to work with modflow USG
         self.dicaddin = {}
@@ -251,6 +254,11 @@ class Core:
         str1+= '<dict>\n<name>dic_addin</name>\n'
         for k in list(self.dicaddin.keys()):
             str1 += '<key><name>'+k+'</name><content>'+str(self.dicaddin[k])+\
+                '</content></key>\n'
+        str1+= '</dict>\n'
+        str1+= '<dict>\n<name>dic_plugins</name>\n'
+        for k in list(self.dicplugins.keys()):
+            str1 += '<key><name>'+k+'</name><content>'+str(self.dicplugins[k])+\
                 '</content></key>\n'
         str1+= '</dict>\n'
         str1+= '</ORTi3Ddoc>'

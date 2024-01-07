@@ -168,8 +168,6 @@ class opfoam(unstructured):
                 lcomp.append(listE['i'][i]);ncomp += 1
             i += 1
         ncomp += 2 # there is pH and pe but we need to have H20,H,0,charge and not pH,pe
-        if len(lspec)==0:
-            lspec = [listE['i'][0]] # we need at least one species for sel out
         return ncomp,gcomp,lcomp,listE['g'],lspec
     
 # **************** potential link with USG faces, not used

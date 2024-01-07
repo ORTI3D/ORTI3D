@@ -489,7 +489,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
     If line in observation (obs.1), opt is a list of zone to consider and 
     the nb of zone instead of value is used.
     """
-    lval = core.dicval[modName][line]
+    lval = core.dicval[modName][line];#print(opt)
     if media<len(lval): vbase=float(lval[media])
     else : vbase =float(lval[0])
     if line != 'obs.1' and opt in['BC','zon']: vbase=0 #EV 26/02/20
@@ -519,7 +519,6 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
             if line == 'obs.1' : #EV 26/02/20
                 if diczone['name'][i] in opt: 
                     zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
-                else : continue
             else :
                 if line in ['drn.1','riv.1','ghb.1']: #EV 26/11/20
                     zv0=float(core.ttable[line][iper,i].split()[opt])
@@ -539,7 +538,8 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
                 x,y = list(zip(*xy))
                 z=[zv0]*len(xy)
             nxp,nyp,nzp=zone2index(core,x,y,z);
-            put(m0,nyp*nx+nxp,nzp)
+            if opt=='zon': put(m0,nyp*nx+nxp,zv0)
+            else : put(m0,nyp*nx+nxp,nzp)
             if ndim==3: continue # a zone with z value is not filled!!
             ind = fillZone(nx,ny,nxp,nyp,nzp)
             putmask(m0, ind==1, [zv0])

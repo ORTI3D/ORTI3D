@@ -115,7 +115,7 @@ class  OpT:
         'DIFFU':['diffu.1','diffu.2'],
         'CONC':['cactiv','cinit','cfix','cghb','cwel','crch'],
         'TEMP':['temp.1','tcps','tlbds','tactiv','tinit','tfix','tghb','twel','trch'],
-        'RCT':['rct.1','rct.2a','rct.2b','rct.2c','rct.3','rct.4','rct.5','rct.6'],
+        'RCT':['rct.1','rct.2a','rct.2b','rct.2c','rct.3','rct.4','rct.5'],
         'TSLV':['tschm','tslv'],
         }
         self.lines={
@@ -178,7 +178,7 @@ class  OpT:
                         ['kinetic reaction','no reaction','1st order'],
                         ['initial conc.','at equilibrium','given']],
                 'type':['choice','choice','choice'],
-                'default':[0,0,2,0]},
+                'default':[0,0,2]},
         #removed 'freundlich','langmuir','kinetic sorption','dual domain no sorp','dual domain with sorp'],#,'0th order'],
         'rct.2a':{'comm':'density','cond':'OISOTH in [1,2,3,4,6]','kw':['ORHOB(NLAY,NCELL)'],
                  'detail':['bulk density'],'type':['arrfloat'],'default':[1.8]},
@@ -186,13 +186,15 @@ class  OpT:
                  'detail':['porosity'],'type':['arrfloat'],'default':[1.]},
         'rct.2c':{'comm':'concentrations','cond':'OIGETSC>0','kw':['ORCONC(NLAY,NCELL)'],
                  'detail':[''],'type':['arrfloat'],'default':[0.]},
-        'rct.3':{'comm':'1st sorption parm','cond':'OISOTH>0','kw':['OSP1(NLAY,NCELL)'],
-                 'detail':[''],'type':['arrfloat'],'default':[1.]},
-        'rct.4':{'comm':'2nd sorption parm','cond':'OISOTH>0','kw':['OSP2(NLAY,NCELL)'],
-                 'detail':[''],'type':['arrfloat'],'default':[1.]},
-        'rct.5':{'comm':'1st order rate','cond':'OIREAC>0','kw':['ORC1'],
+        'rct.3':{'comm':'foc','cond':'OISOTH>0','kw':['OSFOC(NLAY,NCELL)'],
+                 'detail':[''],'type':['arrfloat'],'default':[0.]},
+        #'rct.4a':{'comm':'AW sorption a','cond':'OISOAW>0','kw':['OSAWA(NLAY,NCELL)'],
+        #         'detail':[''],'type':['arrfloat'],'default':[0.]},
+        #'rct.4b':{'comm':'AW sorption b','cond':'OISOAW>0','kw':['OSAWB(NLAY,NCELL)'],
+        #         'detail':[''],'type':['arrfloat'],'default':[0.]},
+        'rct.4':{'comm':'1st order rate','cond':'OIREAC>0','kw':['ORC1'],
                  'detail':[''],'type':['float'],'default':[0.]},
-        'rct.6':{'comm':'1st rate sorbed','cond':'OIREAC>0','kw':['ORC2'],
+        'rct.5':{'comm':'1st rate sorbed','cond':'OIREAC>0','kw':['ORC2'],
                  'detail':[''],'type':['float'],'default':[0.]},
         #Solver
         'tslv':{'comm':'solver for C','cond':'','kw':['OSTSO','OSTPRE','OSTTOL','OSTRTOL','OSTDCMX'],
@@ -201,7 +203,11 @@ class  OpT:
                  'type':['choice','choice','float','float','float'],
                  'default':[0,1,1e-12,0,0.02]},
         }
-    
+        
+    def addKeyword(self,lname,kdef):
+        for n in kdef:
+            self.lines[lname][n].append(kdef[n])
+        
 #Chemistry
 class  OpC:
     def __init__(self):

@@ -191,6 +191,16 @@ class orti3dGui(QMainWindow):
        
        #Add-ins
         self.menuAddin = self.menuBar().addMenu("&Addin")
+        
+       #Plugins
+        menuPlugins = self.menuBar().addMenu("&Plugins")
+        self.core.plugins.setGui(self)
+        pl_list= self.core.plugins.pl_list
+        lactions = []
+        for pl_n in pl_list:
+            act = QAction("&"+pl_n,self,statusTip=n,
+                triggered=self.core.plugins.action)
+            menuPlugins.addAction(act)
 
         #Help
         menuHelp = self.menuBar().addMenu("&Help")
@@ -265,14 +275,14 @@ class orti3dGui(QMainWindow):
     def makeTopBar(self):
         self.currentModel,self.currentLine,self.currentMedia = 'Modflow',None,0
         self.topSizer = QHBoxLayout()
-        self.topSizer.setGeometry(QRect(0,0,(self.screenShape.width()*0.8),45)) #900
+        self.topSizer.setGeometry(QRect(0,0,int(self.screenShape.width()*0.8),45)) #900
         width = self.screenShape.width()*0.8
         self.topSizer.setSpacing(2)
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         qwt1 = QGroupBox()
         qwt1.setSizePolicy(policy)
         qwt1.setMinimumHeight(45)
-        qwt1.setMinimumWidth(width*0.55)
+        qwt1.setMinimumWidth(int(width*0.55))
         self.varBox = Ui_Var()
         self.varBox.setupUi(qwt1,self,self.core)
         self.topSizer.addWidget(qwt1) #,0,0,1,4) 
@@ -293,7 +303,7 @@ class orti3dGui(QMainWindow):
     def makePanelParameters(self):
         self.paramSizer = QVBoxLayout()
         qwp = QWidget()
-        qwp.setMinimumWidth(self.screenShape.width()*0.085)
+        qwp.setMinimumWidth(int(self.screenShape.width()*0.085))
         self.dlgParameters = Ui_Parameters()
         self.dlgParameters.setupUi(qwp,self,self.core,self.mainDir)
         self.paramSizer.addWidget(qwp)
@@ -312,7 +322,7 @@ class orti3dGui(QMainWindow):
         #self.guiShow = guiShow(self,self.core)
         self.showSizer = QVBoxLayout()
         qws = QWidget()
-        qws.setMinimumWidth(self.screenShape.width()*0.112)
+        qws.setMinimumWidth(int(self.screenShape.width()*0.112))
         self.dlgShow = Ui_Show()
         self.dlgShow.setupUi(qws,self,self.core)     
         self.guiShow = self.dlgShow.guiShow

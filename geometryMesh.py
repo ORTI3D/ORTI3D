@@ -216,8 +216,8 @@ def readGmshOut(s,outline=False,nbdy=0,npts=0,liNames=[]): # OA 28/7/20 added nb
         c3 = array([x.split() for x in c1[2:] if len(x.split())==7],dtype='int') # OA 28/7/20
         lines = unique(c3[:,4]); count=0;liout = []
         for l in lines: 
-            if l<=nbdy: dcout['bc'+str(l-1)] = c3[c3[:,4]==l,-2:]-1
-            else : 
+            if l<=nbdy: dcout['bc'+str(l-1)] = c3[c3[:,4]==l,-2:]-1 #domain
+            else : #true lines
                 arr = c3[c3[:,4]==l,-2:]-1
                 if len(liout)==0: liout.append(arr)
                 else :

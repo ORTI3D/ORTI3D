@@ -65,16 +65,13 @@ class addin:
         # creating dic for observation data
         name='obsHead'
         self.core.dicaddin[name] = {}
-        self.structure['menu'][mod]={'name':name,'position': 0,
-                'function': 'OnImportHead','short':'oH'}
+        #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportHead','short':'oH'}
         name='obsTracer'
         self.core.dicaddin[name] = {}
-        self.structure['menu'][mod]={'name':name,'position': 0,
-                'function': 'OnImportTracer','short':'oH'}
+        #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportTracer','short':'oH'}
         name='obsChemistry'
         self.core.dicaddin[name] = {}
-        self.structure['menu'][mod]={'name':name,'position': 0,
-                'function': 'OnImportChemistry','short':'oH'}
+        #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportChemistry','short':'oH'}
         # creating the structure for the buttons
         name = 'Model'
         model = {'dimension':'2D horizontal','type':'Confined','group':'Modflow series'} #EV 22/07/2018 2D -> 2D horizontal
@@ -645,10 +642,13 @@ class addin:
             self.core.setValueFromName('Min3pFlow','Tfinal',tlist[-1])
             self.core.setValueFromName('Min3pFlow','Tmaxstep',tlist[-1]/100.)
 
+    def setMtSpeciesList(self,lst=['Koc','RC1','RC2']):
+        self.mtSpeciesList=lst
+        
     def setMtSpecies(self,flag,species):
         rows = species
         #nrows = len(rows)
-        cols = ['SP1','SP2','RC1','RC2']
+        cols = self.mtSpeciesList
         data,rowIn,dataIn = [],[],[]
         mtreact = self.core.dicaddin['MtReact']
         if 'rows' in mtreact: 

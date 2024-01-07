@@ -274,7 +274,7 @@ class multiPlot(QDialog):
         iper, self.axlabel, self.aylabel, group= self.getUnitLab(
                 self.ptyp,self.splist)
     ## build the plots
-        self.figure.clf();print("multip",self.splist)
+        self.figure.clf();#print("multip",self.splist)
     ## Calibration graph
         if self.ptyp[0] == 'X':
             ptypXY='P0' ; self.llabel=[] ; time=[]

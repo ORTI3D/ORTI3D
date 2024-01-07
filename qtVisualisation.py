@@ -14,7 +14,7 @@ import matplotlib.pylab as pl
 from matplotlib.patches import RegularPolygon,Polygon
 from matplotlib.lines import Line2D
 from matplotlib.collections import PolyCollection,LineCollection
-from mpl_toolkits.axes_grid1 import make_axes_locatable #EV 26.11.20
+#from mpl_toolkits.axes_grid1 import make_axes_locatable #EV 26.11.20
 
 #pour l'affichage d'une carte de fond
 import matplotlib.image as Im
@@ -127,10 +127,10 @@ class qtVisualisation(FigureCanvasQTAgg):
         for v in self.listeZone:
             self.listeZone[v]=[]
             self.listeZoneText[v]=[]                
-        #self.cnv.lines=[]
-        #self.cnv.collections = [None,None]
-        #self.cnv.artists = []
-        #self.cnv.images = []
+        self.cnv.lines=[]
+        self.cnv.collections = [None,None]
+        self.cnv.artists = []
+        self.cnv.images = []
         self.cnv.cla()
         self.draw()
         
@@ -237,7 +237,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Vector.set_transform(self.transform)
         self.Vector.set_visible(False)
         #pl.setp(lc,linewidth=.5);
-        self.cnv.add_collection(self.Vector)
+        #self.cnv.add_collection(self.Vector)
+        self.cnv.collections.append(self.Vector)
         self.Vector.data = [0,0,None,None]
 
 #    def changeDomain(self):
@@ -263,7 +264,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             for i in range(2): self.Grid[i].set_visible(False)
         if col == None: col=self.Grid[2]
         else : self.Grid[2]=col
-        self.mUnstruct = 0;#self.cnv.collections=[]; #=[]
+        self.cnv.collections=[]; 
+        self.mUnstruct = 0;#=[]
 
         if self.mesh != None and self.mshType>0:# case irregular mesh (from matplotlib2dviewer)
             self.mUnstruct = 1 #OA 17/12/20
@@ -391,8 +393,9 @@ class qtVisualisation(FigureCanvasQTAgg):
         [1] : max, [2] nb contours, [3] decimals, [4] : 'lin', log' or 'fix',
         if [4]:fix, then [5] is the series of contours"""
         X,Y,Z = data; #print 'visu controu',value,col
-        #self.cnv.collections=self.cnv.collections[:3]
-        self.cnv.clear();#self.cnv.artists = []
+        self.cnv.collections=self.cnv.collections[:3]
+        #self.cnv.clear();
+        self.cnv.artists = []
         V = 11;Zmin=amin(amin(Z));Zmax=amax(amax(Z*(Z<1e5)));
         if Zmax==Zmin : # test min=max -> pas de contour
             onMessage(self.gui,' values all equal to '+str(Zmin))

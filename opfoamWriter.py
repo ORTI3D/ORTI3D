@@ -3,11 +3,7 @@
 Created on Sun May 17 10:55:23 2020
 
 @author: olivier
-"""
-# a file with point coordinates nbofpts ((x0 y0 z0) (x1 y1 z1)...)
-# faces file nboffaces (nbpts (pt0 pt1 pt2..) nbpts (pt0 pt1...) ...)
-# owner file  al ist of the cell that owns the considered face nb (0 1 2 0)
-# neighbour 
+""" 
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
     amin,amax,mod,ravel
 from numpy import in1d
@@ -73,6 +69,12 @@ class opfoamWriter:
             self.writeChemistry()
             if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 self.writeThermal()
+        if self.group in ['Trans','Chem']: 
+            if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
+                self.writeSorptionDecay()
+        for pl_name in self.core.plugins.pl_list:
+            if self.core.dicplugins[pl_name]['active']==True:
+                self.core.plugins.writer(pl_name)
                 
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
@@ -405,6 +407,9 @@ class opfoamWriter:
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
         f1=open(self.fDir+r'constant/transportProperties','w');f1.write(s);f1.close()
     
+    def addTransportPropeties(self,s):
+        f1=open(self.fDir+r'constant/transportProperties','a');f1.write(s);f1.close()
+        
     def writeInitFields(self):
         # Uw 
         # considering recharge
@@ -430,9 +435,12 @@ class opfoamWriter:
         swi=self.getVariable('OpenFlow','uns.5')
 # head h or pressure
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
+            h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation == 'Xsection':
                 self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
-            h0 = self.getVariable('OpenFlow','head.1')
+            if self.core.dicval['OpenFlow']['fprm.1'][1]==1: # equilibrated pressure
+                dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
+                h0 -= ravel(dzm) 
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
@@ -467,7 +475,19 @@ class opfoamWriter:
             self.cactiv = cactiv.astype('int')
         s = '\n'.join(self.cactiv.astype('str'))
         f1=open(self.fDir+r'constant/options/cactive','w');f1.write(s);f1.close()
-
+        
+    def writeSorptionDecay(self):
+        #write the table that contains sorption and decay
+        s = ''
+        dic = self.core.dicaddin['MtReact']
+        nrow=len(dic['data']);ncol=len(dic['data'][0])
+        s += str(nrow)+' '+str(ncol)+'\n'
+        for i in range(nrow):
+            s += dic['rows'][i]+ ' '
+            for j in range(ncol): s+= str(dic['data'][i][j])+' '
+            s += '\n'
+        f1=open(self.fDir+r'constant/options/sorptionDecay','w');f1.write(s);f1.close()
+        
     def writeThermal(self):
         T0 = self.getVariable('OpenTrans','tinit') # initial concentrations
         self.writeScalField('0','T',T0,self.bcD0,dim='[0 0 0 1 0 0 0]')
@@ -1159,7 +1179,7 @@ class opfoamReader:
 
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
         '''reads the concentrations iesp=-1 for tracer (not used for others)
-        opt not used'''
+        opt not used, used for mt3dms'''
         fDir = self.core.fileDir
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
@@ -1184,7 +1204,7 @@ class opfoamReader:
             return self.readScalar('Cg'+str(iesp),tstep)
         else : #chem species
             iesp = lcomp.index(specname)+4
-            return self.readScalar('Cw'+str(iesp),tstep)
+            return self.readScalar('Cw'+str(iesp),iper=tstep,spc=0)
         
     def getGeom(self,core):
         grd = core.addin.getFullGrid()
@@ -1198,7 +1218,7 @@ class opfoamReader:
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period
         iesp=-1 : tracer, '''
-        
+        print(name,iper,iesp,spc)
         def rd1(t,n): # read classical
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
             s = f1.read();f1.close()
