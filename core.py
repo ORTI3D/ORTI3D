@@ -1,6 +1,6 @@
 #
-import os,subprocess,time,base64,types # OA 25/10/18 add types
-from subprocess import Popen # OA 8/6/19
+import os,time,base64,types # OA 25/10/18 add types
+import subprocess as sbp
 from numpy import frombuffer,float64
 #from scipy.interpolate import griddata
 from .modflowWriter import *
@@ -305,13 +305,13 @@ class Core:
         if info ==True :return 'Files written'
         else : return info  #EV 11/12/19        
       
-    def runModel(self,modName,info=True):
+    def runModel(self,modName,info=False):
         tabRes, sep = [],os.sep
         lf = os.listdir(self.fileDir) 
         cfg = Config(self);#print cfg.typInstall
         #if self.gui != None and 'dist' not in self.baseDir: #OA 22/6 modified
             #if cfg.typInstall=='exe': self.baseDir += os.sep+'dist'
-        if modName[:4] not in ['Opge','Min3','Sutr'] and self.fileName+'.nam' not in lf: 
+        if modName[:4] not in ['Opge','Min3','Sutr','Open'] and self.fileName+'.nam' not in lf: 
             return 'Files not written'
         try : 
             b=str(self.baseDir).encode("utf-8")
@@ -328,56 +328,24 @@ class Core:
                 exec_name = self.baseDir+sep+'mf2k '
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
-            #p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();#
-            os.system(s) #OA 8/6/19
-            if info !=False :
-                try :  # EV 13/11 "show model fail to converge"
-                    if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
-                    else : time_model=self.dicval['Modflow']['disu.4'][5] # EV 3/12/21
-                    if time_model==0 : 
-                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[4]
-                    else : 
-                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[(time_model+1)]
-                    time_last=self.getTlist2()[-1]
-                    if float(time_out)==float(time_last):
-                        if modName == 'Modflow':
-                            return ('Normal termination of MODFLOW-2000')
-                        else : return ('Normal termination of Modflow USG') # EV 3/12/21
-                    else: return('Model fail to converge')
-                except :# IndexError:
-                    return('Model fail to converge')
+            f1 = open('runMf2k.bat','w');f1.write(s);f1.close()
+            sbp.run(['runMf2k.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+
         if modName == 'Mt3dms':
             mod1,mod2 = 'mt3dms5b','Mt3dms'
             if 'VDF' in self.getUsedModulesList('Mt3dms'): 
                 mod1,mod2 ='swt_v4','Mt3dms'
             s=self.baseDir+sep+'bin'+sep+mod1+'.exe '+mod2+'.nam'
             os.chdir(self.fileDir)
-            #p = Popen(s).wait() #,creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
-            os.system(s)
-            if info !=False :
-                try : # EV 13/11 "show model fail to converge"
-                    line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
-                    if line_out=='END':
-                        return ('Normal termination of MT3DMS')
-                    else: return('Model fail to converge') #return self.getTxtFileLastLine('Mt3dms.out',3)#+'\n Mt3dms run done'
-                except IndexError:
-                    return('Model fail to converge')
+            f1 = open('runMt3d.bat','w');f1.write(s);f1.close()
+            sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName #EV 19/03/21
             os.chdir(self.fileDir)
-            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait();
-            try :  # EV 3/12/21
-                time_model=self.dicval['Modflow']['disu.4'][5]
-                if time_model==0 : 
-                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
-                else : 
-                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
-                time_last=self.getTlist2()[-1]
-                if float(time_out)==float(time_last):
-                    return ('Normal termination of Modflow USG Transport')
-                else: return('Model fail to converge')
-            except :
-                return('Model fail to converge')
+            f1 = open('mfusg.bat','w');f1.write(s);f1.close()
+            sbp.run(['mfusg.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            
         if modName == 'Pht3d':
             if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
                 s = self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName
@@ -387,44 +355,25 @@ class Core:
                     s='mpiexec -n '+ str(N) +' '+ self.baseDir+sep+'bin'+sep+'pht3dv217_mpi_fett.exe Pht3d.nam'
                 else : s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
-            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
-            if info !=False :
-                if self.dicaddin['Model']['group'] != 'Modflow USG': 
-                    try : # EV 13/11 "show model fail to converge"
-                        line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
-                        if line_out=='END':
-                            return ('Normal termination of PHT3D')
-                        else: return('Model fail to converge') 
-                    except IndexError:
-                        return('Model fail to converge')
-                else : 
-                    try :  # EV 3/12/21
-                        time_model=self.dicval['Modflow']['disu.4'][5]
-                        if time_model==0 : 
-                            time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
-                        else : 
-                            time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
-                        time_last=self.getTlist2()[-1]
-                        if float(time_out)==float(time_last):
-                            return ('Normal termination of PHT-USG')
-                        else: return('Model fail to converge')
-                    except :
-                        return('Model fail to converge')
-                
+            f1 = open('runPht3d.bat','w');f1.write(s);f1.close()
+            sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+                    
+        if modName in ['OpenFlow','OpenTrans','OpenChem']:
+            sbin=self.baseDir+'\\bin'
+            s= '@echo off\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\ncd "%~dp0"\n'
+            s += 'call '+sbin+'\muFlowRT.exe \necho. \npause'
+            os.chdir(self.fileDir)
+            f1 = open('runOpf.bat','w');f1.write(s);f1.close()
+            sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            
         if modName[:5] =='Min3p':
             #print('name',self.fileName)
             s=self.baseDir+sep+'bin'+sep+'min3p.exe '+self.fileName ; # OA 19/3/19
-            # if self.getValueFromName('Min3pFlow','P_Uns')==0:
-            #     s=self.baseDir+sep+'bin'+sep+'min3p_thc.exe '+self.fileName ;#print s
-            # else :
-            #     s=self.baseDir+sep+'bin'+sep+'min3p_uns.exe '+self.fileName ;#print s                
             os.chdir(self.fileDir)
-            #pop = subprocess.Popen(s,stdin = subprocess.PIPE,stdout = subprocess.PIPE)
-            #time.sleep(0.1)
-            #outp = pop.communicate(self.fileName+'\n')[0]
-            p = Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = sbp.Popen(s).wait() #),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             if info !=False :
                 return self.getTxtFileLastLine(self.fileName+'.log',5)
+            
         if modName[:5] == 'Pest': #EV 07/11
             if self.dicval['Pest']['ctd.1'][1]==0:
                 #s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName #; print(s)
@@ -433,21 +382,87 @@ class Core:
                 s=self.baseDir+sep+'bin'+sep+'pestpp-glm.exe '+self.fileName
                 #s=self.baseDir+sep+'bin'+sep+'pest.exe '+self.fileName+'r' #; print(s)
             os.chdir(self.fileDir)
-            p = Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
+            p = sbp.Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
-            if info !=False :
-                if self.dicval['Pest']['ctd.1'][1]==0:
-                    try : # EV 13/11 "show model fail to converge"
-                        line_out=self.getTxtFileLastLine(self.fileName+'.rec',5)
-                        if line_out=='': return ('Normal termination of Pest')
-                        else : return ('Pest run failed')
-                    except : return ('Pest run failed')
+                    
+    def returnState(self,modName):
+        if info !=False :
+            try :  # EV 13/11 "show model fail to converge"
+                if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
+                else : time_model=self.dicval['Modflow']['disu.4'][5] # EV 3/12/21
+                if time_model==0 : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[4]
                 else : 
-                    try : 
-                        line_out=self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
-                        if line_out=='': return ('Normal termination of Pest')
-                        else : return ('Pest run failed')
-                    except : return ('Pest run failed')
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[(time_model+1)]
+                time_last=self.getTlist2()[-1]
+                if float(time_out)==float(time_last):
+                    if modName == 'Modflow':
+                        return ('Normal termination of MODFLOW-2000')
+                    else : return ('Normal termination of Modflow USG') # EV 3/12/21
+                else: return('Model fail to converge')
+            except :# IndexError:
+                return('Model fail to converge')
+
+        if info !=False :
+            try : # EV 13/11 "show model fail to converge"
+                line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
+                if line_out=='END':
+                    return ('Normal termination of MT3DMS')
+                else: return('Model fail to converge') #return self.getTxtFileLastLine('Mt3dms.out',3)#+'\n Mt3dms run done'
+            except IndexError:
+                return('Model fail to converge')
+
+            
+        if info !=False :
+            if self.dicaddin['Model']['group'] != 'Modflow USG': 
+                try : # EV 13/11 "show model fail to converge"
+                    line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
+                    if line_out=='END':
+                        return ('Normal termination of PHT3D')
+                    else: return('Model fail to converge') 
+                except IndexError:
+                    return('Model fail to converge')
+            else : 
+                try :  # EV 3/12/21
+                    time_model=self.dicval['Modflow']['disu.4'][5]
+                    if time_model==0 : 
+                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
+                    else : 
+                        time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
+                    time_last=self.getTlist2()[-1]
+                    if float(time_out)==float(time_last):
+                        return ('Normal termination of PHT-USG')
+                    else: return('Model fail to converge')
+                except :
+                    return('Model fail to converge')
+                
+        try :  # EV 3/12/21
+            time_model=self.dicval['Modflow']['disu.4'][5]
+            if time_model==0 : 
+                time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
+            else : 
+                time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
+            time_last=self.getTlist2()[-1]
+            if float(time_out)==float(time_last):
+                return ('Normal termination of Modflow USG Transport')
+            else: return('Model fail to converge')
+        except :
+            return('Model fail to converge')
+        
+        if info !=False :
+            if self.dicval['Pest']['ctd.1'][1]==0:
+                try : # EV 13/11 "show model fail to converge"
+                    line_out=self.getTxtFileLastLine(self.fileName+'.rec',5)
+                    if line_out=='': return ('Normal termination of Pest')
+                    else : return ('Pest run failed')
+                except : return ('Pest run failed')
+            else : 
+                try : 
+                    line_out=self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
+                    if line_out=='': return ('Normal termination of Pest')
+                    else : return ('Pest run failed')
+                except : return ('Pest run failed')
+
             
     def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
@@ -461,7 +476,7 @@ class Core:
         else : s += 'zonbud.exe'
         myinput = open(self.fileDir+os.sep+'zonbud.in')
         os.chdir(self.fileDir)
-        p = Popen(s).wait() #),stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()
+        p = sbp.Popen(s).wait() #),stdin=myinput,creationflags=CREATE_NEW_CONSOLE).wait()
         
 #********************** import and export functions *****************
     def importData(self,fileDir,fileName):
@@ -814,7 +829,7 @@ class Core:
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
             else : opt = 'Chemistry'
             for e in esp:
-                if e in lesp: iesp = lesp.index(e) 
+                if e in lesp: iesp = lesbp.index(e) 
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)

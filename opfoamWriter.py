@@ -1003,7 +1003,7 @@ class opfoamWriter:
                 s += str(rates['data'][iek][ip+2])+' '
             s += '\n-formula '+rates['data'][iek][-1] +'\n' # formula
         if len(lkin)>0 :
-            s += '\n'+str(core.getValueFromName('OpenChem','OCKOPT')[0])+'\n'
+            s += '\n'+str(core.getValueFromName('OpenChem','OCKOPT'))+'\n'
         
         rates = chem['Kinetic_Minerals'];
         if len(listE['kp'])>0 :s += '\nKinetics 1\n'
@@ -1015,6 +1015,12 @@ class opfoamWriter:
             for ip in range(parmk[nom]): s += str(rates['data'][iek][ip+1])+' '
         f1 = open(fDir+os.sep+'initChem.pqi','w')
         f1.write(s);f1.close()
+        # write an immobile file if needed
+        s = '\n'.join(listE['kim'])
+        if len(s)>0:
+            f1 = open(fDir+os.sep+'constant\\options\\immobile','w')
+            f1.write(s);f1.close()
+            
 
     def writePhqFoam(self):
         '''phqfoam contains the nb of cell, nb of mobile components and species
