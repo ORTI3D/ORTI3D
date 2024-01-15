@@ -829,7 +829,7 @@ class Core:
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
             else : opt = 'Chemistry'
             for e in esp:
-                if e in lesp: iesp = lesbp.index(e) 
+                if e in lesp: iesp = lesp.index(e) 
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)
