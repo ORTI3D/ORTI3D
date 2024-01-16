@@ -311,7 +311,7 @@ class addin:
                 
         if actionName == 'Ad_Time':
             m = self.core.dicaddin['Model']['group']
-            tlist=['','s','min','hour','day','year']
+            tlist=['','s','min','hour','day','year'];tunit='day'
             if m in ['Modflow','Mt3dms']:
                 tunit = tlist[self.core.dicval['Modflow']['dis.2'][4]]
             if m[:4]=='Open':
