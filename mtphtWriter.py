@@ -246,7 +246,7 @@ class mtphtWriter:
         if ktyp[:3] == 'lay':
             ilay=getNlayersPerMedia(self.core)
             lval = self.core.dicval['Mt3dms'][line] # in 3D, a list of values EV 26/09/19
-            if line=='btn.6' : lval = self.core.dicval['Modflow']['lpf.2'] # EV 26/09/19 for type of layer confined or convertible
+            if line=='btn.6' : lval = self.core.dicval['Modflow']['lpf.2'].astype('int') # EV 26/09/19 for type of layer confined or convertible
             s=''
             if self.dim == '2D' : s=str(lval[0])
             elif self.dim == '3D': # EV 26/09/19

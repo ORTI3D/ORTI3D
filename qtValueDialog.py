@@ -129,7 +129,7 @@ class qtBoxKeys:
                     self.values[i] = but.currentIndex()
                     continue
                 elif self.types[i] in ['layint','layfloat']: # OA added 23/9/19, EV 25/09/19 added layfloat
-                    self.values[i] = self.vect
+                    self.values[i] = self.vect[i]
                     continue
                 elif self.types[i]=='textlong': # added 21/11/19
                     self.values[i] = [but.document().toPlainText()]

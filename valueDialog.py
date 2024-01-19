@@ -139,12 +139,14 @@ class valueDialog:
             self.changeCombo(self.dialg.chlines,names)
             self.dialg.boxkeys.setVisible(False) # OA 10/09/2018
             #readapt unconfined / confined for lpf.2
+            '''
             if self.currentLine == 'lpf.2':  #EV 25/09/19
                 if set(values)=={'0'}:
                     self.core.dicaddin['Model']['type']='Confined'
                 elif set(values)=={'1'}:
                     self.core.dicaddin['Model']['type']='Unconfined'
                 else : self.core.dicaddin['Model']['type']='Mix (for 3D model)' #EV 2/7/21 
+            '''
             if self.core.addin.MshType>0:
                 self.gui.onGridMesh('Mesh')
             else : 

@@ -311,7 +311,7 @@ class Core:
         cfg = Config(self);#print cfg.typInstall
         #if self.gui != None and 'dist' not in self.baseDir: #OA 22/6 modified
             #if cfg.typInstall=='exe': self.baseDir += os.sep+'dist'
-        if modName[:4] not in ['Opge','Min3','Sutr','Open'] and self.fileName+'.nam' not in lf: 
+        if modName[:4] not in ['Opge','Min3','Open'] and self.fileName+'.nam' not in lf: 
             return 'Files not written'
         try : 
             b=str(self.baseDir).encode("utf-8")
@@ -328,8 +328,8 @@ class Core:
                 exec_name = self.baseDir+sep+'mf2k '
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
-            f1 = open('runMf2k.bat','w');f1.write(s);f1.close()
-            sbp.run(['runMf2k.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            f1 = open('runMflow.bat','w');f1.write(s);f1.close()
+            sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
 
         if modName == 'Mt3dms':
             mod1,mod2 = 'mt3dms5b','Mt3dms'
@@ -343,8 +343,8 @@ class Core:
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName #EV 19/03/21
             os.chdir(self.fileDir)
-            f1 = open('mfusg.bat','w');f1.write(s);f1.close()
-            sbp.run(['mfusg.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            f1 = open('runUtrp.bat','w');f1.write(s);f1.close()
+            sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
             
         if modName == 'Pht3d':
             if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
@@ -360,7 +360,8 @@ class Core:
                     
         if modName in ['OpenFlow','OpenTrans','OpenChem']:
             sbin=self.baseDir+'\\bin'
-            s= '@echo off\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\ncd "%~dp0"\n'
+            s= '@echo off\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
+            s += 'cd '+self.fileDir+'\n'
             s += 'call '+sbin+'\muFlowRT.exe \necho. \npause'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
