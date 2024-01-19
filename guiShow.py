@@ -147,7 +147,7 @@ class guiShow:
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour();print('quishow 150',Cname,species)
+        Cgroup,Cname,species = self.getCurrentContour();#print('quishow 150',Cname,species)
         self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
         self.curGroup,self.curName,self.curSpecies = Cgroup,Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
@@ -156,7 +156,7 @@ class guiShow:
             return
         # get the data for contours
         dataM = None
-        print('guish 159',Cgroup,Cname,tstep,species)
+        #print('guish 159',Cgroup,Cname,tstep,species)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
             if self.arr3 is None : # EV 8/12/21
@@ -226,7 +226,7 @@ class guiShow:
             if name=='Temperature':
                 arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Temperature');#print shape(arr),arr                
             else:
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Conc');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
@@ -261,7 +261,7 @@ class guiShow:
                 if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult); #-1 for different orientation in modflow and real world
                 elif plane=='Y': data = (X,Y,arr3[:,section,:]*self.Umult)
                 elif plane=='X': data = (X,Y,arr3[:,:,section]*self.Umult)
-            #☻print('getA2',shape(X),shape(Y),shape(data[2]))
+            #print('getA2',shape(X),shape(Y),shape(data[2]))
             return data
                 
     def getPointValue(self,x,y):

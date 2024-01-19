@@ -197,23 +197,25 @@ class Core:
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         if self.gui!=None: self.gui.onInitGui(self)
-        print('in open')
+        #print('in open')
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         MshType = 0                    
         self.mfUnstruct = False  # OA 13/3/21
         group = self.dicaddin['Model']['group'];self.addin.group = group
         if self.gui!=None: self.gui.currentModel = 'Modflow'
+        if 'gm_in.txt' in os.listdir(): flag='old'
+        else : flag='new'
         if group == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
             self.addin.setMfUnstruct();
-            self.addin.setGridInModel('old')
+            self.addin.setGridInModel(flag)
             MshType = self.getValueFromName('Modflow','MshType')
             #if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
             #    self.flgMesh = 1 #18/12/20                      
         if group == 'Openfoam': # OA 02/20
             if self.gui!=None: self.gui.currentModel = 'OpenFlow'
-            self.addin.setGridInModel('old')
+            self.addin.setGridInModel(flag)
             MshType = self.getValueFromName('OpenFlow','MshType')
             self.flowReader = self.transReader = opfoamReader(self,self.addin.mesh)
         if group[:5] == 'Modfl': #OA 02/20
