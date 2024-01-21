@@ -8,7 +8,7 @@ from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,whe
     amin,amax,mod,ravel
 from numpy import in1d
 from .opfoamKeywords import OpF,OpT
-from ilibq.geometry import *
+from .geometry import *
 import struct 
 
 import os,shutil
@@ -347,6 +347,10 @@ class opfoamWriter:
             else : # ratio
                 kv[r] = K[r]/vrt[r]
         self.writeScalField('constant','Kv',kv,self.bcD0,dim='[0 2 0 0 0 0 0]')
+        storC = self.getVariable('OpenFlow','khy.4')
+        storU = self.getVariable('OpenFlow','khy.5')
+        self.writeScalField('constant','storC',storC,self.bcD0)
+        self.writeScalField('constant','storU',storU,self.bcD0)
         # thickness and bottom
         zb = core.Zblock;self.zb=zb;#print('zb ',shape(zb),shape(K))
         thk = zb[:-1]-zb[1:];thk=thk[-1::-1];thk=ravel(thk);self.thk = thk  #-1::-1 for modflow
@@ -415,7 +419,7 @@ class opfoamWriter:
         # considering recharge
         '''
         if ('rch.2' in self.core.diczone['Modflow'].dic.keys()) or (self.core.dicval['Modflow']['rch.2'][0] != 0):
-            lcell,ncell,zcell = self.writeOptionCells('rch.2','hrch')
+            lcell,ncell,zcell = self.getOptionCells('rch.2','hrch')
             vbase = self.core.dicval['Modflow']['rch.2'][0]
             if 'rch.2' in self.ttable.keys():
                 rmat = self.ttable['rch.2'].astype(float);nt,nc = shape(rmat)
@@ -525,7 +529,7 @@ class opfoamWriter:
             vr = 'h';vr1='h';vfix='head.2'
         if vfix in self.core.diczone['OpenFlow'].dic.keys():
             add=[]
-            lcell,ncell,zcell = self.writeOptionCells(vfix,vr+'fix')
+            lcell,ncell,zcell = self.getOptionCells(vfix,vr+'fix')
             if vr=='p' and self.core.dicval['OpenFlow']['fprm.1'][1]==1: # need to equilibrate pressure
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 dzm = ravel(dzm[-1::-1])*9.81*1e3 #♦ opf is ordered from btoom to top
@@ -537,7 +541,7 @@ class opfoamWriter:
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
 
         if 'wel' in self.core.diczone['OpenFlow'].dic.keys():
-            lcell,ncell,zcell = self.writeOptionCells('wel',vr+'wel')
+            lcell,ncell,zcell = self.getOptionCells('wel',vr+'wel')
             qmat = self.ttable['wel'];nr,nz = shape(qmat)
             mult = [];
             for iz in range(nz) : 
@@ -547,7 +551,7 @@ class opfoamWriter:
             self.writeOptionData(qmat,lcell,ncell,zcell,vr+'wel',mult=mult)
             
         if ('rch' in self.core.diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
-            lcell,ncell,zcell = self.writeOptionCells('rch','hrch')
+            lcell,ncell,zcell = self.getOptionCells('rch','hrch')
             vbase = self.core.dicval['OpenFlow']['rch'][0]
             if 'rch' in self.ttable.keys():
                 rmat = self.ttable['rch'].astype(float);nr,nc = shape(rmat)
@@ -565,7 +569,7 @@ class opfoamWriter:
             if 'conductance' in self.core.dicaddin['Model'].keys():
                 if self.core.dicaddin['Model']['conductance'] == 'byZone': flgAr = True
             if n in self.ttable.keys():
-                lcell,ncell,zcell = self.writeOptionCells(n,'h'+n)
+                lcell,ncell,zcell = self.getOptionCells(n,'h'+n)
                 mat = self.ttable[n];nr,nz = shape(mat);
                 mult, mult2 = [],[]
                 dicz = self.core.diczone['OpenFlow'].dic[n]
@@ -592,18 +596,18 @@ class opfoamWriter:
             for typ in lct:
                 a = typ+'fix'
                 if a in self.ttable.keys():
-                    lcell,ncell,zcell = self.writeOptionCells(a,a)
+                    lcell,ncell,zcell = self.getOptionCells(a,a)
                     mat = self.ttable[a]
                     self.writeOptionData(mat,lcell,ncell,zcell,a,formt='float')
 
                 for n in ['wel','ghb','riv']:
                     if n in self.ttable.keys():# pumping or injection
-                        lcell,ncell,zcell = self.writeOptionCells(n,typ+n)
+                        lcell,ncell,zcell = self.getOptionCells(n,typ+n)
                         mat = self.ttable[n]
                         mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
                         if typ+n in self.ttable.keys(): # find the injecting wells with conc
                             mat1 = self.ttable[typ+n]
-                            lcell1,ncell1,zcell1 = self.writeOptionCells(typ+n,typ+n)
+                            lcell1,ncell1,zcell1 = self.getOptionCells(typ+n,typ+n)
                             for iw,w in enumerate(lcell1):
                                 if w in lcell: 
                                     mat[:,lcell.index(w)] = mat1[:,iw]
@@ -611,7 +615,7 @@ class opfoamWriter:
 
                 a = typ+'rch'
                 if (a in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
-                    lcell,ncell,zcell = self.writeOptionCells(a,a)
+                    lcell,ncell,zcell = self.getOptionCells(a,a)
                     vbase = self.core.dicval['OpenTrans'][a][0]
                     if a in self.ttable.keys():
                         rmat = self.ttable[a].astype(float);nr,nc = shape(rmat)
@@ -624,13 +628,14 @@ class opfoamWriter:
             ## need to know if ph.4 is at a flow bc or at a well
             self.solucell=[] # solucell conaint the list of fixed chem cells
             if 'sfix' in self.ttable.keys():
-                lcell,ncell,zcell = self.writeOptionCells('sfix','sfix')
+                lcell,ncell,zcell = self.getOptionCells('sfix','sfix')
                 self.solucell,self.solunb = lcell,zcell
                 mat = self.ttable['sfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'sfix',formt='int')
 
-            if 'srch' in self.ttable.keys():# ph recharge
-                lcell,ncell,zcell = self.writeOptionCells('srch','srch')
+            if 'srch' in self.ttable.keys():# chem recharge
+                lcell0,ncell0,zcell0 = self.getOptionCells('rch','hrch')
+                lcell,ncell,zcell = self.getOptionCells('srch','srch')
                 nz = len(lcell)
                 vbase = self.core.dicval['OpenChem']['srch'][0]
                 rmat = self.ttable['srch'].astype(float);nr,nc = shape(rmat)
@@ -639,29 +644,29 @@ class opfoamWriter:
 
             for n in ['wel','ghb','riv']:
                 if n in self.ttable.keys():# pumping or injection
-                    lcell,ncell,zcell = self.writeOptionCells(n,'s'+n)
+                    lcell,ncell,zcell = self.getOptionCells(n,'s'+n)
                     mat = self.ttable[n]
                     mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
                     if 's'+n in self.ttable.keys(): # find the injecting wells with conc
                         mat1 = self.ttable['s'+n]
-                        lcell1,ncell1,zcell1 = self.writeOptionCells('s'+n,'s'+n)
+                        lcell1,ncell1,zcell1 = self.getOptionCells('s'+n,'s'+n)
                         for iw,w in enumerate(lcell1):
                             if w in lcell: 
                                 mat[:,lcell.index(w)] = mat1[:,iw]
                     self.writeOptionData(mat,lcell,ncell,zcell,'s'+n,formt='int')
 
             if 'gfix' in self.ttable.keys():
-                lcell,ncell,zcell = self.writeOptionCells('gfix','gfix')
+                lcell,ncell,zcell = self.getOptionCells('gfix','gfix')
                 mat = self.ttable['gfix']
                 self.writeOptionData(mat,lcell,ncell,zcell,'gfix',formt='int')
 
             if 'gwel' in self.ttable.keys():# pumping or injection
-                lcell,ncell,zcell = self.writeOptionCells('gwel','gwel')
+                lcell,ncell,zcell = self.getOptionCells('gwel','gwel')
                 mat = self.ttable['gwel']
                 self.writeOptionData(mat,lcell,ncell,zcell,'gwel',formt='int')
 
 
-    def writeOptionCells(self,line,fname):
+    def getOptionCells(self,line,fname):
         '''
         writes the cell numbers in constant/polyMesh/sets, lcell is the list of cells
         for each considered zone, ncell the nb of these cells
@@ -726,7 +731,7 @@ class opfoamWriter:
                 zcell[j] = zcell[j][list(a)]
                 '''
                 
-        if fname in ['hrch','crch']: # to add the base value
+        if fname in ['hrch','crch','srch']: # to add the base value
             rch_base = self.core.dicval['OpenFlow']['rch'][0]
             if rch_base>0:
                 lc_toplay = set(list(range(nclay*(nlay-1),nclay*nlay)))
