@@ -360,9 +360,9 @@ class Core:
                     
         if modName in ['OpenFlow','OpenTrans','OpenChem']:
             sbin=self.baseDir+'\\bin'
-            s= '@echo off\nstart\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
+            s= '@echo off\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
             s += 'cd '+self.fileDir+'\n'
-            s += 'call '+sbin+'\muFlowRT.exe \necho. \nexit'
+            s += 'call '+sbin+'\muFlowRT.exe \necho.'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
             sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)

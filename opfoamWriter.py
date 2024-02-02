@@ -44,12 +44,12 @@ class opfoamWriter:
             else :
                 points,faces,bfaces,fcup = self.opf.getPointsFaces();print('got geom from usg')  
             self.writeGeom(fDir1,points,faces,bfaces,fcup);print("geom written")
+        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+r'constant/options')
+        os.mkdir(fDir+r'constant/options')
         self.writeCtrlDict()
         self.writeFvSchemes()
         self.writeFvSolutions()
         # write variables
-        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+r'constant/options')
-        os.mkdir(fDir+r'constant/options')
         self.bcD0={'top':{'type':'zeroGradient'},'bottom':{'type':'zeroGradient'}}
         for i in range(self.nbc):
             self.bcD0['bc'+str(i)] = {'type':'zeroGradient'}
@@ -223,58 +223,23 @@ class opfoamWriter:
         s += ' startFrom startTime;\n stopAt endTime;\n writeControl adjustableRunTime;\n'
         s += ' purgeWrite 0;\n writeFormat ascii;\n writePrecision 6;\n'
         s += ' writeCompression uncompressed;\n timeFormat fixed;\n timePrecision 0;\n'
-        s += ' runTimeModifiable yes;\n\n'
+        s += ' runTimeModifiable yes;\n'
+        #if self.core.dicaddin['Model']['type'] =='Unsaturated': s+='timeStepControl Picard;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
-        # ---case with variable times
-        tt = self.core.dicaddin['Time']
-        if len(tt['final'])==1: # all time steps are the same
-            tstp = float(tt['steps'][0])*self.dtu
-            s += 'writeInterval '+str(int(tstp))+ ';\n'
-            #s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
-        else:
-            s += '#include "$FOAM_CASE/system/writeInterval"\n'
-            s += '#include "$FOAM_CASE/system/maxDeltaT"\n'
-            s += 'functions \n { \n #include "fileUpdate1" \n #include "fileUpdate2"\n}'
-            f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval','w')
-            f1.write('writeInterval 10;');f1.close()
-            f1=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT','w')
-            f1.write('maxDeltaT 10;');f1.close()
-    
-            # write the function for variable times
-            s1 = 'fileUpdate1 \n{\n'
-            s1 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-            s1 += '     writeControl timeStep;\n'
-            s1 += '     fileToUpdate  "$FOAM_CASE/system/writeInterval";\n'
-            s1 += '     timeVsFile \n    (\n '
-            # write the deltaT
-            s2 = 'fileUpdate2 \n{\n'
-            s2 += '     type timeActivatedFileUpdate;\n	 libs ("libutilityFunctionObjects.so");\n'
-            s2 += '     writeControl timeStep;\n'
-            s2 += '     fileToUpdate  "$FOAM_CASE/system/maxDeltaT";\n'
-            s2 += '     timeVsFile \n    (\n'
-            t_old,dt_old = -1,-1
-            for i,t in enumerate(self.tlist[1:]):
-                dt = t-t_old
-                #if dt != dt_old:
-                s0 = str(int(t_old*self.dtu))
-                s1 += '    ('+s0+'  "$FOAM_CASE/system/writeInterval.%0*i")\n'%(2,i)
-                s2 += '    ('+s0+'  "$FOAM_CASE/system/maxDeltaT.%0*i")\n'%(2,i)
-                f1=open(self.fDir+os.sep+'system'+os.sep+'writeInterval.%0*i'%(2,i),'w')
-                s0 = str(int(t*self.dtu));f1.write('writeInterval '+s0+';');f1.close()
-                f2=open(self.fDir+os.sep+'system'+os.sep+'maxDeltaT.%0*i'%(2,i),'w')
-                maxdt=min(max(dt*self.dtu/100,10)*10,fslt[1]*self.dtu)
-                s0 = str(int(maxdt));f2.write('maxDeltaT '+s0+';');f2.close()
-                t_old,dt_old = t*1,dt*1
-            s1 += '    );\n    }\n }\n'
-            f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate1','w')
-            f1.write(s1);f1.close()
-            s2 += '    );\n    }\n }\n'
-            f1=open(self.fDir+os.sep+'system'+os.sep+'fileUpdate2','w')
-            f1.write(s2);f1.close()
+        # write times
+        #dt=self.tlist[1:]-self.tlist[:-1]
+#        if len(unique(dt))==1: # all time steps are the same
+        s += 'writeInterval '+str(intv)+ ';\n'
+#            #s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
+#        else:
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
 
+        s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
+        f1=open(self.fDir+r'constant/options/writetimes','w');
+        f1.write(s1);f1.close()
+        
     def writeFvSchemes(self):
         schemeDict = {'ddtSchemes':{'default':'backward'},
         'gradSchemes':{'default':'Gauss linear'},
@@ -313,8 +278,8 @@ class opfoamWriter:
         fsl1 = self.core.dicval['OpenFlow']['fslv.1']
         s += '\nSIMPLE {residualControl {h '+str(fsl1[4])+';C 1e-12;} }\n'
         fsl2 = self.core.dicval['OpenFlow']['fslv.2']
-        s += '\nPicard {tolerance '+str(fsl2[0])+';maxIter '+str(fsl2[1])
-        s += ';minIter '+str(fsl2[2])+';nIterStability  '+str(fsl2[3])+';}'
+        s += '\nPicard {tolerance '+str(fsl2[0])+';minIter '+str(fsl2[1])
+        s += ';maxIter '+str(fsl2[2])+';nIterStability  '+str(fsl2[3])+';}'
         s += '\nrelaxationFactors { fields { h 0.5;} }\n'
         f1=open(self.fDir+r'system/fvSolution','w');f1.write(s);f1.close()
         
@@ -920,9 +885,9 @@ class opfoamWriter:
         dicz = core.diczone['OpenChem']
         lsolu=[]
         if 'sfix' in dicz.dic.keys():
-            lsolu = list(unique([int(a) for a in dicz.dic['sfix']['value']]))
+            lsolu = list([int(a) for a in unique(core.ttable['sfix'])])
         if 'swel' in dicz.dic.keys():
-            lsolu = list(unique([int(a) for a in dicz.dic['swel']['value']]))
+            lsolu = list([int(a) for a in unique(core.ttable['swel'])])
         if 'sinit' in dicz.dic.keys():
             self.linit = unique([a.strip() for a in dicz.dic['sinit']['value']]) # all cell types
             lsinit = unique([int(a.strip()[:-3]) for a in dicz.dic['sinit']['value']]) # solutions

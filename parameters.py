@@ -87,7 +87,7 @@ class BaseParms:
         self.gui.guiShow.init() # OA 22/8/19 added
         self.gui.guiShow.setChemSpecies(listSpec)
         #self.gui.guiShow.resetDicContour() # the show panel nows that everything has to be reread # OA modifs 1/10/19
-        #self.gui.guiShow.setNames('Model_Tstep_L',tl2) #EV 16/12/21
+        self.gui.guiShow.setNames('Model_Tstep_L',tl2) #EV 16/12/21
         return messg
         
     def runModel(self,modName):
