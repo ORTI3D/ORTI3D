@@ -118,7 +118,16 @@ class qtBoxKeys:
         dicout = dlgVect.getValues()
         if dicout != None:
             self.vect = [x[1] for x in dicout[self.comm]['data']]
-            
+
+    def onOpenListDialog(self): # OA 17/9/19
+        ''' creates a vector dialog in case of layint type '''
+        nr = len(self.vect);#print('qtValDlg 98',self.vect)
+        dicV = {self.comm:{'cols':['name','check'],'rows':['']*nmed,'data':[[i,a] for i,a in enumerate(self.vect)]}}; #EV 25/09/19
+        dlgVect = myNoteBook(self.parent.core.gui,self.title,dicV) #EV 25/09/19
+        dicout = dlgVect.getValues()
+        if dicout != None:
+            self.vect = [x[1] for x in dicout[self.comm]['data']]
+           
     def getValues(self):
         #nb = len(self.values) # OA 23/9/19 removed
         if self.nb : # EV 3/12/21

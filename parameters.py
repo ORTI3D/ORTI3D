@@ -23,7 +23,8 @@ class BaseParms:
             '2.Flow':['Parameters','Write','Run'],
             '3.Transport':['Parameters','Write','Run'],
             '4.Chemistry':['Parameters','Write','Run'],
-            '5.Pest':['Parameters','Write','Run']
+            '5.Observation':[],
+            '6.Pest':['Parameters','Write','Run']
             }
         self.tipNames={}
         self.dicaction={
@@ -40,6 +41,7 @@ class BaseParms:
             'Pe_Parameters':'self.getParameters(\'Pest\')',
             'Pe_Write': 'self.dialogs.onMessage(self.gui,self.writeModel(\'Pest\'))',
             'Pe_Run': 'self.runModel(\'Pest\')',
+            #'Ob_Parameters': 'self.getParameters(\'Observation\')',
             }
     
     def action(self,name):

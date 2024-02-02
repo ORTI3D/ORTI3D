@@ -62,15 +62,6 @@ class addin:
             self.structure['menu'][mod]={'name':name,'position': 0,
                 'function': 'onUsedModules','short':'M'}
             self.core.dicaddin[name+'_'+mod] = (lmodules,val) # only data are stored in dicaddin  
-        # creating dic for observation data
-        name='obsHead'
-        self.core.dicaddin[name] = {}
-        #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportHead','short':'oH'}
-        name='obsTracer'
-        self.core.dicaddin[name] = {}
-        #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportTracer','short':'oH'}
-        name='obsChemistry'
-        self.core.dicaddin[name] = {}
         #self.structure['menu'][mod]={'name':name,'position': 0,'function': 'OnImportChemistry','short':'oH'}
         # creating the structure for the buttons
         name = 'Model'
@@ -107,6 +98,12 @@ class addin:
         self.core.dicaddin[name] = {}
         self.core.dicaddin['Chemistry'] = {} # for Min3p to store a different chemistry
         self.structure['button']['4.Chemistry'].append({'name':name,'pos':0,'short':'C'})        
+
+        # creating dic for observation data
+        self.core.dicaddin['obsHead'] = {}
+        self.core.dicaddin['obsTracer'] = {}
+        self.core.dicaddin['obsChemistry'] = {}
+        self.structure['button']['5.Observation']=[{'name':'Obs','pos':0,'short':'Sel'}]
 
         name = 'Pback' # dict for the pest zoens parameters
         self.core.dicaddin['Pback1'] = {} # to choose the parameters
@@ -402,7 +399,12 @@ class addin:
                 if nameB == 'MChemistry': # OA 1/3/19 for exchange species
                     self.chem.Base[nameB]['exchange']['text'] = dic['exchange']['text'] 
             self.core.dicaddin[nameB] = self.chem.Base
-        
+        # observation points
+        if actionName == 'Ad_Obs':
+            data = [('Write','Text','tata'),('Species','Text','toto')]
+            dialg = self.dialogs.genericDialog(self.gui,'Select Points',data)
+            
+        # Pest
         if actionName == 'Ad_Pback':
             dic = self.pest.getDicBack1() # choose the line to modify
             dialg = self.dialogs.myNoteBookCheck(self.gui,"Pest background",dic)

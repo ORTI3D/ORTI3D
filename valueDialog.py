@@ -167,8 +167,9 @@ class valueDialog:
 #            self.dialg.boxkeys.title.SetLabel(n)        
         
     def makeButton(self,name,value,detail,typ):
-        #print('vdlg 145',name,typ)
-        # find the dimension of the array
+        '''
+        for each type of input (coice, text, textlong,layin..) provides the required values
+        '''
         txt = name;
         a=txt.split('(')
         if len(a)>1:
@@ -194,10 +195,9 @@ class valueDialog:
 #            typ = 'text'
 #            txt+=' : '+det1 # OA 20/3/20 detail to det1
 #            bcontent = str(curVal)
-        else :  # OA 20/03/20 readded
-            if typ[:3] != 'lay':
-                bcontent = str(curVal)
-                typ = 'text'
-            else :
-                bcontent = curVal
+        elif typ[:3] != 'lay':
+            bcontent = str(curVal)
+            typ = 'text'
+        else :
+            bcontent = curVal
         return txt,bcontent,bselect,typ # OA 6/11/18 changed order
