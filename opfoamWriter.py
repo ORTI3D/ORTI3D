@@ -75,6 +75,7 @@ class opfoamWriter:
         for pl_name in self.core.plugins.pl_list:
             if self.core.dicplugins[pl_name]['active']==True:
                 self.core.plugins.writer(pl_name)
+        self.writeObservation()
                 
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
@@ -480,6 +481,11 @@ class opfoamWriter:
         s = '\n'.join(self.ractiv.astype('str'))
         f1=open(self.fDir+r'constant/options/ractive','w');f1.write(s);f1.close()
         self.writePhqFoam()
+        
+    def writeObservation(self):
+        if self.core.dicaddin['Obspts'][0]==0 : return
+        s=' '.join(self.core.dicaddin['Obspts'][1])
+        f1=open(self.fDir+r'constant/options/obspts','w');f1.write(s);f1.close()
         
     def getConditions(self):
         '''
@@ -1144,6 +1150,8 @@ class opfoamReader:
         '''reads h as the head'''
         if self.core.dicaddin['Model']['type'] == '2phases':
             return self.readScalar('p',iper)/9.8e4
+        elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
+            return self.readScalar('hp',iper)
         else:
             return self.readScalar('h',iper)
     def readWcontent(self,core,iper):

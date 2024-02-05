@@ -71,18 +71,22 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             if typ == 'Choice':
                 self.item[i] = QComboBox(self.glWidget)
                 chlist = value[1];
-                j=0
-                for n in chlist:
+                for j,n in enumerate(chlist):
                     self.item[i].addItem("")
                     self.item[i].setItemText(j,n)
-                    j+=1
                 self.item[i].setCurrentIndex(value[1].index(value[0]))
                 self.gl.addWidget(self.item[i],i,1,1,1)
             elif typ=='Check':
                 self.item[i] = QCheckBox(self.glWidget) #EV 18/02/20
-                #self.item[i].setCheckState(value)
                 self.item[i].setChecked(value)
-                self.gl.addWidget(self.item[i],i,1,1,1)
+                self.gl.addWidget(self.item[i],i,1,1,1)   
+            elif typ=='CheckList':
+                self.item[i] = CheckableComboBox()
+                chlist = value[1];
+                for j,n in enumerate(chlist):
+                    self.item[i].addItem(n)
+                    self.item[i].setItemChecked(j, False)
+                self.gl.addWidget(self.item[i],i,1,1,1)   
             elif typ=='Text':
                 self.item[i] = QLineEdit(self.glWidget)
                 self.item[i].setText(str(value))
@@ -153,6 +157,12 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             if typ == 'Choice': val[i] = str(self.item[i].currentText())
             if typ == 'Text': val[i] = str(self.item[i].text())
             if typ == 'Check': val[i] = self.item[i].checkState()
+            if typ == 'CheckList':
+                val[i]=[]
+                print(self.data[i][2][1])
+                for j in range(self.item[i].count()):
+                    if self.item[i].itemChecked(j): 
+                        val[i].append(self.data[i][2][1][j])
             if typ == 'Textlong': 
                 v0 = str(self.item[i].document().toPlainText())
                 val[i] = v0.split('\n')   
@@ -161,6 +171,32 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         if self.state =='accept' : return val
         else : return None
 
+class CheckableComboBox(QComboBox):
+	def __init__(self):
+		super().__init__()
+		self._changed = False
+		self.view().pressed.connect(self.handleItemPressed)
+
+	def setItemChecked(self, index, checked=False):
+		item = self.model().item(index, self.modelColumn()) # QStandardItem object
+		if checked: item.setCheckState(Qt.Checked)
+		else: item.setCheckState(Qt.Unchecked)
+        
+	def handleItemPressed(self, index):
+		item = self.model().itemFromIndex(index)
+		if item.checkState() == Qt.Checked:
+			item.setCheckState(Qt.Unchecked)
+		else: item.setCheckState(Qt.Checked)
+		self._changed = True
+        
+	def hidePopup(self):
+		if not self._changed: super().hidePopup()
+		self._changed = False
+
+	def itemChecked(self, index):
+		item = self.model().item(index, self.modelColumn())
+		return item.checkState() == Qt.Checked
+    
 class myFileDialog: # Dialog to open or save a file 
     def __init__(self,opt='Open'):
         self.opt = opt

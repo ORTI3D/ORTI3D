@@ -103,19 +103,19 @@ class addin:
         self.core.dicaddin['obsHead'] = {}
         self.core.dicaddin['obsTracer'] = {}
         self.core.dicaddin['obsChemistry'] = {}
-        self.structure['button']['5.Observation']=[{'name':'Obs','pos':0,'short':'Sel'}]
+        self.structure['button']['5.Observation']=[{'name':'Obspts','pos':0,'short':'Sel'}]
 
         name = 'Pback' # dict for the pest zoens parameters
         self.core.dicaddin['Pback1'] = {} # to choose the parameters
         self.core.dicaddin['Pback2'] = {} # to provide values
-        self.structure['button']['5.Pest']=[{'name':name,'pos':0,'short':'Pbk'}]
+        self.structure['button']['6.Pest']=[{'name':name,'pos':0,'short':'Pbk'}]
         name = 'Pzones' # dict for the pest zoens parameters
         self.core.dicaddin['Pzones1'] = {}
         self.core.dicaddin['Pzones2'] = {}
-        self.structure['button']['5.Pest'].append({'name':name,'pos':0,'short':'Pz'})
+        self.structure['button']['6.Pest'].append({'name':name,'pos':0,'short':'Pz'})
         
         name = 'Pestchek' # run Pestchek EV 07/11
-        self.structure['button']['5.Pest'].append({'name':name,'pos':0,'short':'Pz'})
+        self.structure['button']['6.Pest'].append({'name':name,'pos':0,'short':'Pz'})
 
         name = 'InitialChemistry' # to set specific initial chemistry
         self.core.dicaddin[name] = {'name':'','formula':'','tstep':''} #ev05/02/19 removed value =
@@ -400,10 +400,14 @@ class addin:
                     self.chem.Base[nameB]['exchange']['text'] = dic['exchange']['text'] 
             self.core.dicaddin[nameB] = self.chem.Base
         # observation points
-        if actionName == 'Ad_Obs':
-            data = [('Write','Text','tata'),('Species','Text','toto')]
+        if actionName == 'Ad_Obspts':
+            lz=self.core.diczone['Observation'].dic['obs.1']['name']
+            data = [('Write','Check',0),('Points','CheckList',(lz[0],lz))]
             dialg = self.dialogs.genericDialog(self.gui,'Select Points',data)
-            
+            dic2 = dialg.getValues()
+            if dic2 != None:
+                self.core.dicaddin['Obspts'] = dic2
+            print(dic2)
         # Pest
         if actionName == 'Ad_Pback':
             dic = self.pest.getDicBack1() # choose the line to modify
