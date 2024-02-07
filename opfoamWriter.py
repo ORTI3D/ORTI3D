@@ -75,7 +75,7 @@ class opfoamWriter:
         for pl_name in self.core.plugins.pl_list:
             if self.core.dicplugins[pl_name]['active']==True:
                 self.core.plugins.writer(pl_name)
-        #self.writeObservation()
+        self.writeObservation()
                 
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
@@ -233,7 +233,7 @@ class opfoamWriter:
         # creating the writetimes file
         s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
         t1=self.core.dicaddin['Time'];
-        if t1.haskey('write'):
+        if 'write' in t1:
             if t1['write']==0: # we write only the time here and not in zones
                 lfin,lstp=t1['final'],t1['steps']
                 s1=''
