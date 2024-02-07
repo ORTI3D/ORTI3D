@@ -314,13 +314,14 @@ class addin:
             if m[:4]=='Open':
                 tunit = tlist[self.core.dicval['OpenFlow']['dis.3'][4]]
             t = self.core.dicaddin['Time']
+            if 'write' not in t.keys(): t['write']='only these times'
             data = [('Total simulation time\n'+tunit,'Textlong',t['final']),
-                    ('Step size\n'+tunit,'Textlong',t['steps'])] # EV 18/02/19 remove 'mode'
-                    #('Step mode','Choice',(t['mode'],['linear','log']))]
+                    ('Step size\n'+tunit,'Textlong',t['steps']), # EV 18/02/19 remove 'mode'
+                    ('Writing','Choice',(t['write'],['only these times','add zone times']))]
             dialg = self.dialogs.genericDialog(self.gui,'Time',data)
             retour = dialg.getValues()
             if retour != None:
-                t['final'],t['steps']= retour # EV 18/02/19 removed t['mode'] 
+                t['final'],t['steps'],t['write']= retour # EV 18/02/19 removed t['mode'] 
                 self.setTime()
                 
         if actionName == 'Ad_Particle':

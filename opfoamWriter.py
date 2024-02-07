@@ -75,7 +75,7 @@ class opfoamWriter:
         for pl_name in self.core.plugins.pl_list:
             if self.core.dicplugins[pl_name]['active']==True:
                 self.core.plugins.writer(pl_name)
-        #self.writeObservation()
+        self.writeObservation()
                 
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
@@ -205,9 +205,6 @@ class opfoamWriter:
         if tunit== 1 : self.dtu = 1
         self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*self.dtu)
         self.ttable = self.core.makeTtable()
-        self.tlist = self.ttable['tlist']
-        intv = int(float(self.core.dicaddin['Time']['steps'][0])*self.dtu)
-        nstp = 10; #self.core.dicval['Modflow']['dis.8'][1]
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': int(self.maxT),
                   'deltaT':int(max(round(fslt[0]*self.dtu/200,0)*100,1)), 
@@ -228,16 +225,21 @@ class opfoamWriter:
         #if self.core.dicaddin['Model']['type'] =='Unsaturated': s+='timeStepControl Picard;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
-        # write times
-        #dt=self.tlist[1:]-self.tlist[:-1]
-#        if len(unique(dt))==1: # all time steps are the same
+        # write times (below is not really used now)
+        intv = int(float(self.core.dicaddin['Time']['steps'][0])*self.dtu)
         s += 'writeInterval '+str(intv)+ ';\n'
-#            #s += 'maxDeltaT '+str(int(tstp/10))+ ';\n'
-#        else:
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
-
+        # creating the writetimes file
         s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
+        t1=self.core.dicaddin['Time'];
+        if t1.haskey('write'):
+            if t1['write']==0: # we write only the time here and not in zones
+                lfin,lstp=t1['final'],t1['steps']
+                s1=''
+                for i in range(len(lfin)):
+                    s1+='\n'.join(linspace(stp,lfin[i],int(lfin[i]/lstp[i])))
+                    s1+='\n'
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -483,6 +485,7 @@ class opfoamWriter:
         self.writePhqFoam()
         
     def writeObservation(self):
+        if 'Obspts' not in self.core.dicaddin.keys(): return
         if self.core.dicaddin['Obspts'][0]==0 : return
         s=' '.join(self.core.dicaddin['Obspts'][1])
         f1=open(self.fDir+r'constant/options/obspts','w');f1.write(s);f1.close()

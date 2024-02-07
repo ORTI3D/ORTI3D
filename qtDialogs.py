@@ -74,6 +74,7 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 for j,n in enumerate(chlist):
                     self.item[i].addItem("")
                     self.item[i].setItemText(j,n)
+                self.item[i].setMinimumWidth(150)
                 self.item[i].setCurrentIndex(value[1].index(value[0]))
                 self.gl.addWidget(self.item[i],i,1,1,1)
             elif typ=='Check':

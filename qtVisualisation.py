@@ -14,7 +14,7 @@ import matplotlib.pylab as pl
 from matplotlib.patches import RegularPolygon,Polygon
 from matplotlib.lines import Line2D
 from matplotlib.collections import PolyCollection,LineCollection
-#from mpl_toolkits.axes_grid1 import make_axes_locatable #EV 26.11.20
+#from mpl_toolkits.axes_grid1 import Divider #make_axes_locatable #EV 26.11.20
 
 #pour l'affichage d'une carte de fond
 import matplotlib.image as Im
@@ -101,7 +101,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.toolbar = Toolbar(self,gui)
         self.toolbar.setFixedWidth(350)
         # ajout du subplot a la figure
-        self.cnv = self.fig.add_axes([.1,.05,.8,.9]) #left,bottom, wide,height     
+        self.cnv = self.fig.add_axes([.05,.05,.9,.9]) #left,bottom, wide,height     
+        #self.cbar = self.fig.add_axes([.9,.05,.1,.9]) #left,bottom, wide,height     
         #self.toolbar.update()    
         self.pos = self.mpl_connect('motion_notify_event', self.onPosition)
         
@@ -175,9 +176,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         #print('qtVis',self.gui.guiShow.swiImg,dataM)
         if dataM == None : self.drawContour(False)
         else : # modifs below 22/8/19
-            self.cbar=None #EV 26.11.20
             if self.gui.guiShow.swiImg == 'Contour':
-                #if self.cbar : self.cbar.remove()
+                if self.cbar : self.cbar.remove()
                 self.createContour(dataM,value,color)
             elif self.gui.guiShow.swiImg == 'Image':
                 self.createImage(dataM)
@@ -189,10 +189,10 @@ class qtVisualisation(FigureCanvasQTAgg):
         else : self.createVector(dataV,value,color)
         
     def drawObject(self,typObj,bool):
-        if typObj not in ['Particles','Grid']: #EV 15.2.21
-            try : self.cbar.remove() #EV 26.11.20
-            except : 
-                self.cbar = None
+#        if typObj not in ['Particles','Grid']: #EV 15.2.21
+#            try : self.cbar.clf() #OA 7/2/24
+#            except : 
+#                self.cbar = None
         if typObj == 'Map' and self.Map == None and bool == False : return
         exec('self.draw'+typObj+'('+str(bool)+')')
         
@@ -357,17 +357,17 @@ class qtVisualisation(FigureCanvasQTAgg):
         else: # classical square grid
             obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
             self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
-        if self.caxis==None: 
-            divider = make_axes_locatable(self.cnv) #EV 26.11.20
-            self.caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
-        self.cbar=self.fig.colorbar(obj,cax=self.caxis) #EV 26.11.20
+#        if self.caxis==None: 
+#            divider = make_axes_locatable(self.cnv) #EV 26.11.20
+#            self.caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
+        self.cbar=self.fig.colorbar(obj) #,cax=self.caxis) #EV 26.11.20
         self.redraw()
         
     def drawImage(self,bool):
         if self.mUnstruct: #OA 17/12/20
             if bool : 
                 self.Grid[0].set_array(self.grdArray)
-                self.cbar.on_mappable_changed(self.Grid[0]) #EV 15/02/21
+                #self.cbar.on_mappable_changed(self.Grid[0]) #EV 15/02/21
             else:
                 #if len(self.cnv.images)>0: #EV 07/01/2021 #EV 15/02/21
                     #self.cnv.images[0].set_visible(bool)
@@ -375,12 +375,18 @@ class qtVisualisation(FigureCanvasQTAgg):
         else:
             if len(self.cnv.images)>0: #EV 07/01/2021
                 self.cnv.images[0].set_visible(bool)
+        print('in draw img ',bool)
+        print(self.cnv.figure.subplotpars.right)
+        print(self.cnv.figure.get_size_inches())
+        print(self.cnv.bbox.width)
         if bool == False: 
             try: 
-                if self.cbar : 
-                    self.cbar.remove()
-                    #self.fig.delaxes(self.fig.axes[1])
-                    self.caxis=None #EV 26.11.20
+                self.cbar.remove()
+                #self.cnv.SubplotParams.update(.05,.05,.9,.9)
+                self.cnv.size(5,4)
+                self.cnv.tight_layout(True)
+                #self.fig.delaxes(self.fig.axes[1]) # same as remove
+                #self.caxis=None #EV 26.11.20
             except : pass
         self.redraw()
 
