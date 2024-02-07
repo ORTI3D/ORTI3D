@@ -9,12 +9,14 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.artist import Artist
 from matplotlib.axes import Subplot
 from matplotlib import rcParams,cm
+import matplotlib.colorbar as mcbar
 import matplotlib.pylab as pl
 #from matplotlib.mlab import dist_point_to_segment
 from matplotlib.patches import RegularPolygon,Polygon
 from matplotlib.lines import Line2D
 from matplotlib.collections import PolyCollection,LineCollection
 #from mpl_toolkits.axes_grid1 import Divider #make_axes_locatable #EV 26.11.20
+import matplotlib.transforms as mtransforms
 
 #pour l'affichage d'une carte de fond
 import matplotlib.image as Im
@@ -60,6 +62,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def __init__(self,gui):
     
         #super(wxVisualisation, self).__init__(parent=None, id=-1) 
+        #self.fig,self.cnv = pl.subplots();print(self.cnv)
         self.fig = pl.figure()
         #self.figurepanel = FigureCanvasWxAgg(self.panel, -1, self.fig)        
         FigureCanvasQTAgg.__init__(self, self.fig) #gui, -1, self.fig)
@@ -101,8 +104,9 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.toolbar = Toolbar(self,gui)
         self.toolbar.setFixedWidth(350)
         # ajout du subplot a la figure
-        self.cnv = self.fig.add_axes([.05,.05,.9,.9]) #left,bottom, wide,height     
-        #self.cbar = self.fig.add_axes([.9,.05,.1,.9]) #left,bottom, wide,height     
+        self.cbar = self.fig.add_axes([.91,.05,.03,.9]) #left,bottom, wide,height    
+        self.cbar.axis('off')
+        self.cnv = self.fig.add_axes([.05,.05,.85,.9]) #left,bottom, wide,height     
         #self.toolbar.update()    
         self.pos = self.mpl_connect('motion_notify_event', self.onPosition)
         
@@ -177,7 +181,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         if dataM == None : self.drawContour(False)
         else : # modifs below 22/8/19
             if self.gui.guiShow.swiImg == 'Contour':
-                if self.cbar : self.cbar.remove()
+                #if self.cbar : self.cbar.remove()
                 self.createContour(dataM,value,color)
             elif self.gui.guiShow.swiImg == 'Image':
                 self.createImage(dataM)
@@ -326,7 +330,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def createMap(self):
         try : file = self.gui.map
         except : 
-            onMessage(self.gui,'Please select a Map to display')
+            self.gui.onMessage(self.gui,'Please select a Map to display')
             self.gui.guiShow.dlgShow.onTickBox('Model','Map','B',False)#EV 8/12/21
             self.gui.guiShow.dicVisu['Model']['Map']=False 
         else : #EV 8/12/21
@@ -357,37 +361,26 @@ class qtVisualisation(FigureCanvasQTAgg):
         else: # classical square grid
             obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
             self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
-#        if self.caxis==None: 
-#            divider = make_axes_locatable(self.cnv) #EV 26.11.20
-#            self.caxis = divider.append_axes("right", size="5%", pad=0.05) #EV 26.11.20
-        self.cbar=self.fig.colorbar(obj) #,cax=self.caxis) #EV 26.11.20
+        self.fig.colorbar(obj, cax=self.cbar, orientation='vertical',fraction=0.05,pad=0)
+        self.cbar.axis('on')
         self.redraw()
         
     def drawImage(self,bool):
         if self.mUnstruct: #OA 17/12/20
             if bool : 
                 self.Grid[0].set_array(self.grdArray)
-                #self.cbar.on_mappable_changed(self.Grid[0]) #EV 15/02/21
             else:
-                #if len(self.cnv.images)>0: #EV 07/01/2021 #EV 15/02/21
-                    #self.cnv.images[0].set_visible(bool)
                 self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
         else:
             if len(self.cnv.images)>0: #EV 07/01/2021
                 self.cnv.images[0].set_visible(bool)
-        print('in draw img ',bool)
-        print(self.cnv.figure.subplotpars.right)
-        print(self.cnv.figure.get_size_inches())
-        print(self.cnv.bbox.width)
-        if bool == False: 
-            try: 
-                self.cbar.remove()
-                #self.cnv.SubplotParams.update(.05,.05,.9,.9)
-                self.cnv.size(5,4)
-                self.cnv.tight_layout(True)
-                #self.fig.delaxes(self.fig.axes[1]) # same as remove
-                #self.caxis=None #EV 26.11.20
-            except : pass
+        # colorbar
+        if bool==False: 
+            self.cbar.axis('off');
+            self.cbar.tick_params(axis='x',bottom=False,labelbottom=False)
+            self.cbar.tick_params(axis='y',right=False,labelright=False)
+            self.cbar.clear();
+            #self.cbar.figure.gcf().set_visible(bool)
         self.redraw()
 
     #####################################################################
@@ -404,7 +397,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.cnv.artists = []
         V = 11;Zmin=amin(amin(Z));Zmax=amax(amax(Z*(Z<1e5)));
         if Zmax==Zmin : # test min=max -> pas de contour
-            onMessage(self.gui,' values all equal to '+str(Zmin))
+            self.gui.onMessage(self.gui,' values all equal to '+str(Zmin))
             return
         if value == None or len(value)<4: value = [Zmin,Zmax,(Zmax-Zmin)/10.,2,'auto',[]]
         # adapt the number and values of the contours

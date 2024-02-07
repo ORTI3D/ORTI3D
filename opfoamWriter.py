@@ -75,7 +75,7 @@ class opfoamWriter:
         for pl_name in self.core.plugins.pl_list:
             if self.core.dicplugins[pl_name]['active']==True:
                 self.core.plugins.writer(pl_name)
-        self.writeObservation()
+        #self.writeObservation()
                 
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
