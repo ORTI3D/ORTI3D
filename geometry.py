@@ -1096,7 +1096,7 @@ def zone2array(core,modName,line,im):
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
         grd = core.addin.getFullGrid()
-        intp = False # OA 3/4/20 this l an dl. below
+        intp = True # OA 3/4/20 this l an dl. below
         #if line in ['lpf.8']: intp=True #'dis.6','dis.7',
         if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
         else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20

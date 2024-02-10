@@ -159,12 +159,12 @@ class BaseTop:
                 else :
                     mat=zone2grid(self.core,mod,line,section,opt=var,iper=0)
         else:
-            if self.core.addin.getDim()=='3D' and 'USG' in mdgroup: # OA 3/2/21
-                mat = zone2mesh(self.core,mod,line,media=section,iper=0)
-                if self.core.dictype[mod][line][section]=='importArray':#EV 15/2/21 
-                    mat = self.core.getValueLong(mod,line,0)[section]
-            else :
-                mat = self.core.getValueLong(mod,line,0)[section];#added section
+#            if self.core.addin.getDim()=='3D' and 'USG' in mdgroup: # OA 3/2/21
+#                mat = zone2mesh(self.core,mod,line,media=section,iper=0)
+#                if self.core.dictype[mod][line][section]=='importArray':#EV 15/2/21 
+#                    mat = self.core.getValueLong(mod,line,0)[section]
+#            else :
+            mat = self.core.getValueLong(mod,line,0)[section];#added section
         #self.curVar[line] = mat*1;
         X,Y = getXYmeshSides(self.core,plane,section)
         if 'USG' in mdgroup: # OA 20/11/20

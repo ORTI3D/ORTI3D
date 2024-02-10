@@ -88,13 +88,20 @@ class Menus:
         fDir,fName =dlg.getsetFile(self.gui,'Open',"*.ipht");#print fDir,fName
         importer = impFile(self.gui,self.core)
         importer.impVersion1(fDir,fName)
-        
+    '''    
     def OnImportModflowAscii(self,evt=None):
         dlg = self.dialogs.myFileDialog()
         fDir,fName =dlg.getsetFile(self.gui,'Open',"*.nam");#print fDir,fName
         importer = impAsciiModflow(self.core,fDir,fName)
         importer.readAll()
-        
+    '''    
+    def OnImport3DgeomDis(self,evt=None):
+        dlg = self.dialogs.myFileDialog()
+        fDir,fName =dlg.getsetFile(self.gui,'Open',"*.disrw");#print fDir,fName
+        importer = impFile(self.gui,self.core)
+        bool = importer.imp3DgeomDis(self.core,fDir+os.sep+fName)
+        if bool: self.dialogs.onMessage(self.gui,'File imported')
+
     def askSave(self,evt=None):
         if self.gtyp=='qgis': #EV 27/11/18
             if self.core.fileDir==None:return
