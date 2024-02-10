@@ -43,7 +43,8 @@ class Ui_Var(object):
         self.choiceM = QComboBox(self.hlWidget)
         #self.choiceM.setSizePolicy(policy)
         self.choiceM.setMaximumWidth(100);#setGeometry(QRect(0, 0, 45, 18))
-        #self.choiceM.setView(view)
+        view =  QListView(self.choiceM) ; view.setMinimumWidth(150) # creat and set the width ListView
+        self.choiceM.setView(view)
         self.choiceM.activated['QString'].connect(self.onChoiceModel)
         self.gridLayout.addWidget(self.choiceM, 0)
 

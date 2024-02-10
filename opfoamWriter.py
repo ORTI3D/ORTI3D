@@ -73,7 +73,7 @@ class opfoamWriter:
             if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
                 self.writeSorptionDecay()
         for pl_name in self.core.plugins.pl_list:
-            if self.core.dicplugins[pl_name]['active']==True:
+            if self.core.dicplugins[pl_name]['active']>0:
                 self.core.plugins.writer(pl_name)
         self.writeObservation()
                 
