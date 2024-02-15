@@ -194,8 +194,52 @@ class impFile:
                 arr[iv,ir,:] = [float(x) for x in s[iv*nr+ir+3].split()]
         if nvar==1: arr=arr[0]
         return ysign,cols,rows,arr # OA added 13/6/20
-                    
 
+    def imp3DgeomDis(self,core,fileName):
+        '''
+        this imports geometry as gvar from a disrw file produced by gWvistas 
+        (will be modified to be more general later)
+        this works only for a regular grid
+        '''  
+        f1=open(fileName+'.disrw','r')
+        for i in range(4): f1.readline()
+        a=f1.readline();b=a.split()
+        nlay,nrow,ncol=int(b[0]),int(b[1]),int(b[2]);print (nlay,nrow,ncol)
+        f1.readline();f1.readline()
+        nc=0;wx=[]
+        #reading col width
+        while nc<ncol:
+            a=f1.readline().split();wx.extend(a);nc+=len(a)
+        wx=array(wx).astype('float')
+        #reading row height
+        f1.readline()
+        nr=0;hy=[]
+        while nr<nrow:
+            a=f1.readline().split();hy.extend(a);nr+=len(a)
+        hy=array(hy).astype('float')
+        #reading layer top
+        ztop=zeros((nlay,nrow,ncol))
+        for ilay in range(nlay):
+            f1.readline()
+            for irow in range(nrow):
+                nc=0;z=[]
+                while nc<ncol:
+                    a=f1.readline().split();z.extend(a);nc+=len(a)
+                ztop[ilay,irow]=array(z).astype('float')
+        f1.close()
+        # writing 
+        for ilay in range(nlay):
+            f2=open(core.fileDir+os.sep+'top'+str(ilay)+'.gvar','w')
+            f2.write('-1\n')
+            f2.write(' '.join(wx.astype('str'))+'\n')
+            f2.write(' '.join(hy.astype('str'))+'\n')
+            for irow in range(nrow):
+                f2.write(' '.join(ztop[ilay,irow].astype('str'))+'\n')
+        f2.close()
+        return True
+                  
+''' below not used
+'''
 class impAsciiModflow:
     """this class imports a whole modflow model, and sets it as an
     iqpht3d model. It reads each file according to the keyword dictionnary
@@ -432,6 +476,3 @@ class impAsciiModflow:
             self.core.dicaddin['3D']['topMedia']=list(range(nlay,0,-1))
         print ('done')
         return dic1
-        
-"""to be done : make model in 3D if needed to see layers
-"""

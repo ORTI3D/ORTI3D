@@ -134,9 +134,9 @@ class orti3dGui(QMainWindow):
         menuFile.addAction(exitAction)
         # import menu
         menuImport = self.menuBar().addMenu("&Import")
-        #idataAction = QAction("&Data", self, 
-                #statusTip="import data text file",
-                #triggered=self.menus.OnImportData)
+        i3dgeoAction = QAction("&3Dgeom", self, 
+                statusTip="import disrw file",
+                triggered=self.menus.OnImport3DgeomDis)
         iobsHAction = QAction("&Head observation data", self, #EV 21/12
                 statusTip="import data text file",
                 triggered=self.menus.OnImportHead)
@@ -155,11 +155,10 @@ class orti3dGui(QMainWindow):
         ipostfAction = QAction("&Postfix species", self, # OA 30/6/19
                 statusTip="import user species from postfix",
                 triggered=self.menus.OnImportPostfixSpecies)
-        #menuImport.addAction(idataAction)
+        menuImport.addAction(i3dgeoAction)
         menuImport.addAction(iobsHAction)
         menuImport.addAction(iobsTAction)
         menuImport.addAction(iobsCAction)
-        #menuImport.addAction(isoluAction) #EV 14/11/19
         menuImport.addAction(iuspecAction)
         menuImport.addAction(ipostfAction)        # OA 30/6/19
         # export menu
