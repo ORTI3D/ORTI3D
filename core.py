@@ -197,7 +197,7 @@ class Core:
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         if self.gui!=None: self.gui.onInitGui(self)
-        print('in open')
+        #print('in open')
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
         self.makeTtable()
         MshType = 0                    
@@ -215,7 +215,8 @@ class Core:
             if self.gui!=None: self.gui.currentModel = 'OpenFlow'
             self.addin.setGridInModel('old')
             MshType = self.getValueFromName('OpenFlow','MshType')
-            self.flowReader = self.transReader = opfoamReader(self,self.addin.mesh)
+            self.flowReader = opFlowReader(self,self.addin.mesh)
+            self.transReader = opTransReader(self,self.addin.mesh)
         if group[:5] == 'Modfl': #OA 02/20
             self.flowReader = modflowReader(fDir,fName)
             if 'USG' in group: self.transReader = mtUsgReader(fDir,fName)
@@ -299,7 +300,8 @@ class Core:
             self.opfWriter = opfoamWriter(self,self.addin.mesh)
             dicBC= {};options = {'group':modName[4:]}
             self.opfWriter.writeFiles(self.fileDir,dicBC,options)
-            self.transReader=self.flowReader = opfoamReader(self,self.addin.mesh)
+            self.flowReader = opFlowReader(self,self.addin.mesh)
+            self.transReader = opTransReader(self,self.addin.mesh)
         if modName == 'Pest':
             info=self.addin.pest.writeFiles() #EV 11/12/19
         if info ==True :return 'Files written'
@@ -715,25 +717,39 @@ class Core:
         grd  = self.addin.getFullGrid()
         nrow = grd['ny']
         if self.addin.getDim() in ['Xsection','Radial']:
-            iz=iy*1;iy=[0]*len(iz)
+            iz=iy*1;nrow=1;iy=zeros(len(iz)).astype('int')
         return z2[iz,nrow-iy-1,ix]  
             
+    def isObsFile(self,zname,esp):
+        '''returns a list of bool stating if for the given zone and given species there
+        is a file written by opf
+        not fully finished
+        '''
+        if 'Obspts' not in self.dicaddin.keys(): return [False]*len(esp)
+        if zname in self.dicaddin['Obspts'][1]: return [True]*len(esp)
+        else : return [False]*len(esp)
+        
     def onPtObs(self,typ,iper,group,zname,esp,layers_in=0,ss=''): #EV 23/03/20
         """ get the values at observation zones, esp can be a list of species names
         typ[0]: B: breakthrough, P: profile, X : XYplot, V: vertical profile
         typ[1]: 0:head/conc, 1:weighted conc, 2:total discharge, 3:average flux
+        iper is a period number
         group : Flow, Transport, Chemistry
         zname : zone name
         esp : list of species (F:Head,Wcontent,Flux; T:Tracer, C:species)
         layers_in : list of layer or 'all' for all layers of one zone
         ss : solute ss='' or sorbed species ss='S'
         """
+        ofile=self.isObsFile(zname,esp) # returns a list for the given variables
+        if self.addin.getDim() in ['Xsection','Radial']: layers_in='all'
     ### Get some parameters
         zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
         nx,ny,xvect,yvect = getXYvects(self) 
         grd = self.addin.getFullGrid()
         mtype = self.dicaddin['Model']['group'][:3]; ## model type, modflow or other
-        MshType = self.getValueFromName('Modflow','MshType') # OA 18/12/20
+        modName='Modflow'
+        if self.dicaddin['Model']['group'][:4]=='Open': modName='OpenFlow'
+        MshType = self.getValueFromName(modName,'MshType') # OA 18/12/20
         ### Get a list of icol, irow, ilay
         if typ[0]=='X': ## XYplot
             ix=[];iy=[];typ='X0'
@@ -775,9 +791,12 @@ class Core:
                 #print('lay :',layers)
             elif  layers_in == 'all' : layers = zlayers
             else : layers = layers_in # OA 13/5/20 layers->layers_in already a list
-            for il in layers: 
-                ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
-                asin2.extend(asin);acos2.extend(acos)
+            if self.addin.getDim() in ['Xsection','Radial']:
+                ix2,iy2,iz2,asin2,acos2=ix*1,iy*1,layers,asin,acos
+            else :
+                for il in layers: 
+                    ix2.extend(ix);iy2.extend(iy);iz2.extend([il]*len(ix))
+                    asin2.extend(asin);acos2.extend(acos)
         #if layers_in == 'all': layers=[-1]*len(zlayers) # OA 19/3/20 to make later the avergae on layers
         llay=iz2  #EV 23/03/20 
     ### Transform icol for modflow
@@ -789,11 +808,12 @@ class Core:
         if typ[0]=='B': iper=list(range(len(t2))) ## time-serie graph
         else : iper = [iper]
     ### Get the value
-        pt=[] ## pt will be a list of tables (iper,irows) provided by the reader
+        pt=[] 
+        '''pt is a list of tables (iper,irows) for each species for the given zone'''
         labels=[''] 
        ## For Head and Wcontent (pt index is the layer)
         if esp[0] in ['Head','Wcontent']: 
-            m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0])
+            m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0],ofile=ofile[0],zname=zname)
             #print(shape(m),ix2,iym,iz2)
             if layers_in == 'all': # +below OA 11/4/2 to consider all
                 pt.append(m)
@@ -885,8 +905,11 @@ class Core:
         #if esp[0] == 'Flux': pt=flux1 #EV 20/04/20 # OA 13/5/20 no it is 1 mutliplied later by flux or discharge
        ## Time-serie graph
         if typ[0]=='B': 
-            p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             labels[0]='time';
+            if ofile[0]:
+                t2,p1=pt[0][:,0],pt[0][:,1]
+                return t2,p1,labels
+            p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
                 if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1);## conc, pt[i] is a table (nper,nrow) 
                 elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
@@ -917,14 +940,15 @@ class Core:
         elif typ[0]=='V': #EV 20/04/20
             labels[0]='distance'
             distz=self.getZcoord(iym,ix2,llay) #print('distz',distz)
-            distz=list(dict.fromkeys(distz))
-            p1=zeros(len(distz)*len(esp))
-            for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
-                if typ[1]=='0': p1[i]=mean(pt[i],axis=1)
-                elif typ[1]=='1': p1[i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) 
-                elif typ[1]=='2': p1[i]=sum(pt[i]*disch1[i],axis=1)
-                elif typ[1]=='3': p1[i]=mean(pt[i]*flux1[i],axis=1)
-            p1=(p1.reshape(len(esp),len(distz))).T
+            #distz=list(dict.fromkeys(distz))
+            p1=zeros((len(distz),len(pt)))
+            for i in range(len(pt)): 
+#                if layers_in == 'all': # EV 30/04/20 
+#                    pt[i]=pt[i].reshape(len(distz),len(pt)).T
+#                    pt[i]=np.mean(pt[i],axis=1)
+                if typ[1]=='0': p1[:,i]=pt[i][0] # there is jus tone species
+                elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux1[i] ## weigthed conc= darcy flux #EV 20/04/20
+                elif typ[1]=='2': p1[:,i]=pt[i]*disch1[i] ## discharge or mass discharge #EV 20/04/20
             return distz,p1,labels
        ## XY plot
         elif typ[0]=='X': 

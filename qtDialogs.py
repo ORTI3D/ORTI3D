@@ -83,10 +83,10 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
                 self.gl.addWidget(self.item[i],i,1,1,1)   
             elif typ=='CheckList':
                 self.item[i] = CheckableComboBox()
-                chlist = value[1];
-                for j,n in enumerate(chlist):
+                lchoice,lbool = zip(*value[1]);
+                for j,n in enumerate(lchoice):
                     self.item[i].addItem(n)
-                    self.item[i].setItemChecked(j, False)
+                    self.item[i].setItemChecked(j, lbool[j])
                 self.gl.addWidget(self.item[i],i,1,1,1)   
             elif typ=='Text':
                 self.item[i] = QLineEdit(self.glWidget)
@@ -160,10 +160,10 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
             if typ == 'Check': val[i] = self.item[i].checkState()
             if typ == 'CheckList':
                 val[i]=[]
-                print(self.data[i][2][1])
+                print('chekli', self.data[i][2][1])
                 for j in range(self.item[i].count()):
                     if self.item[i].itemChecked(j): 
-                        val[i].append(self.data[i][2][1][j])
+                        val[i].append(self.data[i][2][1][j][0])
             if typ == 'Textlong': 
                 v0 = str(self.item[i].document().toPlainText())
                 val[i] = v0.split('\n')   

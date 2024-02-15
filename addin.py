@@ -403,7 +403,10 @@ class addin:
         # observation points
         if actionName == 'Ad_Obspts':
             lz=self.core.diczone['Observation'].dic['obs.1']['name']
-            data = [('Write','Check',0),('Points','CheckList',(lz[0],lz))]
+            chk,ptlist=self.core.dicaddin['Obspts']
+            lpt=[]
+            for n in lz: lpt.append((n,n in ptlist))
+            data = [('Write','Check',chk),('Points','CheckList',(lz[0],lpt))]
             dialg = self.dialogs.genericDialog(self.gui,'Select Points',data)
             dic2 = dialg.getValues()
             if dic2 != None:

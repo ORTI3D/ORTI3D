@@ -57,7 +57,7 @@ class multiPlot(QDialog):
         #self.gl.setGeometry(QRect(5, 5, w0*.2, h0*.03))
 
     ## type of result 
-        if self.res != 'W content':
+        if self.res != 'Wcontent':
             self.label_0 = QtWidgets.QLabel(self.frame)
             #self.label_0.setMaximumSize(QtCore.QSize(60, 20))
             self.label_0.setText("Type of result")
@@ -67,8 +67,8 @@ class multiPlot(QDialog):
                 mm,mval = self.core.dicaddin['usedM_Modflow']
                 v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
                 mod=self.core.dicaddin['Model']['group']
-                if (v1==2 or v2==2) and (mod =='Modflow series'):
-                    self.rgroup.addItems(['Head','W content'])#,'Flux']) #EV 02/03/20
+                if ((v1==2 or v2==2) and (mod =='Modflow series')) or (mod[:4]=='Open'):
+                    self.rgroup.addItems(['Head','Wcontent'])#,'Flux']) #EV 02/03/20
                 else : self.rgroup.addItems(['Head'])
             if self.res in ['Transport','Chemistry'] : 
                 self.rgroup.addItems(
@@ -171,22 +171,23 @@ class multiPlot(QDialog):
     
     def getChoices(self,res,typ):
     ## return a dic in function of type of graph and result to plot
+        dim=self.core.addin.getDim()
         dicObsZone=self.getObsZone()
         dicLayers=self.getLayers()
         if res =='Chemistry': 
             dicSpecies=self.getSpecies()
-            if typ=='X' or len(dicLayers['Layers'])==1: 
-                dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
-            else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
+            if typ!='X' and dim=='3D': 
+                dic = {**dicObsZone,**dicLayers,**dicSpecies} #EV 26/08/19
+            else : dic = {**dicObsZone,**dicSpecies}
         elif res =='Transport': 
             dicSpecies={'Species':[('Tracer',False),('Temperature',False)]}
-            if typ=='X' or len(dicLayers['Layers'])==1: 
-                dic = {**dicObsZone,**dicSpecies} #EV 26/08/19
-            else : dic = {**dicObsZone,**dicLayers,**dicSpecies}
+            if typ=='X' and dim=='3D': 
+                dic = {**dicObsZone,**dicLayers,**dicSpecies} #EV 26/08/19
+            else : dic = {**dicObsZone,**dicSpecies}
         else : 
-            if typ=='X' or len(dicLayers['Layers'])==1: 
-                dic = dicObsZone #EV 26/08/19
-            else : dic = {**dicObsZone,**dicLayers}
+            if typ=='X' and dim=='3D': 
+                dic = {**dicObsZone,**dicLayers}
+            else : dic = dicObsZone
         return dic
     
     def getValues(self): #EV 14/08/19
@@ -206,13 +207,13 @@ class multiPlot(QDialog):
         plotOrder: for chemistry multiplot by zone or by species
         zolist: list with model observation zone
         splist: list of species for chem, 'tracer' for transport and 'Head' and 
-            'W content' ('Flux' for flow is in ZB)
+            'Wcontent' ('Flux' for flow is in ZB)
         lylist: list with model layers'''
         dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
         rtyp = int(self.rgroup.currentIndex()) #EV 02/03/20
         dicIn['ptyp']=ptyp+str(rtyp)
-        if self.rgroup.currentText() in ['W content']:#,'Flux']: 
+        if self.rgroup.currentText() in ['Wcontent']:#,'Flux']: 
             dicIn['ptyp']=ptyp+'0'
             dicIn['splist']=['Wcontent']
         elif self.res=='Transport' :
@@ -224,7 +225,7 @@ class multiPlot(QDialog):
         #dic=self.nb.getValues() 
         dic=self.getValues() #EV 14/08/19
         nblay=getNlayers(self.core) #EV 26/08/19
-        if nblay==1 : dic['Layers']= [('0', int(2))] #EV 26/08/19
+        dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
         dicIn['zolist']=[dic['Zones'][i][0] for i in range(
                 len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
@@ -388,7 +389,7 @@ class multiPlot(QDialog):
             curTime = int(self.Tstep.currentIndex())
             iper = curTime ; axlabel='Distance '+'('+ulength+')' 
         if 'Head' in splist: group='Flow'; aylabel='Head '+'('+ulength+')'
-        elif 'W content' in splist : group = 'Flow' ; aylabel = 'W content' # OA 21/2/2019
+        elif 'Wcontent' in splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
         elif ('Tracer' in splist) or ('Temperature' in splist) : 
             group = 'Transport' 
             #print('ptyp[1]',ptyp[1],len(ptyp[1]))

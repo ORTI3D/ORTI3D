@@ -105,6 +105,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.toolbar.setFixedWidth(350)
         # ajout du subplot a la figure
         self.cbar = self.fig.add_axes([.91,.05,.03,.9]) #left,bottom, wide,height    
+        self.cbar_on = False
         self.cbar.axis('off')
         self.cnv = self.fig.add_axes([.05,.05,.85,.9]) #left,bottom, wide,height     
         #self.toolbar.update()    
@@ -157,9 +158,15 @@ class qtVisualisation(FigureCanvasQTAgg):
         """definit l'affichage ou non des donnees qaund contour"""
         self.dataon=bool
         
-    def redraw(self,opt=''): # OA 28/1/21
+    def redraw(self,Imgopt=False): # OA 28/1/21
         #self.cnv.set_xlim(self.xlim)
         #self.cnv.set_ylim(self.ylim)
+                # colorbar
+        if Imgopt == False: 
+            self.cbar.axis('off');
+            self.cbar.tick_params(axis='x',bottom=False,labelbottom=False)
+            self.cbar.tick_params(axis='y',right=False,labelright=False)
+            self.cbar.clear();
         self.draw()
 
 #    def changeTitre(self,titre):
@@ -244,6 +251,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         #self.cnv.add_collection(self.Vector)
         self.cnv.collections.append(self.Vector)
         self.Vector.data = [0,0,None,None]
+        self.redraw()
 
 #    def changeDomain(self):
 #        self.changeAxesOri('Z',0)
@@ -363,7 +371,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
         self.fig.colorbar(obj, cax=self.cbar, orientation='vertical',fraction=0.05,pad=0)
         self.cbar.axis('on')
-        self.redraw()
+        self.redraw(Imgopt=True)
         
     def drawImage(self,bool):
         if self.mUnstruct: #OA 17/12/20
@@ -374,14 +382,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         else:
             if len(self.cnv.images)>0: #EV 07/01/2021
                 self.cnv.images[0].set_visible(bool)
-        # colorbar
-        if bool==False: 
-            self.cbar.axis('off');
-            self.cbar.tick_params(axis='x',bottom=False,labelbottom=False)
-            self.cbar.tick_params(axis='y',right=False,labelright=False)
-            self.cbar.clear();
             #self.cbar.figure.gcf().set_visible(bool)
-        self.redraw()
+        self.redraw(Imgopt=bool)
 
     #####################################################################
     #             Gestion de l'affichage des contours

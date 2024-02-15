@@ -73,7 +73,7 @@ class opfoamWriter:
             if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
                 self.writeSorptionDecay()
         for pl_name in self.core.plugins.pl_list:
-            if self.core.dicplugins[pl_name]['active']==True:
+            if self.core.dicplugins[pl_name]['active']>0:
                 self.core.plugins.writer(pl_name)
         self.writeObservation()
                 
@@ -487,7 +487,19 @@ class opfoamWriter:
     def writeObservation(self):
         if 'Obspts' not in self.core.dicaddin.keys(): return
         if self.core.dicaddin['Obspts'][0]==0 : return
-        s=' '.join(self.core.dicaddin['Obspts'][1])
+        obs =self.core.dicaddin['Obspts'][1];nobs = len(obs)
+        dicz = self.core.diczone['Observation'].dic['obs.1']
+        grd = self.core.addin.getFullGrid()
+        s=str(nobs)+' 2\n'
+        for i in range(nobs):
+            io = dicz['name'].index(obs[i])
+            x,y = dicz['coords'][io][0];media=dicz['media'][io]
+            if self.MshType==0: #structured
+                ix,iy,a =zone2index(self.core,[x],[y],0)
+                s += obs[i]+' '+str(iy[0]*grd['nx']+ix[0])+' '+str(media)+'\n'
+            else : #usntructured
+                idx,val=zmesh(self.core,dicz,media,0)
+                s += obs[i]+' '+str(idx[0])+' '+str(media)+'\n'
         f1=open(self.fDir+r'constant/options/obspts','w');f1.write(s);f1.close()
         
     def getConditions(self):
@@ -1117,20 +1129,21 @@ class opfoamWriter:
         # writing the file
         f1=open(core.fileDir+os.sep+core.fileName+'.gsf','w');f1.write(s);f1.close()
 
-class opfoamReader:
+class opfReader:
     def __init__(self,core,opfoam):
         '''core is the model, opf the openfoam object'''
-        self.ncell_lay = opfoam.ncell_lay
         self.core,self.opf = core,opfoam
-        self.ttable = core.makeTtable()
+        
+    def inivar(self):
+        self.ncell_lay = self.opf.ncell_lay
+        self.ttable = self.core.makeTtable()
         self.tlist = self.ttable['tlist']
-        self.nlay = getNlayers(core)
+        self.nlay = getNlayers(self.core)
         self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         self.orientation = self.core.addin.getDim() # 'z' or 'y' for xsect or 'r' for radial
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
         else : self.nlay = 1
         self.ncell = self.ncell_lay*self.nlay
-        self.listE = core.addin.pht3d.getDictSpecies();
         self.flagMask=0;
         tunit = self.core.dicval['OpenFlow']['dis.3'][4]
         if tunit== 5 : self.dtu = 86400*365
@@ -1138,7 +1151,6 @@ class opfoamReader:
         if tunit== 3: self.dtu = 3600
         if tunit== 2: self.dtu = 60
         if tunit== 1 : self.dtu = 1
-
         
     def readMask(self,iesp,specname):
         self.phmask = list(range(self.ncell))
@@ -1148,59 +1160,25 @@ class opfoamReader:
         fname=dr+os.sep+fn
         if fname in os.listdir(dr):
             a=loadtxt(fname);self.phmask = a.astype('int')
-        
-    def readHeadFile(self,core,iper):
-        '''reads h as the head'''
-        if self.core.dicaddin['Model']['type'] == '2phases':
-            return self.readScalar('p',iper)/9.8e4
-        elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
-            return self.readScalar('hp',iper)
-        else:
-            return self.readScalar('h',iper)
-    def readWcontent(self,core,iper):
-        '''reads sw as the water content'''
-        return self.readScalar('sw',iper)
-
-    def readFloFile(self,core,iper):
-        return self.readVector(iper)        
-
-    def readUCN(self,core,opt,tstep,iesp,specname=''): 
-        '''reads the concentrations iesp=-1 for tracer (not used for others)
-        opt not used, used for mt3dms'''
-        fDir = self.core.fileDir
-        if self.flagMask==0: 
-            self.readMask(iesp,specname);self.flagMask=1
-        if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
-            f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
-            s = s.split()[0] # to remove \n
-            dname = str(int(self.tlist[1]*self.dtu))
-            if dname not in os.listdir(fDir):
-                os.mkdir(fDir+os.sep+dname)
-            os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
-            tstep = 1
-        if iesp==-1: # tracer or temp 1st letter
-            return self.readScalar(specname[:1],tstep)
-        ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
-        lesp1 = ['pH','pe']
-        lesp1.extend(lesp)
-        lesp1.extend(self.listE['p'])
-        if specname in lesp1: #search in species file
-            return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
-        elif '(g)' in specname: #gas species
-            iesp = lgcomp.index(specname)
-            return self.readScalar('Cg'+str(iesp),tstep)
-        else : #chem species
-            iesp = lcomp.index(specname)+4
-            return self.readScalar('Cw'+str(iesp),iper=tstep,spc=0)
-        
+            
     def getGeom(self,core):
+        '''send back the geometry, transforms xsect and radial to vertical
+        '''
         grd = core.addin.getFullGrid()
         ncol, nrow = grd['nx'], grd['ny']
         nlay=getNlayers(core);#print iper, nlay,ncol,nrow
         if core.addin.getDim() in ['Xsection','Radial']:
             nlay=nrow;nrow=1
         return nlay,ncol,nrow
-        
+    
+    def getPtsInArray(self,A,irow,icol,ilay):
+            if self.core.addin.getDim() in ['Xsection','Radial']:
+                ilay=irow;irow=[0]*len(icol)
+            if self.MshType==0:
+                return A[ilay,irow,icol]
+            else :
+                return A[ilay,icol]
+
     def readScalar(self,name,iper=None,iesp=-1,spc=0):
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period
@@ -1276,6 +1254,81 @@ class opfoamReader:
         #print("vector 0",vx[0,0],vy[0,0],vz[0,0])
         return vx,vy,vz
 
+class opFlowReader(opfReader):  
+    def __init__(self,core,opfoam):
+        self.core,self.opf = core, opfoam
+        self.inivar()
+        
+    def readHeadFile(self,core,iper):
+        '''reads h as the head'''
+        if self.core.dicaddin['Model']['type'] == '2phases':
+            return self.readScalar('p',iper)/9.8e4
+        elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
+            return self.readScalar('hp',iper)
+        else:
+            return self.readScalar('h',iper)
+    def readWcontent(self,core,iper):
+        '''reads sw as the water content'''
+        return self.readScalar('sw',iper)
+
+    def readFloFile(self,core,iper):
+        return self.readVector(iper)       
+
+    def getPtObs(self,core,irow,icol,ilay,iper,specname='',ofile=False,zname=''):
+        """a function to get values of one variable at given point or points.
+        irow, icol and ilay must be lists of the same length. iper is also
+        a list containing the periods for which data are needed. opt is not used
+        , iesp is a list containing the indice of the species 
+        ss is for solute ('') or sorbed ('S' ) species. 
+        """
+        if specname == 'Head': short = 'hp'
+        elif specname == 'Wcontent': short = 'sw'
+        if ofile==True:
+            if len(irow==1): # verify that its a one point
+                m = loadtxt(self.core.fileDir+os.sep+'observation\\obs_'+zname+'_'+short+'.txt')
+                return m
+        pobs=zeros((len(iper),npts))+0.;
+        for i in range(len(iper)):
+            ip = iper[i]
+            A = self.readScalar(short,ip)
+            pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
+        return pobs
+
+class opTransReader(opfReader):  
+    def __init__(self,core,opfoam):
+        self.core,self.opf = core, opfoam
+        self.inivar()
+        self.listE = core.addin.pht3d.getDictSpecies();
+        
+    def readUCN(self,core,opt,tstep,iesp,specname=''): 
+        '''reads the concentrations iesp=-1 for tracer (not used for others)
+        opt not used, used for mt3dms'''
+        fDir = self.core.fileDir
+        if self.flagMask==0: 
+            self.readMask(iesp,specname);self.flagMask=1
+        if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
+            f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
+            s = s.split()[0] # to remove \n
+            dname = str(int(self.tlist[1]*self.dtu))
+            if dname not in os.listdir(fDir):
+                os.mkdir(fDir+os.sep+dname)
+            os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
+            tstep = 1
+        if iesp==-1: # tracer or temp 1st letter
+            return self.readScalar(specname[:1],tstep)
+        ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
+        lesp1 = ['pH','pe']
+        lesp1.extend(lesp)
+        lesp1.extend(self.listE['p'])
+        if specname in lesp1: #search in species file
+            return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
+        elif '(g)' in specname: #gas species
+            iesp = lgcomp.index(specname)
+            return self.readScalar('Cg'+str(iesp),tstep)
+        else : #chem species
+            iesp = lcomp.index(specname)+4
+            return self.readScalar('Cw'+str(iesp),iper=tstep,spc=0)
+        
 
     def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''):
         """a function to get values of one variable at given point or points.
@@ -1283,15 +1336,7 @@ class opfoamReader:
         a list containing the periods for which data are needed. opt is not used
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
-        """
-        grd = self.core.addin.getFullGrid()
-            
-        def getPtsInArray(A,irow,icol,ilay):
-            if self.MshType==0:
-                return A[ilay,irow,icol]
-            else :
-                return A[ilay,icol]
-        
+        """      
         npts=len(irow)
         pobs=zeros((len(iper),npts))+0.;
         #fDir = self.core.fileDir
@@ -1309,8 +1354,9 @@ class opfoamReader:
             else : #chem species
                 iesp = lcomp.index(specname)+4
                 A = self.readScalar('Cw'+str(iesp),ip)
-            pobs[i,:] = getPtsInArray(A,irow,icol,ilay)
+            pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
         return pobs
+
 
 #################   utilities for openfoam
 '''

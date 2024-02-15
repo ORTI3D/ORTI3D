@@ -54,9 +54,9 @@ def linIntpFromGrid(core,core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # 
                 cnd = (xx>=vx[n])&(xx<vx[n+1]) #OA 10/6/20 added =
                 vj[cnd] = n
                 dxx[cnd] = (xx[cnd]-xc[n])/(vx[n+1]-vx[n]) # OA 3/4/20 added
-            core.lcellInterp = [vi,vj] # OA 9/1/21
+            core.lcellInterp = [vi,vj,dxx,dyy] # OA 9/1/21
         else : # OA 9/1/21
-            vi,vj = core.lcellInterp # OA 9/1/21
+            vi,vj,dxx,dyy = core.lcellInterp # OA 9/1/21
     # OA 14/2/19 line below changed, 2nd below added
     vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
     vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')

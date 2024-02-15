@@ -43,7 +43,8 @@ class Ui_Var(object):
         self.choiceM = QComboBox(self.hlWidget)
         #self.choiceM.setSizePolicy(policy)
         self.choiceM.setMaximumWidth(100);#setGeometry(QRect(0, 0, 45, 18))
-        #self.choiceM.setView(view)
+        view =  QListView(self.choiceM) ; view.setMinimumWidth(150) # creat and set the width ListView
+        self.choiceM.setView(view)
         self.choiceM.activated['QString'].connect(self.onChoiceModel)
         self.gridLayout.addWidget(self.choiceM, 0)
 
@@ -341,7 +342,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 19/01/2024 ")
+        version = QLabel("       version 15/02/2024 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()

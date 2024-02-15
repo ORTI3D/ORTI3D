@@ -515,10 +515,12 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
         zmedia = [int(a) for a in zmedia]
         if int(media) not in zmedia: continue # the zone is not in the correct media
         #if line in list(core.ttable.keys()): zv0=float(core.ttable[line][iper,i])
+        zv0= 0
         if line in list(core.ttable.keys()): 
-            if line == 'obs.1' : #EV 26/02/20
-                if diczone['name'][i] in opt: 
-                    zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
+            if line == 'obs.1':
+                if opt !=None:
+                    if diczone['name'][i] in opt: 
+                        zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
             else :
                 if line in ['drn.1','riv.1','ghb.1']: #EV 26/11/20
                     zv0=float(core.ttable[line][iper,i].split()[opt])
@@ -1096,7 +1098,7 @@ def zone2array(core,modName,line,im):
     #print(type(arr),shape(arr),arr[:1])
     if arr.size != 0:
         grd = core.addin.getFullGrid()
-        intp = False # OA 3/4/20 this l an dl. below
+        intp = True # OA 3/4/20 this l an dl. below
         #if line in ['lpf.8']: intp=True #'dis.6','dis.7',
         if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
         else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20
