@@ -35,7 +35,8 @@ class Ui_Show(object):
         self.screenShape = QDesktopWidget().screenGeometry()
         self.tWidget.setGeometry(QRect(0, 0, int(self.screenShape.width()*0.105), 45)) 
         self.dictBox={}
-        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
+        #wd0 = QDesktopWidget().screenGeometry().height()/100 # OA 23/2/19
+        wd0=15
         if gui.gtyp =='qgis': pos=0  # ifelse added 1/6/19 to use this in qgis too
         else : 
             self.makeTop(self,gui)
@@ -45,7 +46,8 @@ class Ui_Show(object):
                 if self.groups[g0][0]==ig: g=g0
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
-            pos += len(names)*wd0*1.3+wd0*2.5 # OA 23/2/19
+            pos += len(names)*wd0*1.4+wd0*2.5 # OA 23/2/19
+        #self.mainbx.addStretch(0) # OA 6/11
         QMetaObject.connectSlotsByName(Show)
         
     def makeTop(self,parent,gui):  # OA 1/6/19 separated form above  
@@ -279,20 +281,21 @@ class Ui_Show(object):
     #     if typ[0]=='X' and lesp[0]=='Transport': self.dicplots['X_tracer']= plt
     #     #plt.Raise()
 
-class showBox:
+class showBox():
     def __init__(self,Show,parent,names,gr,pos,ig):
         self.Show,self.parent = Show,parent
         self.group = QGroupBox(Show)
         self.group.setTitle(str(ig+1)+'.'+gr)
         ln = len(names)
-        wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
+        #wd0 = QDesktopWidget().screenGeometry().height()/100 # OA 23/2/19
+        wd0=15
         self.group.setGeometry(QRect(10, int(pos), int(wd0*10.5), int(wd0*2.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
         self.hlWidget = QWidget(self.group)
         self.hlWidget.setGeometry(QRect(3,15 ,int(wd0*10), int(wd0*1.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
         boxGrid = QGridLayout(self.hlWidget)
-        boxGrid.alignment()
+        #boxGrid.alignment()
         boxGrid.setContentsMargins(0,0,0,0)
-        boxGrid.setSpacing(0)
+        #boxGrid.setSpacing(0)
         self.buts = list(range(len(names)))
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         for i,n in enumerate(names):
