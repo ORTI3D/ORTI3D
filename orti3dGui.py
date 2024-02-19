@@ -5,16 +5,16 @@ writer/readers are available for different models"""
 import os, sys,traceback # traceback added OA 25/9/18
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 #from PyQt5.QtWidgets import *
-from .qtVisualisation import *
-from .qtShow import *
-from .qtParameters import *
-from .qtTopBar import *
-from .qtDialogs import *
-from .menus import *
-from .core import *
-from .addin import *
-from . import config
+from qtVisualisation import *
+from qtShow import *
+from qtParameters import *
+from qtTopBar import *
+from qtDialogs import *
+from menus import *
+from core import *
+from addin import *
 #from pyqtconsole.console import PythonConsole # does not work, pyqt console is nto present
 #from subprocess import CREATE_NEW_CONSOLE
 
@@ -93,7 +93,8 @@ class orti3dGui(QMainWindow):
     def onSetMediaNb(self,nbM,nbL):
         self.varBox.choice3D.clear()
         for i in range(nbM): self.varBox.choice3D.addItem(str(i))
-        self.guiShow.setNames('Model_Layer_L',list(range(nbL)))
+        if self.core.addin.getDim()=='3D':
+            self.guiShow.setNames('Model_Layer_L',list(range(nbL)))
         
     def onRCT(self,bool):
         boutonVisible(self,'Ad_MtSpecies',bool) #EV 05/08/19

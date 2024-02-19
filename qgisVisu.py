@@ -6,9 +6,9 @@ Created on Thu Feb 20 23:43:54 2014
 This is the visualization tol box for qgis that creates the link between orti3d
 and Qgis
 """
-from .geometry import *
-from .config import *
-from .qtDialogs import *
+from geometry import *
+from config import *
+from qtDialogs import *
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *

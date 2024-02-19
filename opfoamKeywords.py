@@ -22,11 +22,11 @@ class  OpF:
         'FSLV':['fslv.'+str(i) for i in range(1,4)] # solver
         }
         self.lines={
-        'fprm.1':{'comm':'Flow parameters','cond':'','kw':['OFPMS','OFPMEQ'],
+        'fprm.1':{'comm':'Flow parameters','cond':'','kw':['OFPMS','OFPMEQ','OFXSECT'],
                 'detail':[['type of flow','saturated','unsaturated','2phase'],
-                    ['pressure equilibrium','no','yes']],
-                'type':['choice','choice'],
-                'default':[0,0]},
+                    ['pressure equilibrium','no','yes'],'Xsection'],
+                'type':['choice','choice','int'],
+                'default':[0,0,0]},
         'dis.1':{'comm':'Type of mesh','cond':'','kw':['MshType'],
                 'detail':[['','Rectangle','Nested','Triangle','Voronoi']],
                 'type':['choice'],'default':[0]},
@@ -48,7 +48,7 @@ class  OpF:
         'dis.8':{'comm':'Periods characteristics','cond':'','kw':['PERLENu','NSTPu','TSMULTu', 'SsTru'], # OA 3/11/18 
                 'detail':['Period length','internal steps','multiplier',['type','Steady state','transient']],
                 'type':['float','int','float','choice'],
-                'default':[1.,1,1.,0],'units':['T','','','']},
+                'default':[1.,1,1.,0],'units':['T','','','']},                 
         'head.1':{'comm':'Initial heads','cond':'OFPMS<2','kw':['OIH'],
                  'detail':[],'type':['arrfloat'],'default':[10.],'units':['L']},
         'head.2':{'comm':'Fixed heads','cond':'OFPMS<2','kw':['OFH'],
@@ -60,7 +60,7 @@ class  OpF:
         'khy.1':{'comm':'Hydraulic cond. parms','cond':'','kw':['OKTYP'],
                  'detail':[['','Kh/Kv ratio','value']],
                 'type':['choice'],'default':[0]},
-        'khy.2':{'comm':'Hor hydraulic cond.','cond':'','kw':['OKH'],
+        'khy.2':{'comm':'Hor hydraulic cond.','cond':'OFXSECT==0','kw':['OKH'],
                  'detail':[],'type':['arrfloat'],'default':[10],
                  'units':['L/T']},
         'khy.3':{'comm':'Vert K or ratio/value','cond':'','kw':['OKV'],

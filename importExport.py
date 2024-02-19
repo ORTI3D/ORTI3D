@@ -1,9 +1,9 @@
 #from config import *
 import os
 import xml.dom.minidom as xdom
-from .geometry import *
+from geometry import *
 #from wxDialogs import *
-#from .qtDialogs import *
+#from qtDialogs import *
 from functools import partial
 
 class impFile:
@@ -218,24 +218,44 @@ class impFile:
             a=f1.readline().split();hy.extend(a);nr+=len(a)
         hy=array(hy).astype('float')
         #reading layer top
-        ztop=zeros((nlay,nrow,ncol))
+        ztop=zeros((nlay,nrow,ncol));flgTop=zeros(nlay)
         for ilay in range(nlay):
-            f1.readline()
+            a=f1.readline()
+            if int(a.split()[0])==11:
+                flgTop[ilay]=1
+                for irow in range(nrow):
+                    nc=0;z=[]
+                    while nc<ncol:
+                        a=f1.readline().split();z.extend(a);nc+=len(a)
+                    ztop[ilay,irow]=array(z).astype('float')
+        zbot=zeros((nrow,ncol));flgBot=0
+        a=f1.readline()
+        if int(a.split()[0])==11:
+            flgBot=1
             for irow in range(nrow):
                 nc=0;z=[]
                 while nc<ncol:
                     a=f1.readline().split();z.extend(a);nc+=len(a)
-                ztop[ilay,irow]=array(z).astype('float')
+                zbot[ilay,irow]=array(z).astype('float')
         f1.close()
         # writing 
         for ilay in range(nlay):
-            f2=open(core.fileDir+os.sep+'top'+str(ilay)+'.gvar','w')
+            if flgTop[ilay]==1:
+                f2=open(core.fileDir+os.sep+'top'+str(ilay)+'.gvar','w')
+                f2.write('-1\n')
+                f2.write(' '.join(wx.astype('str'))+'\n')
+                f2.write(' '.join(hy.astype('str'))+'\n')
+                for irow in range(nrow):
+                    f2.write(' '.join(ztop[ilay,irow].astype('str'))+'\n')
+                f2.close()
+        if flgBot==1:
+            f2=open(core.fileDir+os.sep+'botm.gvar','w')
             f2.write('-1\n')
             f2.write(' '.join(wx.astype('str'))+'\n')
             f2.write(' '.join(hy.astype('str'))+'\n')
             for irow in range(nrow):
-                f2.write(' '.join(ztop[ilay,irow].astype('str'))+'\n')
-        f2.close()
+                f2.write(' '.join(zbotm[irow].astype('str'))+'\n')
+            f2.close()
         return True
                   
 ''' below not used

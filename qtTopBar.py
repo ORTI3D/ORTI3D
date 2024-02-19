@@ -2,12 +2,12 @@
 
 from PyQt5.QtGui import *
 import os
-from .qtDialogs import *
-from .geometry import *
-from .core import *
-from .config import *
-from .topBar import BaseTop
-from .myInterpol import *
+from qtDialogs import *
+from geometry import *
+from core import *
+from config import *
+from topBar import BaseTop
+from myInterpol import *
 
 class Observer(object):
     '''this tool serve to observe what happens somewhere and when some object

@@ -2,9 +2,9 @@
 from array import array as arr2
 import os,time
 import numpy as np
-from .mtUsgKeywords import Mtu
-from .geometry import *
-from .modflowWriter import * # OA 6/5/19
+from mtUsgKeywords import Mtu
+from geometry import *
+from modflowWriter import * # OA 6/5/19
 
 class mtUsgWriter:
 

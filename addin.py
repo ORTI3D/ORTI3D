@@ -1,15 +1,15 @@
-from .config import *
-from .Pht3d import *
-from .Min3p import *
-from .modflowUsg import *
-from .opfoam import *
-from .geometry import *
+from config import *
+from Pht3d import *
+from Min3p import *
+from modflowUsg import *
+from opfoam import *
+from geometry import *
 #from matplotlib import pylab # for having grafs in batch
-from .Pest import *
-from .instantFit import *
-from .modflowWriter import *
-from .opfoamWriter import *
-#from .multiPlot import * # oa 28/11/18
+from Pest import *
+from instantFit import *
+from modflowWriter import *
+from opfoamWriter import *
+#from multiPlot import * # oa 28/11/18
 
 #from matplotlib.tri import CubicTriInterpolator
 #from PyQt5.QtGui import *
@@ -240,6 +240,7 @@ class addin:
                 if m['type']=='Unconfined': #EV 22/07/2018 free -> Unconfined
                     self.core.setValueFromName('Modflow','LAYTYP',[1]*nmed) # 0 for confined, 1 for unconfined
                     self.core.setValueFromName('Mt3dms','TLAYCON',[1]*nmed)
+                self.core.setValueFromName('OpenFlow','OFXSECT',0)
                 if m['dimension'] in ['Xsection','Radial']:
                     self.core.setValueFromName('Modflow','TOP',1.)
                     self.core.setValueFromName('Modflow','BOTM',0.)
@@ -587,6 +588,7 @@ class addin:
             self.min3p.buildMesh()
         elif mgroup == 'Openfoam': # oa 9/2/20 added rect, 29/2 removed
             self.mesh= self.opfoam
+            if self.xsect: self.core.setValueFromName('OpenFlow','OFXSECT',1)
             self.core.dicval['OpenFlow']['dis.4']=list(g['dx']) # pb with setting list
             self.core.dicval['OpenFlow']['dis.5']=list(g['dy'])
             self.mesh.buildMesh(opt)

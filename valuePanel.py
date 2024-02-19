@@ -1,10 +1,10 @@
 import wx
 #import wx.grid as wgrid
 import os
-from .modflowWriter import *
-from .geometry import *
-from . import core as corebase
-from .myDialogs import *
+from modflowWriter import *
+from geometry import *
+from  import core as corebase
+from myDialogs import *
 
 class valuePanel(wx.Panel):
     """ main frame"""

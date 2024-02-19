@@ -1,5 +1,5 @@
 import os
-from .config import *
+from config import *
 from copy import deepcopy
 
 class Min3pChem:

@@ -1,7 +1,5 @@
 from config import *
 from geometry import *
-from qtDialogs import *
-#from mayavi import mlab
 
 class guiShow:
     def __init__(self,gui,core):
@@ -10,36 +8,30 @@ class guiShow:
         self.Glist = {}
         #self.SetBackgroundColour('#EDFAFF')
         self.groups={
-            'Model':[0,['Plane',['Z','X','Y']],['Layer',['___']], #OA 20/11/19  order
+            'Model':[0,['Plane',['X','Y','Z']],['Layer',['___']],
                 ['Tstep',['_____']],'Grid','Map'], #,'Variable'],
             'Flow':[1,'Head','Wcontent','Veloc-vect','Veloc-magn','Particles'],
-            'Transport':[2,'Tracer','Temperature'],
+            'Transport':[2,'Tracer'],
             'Chemistry':[3,['Species',['_______']],
                      ['Units',['mol/L','mmol/L','umol/L','nmol/L']],
                      ['User',['_______']]],
             #'Observation':[4,['Type',['Profile','Breakthrough','XYplot']],
                         #   ['Zone',['_______']]]}
-            'Observation':[4,['Type',
-                              ['Time-series Graphs','Horizontal profile Graphs',
-                               'Vertical profile Graphs','Calibration Graphs', #EV 20/04/20
-                               'Mass balance Graphs','Zone budget Graphs']], # EV 02/03/20 
-                           ['Result',['Flow','Transport','Chemistry']]]} # OA 21/2/2019 # EV 02/03/20 'W content',
-        self.dicVisu = {'Model':{'Plane':'Z','Layer':0,'Tstep':0,
-                                 'Grid':False,'Map':False,'Variable':False},
-                'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,
-                        'Veloc-magn':False,'Particles':False},
-                'Transport':{'Tracer':False,'Temperature':False},
+            'Observation':[4,['Type',['Time-series Graphs','Profile Graphs','Calibration Graphs']],
+                           ['Result',['Head','Tracer','Chemistry']]]}
+        self.dicVisu = {'Model':{'Plane':'Z','Layer':0,'Tstep':0,'Grid':False,'Map':False,'Variable':False},
+                'Flow':{'Head':False,'Wcontent':False,'Veloc-vect':False,'Veloc-magn':False,'Particles':False},
+                'Transport':{'Tracer':False},
                 'Chemistry':{'Species':False,'Units':'mmol/L','User':False},
-                #'Observation':{'Type':'Profile','Zone':' '}}
-                'Observation':{'Type':'Time-series Graphs','Result':'Head'}}
+                'Observation':{'Type':'Profile','Zone':' '}}
         self.change={'Grid':None,'Veloc-vect':['scale',1.],
             'Particles':['time',10.],
             'Visible':['size',10]} # change that are not contours
         self.Vtypes = {'Modif':['Plane','Layer','Tstep','Units'],
-            'Array' : ['Head','Wcontent','Veloc-magn','Tracer','Temperature','Species','User'],
+            'Array' : ['Head','Wcontent','Veloc-magn','Tracer','Species','User'],
             'Image': ['Variable','Map'],'Grid':['Grid'],'Particles':['Particles'],
             'Vector' : ['Veloc-vect']}
-        self.gui,self.visu,self.Tstep = gui,gui.visu,0  # OA 20/11/19 added tstep
+        self.gui,self.visu = gui,gui.visu
         cfg = Config(self.core)
         self.gtyp = cfg.gtyp
         if self.gtyp=='wx': 
@@ -48,7 +40,6 @@ class guiShow:
             self.dlgShow = gui.dlgShow
         self.dialogs = cfg.dialogs
         self.dicplots={'X_head':None,'X_tracer':None}
-        self.curName, self.arr3= None, None #EV 11/12/19
         self.init()
         
     def init(self):     
@@ -56,33 +47,10 @@ class guiShow:
         self.userSpecies,self.data = {},None
         self.visu.Glist = self.Glist
         self.curVar, self.curVarView = {},None
-        modgroup = self.core.addin.getModelGroup();self.modgroup = modgroup
-        self.MshType = 0
-        if 'USG' in modgroup: self.MshType = self.core.getValueFromName('Modflow','MshType')
-        if modgroup == 'Openfoam': self.MshType = self.core.getValueFromName('OpenFlow','MshType')
-      
-    def openModel(self):
-        self.init()
-        if self.core.addin.getDim() == '3D': self.setNames('Model_Plane_L',['Z','X','Y'])#OA 20/11/19  order
-        else : self.setNames('Model_Plane_L',['Z'])
-        '''
-        if self.core.dicaddin['Model']['group'] == 'Min3p':
-            self.dlgShow.getBoxNames('Flow_Wcontent_B',False)
-        else : 
-            mm,mval = self.core.dicaddin['usedM_Modflow']
-            v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
-            mod=self.core.dicaddin['Model']['group']
-            if (v1==2 or v2==2) and (mod =='Modflow series'):
-                self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',False)
-            else : self.gui.guiShow.dlgShow.getBoxNames('Flow_Wcontent_B',True)
-        '''
-        if self.core.dicaddin['Model']['group'] == 'Modflow USG':
-            self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',True)
-            self.gui.onParticle(False) 
-        else : 
-            self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
-            self.gui.onParticle(True)
-            
+        modgroup = self.core.addin.getModelGroup()
+        self.mesh = False
+        if (modgroup=='Opgeo') or (modgroup=='Min3p' and self.core.getValueFromName('Min3pFlow','P_Uns')!=0) or self.core.mfUnstruct:
+            self.mesh=True
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)
@@ -93,25 +61,25 @@ class guiShow:
     def setUserSpecies(self,dicU): self.userSpecies = dicU.copy();#print dicU
 
     def getGlist(self,group,name):
-        #print('guish getglist',group,name,self.Glist)
+        #print 'guish 55',group,name,self.Glist
         if group in self.Glist:
             if name in self.Glist[group]: return self.Glist[group][name] 
             else :
-                self.Glist[group][name] = {'value':None,'color':None}
+                self.Glist[group][name] = {'value':None,'color':None,'calc':False}
         else :
             self.Glist[group] = {}
-            self.Glist[group][name] = {'value':None,'color':None}
+            self.Glist[group][name] = {'value':None,'color':None,'calc':False}
         return self.Glist[group][name] 
     
     def setGlistParm(self,group,name,parm,value):
         #print 'guish 67', group,name,parm, value
-        self.Glist[group][name][parm]= value;#print('guishow setglist',group,name,self.Glist[group][name])
+        self.Glist[group][name][parm]= value
         
-    # def resetGlist(self):
-    #     """reset all Glist tags 'calc' to False"""
-    #     for group in list(self.Glist.keys()):
-    #         for name in list(self.Glist[group].keys()): 
-    #             self.Glist[group][name]['calc'] = False
+    def resetGlist(self):
+        """reset all Glist tags 'calc' to False"""
+        for group in list(self.Glist.keys()):
+            for name in list(self.Glist[group].keys()): 
+                self.Glist[group][name]['calc'] = False
 
     def onClick2(self,group,name,retour):
         """after the click the type of object is defined and data are retrieved 
@@ -122,73 +90,60 @@ class guiShow:
         there are four types of action : 
           -  if a False arrives in retour just make the object unvisible. 
           - for observation go elsewhere to show the observations
-          - if plane/time has changed show the same object but for different plane/time
+          - if plane, time has changed show the same object but for different time
           - for the other case show the object
         objects : grid (true/false), vectors(true/false), map(true/false)
         variable (?), contour(group,name):True/false, types in Vtypes
         """
         #current visu data are stored (by wx dialog) in dicVisu
-        self.currentGroup = group
         listSpecies = self.getNames('Chemistry_Species_L')
         opt,bool = 'contour',False
         # set the first steps GRID, MAP, VARIABLE, PARTICLE
-        m = self.dicVisu['Model'] 
+        m = self.dicVisu['Model']
         plane, layer, tstep = m['Plane'],m['Layer'],m['Tstep'];
         self.Tstep = tstep
-        #self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
+        self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
         if m['Variable'] : 
             self.visu.createImage(self.getCurrentVariable(plane,layer))
             m['Map'] = False
         elif m['Map'] : 
             self.visu.drawObject('Map',True)
-        elif name == 'Grid' :#EV 15/02/2021
-            self.visu.drawObject('Grid',retour)
         else :
             self.visu.drawObject('Image',False)
         self.visu.drawObject('Particles',self.dicVisu['Flow']['Particles'])
         # find the current CONTOUR and if needs to be dranw
-        Cgroup,Cname,species = self.getCurrentContour();#print('quishow 150',Cname,species)
-        self.dlgShow.uncheckContours(Cgroup,Cname,species) # OA 9/6/19
-        self.curGroup,self.curName,self.curSpecies = Cgroup,Cname,species;# OA 10/5/17
+        self.dlgShow.uncheckContours()
+        Cgroup,Cname,species = self.getCurrentContour();#print 'guish l 94',group,name,species
+        self.curName,self.curSpecies = Cname,species;# OA 10/5/17
         if group=='Observation': # observation for the group that is currently drawn
-            #if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
-            if name=='Result': self.dlgShow.onPlot()
+            if name=='Zone': self.dlgShow.onObservation(Cgroup,tstep)
             return
         # get the data for contours
         dataM = None
-        #print('guish 159',Cgroup,Cname,tstep,species)
+        print('guish 116', name,species,self.userSpecies)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
-            if self.arr3 is None : # EV 8/12/21
-                mess=onMessage(self.gui,'No result')
-                self.dlgShow.onTickBox(group,name,'B',False)
-                self.dicVisu[group][name]=False
-                return
             if species in list(self.userSpecies.keys()):
                 dataM = self.getUserSpecies(species,plane,layer)
             else :
                 dataM = self.getArray2D(Cgroup,self.arr3,plane,layer)
-        self.data = dataM; #print('guish 133',shape(dataM))
+        self.data = dataM; #print 'guish 123',shape(dataM)
         # get VECTORS
         dataV = None
         if self.dicVisu['Flow']['Veloc-vect']: 
             dataV = self.getVectors(plane,layer,tstep)
-            opt = 'vector';
+            opt = 'vector'
         #print self.dicVisu
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
         glist = self.getGlist(Cgroup,toshow)
-        value,color = glist['value'],glist['color'];#print('guishow 171',Cgroup,Cname,value,color)
+        value,color = glist['value'],glist['color'];#print 'guishow 122',Cgroup,Cname,value,color
         if layer !=0 : self.visu.changeAxesOri(plane)
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)
 
-    def redraw(self):
-        group,name,species = self.getCurrentContour()
-        self.onClick2(group,name,species)
-        
     def resetDicContour(self):
-        # put all cntour values to none
+        # put all cntour values to non
         for k in list(self.dicVisu.keys()):
             for k1 in list(self.dicVisu[k].keys()):
                 if k1 in self.Vtypes['Array']:
@@ -214,92 +169,72 @@ class guiShow:
                 arr = self.core.flowReader.readWcontent(self.core,tstep)
             elif name=='Veloc-magn':
                 vx,vy,vz = self.core.flowReader.readFloFile(self.core,tstep)
-                if vx is not None : #EV 8/12/21
-                    if vz is None: #EV 01/02/19 & 19/07/19
-                        arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
-                    else :
-                        arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
-                    #arr = arr[:,-1::-1,:] already done in flofile
-                    #arr=arr[0] #EV 14/06/21
-                else : return None
+                if vz !=None:
+                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2+(vz[1:,:,:]/2+vz[:-1,:,:]/2)**2)
+                else :
+                    arr=sqrt((vx[:,:,1:]/2+vx[:,:,:-1]/2)**2+(vy[:,1:,:]/2+vy[:,:-1,:]/2)**2)
+                #arr = arr[:,-1::-1,:] already done in flofile
         if group=='Transport':
-            if name=='Temperature':
-                arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Temperature');#print shape(arr),arr                
-            else:
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Conc');#print shape(arr),arr
+            if name=='Tracer':
+                #print 'hello',self.core.transReader
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,0,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)
                 arr = self.core.transReader.readUCN(self.core,'Pht3d',tstep,iesp,spec) #iesp=0
             elif name=='User':
-                #print(self.userSpecies)
+                print(self.userSpecies)
                 arr = self.userSpecies[spec][tstep]
         return arr
         
     def getArray2D(self,group,arr3,plane,section):
-        '''uses the 3D array to and plane to return a 2D array'''
-        X,Y = getXYmeshCenters(self.core,plane,section)# X,Y can be in Z for presention purpose
+        #print group,plane,section,shape(arr3),self.Species,self.Units
+        X,Y = getXYmeshSides(self.core,plane,section)# X,Y can be in Z for presention purpose
         self.Umult, units = 1.,self.dicVisu['Chemistry']['Units']
-        #print('guish l 206',shape(arr3))
         if group =='Chemistry':
             if self.dicVisu['Chemistry']['Species'] not in ['pH','ph','pe']:
                 if units == 'mmol/L': self.Umult = 1000.
                 elif units == 'umol/L': self.Umult = 1e6
                 elif units == 'nmol/L': self.Umult = 1e9 
-        #print('guish 196',shape(arr3),self.mesh,self.core.getValueFromName('Modflow','MshType'))
-        if self.MshType>0: # OA 24/10/20 mfUnstruct
-            return None,None,arr3[section,:]*self.Umult # OA 7/12/21
+        modgroup = self.core.addin.getModelGroup()
+        if self.swiImg =='Contour': 
+            X=(X[:,:-1]+X[:,1:])/2;X=X[1:,:]
+            Y=(Y[:-1,:]+Y[1:,:])/2;Y=Y[:,1:]
+        #print 'guish 196',shape(arr3)
+        if self.mesh:
+            #print 'guis203',shape(arr3)
+            return None,None,arr3[section,:]
         else:
             if self.core.addin.getDim() in ['Radial','Xsection']:
-                if self.modgroup[:4]=='Modf': 
+                if modgroup[:4]=='Modf': 
                     if self.core.addin.getModelType()=='free' and self.curName=='Head':
                         Y = self.getXyHeadFree(arr3,Y)
-                    data = (X,Y,arr3[::-1,0,:]*self.Umult)
+                    return X,Y,arr3[::-1,0,:]*self.Umult
+#                elif modgroup[:4]=='Min3' : # OA 26/5 min3p sahpe is different
+#                    return X,Y,arr3[0]*self.Umult
                 else : 
-                    data = (X,Y,arr3[:,0,:]*self.Umult)
+                    return X,Y,arr3[:,0,:]*self.Umult
             else : # 2 or 3D
-                if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult); #-1 for different orientation in modflow and real world
+                if plane=='Z': data = (X,Y,arr3[section,:,:]*self.Umult) #-1 for different orientation in modflow and real world
                 elif plane=='Y': data = (X,Y,arr3[:,section,:]*self.Umult)
                 elif plane=='X': data = (X,Y,arr3[:,:,section]*self.Umult)
-            #print('getA2',shape(X),shape(Y),shape(data[2]))
-            return data
+                return data
                 
     def getPointValue(self,x,y):
         """using a coordinate get the value of the current variable at
         this coordinates, using self.data which is a 2D array
         or """
-        if x==None or y==None: #OA 24/10/20 removed mesh
+        if self.data == None or x==None or y==None or self.mesh: 
             return ' '
-        vbox=self.gui.varBox
-        var = vbox.choiceV.currentIndex()
-        if vbox.chkView.isChecked(): 
-            X,Y,mat = vbox.base.getCurVariable(var)
-        if self.MshType>0:
-            c = self.core.addin.mesh.elcenters
-            xc,yc = c[:,0],c[:,1]
-            d = sqrt((x-xc)**2+(y-yc)**2);
-            inod = where(d==amin(d))[0][0];# print(self.curVarView )
-            if self.data == None: zval = 0
-            else : zval = self.data[2][inod]
-            if vbox.chkView.isChecked(): 
-                return '%g, node nb : %i, parm value : %g'%(zval,inod,mat[inod])
-            else :
-                return '%g, node nb : %i'%(zval,inod)
-        else :
-            if self.data == None: zval = 0
-            else : 
-                x0,y0 = self.data[0][0,:],self.data[1][:,0]
-                d=x-x0; d1=d[d>0.]
-                if len(d1)==0 : return ' '
-                ix=where(d==amin(d1))[0][0]
-                d=y-y0; d1=d[d>0.]
-                if len(d1)==0 : return ' '
-                iy=where(d==amin(d1))[0][0] 
-                zval = self.data[2][iy,ix]
-            if vbox.chkView.isChecked():
-                return '%g, parm value %g'%(zval,mat[iy,ix])
-            else :
-                return '%g'%zval # OA 6/11/18
+        x0,y0 = self.data[0][0,:],self.data [1][:,0]
+        d=x-x0; d1=d[d>0.]
+        if len(d1)==0 : return ' '
+        ix=where(d==amin(d1))[0][0]
+        d=y-y0; d1=d[d>0.]
+        if len(d1)==0 : return ' '
+        iy=where(d==amin(d1))[0][0] 
+        zval = self.data[2][iy,ix]
+        return '%g'%zval # OA 6/11/18
             
     def getXyHeadFree(self,arr3,Y):
         """modifies the Y coord to show the elevation of the water table
@@ -333,19 +268,12 @@ class guiShow:
         return self.getArray2D('Chemistry',arr3,plane,layer)        
         
     def get3Dvectors(self,tstep):
-        grp = self.core.dicaddin['Model']['group']
-        mesh = self.core.addin.mesh
-        if grp=="Modflow":
-            qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep);
+        mod = self.gui.currentModel
+        qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep);
+        if mod=="Modflow":
             qx = qx[:,:,1:]/2+qx[:,:,:-1]/2
             qy = qy[:,1:,:]/2+qy[:,:-1,:]/2
-            if qz is None: pass # EV 19/07/19
-            else : qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
-        elif "USG"in grp:
-            qx,qy,qz=self.core.flowReader.readFlowMesh(self.core,mesh,tstep)
-        elif "foam"in grp:
-            qx,qy,qz = self.core.flowReader.readFloFile(self.core,tstep)
-        self.vect3 = [qx,qy,qz]
+            if qz !=None: qz = qz[1:,:,:]/2+qz[:-1,:,:]/2
         return qx,qy,qz
         
     def getVectors(self,plane,layer,tstep):
@@ -366,7 +294,7 @@ class guiShow:
     def getCurrentVariable(self,plane,section):
         mod = self.gui.varBox.parent.currentModel
         line = self.gui.varBox.parent.currentLine
-        media, opt, iper = 0,None,0;print('guisho 330',line,self.curVar)
+        media, opt, iper = 0,None,0; #print 'guisho 275',line,self.curVar
         if line in self.curVar: 
             mat = self.curVar[line]*1
         else:

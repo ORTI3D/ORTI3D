@@ -1,6 +1,6 @@
 import os
-from .config import * # oa 8/6/17
-from .geometry import * #OA 9/6/17
+from config import * # oa 8/6/17
+from geometry import * #OA 9/6/17
 
 class PHT3D:
     """A class that gathers thhe actions for Pht3d, except writing that is left to

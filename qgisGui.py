@@ -8,17 +8,17 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 import os
-from .parameters import *
-from .menus import *
-from .qtDialogs import *
-from .geometry import *
-from .qgisVisu import *
-from .core import *
-from .config import *
-from .guiShow import *
-from .topBar import *
-from .qtShow import *
-from .multiPlot import *
+from parameters import *
+from menus import *
+from qtDialogs import *
+from geometry import *
+from qgisVisu import *
+from core import *
+from config import *
+from guiShow import *
+from topBar import *
+from qtShow import *
+from multiPlot import *
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):

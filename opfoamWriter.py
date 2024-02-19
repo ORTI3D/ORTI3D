@@ -7,8 +7,8 @@ Created on Sun May 17 10:55:23 2020
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
     amin,amax,mod,ravel
 from numpy import in1d
-from .opfoamKeywords import OpF,OpT
-from .geometry import *
+from opfoamKeywords import OpF,OpT
+from geometry import *
 import struct 
 
 import os,shutil
@@ -28,6 +28,8 @@ class opfoamWriter:
         if 'system' not in os.listdir(fDir): os.mkdir(fDir+'system')
         if 'constant' not in os.listdir(fDir): os.mkdir(fDir+'constant')
         if '0' not in os.listdir(fDir): os.mkdir(fDir+'0')
+        if 'observation' in os.listdir(fDir):shutil.rmtree(fDir+r'observation')
+        os.mkdir(fDir+r'observation')
         self.ttable = self.core.makeTtable()
         self.tlist = self.ttable['tlist']
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
@@ -305,15 +307,18 @@ class opfoamWriter:
         self.eps = self.getVariable('OpenTrans','poro')
         self.writeScalField('constant','eps',self.eps,self.bcD0)
         # permeability
-        K = self.getVariable('OpenFlow','khy.2')/self.dtu/9.81e6;self.K=K
-        self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
-        for il in range(self.nlay):
-            r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
-            if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
-                kv[r] = vrt[r]/self.dtu/9.81e6
-            else : # ratio
-                kv[r] = K[r]/vrt[r]
+        if self.orientation[0] in ['R','X']: 
+            K=vrt/self.dtu/9.81e6
+        else :
+            K = self.getVariable('OpenFlow','khy.2')/self.dtu/9.81e6;self.K=K
+            for il in range(self.nlay):
+                r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
+                if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
+                    kv[r] = vrt[r]/self.dtu/9.81e6
+                else : # ratio
+                    kv[r] = K[r]/vrt[r]
+        self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
         self.writeScalField('constant','Kv',kv,self.bcD0,dim='[0 2 0 0 0 0 0]')
         storC = self.getVariable('OpenFlow','khy.4')
         storU = self.getVariable('OpenFlow','khy.5')
@@ -809,7 +814,8 @@ class opfoamWriter:
     def getPermScaled(self,lcel):
         """return the permeability for a list of layer, col rows scaled by the
         sum of permeability for this list"""
-        ka=ones(len(lcel))*0.;#print 'mfi permsc',shape(ka),shape(K),ilay,irow,icol
+        ka=ones(len(lcel));#print 'mfi permsc',shape(ka),shape(K),ilay,irow,icol
+        if self.core.addin.getDim() in ['Xsection','Radial']: return ka
         for i in range(len(lcel)):
             ka[i] = self.K[lcel[i]]*self.thk[lcel[i]]
         return ka/sum(ka)
@@ -1183,7 +1189,7 @@ class opfReader:
         ''' returns a scalar for all the times reshapes in layers
         if iper =None if one value just one period
         iesp=-1 : tracer, '''
-        print(name,iper,iesp,spc)
+        #print(name,iper,iesp,spc)
         def rd1(t,n): # read classical
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
             s = f1.read();f1.close()
@@ -1287,7 +1293,7 @@ class opFlowReader(opfReader):
             if len(irow==1): # verify that its a one point
                 m = loadtxt(self.core.fileDir+os.sep+'observation\\obs_'+zname+'_'+short+'.txt')
                 return m
-        pobs=zeros((len(iper),npts))+0.;
+        pobs=zeros((len(iper),len(irow)))+0.;
         for i in range(len(iper)):
             ip = iper[i]
             A = self.readScalar(short,ip)
@@ -1337,8 +1343,7 @@ class opTransReader(opfReader):
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
         """      
-        npts=len(irow)
-        pobs=zeros((len(iper),npts))+0.;
+        pobs=zeros((len(iper),len(irow)))+0.;
         #fDir = self.core.fileDir
         if iesp !=-1: 
             ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)

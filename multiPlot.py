@@ -2,9 +2,9 @@ from matplotlib.backends.qt_compat import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
-from .qtDialogs import *
-from .geometry import *
-#from .qtShow import * # OA 1/6/19
+from qtDialogs import *
+from geometry import *
+#from qtShow import * # OA 1/6/19
 import numpy as np
 import matplotlib.ticker as ticker
 
@@ -321,7 +321,8 @@ class multiPlot(QDialog):
                     self._ax=self.figure.add_subplot(nrows,ncols,i+1)
                     self.x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[i],self.splist,lylist) 
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
-                    if self.ptyp[0] == 'V' :myplot=self._ax.plot(yy,self.x,marker='o')
+                    if self.ptyp[0] == 'V' :
+                        myplot=self._ax.plot(yy,self.x[-1::-1],marker='o')
                     elif self.ptyp[0] == 'P' :myplot=self._ax.plot(self.x,yy,marker='o')
                     else:myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
@@ -438,7 +439,6 @@ class multiPlot(QDialog):
         return xobs,yobs,lobs
     
     def onExport(self):
-        dlg = myFileDialog('Save')
         dlg = myFileDialog('Save')
         fDir,fName = dlg.getsetFile(self.gui,'Save','*.txt')
         if fDir == None: return

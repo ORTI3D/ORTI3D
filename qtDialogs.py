@@ -5,8 +5,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.Qt import QFrame
 #import qwt
-from .config import *
-from .geometry import *
+from config import *
+from geometry import *
 
 from functools import partial
 #from scipy import * #OA 2/4/19
@@ -399,13 +399,12 @@ class myNBpanelGrid(QTableWidget):
         # from http://retrofocus28.blogspot.com/2013/09/pyqt-qtablewidget-copy-and-past-excel.html
         if (e.modifiers() & Qt.ControlModifier):
             selected = self.selectedRanges()
-            if e.key() == Qt.Key_V:#past
+            if e.key() == Qt.Key_V: #paste
                 first_row = selected[0].topRow()
                 first_col = selected[0].leftColumn()
                 #copied text is split by '\n' and '\t' to paste to the cells
                 rowText = self.clip.text().split('\n')
-                if len(rowText)>self.rowCount(): # OA added if 1/8/19
-                    self.setRowCount(len(rowText)) # OA 19/8/19
+                self.setRowCount(len(rowText)-1) # OA 19/8/19
                 for r, row in enumerate(rowText):
                     for c, text in enumerate(row.split('\t')):
                         self.setItem(first_row+r, first_col+c, QTableWidgetItem(text))

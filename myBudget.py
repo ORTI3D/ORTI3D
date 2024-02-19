@@ -9,8 +9,8 @@ from matplotlib.backends.qt_compat import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
-from .qtDialogs import *
-from .geometry import *
+from qtDialogs import *
+from geometry import *
 import numpy as np
 import matplotlib.ticker as ticker
 import csv

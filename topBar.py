@@ -1,7 +1,7 @@
 from os import sep
-from .geometry import *
-from .qtDialogs import *
-from .config import *
+from geometry import *
+from qtDialogs import *
+from config import *
     
 class BaseTop:
     def __init__(self,gui,core):

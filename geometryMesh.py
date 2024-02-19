@@ -5,11 +5,11 @@ Created on Mon Jul  4 07:11:43 2022
 @author: olivi
 """
 import os
-from .config import *
+from config import *
 import matplotlib.tri as mptri
 import numpy as np
 from numpy import pi,in1d,nonzero,insert
-from .geometry import *
+from geometry import *
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
     amin,amax,mod,lexsort
 

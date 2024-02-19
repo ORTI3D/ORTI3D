@@ -4,8 +4,8 @@ Created on Sun Feb 16 09:47:03 2014
 
 @author: olive
 """
-from .valueDialog import valueDialog
-from .config import *
+from valueDialog import valueDialog
+from config import *
 import os
 
 class BaseParms:

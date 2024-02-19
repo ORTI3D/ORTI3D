@@ -2,10 +2,10 @@
 from array import array as arr2
 import os,time
 from re import finditer
-from .modflowKeywords import Mf
-from .geometry import *
-from .timeperiod import *
-from .modflowUsg import *
+from modflowKeywords import Mf
+from geometry import *
+from timeperiod import *
+from modflowUsg import *
 
 class modflowWriter:
     

@@ -11,14 +11,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
 import os
-from .parameters import BaseParms
-from .menus import *
-from .qtDialogs import *
-from .geometry import *
-from .qtVisu import *
-from .core import *
-from .config import *
-from .guiShow import guiShow
+from parameters import BaseParms
+from menus import *
+from qtDialogs import *
+from geometry import *
+from qtVisu import *
+from core import *
+from config import *
+from guiShow import guiShow
 
 class Ui_Main(object):
     def setupUi(self,Main,iface,plugin_dir):

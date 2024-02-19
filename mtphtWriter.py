@@ -2,9 +2,9 @@
 from array import array as arr2
 import os,time
 #from phtDbase import *
-from .mtPhtKeywords import Mt
-from .geometry import *
-from .modflowWriter import * # OA 6/5/19
+from mtPhtKeywords import Mt
+from geometry import *
+from modflowWriter import * # OA 6/5/19
 
 class mtphtWriter:
 

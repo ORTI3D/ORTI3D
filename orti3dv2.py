@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from .orti3dGui import *
+from orti3dGui import *
 
 if __name__ == '__main__':
 

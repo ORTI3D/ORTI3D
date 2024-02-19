@@ -1,7 +1,7 @@
-from .config import *
+from config import *
 import numpy as np
 from scipy import pi
-from .myInterpol import *
+from myInterpol import *
 
 """all geometrical operations are performed here
 all coordinates are in real world ones. so matrices have index 0 for rows

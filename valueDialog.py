@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-from .geometry import *
-from .qtValueDialog import *
+from geometry import *
+from qtValueDialog import *
 def onMessage(gui,text):  QMessageBox.information(gui,"Info",text)
 
 class valueDialog:

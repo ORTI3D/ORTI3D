@@ -5,7 +5,7 @@ Created on Mon Dec 09 22:30:16 2013
 @author: olive
 This module is to deal with transient things
 """
-from .config import *
+from config import *
 import numpy as np
 
 def makeTransientTable(core):

@@ -2,7 +2,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from scipy.special import erf,erfc
 from scipy.stats import norm
-from .config import *
+from config import *
 import os,time
 #from rflow import *
 

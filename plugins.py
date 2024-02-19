@@ -4,7 +4,7 @@ Created on Thu Jan  4 09:19:11 2024
 
 @author: olivi
 """
-from .config import *
+from config import *
 
 class plugins:
     

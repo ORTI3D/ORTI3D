@@ -4,9 +4,9 @@ Created on Sun Sep 17 07:08:20 2017
 
 @author: oatteia
 """
-from .config import *
-from .geometry import *
-from .geometryMesh import *
+from config import *
+from geometry import *
+from geometryMesh import *
 
 class modflowUsg(unstructured):
     def __init__(self,core):

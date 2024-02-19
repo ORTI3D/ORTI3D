@@ -33,7 +33,7 @@ class Config():
 #                self.dialogs,self.show,self.valDlg = wxDialogs,wxShow,wxValueDialog
 #                self.gtyp = 'wx'
 #            elif core.gui.gtyp in ['qt','qgis']:
-            from . import qtDialogs,qtValueDialog
+            import qtDialogs,qtValueDialog
             self.dialogs,self.valDlg = qtDialogs,qtValueDialog
             self.gtyp = core.gui.gtyp
             lfi=os.listdir(core.baseDir) # oa 29/3/17

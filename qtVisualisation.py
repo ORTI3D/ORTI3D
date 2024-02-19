@@ -30,9 +30,9 @@ import time
 from scipy.interpolate import interp1d
 import numpy.ma as ma
 
-from .geometry import *
-from .qtDialogs import *
-from .qtShow import *
+from geometry import *
+from qtDialogs import *
+from qtShow import *
 #from mayavi.mlab import *
 
 def smoo(v):
@@ -165,8 +165,8 @@ class qtVisualisation(FigureCanvasQTAgg):
         if Imgopt == False: 
             self.cbar.axis('off');
             self.cbar.tick_params(axis='x',bottom=False,labelbottom=False)
-            self.cbar.tick_params(axis='y',right=False,labelright=False)
-            self.cbar.clear();
+            self.cbar.tick_params(axis='y',right=False,labelright=False,labelleft=False)
+            #self.cbar.clear();
         self.draw()
 
 #    def changeTitre(self,titre):
@@ -267,7 +267,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.cnv.set_xlim(self.ylim);self.cnv.set_ylim(zlim)
         elif ori=='Y':
             self.cnv.set_xlim(self.xlim);self.cnv.set_ylim(zlim)
-        self.draw()
+        self.redraw()
         
     def createGrid(self,col=None,ori='Z',layer=0): 
         if self.Grid == None:
@@ -457,7 +457,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.ContourF = cf
         self.ContourLabel = cl
         self.Contour.data = data
-        self.draw()
+        self.redraw()
             
     def changeContour(self,value,col):
         """ modifies the values of an existing contour"""
@@ -470,7 +470,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         for c in self.Contour.collections :c.set_visible(bool)
         for c in self.ContourF.collections :c.set_visible(bool)
         for c in self.ContourLabel: c.set_visible(bool)
-        self.draw()
+        self.redraw()
 
     #####################################################################
     #             Gestion de l'affichage de vectors
@@ -567,13 +567,13 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Particles['line'].append(ligne)
         self.Particles['data'].append((X,Y,T))
         #self.gui_repaint() # bug matplotlib v2.6 for direct draw!!!
-        self.draw()
+        self.redraw()
         
     def drawParticles(self,bool,value=None):
         if self.Particles==None: return
         self.partVisible(bool)
         #self.gui_repaint()
-        self.draw()
+        self.redraw()
                 
     def changeParticles(self,value=None,color=(255,0,0)):
         self.partVisible(False)

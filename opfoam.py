@@ -23,12 +23,12 @@ Increase that cell index counter.
 # neighbour 
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
     amin,amax,mod,lexsort
-from .geometry import *
-from .geometryMesh import *
+from geometry import *
+from geometryMesh import *
 
 import os,time
-from .opfoamKeywords import OpF
-from .opfoamKeywords import OpT
+from opfoamKeywords import OpF
+from opfoamKeywords import OpT
 
 class opfoam(unstructured):
     

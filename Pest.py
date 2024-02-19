@@ -27,7 +27,7 @@ for each pest run, the python script is run"""
 # all imports
 import os,sys, subprocess
 from numpy import loadtxt,savetxt
-from .config import *
+from config import *
 
 class Pest:
     def __init__(self,core):

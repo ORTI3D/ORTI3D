@@ -1,34 +1,36 @@
 #
-import os,time,base64,types # OA 25/10/18 add types
+import os,sys,time,base64,types # OA 25/10/18 add types
 import subprocess as sbp
 from numpy import frombuffer,float64
+'''juste below : to remove the . before each module'''
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 #from scipy.interpolate import griddata
-from .modflowWriter import *
-from .mtphtWriter import *
-from .mtUsgWriter import *
-from .min3pWriter import *
+from modflowWriter import *
+from mtphtWriter import *
+from mtUsgWriter import *
+from min3pWriter import *
 import xml.dom.minidom as xdom
-from .geometry import *
-from .importExport import *
-from .addin import *
-from .timeperiod import *
+from geometry import *
+from importExport import *
+from addin import *
+from timeperiod import *
 from numpy import loadtxt,size #OA 25/1/21
 from numpy import savez_compressed
 from numpy import load as npload
-from .config import *
-from .modflowKeywords import Mf
-from .mtPhtKeywords import Mt
-from .mtUsgKeywords import Mtu  # OA 27/7/19
-from .pht3dKeywords import Ph
-from .min3pFlowKeywords import m3F
-from .min3pTransKeywords import m3T
-from .min3pChemKeywords import m3C
-from .opfoamKeywords import OpF
-from .opfoamKeywords import OpT
-from .opfoamKeywords import OpC
-from .obsKeywords import Obs
-from .pestKeywords import Pst
-from .plugins import *
+from config import *
+from modflowKeywords import Mf
+from mtPhtKeywords import Mt
+from mtUsgKeywords import Mtu  # OA 27/7/19
+from pht3dKeywords import Ph
+from min3pFlowKeywords import m3F
+from min3pTransKeywords import m3T
+from min3pChemKeywords import m3C
+from opfoamKeywords import OpF
+from opfoamKeywords import OpT
+from opfoamKeywords import OpC
+from obsKeywords import Obs
+from pestKeywords import Pst
+from plugins import *
 
 class Core:
     """this is the central class that makes the link between all objects
@@ -599,7 +601,7 @@ class Core:
             for k in kwl:
                 if k in cond:
                     cond=cond.replace(k,s1+'\''+k+'\','+str(ilay)+')')
-            a=eval('('+cond+')');# OA 1/8/17 for python 3 print(kwl,a)
+            a=eval('('+cond+')');#print(kwl,a) # OA 1/8/17 for python 3 
             if a : return True
         return False  
 
@@ -809,7 +811,7 @@ class Core:
         else : iper = [iper]
     ### Get the value
         pt=[] 
-        '''pt is a list of tables (iper,irows) for each species for the given zone'''
+        '''pt is a list of tables (iper,irows) for each species/layers for the given zone'''
         labels=[''] 
        ## For Head and Wcontent (pt index is the layer)
         if esp[0] in ['Head','Wcontent']: 
@@ -907,7 +909,7 @@ class Core:
         if typ[0]=='B': 
             labels[0]='time';
             if ofile[0]:
-                t2,p1=pt[0][:,0],pt[0][:,1]
+                t2,p1=pt[0][:,0],pt[0][:,1:2]
                 return t2,p1,labels
             p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
@@ -937,12 +939,13 @@ class Core:
                 elif typ[1] in ['1','3']: p1[:,i]=pt[i]*flux1[i] ## weigthed conc= darcy flux #EV 20/04/20
                 elif typ[1]=='2': p1[:,i]=pt[i]*disch1[i] ## discharge or mass discharge #EV 20/04/20
             return dist,p1,labels
+        
         elif typ[0]=='V': #EV 20/04/20
             labels[0]='distance'
             distz=self.getZcoord(iym,ix2,llay) #print('distz',distz)
             #distz=list(dict.fromkeys(distz))
             p1=zeros((len(distz),len(pt)))
-            for i in range(len(pt)): 
+            for i in range(len(pt)): # i layer or species
 #                if layers_in == 'all': # EV 30/04/20 
 #                    pt[i]=pt[i].reshape(len(distz),len(pt)).T
 #                    pt[i]=np.mean(pt[i],axis=1)

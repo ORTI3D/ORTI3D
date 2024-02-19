@@ -4,7 +4,7 @@ Created on Thu Feb 20 23:43:54 2014
 
 @author: olive
 """
-from .geometry import *
+from geometry import *
 
 
 from PyQt5.QtCore import *

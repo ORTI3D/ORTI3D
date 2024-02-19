@@ -1,7 +1,7 @@
 import os
-from .config import *
+from config import *
 from copy import deepcopy
-from .geometry import *
+from geometry import *
 
 class Min3p:
     """A class that gathers thhe actions for min3p chemistry, except writing that is left to

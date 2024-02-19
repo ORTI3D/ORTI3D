@@ -11,65 +11,35 @@ import os
 from numpy.linalg import solve
 from scipy.stats import tvar as variance
 from scipy.spatial import Delaunay
-#from qtDialogs import *
+from geometry import *
 from config import *
-from pykrige.ok import OrdinaryKriging
+#from pykrige.ok import OrdinaryKriging
 #import pykrige.kriging_tools as kt
-import itertools
-from numpy.linalg import lstsq
-        
-######################   BI LINEAR INTERPOLATION  ############################ 
 
-def linIntpFromGrid(core,core_grd,z_grid,xx,yy,intp=False,zdx=None,zdy=None): # added OA 22/5/17
-    '''linear interpolation from a regular grid (zdx=None) or irregular (zdx!=None)
+
+def linIntpFromGrid(core_grd,z_grid,xx,yy): # added OA 22/5/17
+    '''linear interpolation from a regular grid
     that has exactly the same size as the current domain
-    zdx and zdy are the cell size of z_grid
-    xx,yy are the position of the point where the z value is searched for
+    xx,yy are the position of the point where the z vlaue is searched for
     x0,y0 are the origin of the domain
-    dx,dy are the cell width of the grid
-    lcellIntp is a list of vi vj that can exist in core or not'''
+    dx,dy are the cell width of the regular grid'''
     x0,x1,y0,y1 = core_grd['x0'],core_grd['x1'],core_grd['y0'],core_grd['y1']
-    eps = min(x1-x0,y1-y0)/1e3 # EV 07/01/21
-    nr,nc = shape(z_grid);z_grid=z_grid.astype('float')
+    nr,nc = shape(z_grid)
+    dx,dy = (x1-x0)/nc,(y1-y0)/nr
     nr_out =0
     if len(shape(xx))> 1 : 
         nr_out,nc_out = shape(xx)
         xx,yy = ravel(xx),ravel(yy)
-    if zdx == None: # find indices of new points in old grid
-        dx,dy = (x1-x0)/nc,(y1-y0)/nr # dx,dy of z_grid
-        vi,vj = around((yy-(y0+dy/2))/dy),around((xx-(x0+dx/2))/dx) # OA 7/4/20 floor to around
-        vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
-        dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
-    else: # here the interval is found by a where condition
-        if len(core.lcellInterp)==0:  # OA 9/1/21
-            vx,vy = r_[x0,x0+cumsum(zdx)],r_[y0,y0+cumsum(zdy)] #EV 17/12/20 
-            xc,yc = (vx[:-1]+vx[1:])/2,(vy[:-1]+vy[1:])/2 # added 3/4/20
-            if abs(vx[-1]-x1)>eps or abs(vy[-1]-y1)>eps: return 'wrong grid size'
-            vi,vj,dyy,dxx = yy*0,xx*0,yy*0,xx*0 # OA 3/4/20 dxx,dyy added
-            for n in range(len(vy)-1): 
-                cnd = (yy>=vy[n])&(yy<vy[n+1]) #OA 10/6/20 added =
-                vi[cnd] = n # OA 3/4/20 i,j inverted
-                dyy[cnd] = (yy[cnd]-yc[n])/(vy[n+1]-vy[n]) # OA 3/4/20 added
-            for n in range(len(vx)-1): 
-                cnd = (xx>=vx[n])&(xx<vx[n+1]) #OA 10/6/20 added =
-                vj[cnd] = n
-                dxx[cnd] = (xx[cnd]-xc[n])/(vx[n+1]-vx[n]) # OA 3/4/20 added
-            core.lcellInterp = [vi,vj,dxx,dyy] # OA 9/1/21
-        else : # OA 9/1/21
-            vi,vj,dxx,dyy = core.lcellInterp # OA 9/1/21
-    # OA 14/2/19 line below changed, 2nd below added
-    vi,vj,vi1,vj1 = array(vi),array(vj),array(clip(vi+1,0,nr-1)),array(clip(vj+1,0,nc-1)) 
-    vi,vj,vi1,vj1 = vi.astype('int'),vj.astype('int'),vi1.astype('int'),vj1.astype('int')
-    zz = z_grid[vi,vj]
-    if intp : 
-        dzx = z_grid[vi,vj1]-z_grid[vi,vj]
-        dzy = z_grid[vi1,vj]-z_grid[vi,vj]
-        dzxy = z_grid[vi,vj]+z_grid[vi1,vj1]-z_grid[vi,vj1]-z_grid[vi1,vj]
-        zz += dzx*dxx + dzy*dyy + dzxy*dxx*dyy #OA 3/4/20
+    vi,vj = floor((yy-(y0+dy/2))/dy),floor((xx-(x0+dx/2))/dx)
+    vi = clip(vi,0,nr-1); vj=clip(vj,0,nc-1)
+    dxx, dyy = (xx-(x0+dx/2+dx*vj))/dx,(yy-(y0+dy/2+dy*vi))/dy
+    vi,vj,vi1,vj1 = list(vi),list(vj),list(clip(vi+1,0,nr-1)),list(clip(vj+1,0,nc-1))
+    dzx = z_grid[vi,vj1]-z_grid[vi,vj]
+    dzy = z_grid[vi1,vj]-z_grid[vi,vj]
+    dzxy = z_grid[vi,vj]+z_grid[vi1,vj1]-z_grid[vi,vj1]-z_grid[vi1,vj]
+    zz = z_grid[vi,vj] + dzx*dxx + dzy*dyy + dzxy*dxx*dyy
     if nr_out>0: zz=reshape(zz,((nr_out,nc_out)))
     return clip(zz,amin(z_grid),amax(z_grid))
-
-######################   INVERSE DISTANCE INTERPOLATION ############################ 
 
 def invDistance(xpt,ypt,zpt,x,y,power=1.):
     """inverse distance interpolation on x,y points, and reference points
@@ -81,27 +51,9 @@ def invDistance(xpt,ypt,zpt,x,y,power=1.):
         lb=lb/sum(lb)
         z0[i]=sum(zpt*lb)
     return z0
-
-def polyfit2d(x, y, z, order=3):
-    ncols = (order + 1)**2
-    G = zeros((x.size, ncols))
-    ij = itertools.product(list(range(order+1)), list(range(order+1)))
-    for k, (i,j) in enumerate(ij):
-        G[:,k] = x**i * y**j
-    m, _, _, _ = lstsq(G, z)
-    return m
-
-def polyval2d(x, y, m):
-    order = int(sqrt(len(m))) - 1
-    ij = itertools.product(list(range(order+1)), list(range(order+1)))
-    z = zeros_like(x)
-    for a, (i,j) in zip(m, ij):
-        z += a * x**i * y**j
-    return z
     
-######################  KRIGING INTERPOLATION  ############################ 
-    
-def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+######################   kriging  ############################ 
+def krige(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     """ krige function to interpolate over a vector of points of x,y coords
     using the base points xpt ypt and the vario distance rg (range)"""
     #print 'geom kr l 522',len(xpt),rg
@@ -134,19 +86,32 @@ def krige_old(xpt,ypt,zpt,rg,x,y,vtype='spher'):
     #z0 = clip(z0,min(zpt)*0.9,max(zpt)*1.1)
     return z0
     
-def krige(xpt,ypt,zpt,x,y,vtype,vparm,nlags): #EV 19/02/20
-    OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model=vtype,
-                 variogram_parameters=vparm,variogram_function=None,nlags=nlags,
-                 weight=False, anisotropy_scaling=1.0, anisotropy_angle=0.0,
-                 verbose=True, enable_plotting=False, enable_statistics=False,
-                 coordinates_type='euclidean')
-    zvalues, sigmasq, text = OK.execute('points', x, y) # EV 04/02/20 added verbose and text option and plot variogram
-    lags, sem, var = OK.get_variogram_model() 
-    return zvalues, (text,lags, sem, var)
-   
-
-###################################  simulation using GSLIB  ################
+def krige_ok(xpt,ypt,zpt,rg,x,y,vtype='spher'):
+    vparms = [0.5*variance(zpt),rg,0] # sill, range, nugget
+    OK = OrdinaryKriging(xpt,ypt,zpt, variogram_model='exponential',
+        variogram_parameters=vparms, verbose=False, enable_plotting= False)#'spherical'
+    zvalues, sigmasq = OK.execute('points', x, y)
+    return zvalues
     
+import itertools
+from numpy.linalg import lstsq
+def polyfit2d(x, y, z, order=3):
+    ncols = (order + 1)**2
+    G = zeros((x.size, ncols))
+    ij = itertools.product(list(range(order+1)), list(range(order+1)))
+    for k, (i,j) in enumerate(ij):
+        G[:,k] = x**i * y**j
+    m, _, _, _ = lstsq(G, z)
+    return m
+
+def polyval2d(x, y, m):
+    order = int(sqrt(len(m))) - 1
+    ij = itertools.product(list(range(order+1)), list(range(order+1)))
+    z = zeros_like(x)
+    for a, (i,j) in zip(m, ij):
+        z += a * x**i * y**j
+    return z
+###################################  simulation using GSLIB  ################
 def makeSimul(core,data,asearch,zbounds=(-3,3)):
     '''runs a simulation with sgsim in the simul folder, using initial heads
     data cols : x,y,head,conc
@@ -211,7 +176,7 @@ def makeSimul(core,data,asearch,zbounds=(-3,3)):
     Z1 = m*stdZ+meanZ
     return Z1
 
-###################################  VORONOI INTERPOLATION ##################
+###################################  VORONOI ##################""
 def getPolyList(listP,xb,yb):
     polylist = []
     #add points on sides
@@ -227,6 +192,7 @@ def getPolyList(listP,xb,yb):
         polylist.append(p)
     return polylist
     
+
 def findPoly(delauny,segments,listP,ipt,xb,yb):
     """finds a polygon around a point identified in the vt series (vertices)"""
     vt = delauny.vertices
@@ -299,12 +265,11 @@ def triangle_csc(pts):
     bary_coords = x[:-1]
     return np.sum(pts * np.tile(bary_coords.reshape((pts.shape[0], 1)), (1, pts.shape[1])), axis=0)
 
-################################### OTHER THINGS ##################
-
 def irreg2mat(core,XP,YP,Z):
     """ transform data from an irregular matrix XP, YP,
     to a regular one using the model grid
     """
+#if 3>2:
     grd = core.addin.getFullGrid()
     x0,dx,nx = grd['x0'],grd['dx'][0],grd['nx']
     y0,dy,ny = grd['y0'],grd['dy'][0],grd['ny']
