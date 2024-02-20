@@ -364,9 +364,9 @@ class Core:
                     
         if modName in ['OpenFlow','OpenTrans','OpenChem']:
             sbin=self.baseDir+'\\bin'
-            s= '@echo off\ncall '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
+            s= '@echo off\n\call '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
             s += 'cd '+self.fileDir+'\n'
-            s += 'call '+sbin+'\muFlowRT.exe \necho.'
+            s += 'call '+sbin+'\muFlowRT.exe >log.txt \n echo.'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
             sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
@@ -389,7 +389,18 @@ class Core:
             os.chdir(self.fileDir)
             p = sbp.Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
-                    
+
+    def runProgress(self):
+        with open(self.fileDir+os.sep+'log.txt') as f:
+            while True:
+                memcap = f.read(102400)
+                memcaplist = memcap.split("\n")
+                for line in memcaplist:
+                    if 'time =' in line:
+                        time = line.split()[2];print(time)
+                if not memcap:
+                    break
+                
     def returnState(self,modName):
         if info !=False :
             try :  # EV 13/11 "show model fail to converge"

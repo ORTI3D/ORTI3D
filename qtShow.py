@@ -31,12 +31,18 @@ class Ui_Show(object):
         self.guiShow = guiShow(gui,core)
         self.groups = self.guiShow.groups
         Show.setObjectName("Show")
-        self.tWidget = QWidget(Show)
-        self.screenShape = QDesktopWidget().screenGeometry()
-        self.tWidget.setGeometry(QRect(0, 0, int(self.screenShape.width()*0.105), 45)) 
+        #self.tWidget = QWidget(Show)
+        self.mainbx = QVBoxLayout(Show) # this and 5 lines below added OA 6/11
+        title = QLabel(Show)
+        title.setText("Results")
+        font = QFont();font.setPointSize(10);font.setBold(True)
+        title.setFont(font)
+        title.setMaximumHeight(30)
+        self.mainbx.addWidget(title)
+        #self.screenShape = QDesktopWidget().screenGeometry()
+        #self.tWidget.setGeometry(QRect(0, 0, int(self.screenShape.width()*0.105), 45)) 
         self.dictBox={}
-        #wd0 = QDesktopWidget().screenGeometry().height()/100 # OA 23/2/19
-        wd0=15
+        #wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
         if gui.gtyp =='qgis': pos=0  # ifelse added 1/6/19 to use this in qgis too
         else : 
             self.makeTop(self,gui)
@@ -46,18 +52,12 @@ class Ui_Show(object):
                 if self.groups[g0][0]==ig: g=g0
             names = self.groups[g][1:]  
             self.dictBox[g] = showBox(Show,self,names,g,pos,ig)
-            pos += len(names)*wd0*1.4+wd0*2.5 # OA 23/2/19
-        #self.mainbx.addStretch(0) # OA 6/11
+            #pos += len(names)*wd0*1.3+wd0*2.5 # not used
+        self.mainbx.addStretch() # OA 6/11
         QMetaObject.connectSlotsByName(Show)
         
     def makeTop(self,parent,gui):  # OA 1/6/19 separated form above  
-        topHBox = QHBoxLayout(parent.tWidget)
-        title = QLabel(parent.Show) # this and 5 lines below added OA 6/11
-        title.setText("Results")
-        font = QFont();font.setPointSize(10);font.setBold(True)
-        title.setFont(font)
-        title.setMaximumHeight(40)
-        topHBox.addWidget(title)
+        topHBox = QHBoxLayout()#parent.mainbx) #tWidget)
         self.swiPlane = QPushButton()
         self.swiPlane.setIcon(QIcon(gui.u_dir+os.sep+'Vis_OriZ.png'))
         self.swiPlane.setIconSize(QSize(25, 25))
@@ -81,7 +81,7 @@ class Ui_Show(object):
         #self.maya.setMaximumWidth(25)        
         #self.maya.setFlat(True)   
         #topHBox.addWidget(self.maya)
-        topHBox.addStretch(0)
+        #topHBox.addStretch(0)
         return topHBox
         
     def switchPlane(self,plane): # OA added 22/8/19
@@ -281,31 +281,31 @@ class Ui_Show(object):
     #     if typ[0]=='X' and lesp[0]=='Transport': self.dicplots['X_tracer']= plt
     #     #plt.Raise()
 
-class showBox():
+class showBox:
     def __init__(self,Show,parent,names,gr,pos,ig):
         self.Show,self.parent = Show,parent
         self.group = QGroupBox(Show)
         self.group.setTitle(str(ig+1)+'.'+gr)
-        ln = len(names)
-        #wd0 = QDesktopWidget().screenGeometry().height()/100 # OA 23/2/19
-        wd0=15
-        self.group.setGeometry(QRect(10, int(pos), int(wd0*10.5), int(wd0*2.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
-        self.hlWidget = QWidget(self.group)
-        self.hlWidget.setGeometry(QRect(3,15 ,int(wd0*10), int(wd0*1.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
-        boxGrid = QGridLayout(self.hlWidget)
+        #ln = len(names)
+        #wd0 = QDesktopWidget().screenGeometry().width()/100 # OA 23/2/19
+        #self.group.setGeometry(QRect(10, int(pos), int(wd0*10.5), int(wd0*2.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
+        #self.hlWidget = QWidget(self.group)
+        #self.hlWidget.setGeometry(QRect(3,15 ,int(wd0*10), int(wd0*1.4+ln*wd0*1.3))) # OA 23/2/19 to see it on laptop
+        boxGrid = QGridLayout(self.group) #self.hlWidget)
+        parent.mainbx.addWidget(self.group) # OA 6/11/18
         #boxGrid.alignment()
-        boxGrid.setContentsMargins(0,0,0,0)
-        #boxGrid.setSpacing(0)
+        boxGrid.setContentsMargins(3,3,3,3)
+        boxGrid.setSpacing(5)
         self.buts = list(range(len(names)))
-        policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        #policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         for i,n in enumerate(names):
             if type(n)==type([1,2]): #cas liste -> choix
                 name = gr+'_'+n[0]+'_L';
-                text = QLabel(self.hlWidget)
+                text = QLabel()#self.hlWidget)
                 text.setText(n[0])
                 boxGrid.addWidget(text,i,0,1,1)
                 liste = n[1]
-                self.buts[i] = QComboBox(self.hlWidget)
+                self.buts[i] = QComboBox()#self.hlWidget)
                 view =  QListView() ; view.setMinimumWidth(150)  #EV 20/04/20
                 if n[0]=='Type' : self.buts[i].setView(view)
                 self.buts[i].setObjectName(gr+'_'+n[0]+'_L')
@@ -314,19 +314,19 @@ class showBox():
                 self.buts[i].activated['QString'].connect(parent.onClick)        
             else : # cas simple : checkbox
                 name = gr+'_'+n+'_B';
-                text = QLabel(self.hlWidget)
+                text = QLabel()#self.hlWidget)
                 text.setText(n)
                 boxGrid.addWidget(text,i,0,1,1)
-                self.buts[i] = QCheckBox(self.hlWidget)
+                self.buts[i] = QCheckBox()#self.hlWidget)
                 self.buts[i].setObjectName(gr+'_'+n+'_B')
                 boxGrid.addWidget(self.buts[i],i,1,1,1)
                 self.buts[i].clicked.connect(parent.onClick)
-            self.buts[i].setSizePolicy(policy)
+            #self.buts[i].setSizePolicy(policy)
             self.buts[i].setMaximumHeight(18)
             if gr not in ['Model','Observation'] and parent.gui.gtyp != 'qgis': # OA 1/6/19 no C for qgis
-                but = QPushButton('C',self.hlWidget)
+                but = QPushButton('C')#,self.hlWidget)
                 but.setObjectName(name[:-2]+'_C')
-                but.setSizePolicy(policy)
+                #but.setSizePolicy(policy)
                 but.setMaximumWidth(16)
                 but.setMaximumHeight(18)
                 but.clicked.connect(parent.OnChange)

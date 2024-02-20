@@ -44,8 +44,8 @@ class Box(): #QGroupBox):
     def __init__(self,Parameters,parent,gr,nb):
         '''parent is the Ui_parameters class above'''
         self.box = QGroupBox(Parameters)
-        self.screenShape = QDesktopWidget().screenGeometry()
-        self.box.setGeometry(QRect(0, nb*70, self.screenShape.width()*0.08, 60))
+        #self.screenShape = QDesktopWidget().screenGeometry()
+        #self.box.setGeometry(QRect(0, nb*70, self.screenShape.width()*0.08, 60))
         self.box.setMaximumWidth(145)
         self.Parameters,self.parent = Parameters,parent
         self.box.setTitle(gr)
