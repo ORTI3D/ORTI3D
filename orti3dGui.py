@@ -15,6 +15,9 @@ from qtDialogs import *
 from menus import *
 from core import *
 from addin import *
+#
+from defSPH import *
+from configSPH import *
 #from pyqtconsole.console import PythonConsole # does not work, pyqt console is nto present
 #from subprocess import CREATE_NEW_CONSOLE
 
