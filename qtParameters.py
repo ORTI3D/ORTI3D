@@ -240,16 +240,10 @@ class Ui_Parameters(object):
         checkUpToHereButton_Q.setText('check up to here')
         refreshButton_Q.setText('refresh')
 
-        # test 240212" \
-        #dockedWidget_Q.layout().addWidget(checkAllButton_Q)
-        #dockedWidget_Q.layout().addWidget(uncheckAllButton_Q)
-        #dockedWidget_Q.layout().addWidget(checkUpToHereButton_Q)
         rightButtons_L.addWidget(refreshButton_Q)
         rightButtons_L.addWidget(checkAllButton_Q)
         rightButtons_L.addWidget(uncheckAllButton_Q)
         rightButtons_L.addWidget(checkUpToHereButton_Q)
-        # test 240212
-        # dockedWidget_Q.layout().addWidget(removeButton_Q)
         rightButtons_L.addWidget(removeButton_Q)
 
         checkAllButton_Q.clicked.connect(self.sph_interpreteCheckAll)
@@ -258,18 +252,6 @@ class Ui_Parameters(object):
         removeButton_Q.clicked.connect(self.sph_interpreteRemoveButton)
         refreshButton_Q.clicked.connect(self.sph_interpreteRefreshButton)
 
-        # window.vBox_Q.addWidget(window.backupList_Q)
-        # # vBox_Q.addWidget(addButton_Q)
-        # window.vBox_Q.addWidget(window.removeButton_Q)
-        # window.vBox_Q.addWidget(window.infoButton_Q)
-        #vBox_Q = QtWidgets.QVBoxLayout()
-        ##toto = QtWidgets.QWidget
-        ##toto.setLayout(vBox_Q)
-        ##window.setWidget(toto)
-        # window.vBox_Q = QtWidgets.QVBoxLayout(window)
-        #window.layout_Q = QtWidgets.QVBoxLayout()
-        #window.setLayout(window.layout_Q)
-        #window.setWindowTitle('save list')
         docked_Q.setVisible(True)
         docked_Q.setFloating(True)
         docked_Q.setGeometry(400, 300, 650, 650)
@@ -328,24 +310,7 @@ class Ui_Parameters(object):
                                    fileName=self.backupList[item].fileName,
                                    mode=modifSPH2023_backupFormat)
 
-        #print('*** debug 240123:', inspect.getmembers(self.core))
-# looks like a list encapsulating a tuple with the second element being a dictionary
-        #print('*** debug 240123:', type(self.core))#[1]['Modflow'])
-        if modifSPH2023_debugLevel>20:
-            print('*** debug 240216:', self.core.KwList)  # this looks like a dict of all possible 'currentLine' names
-        # with their positions
-        #print('*** debug 240123c:', self.core.dicval)# this looks like a dict of all values. that's what we need to overwrite when loading !!!
-    #dialg = genericDialog(self.gui,'value',lst0)
-        #values = dialg.getValues()
-        #print('debug 240122b:',self.core.ttable)
-        #print('debug 240122:',self.core.getTlist2())
-
-        #print('debug 240125d:',self.core.dicval,hasattr(self.core,'dicaddin'),(self.core.dicaddin['Model'])['group'])
         if currentSave['backupType'] == sph_backupType.leftColumn:
-
-            #for groupKey in self.core.dicval.keys():
-            #    if currentSave['currentLine'] in self.core.dicval[groupKey].keys():
-            #        print('debug 240219f, yep:',groupKey)
 
             for groupKey in self.core.dicval.keys():
                 if groupKey.startswith('Opgeo'):#according to OA, this model was given up
@@ -357,12 +322,8 @@ class Ui_Parameters(object):
                         print('### ### debug 240129h:',currentSave['currentLine'])
 
                     d = (self.core.dicval[groupKey])#[currentSave['currentLine']]
-
-                    #print('debug 240219f:',self.core.dicval)
-
                     if modifSPH2023_debugLevel>5:
                         print('debug 240129g:',d)
-                #d = self.core.dicval[currentSave['currentModel']]
 
 
             if modifSPH2023_debugLevel>5:

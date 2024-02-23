@@ -93,7 +93,8 @@ class BaseParms:
         return messg
         
     def runModel(self,modName):
-        message = self.core.runModel(modName);#print message
-        #self.dialogs.onMessage(self.gui,message)
+        messg = self.core.runModel(modName,True);#print message
+        self.dialogs.onMessage(self.gui,messg)
         self.gui.guiShow.redraw() #EV 16/12/21
         #if modName == 'Pht3d': self.core.usePostfix() #OA 3/10/19 removed, usePostFix does not exist anymore?
+        return messg

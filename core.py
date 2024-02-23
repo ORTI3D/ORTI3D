@@ -364,7 +364,7 @@ class Core:
                     
         if modName in ['OpenFlow','OpenTrans','OpenChem']:
             sbin=self.baseDir+'\\bin'
-            s= '@echo off\n\call '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
+            s= '@echo off\n call '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
             s += 'cd '+self.fileDir+'\n'
             s += 'call '+sbin+'\muFlowRT.exe >log.txt \n echo.'
             os.chdir(self.fileDir)
@@ -389,6 +389,9 @@ class Core:
             os.chdir(self.fileDir)
             p = sbp.Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
+            
+        a = self.returnState(modName,info);print(a)
+        return a
 
     def runProgress(self):
         with open(self.fileDir+os.sep+'log.txt') as f:
@@ -401,8 +404,8 @@ class Core:
                 if not memcap:
                     break
                 
-    def returnState(self,modName):
-        if info !=False :
+    def returnState(self,modName,info):
+        if info !=False and modName[:6]=='Modflo':
             try :  # EV 13/11 "show model fail to converge"
                 if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
                 else : time_model=self.dicval['Modflow']['disu.4'][5] # EV 3/12/21
@@ -419,7 +422,7 @@ class Core:
             except :# IndexError:
                 return('Model fail to converge')
 
-        if info !=False :
+        if info !=False and modName[:5]=='Mt3dms':
             try : # EV 13/11 "show model fail to converge"
                 line_out=self.getTxtFileLastLine('Mt3dms.out',3).split()[4]
                 if line_out=='END':
@@ -429,7 +432,7 @@ class Core:
                 return('Model fail to converge')
 
             
-        if info !=False :
+        if info !=False and modName[:5]=='Pht3d':
             if self.dicaddin['Model']['group'] != 'Modflow USG': 
                 try : # EV 13/11 "show model fail to converge"
                     line_out=self.getTxtFileLastLine('Pht3d.out',3).split()[4]
@@ -452,40 +455,42 @@ class Core:
                 except :
                     return('Model fail to converge')
                 
-        try :  # EV 3/12/21
-            time_model=self.dicval['Modflow']['disu.4'][5]
-            if time_model==0 : 
-                time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
-            else : 
-                time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
-            time_last=self.getTlist2()[-1]
-            if float(time_out)==float(time_last):
-                return ('Normal termination of Modflow USG Transport')
-            else: return('Model fail to converge')
-        except :
-            return('Model fail to converge')
-        
-        if info !=False :
-            if self.dicval['Pest']['ctd.1'][1]==0:
-                try : # EV 13/11 "show model fail to converge"
-                    line_out=self.getTxtFileLastLine(self.fileName+'.rec',5)
-                    if line_out=='': return ('Normal termination of Pest')
-                    else : return ('Pest run failed')
-                except : return ('Pest run failed')
-            else : 
-                try : 
-                    line_out=self.getTxtFileLastLine(self.fileName+'r'+'.rec',5)
-                    if line_out=='': return ('Normal termination of Pest')
-                    else : return ('Pest run failed')
-                except : return ('Pest run failed')
+        if info !=False and modName[:5]=='MtUsg':
+            try :  # EV 3/12/21
+                time_model=self.dicval['Modflow']['disu.4'][5]
+                if time_model==0 : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[4]
+                else : 
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',7).split()[(time_model+1)]
+                time_last=self.getTlist2()[-1]
+                if float(time_out)==float(time_last):
+                    return ('Normal termination of Modflow USG Transport')
+                else: return('Model fail to converge')
+            except :
+                return('Model fail to converge')
+                
+        if info!=False and modName in ['OpenFlow','OpenTrans','OpenChem']:
+            time_model=int(float(self.dicaddin['Time']['final'][-1])*86400)
+            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',30)
+            for i in range(29,-1,-1):
+                if 'time =' in lines[i]:
+                    time_file=int(lines[i].split()[2])
+                    break
+            if time_file==time_model: return 'Normal termination of OpenFoam'
+            else : return 'Model fail to converge'
 
-            
     def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
         a= f1.read().split('\n')
         f1.close()
         return a[-line]
     
+    def getTxtFileLastNLines(self,fname,nline):
+        f1 = open(fname,'r')
+        a= f1.read().split('\n')
+        f1.close()
+        return a[-nline:]
+
     def runZonebud(self,modName): # EV 04/03/20
         s = self.baseDir+os.sep+'bin'+os.sep
         if 'USG' in modName: s += 'zonbudusg.exe'
