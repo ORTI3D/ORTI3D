@@ -806,7 +806,7 @@ class mtphtReader:
         if dim in ['Xsection','Radial']: return m0 # [::-1,:,:] #OA 11/3/19 renversement, je sais pas bien
         else : return m0[:,::-1,:]
 
-    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''): #EV 23/03/20
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss='',ofile=False,zname=''): #EV 23/03/20
         """a function to values of one variable at given point or points.
         irow, icol and ilay must be lists of the same length. iper is also
         a list containing the periods for which data are needed. opt is for 

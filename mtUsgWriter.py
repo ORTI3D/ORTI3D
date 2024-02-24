@@ -658,6 +658,7 @@ class mtUsgReader:
             nspec = len(lSpec)+3;iesp+=3; # always 3 species added (O,H,charge)
         else : # OA 20/5/21
             nspec = 1
+        print('in getObUsgTran',irow,icol,opt,iesp,spec)
         c = zeros((nper,len(irow)))
         if core.mfUnstruct and core.getValueFromName('Modflow','MshType')>0:
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements') # only 1 layer up to now

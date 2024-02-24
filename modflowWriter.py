@@ -1046,7 +1046,7 @@ class modflowReader:
         part = nvar*blok+l2+4+ncnh*4*4
         return ncol,nrow,nlay,blok,part
         
-    def getPtObs(self,core,irow,icol,ilay,iper,typ):
+    def getPtObs(self,core,irow,icol,ilay,iper,typ,ofile=False,zname=''):
         """for typ=flux return fluxes for a series of obs cell
         for typ=head return the heads
         iper is a list of periods indices"""

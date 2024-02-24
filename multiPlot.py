@@ -198,7 +198,7 @@ class multiPlot(QDialog):
                 items = self.nb.dwidget[k]
                 for item in items:
                     lout.append(item.checkState())
-                self.nb.dicOut[k] = list(zip(names,lout))
+                self.nb.dicOut[k] = list(zip(names,lout));#print('mult getv',self.nb.dicOut[k])
         return self.nb.dicOut
         
     def getOptions(self):
@@ -209,43 +209,44 @@ class multiPlot(QDialog):
         splist: list of species for chem, 'tracer' for transport and 'Head' and 
             'Wcontent' ('Flux' for flow is in ZB)
         lylist: list with model layers'''
-        dicIn={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
+        dicOut={'ptyp':{},'plotOrder':{},'zolist':{},'splist':{},'lylist':{}} # 'lylist':{}
         ptyp=self.typ
         rtyp = int(self.rgroup.currentIndex()) #EV 02/03/20
-        dicIn['ptyp']=ptyp+str(rtyp)
+        dicOut['ptyp']=ptyp+str(rtyp)
         if self.rgroup.currentText() in ['Wcontent']:#,'Flux']: 
-            dicIn['ptyp']=ptyp+'0'
-            dicIn['splist']=['Wcontent']
+            dicOut['ptyp']=ptyp+'0'
+            dicOut['splist']=['Wcontent']
         elif self.res=='Transport' :
-            dicIn['splist']=[self.rgroup.currentText()]
-        else:dicIn['splist']=[self.rgroup.currentText()]
+            dicOut['splist']=[self.rgroup.currentText()]
+        else:dicOut['splist']=[self.rgroup.currentText()]
         #if ptyp=='B' : dicIn['ptyp']='B0'
         #if ptyp=='P' : dicIn['ptyp']='P0'
         #if ptyp=='X' : dicIn['ptyp']='XY'
         #dic=self.nb.getValues() 
         dic=self.getValues() #EV 14/08/19
         nblay=getNlayers(self.core) #EV 26/08/19
-        dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
-        dicIn['zolist']=[dic['Zones'][i][0] for i in range(
+        #dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
+        dicOut['zolist']=[dic['Zones'][i][0] for i in range(
                 len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
             lylist=[dic['Layers'][i][0] for i in range(
-                    len(dic['Layers'])) if dic['Layers'][i][1]==2]
-            dicIn['lylist']=','.join(lylist)
+                    len(dic['Layers'])) if dic['Layers'][i][1]>0]
+            dicOut['lylist']=','.join(lylist)
+        #print('muli opt 235',dicOut['lylist'])
         if self.res in ['Transport','Chemistry']:
-            if ptyp in ['X','P','V']: dicIn['plotOrder']='Zones'
+            if ptyp in ['X','P','V']: dicOut['plotOrder']='Zones'
             else :
                 plotOrder=int(self.plgroup.currentIndex())
-                if plotOrder==0 : dicIn['plotOrder']='Zones'
-                if plotOrder==1 : dicIn['plotOrder']='Species'
-            dicIn['splist']=[dic['Species'][i][0] for i in range(
+                if plotOrder==0 : dicOut['plotOrder']='Zones'
+                if plotOrder==1 : dicOut['plotOrder']='Species'
+            dicOut['splist']=[dic['Species'][i][0] for i in range(
                     len(dic['Species'])) if dic['Species'][i][1]==2]
-        else :dicIn['plotOrder']='Zones' 
-        if 'All observations' in dicIn['zolist'] :  #EV 7/7/21
+        else :dicOut['plotOrder']='Zones' 
+        if 'All observations' in dicOut['zolist'] :  #EV 7/7/21
             if 'All observations' in self.zname :  #EV 7/7/21
                 self.zname.remove('All observations') #EV 7/7/21
-            dicIn['zolist'] =self.zname
-        return dicIn
+            dicOut['zolist'] =self.zname
+        return dicOut
     
     def buildPlot(self): #,dicIn
         '''this method build the piece of code that, when executed will make the graphs

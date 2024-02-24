@@ -51,11 +51,10 @@ def makeTransientTable(core):
     dZone['tlist']=tlist
     core.nper = len(tlist)
     #create the list of transient zones and their values along time
-    for mod in core.modelList:    
+    for mod in core.usedModelList:    
         diczin = core.diczone[mod].dic
         llines = list(diczin.keys()) # gives the lines where they are zones
         for line in llines: # loop into var to get transient values for each zone
-            #print 'timep 47',line
             dZone['Transient'][line]=False # says if the line has transient zones or not
             dZone['zlist'][line]=[] # this is the list of zones for the considered line
             #dZone[line]=None

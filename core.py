@@ -1,5 +1,5 @@
 #
-import os,sys,time,base64,types # OA 25/10/18 add types
+import os,sys,time,base64,types,io # OA 25/10/18 add types
 import subprocess as sbp
 from numpy import frombuffer,float64
 '''juste below : to remove the . before each module'''
@@ -31,6 +31,7 @@ from opfoamKeywords import OpC
 from obsKeywords import Obs
 from pestKeywords import Pst
 from plugins import *
+from collections import deque
 
 class Core:
     """this is the central class that makes the link between all objects
@@ -201,10 +202,11 @@ class Core:
         if self.gui!=None: self.gui.onInitGui(self)
         #print('in open')
         self.addin.grd = makeGrid(self,self.dicaddin['Grid']);#print 'core 152',self.addin.grd
+        group = self.dicaddin['Model']['group'];self.addin.group = group;print(group)
+        self.makeUsedModelList(group)
         self.makeTtable()
         MshType = 0                    
         self.mfUnstruct = False  # OA 13/3/21
-        group = self.dicaddin['Model']['group'];self.addin.group = group
         if self.gui!=None: self.gui.currentModel = 'Modflow'
         if group == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
@@ -232,7 +234,17 @@ class Core:
         if type(self.Zblock)!=type(ones(3)): self.Zblock = makeZblock(self)
         self.addin.setChemType()
         #self.usePostfix()
-                        
+        
+    def makeUsedModelList(self,group):
+        '''crate a list of models that are used in the opened file'''
+        if group == 'Modflow series':
+           self.usedModelList=['Modflow','Mt3dms','Pht3d']
+        if group == 'Modflow USG':
+           self.usedModelList=['Modflow','MfUsgTrans','Pht3d']
+        if group[:4] == 'Open':
+           self.usedModelList=['OpenFlow','OpenTrans','OpenChem']
+        self.usedModelList.append('Observation')
+            
     def saveModel(self,fDir = None,fName = None):
         """save the model"""
         if fDir!= None:
@@ -306,10 +318,25 @@ class Core:
             self.transReader = opTransReader(self,self.addin.mesh)
         if modName == 'Pest':
             info=self.addin.pest.writeFiles() #EV 11/12/19
+        self.writeBatchFile(modName)
         if info ==True :return 'Files written'
-        else : return info  #EV 11/12/19        
-      
+        else : return info  #EV 11/12/19   
+        
     def runModel(self,modName,info=False):
+        if modName in ['Modflow','Modflow_USG']:
+            sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Mt3dms':
+            sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'MfUsgTrans': # OA 19/8/19
+            sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Pht3d':
+            sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName in ['OpenFlow','OpenTrans','OpenChem']:
+            sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        a = self.returnState(modName,info);print(a)
+        return a
+
+    def writeBatchFile(self,modName):
         tabRes, sep = [],os.sep
         lf = os.listdir(self.fileDir) 
         cfg = Config(self);#print cfg.typInstall
@@ -333,7 +360,6 @@ class Core:
             s=exec_name+' '+self.fileName+'.nam'
             os.chdir(self.fileDir)
             f1 = open('runMflow.bat','w');f1.write(s);f1.close()
-            sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
 
         if modName == 'Mt3dms':
             mod1,mod2 = 'mt3dms5b','Mt3dms'
@@ -342,13 +368,11 @@ class Core:
             s=self.baseDir+sep+'bin'+sep+mod1+'.exe '+mod2+'.nam'
             os.chdir(self.fileDir)
             f1 = open('runMt3d.bat','w');f1.write(s);f1.close()
-            sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
             
         if modName == 'MfUsgTrans': # OA 19/8/19
             s=self.baseDir+sep+'bin'+sep+'PHT_USG.exe '+self.fileName #EV 19/03/21
             os.chdir(self.fileDir)
             f1 = open('runUtrp.bat','w');f1.write(s);f1.close()
-            sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
             
         if modName == 'Pht3d':
             if self.dicaddin['Model']['group'] == 'Modflow USG': # OA 03/20
@@ -360,7 +384,6 @@ class Core:
                 else : s=self.baseDir+sep+'bin'+sep+'Pht3dv217.exe Pht3d.nam'
             os.chdir(self.fileDir)
             f1 = open('runPht3d.bat','w');f1.write(s);f1.close()
-            sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
                     
         if modName in ['OpenFlow','OpenTrans','OpenChem']:
             sbin=self.baseDir+'\\bin'
@@ -369,7 +392,7 @@ class Core:
             s += 'call '+sbin+'\muFlowRT.exe >log.txt \n echo.'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
-            sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+            #process = sbp.Popen('runOpf.bat', shell=True) #, stdout=sbp.PIPE)
             
         if modName[:5] =='Min3p':
             #print('name',self.fileName)
@@ -389,21 +412,20 @@ class Core:
             os.chdir(self.fileDir)
             p = sbp.Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
-            
-        a = self.returnState(modName,info);print(a)
-        return a
 
     def runProgress(self):
-        with open(self.fileDir+os.sep+'log.txt') as f:
-            while True:
-                memcap = f.read(102400)
-                memcaplist = memcap.split("\n")
-                for line in memcaplist:
-                    if 'time =' in line:
-                        time = line.split()[2];print(time)
-                if not memcap:
-                    break
-                
+        """Returns the nth before last line of a file (n=1 gives last line)"""
+        tt = self.getTlist2();tmax=int(tt[-1]*86400)
+        self.runproc=0
+        while self.runproc<tmax:
+            time.sleep(0.1)
+            with open(self.fileDir+os.sep+'log.txt') as f:
+                last = deque(f, 50)
+                for l in last:
+                    if 'time =' in l:
+                        self.runproc = int(l.split()[2]);print(self.runproc)
+                        break
+    
     def returnState(self,modName,info):
         if info !=False and modName[:6]=='Modflo':
             try :  # EV 13/11 "show model fail to converge"
@@ -478,19 +500,19 @@ class Core:
                     break
             if time_file==time_model: return 'Normal termination of OpenFoam'
             else : return 'Model fail to converge'
-
+            
     def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
         a= f1.read().split('\n')
         f1.close()
         return a[-line]
-    
+   
     def getTxtFileLastNLines(self,fname,nline):
         f1 = open(fname,'r')
         a= f1.read().split('\n')
         f1.close()
         return a[-nline:]
-
+    
     def runZonebud(self,modName): # EV 04/03/20
         s = self.baseDir+os.sep+'bin'+os.sep
         if 'USG' in modName: s += 'zonbudusg.exe'
