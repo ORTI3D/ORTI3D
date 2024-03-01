@@ -47,7 +47,7 @@ class multiPlot(QDialog):
         self.label.setFont(font)
         self.verticalLayout.addWidget(self.label, alignment=Qt.AlignHCenter)
     ## model time list
-        self.tlist = self.core.getTlist2()
+        self.tlist = self.core.ttable['wtimes']
     ## frame 
         self.frame = QtWidgets.QFrame(self)
         self.frame.setMaximumSize(QtCore.QSize(int(w0*0.11), int(h0*.1))) 
@@ -225,7 +225,8 @@ class multiPlot(QDialog):
         #dic=self.nb.getValues() 
         dic=self.getValues() #EV 14/08/19
         nblay=getNlayers(self.core) #EV 26/08/19
-        #dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
+        if 'Layers' not in dic.keys():
+            dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
         dicOut['zolist']=[dic['Zones'][i][0] for i in range(
                 len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':

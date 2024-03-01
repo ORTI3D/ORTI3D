@@ -103,6 +103,7 @@ class addin:
         self.core.dicaddin['obsHead'] = {}
         self.core.dicaddin['obsTracer'] = {}
         self.core.dicaddin['obsChemistry'] = {}
+        self.core.dicaddin['Obspts'] = []
         self.structure['button']['5.Observation']=[{'name':'Obspts','pos':0,'short':'Sel'}]
 
         name = 'Pback' # dict for the pest zoens parameters
@@ -213,6 +214,7 @@ class addin:
                 self.gui.onGridMesh('Grid') # default grid button
                 m['dimension'],m['type'],m['group'],self.checkFlowMod = retour # EV 27/04/20
                 self.group = m['group']
+                self.core.makeUsedModelList(self.group)
                 self.core.mfUnstruct = False;self.setMfUnstruct() # OA 1/3/20 added cond
                 if m['group'] == 'Modflow USG':
                     self.core.mfUnstruct = True
@@ -404,8 +406,10 @@ class addin:
         # observation points
         if actionName == 'Ad_Obspts':
             lz=self.core.diczone['Observation'].dic['obs.1']['name']
-            chk,ptlist=self.core.dicaddin['Obspts']
+            dco= self.core.dicaddin['Obspts']
             lpt=[]
+            if len(dco)>0: chk,ptlist=dco
+            else : chk,ptlist=0,[]
             for n in lz: lpt.append((n,n in ptlist))
             data = [('Write','Check',chk),('Points','CheckList',(lz[0],lpt))]
             dialg = self.dialogs.genericDialog(self.gui,'Select Points',data)

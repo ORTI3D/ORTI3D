@@ -265,7 +265,7 @@ class orti3dGui(QMainWindow):
         #font = wx.Font(16, wx.SWISS, wx.NORMAL, wx.NORMAL)
         #self.notify.SetFont(font)
         self.basSizer.addWidget(self.notify)
-        
+        self.onNotify("run time :" )
         self.visu.initDomain() #,self.model.getGlist())
         
     #def getVisu(self): return self.visu

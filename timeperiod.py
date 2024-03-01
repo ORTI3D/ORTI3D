@@ -30,22 +30,17 @@ def makeTransientTable(core):
     tf,step = core.dicaddin['Time']['final'],core.dicaddin['Time']['steps']
     #tmode = core.dicaddin['Time']['mode'] # EV 18/02/19
     if type(tf) != type([4,5]): tf,step = [tf],[step]
-    t0,tflow = 0.,[]
+    t0,wtimes = 0.,[]
     ndec=max(0,int(1-log10(float(step[0]))))
     for i in range(len(tf)):
         t1,st = float(tf[i]),float(step[i])
-        tflow.extend(list(around(arange(t0,t1,st),ndec))) # EV 18/02/19
-        #tflow.extend(list(arange(t0,t1,st)))
-        #if tmode == 'linear': tflow.extend(list(arange(t0,t1,st))) 
-        #elif tmode == 'log':
-            #t0 = float(st) # OA 9/6/17
-            #a = logspace(log10(t0),log10(t1),100)[:-1] # OA 9/6/17
-            #tflow.extend(list(a))
+        wtimes.extend(list(around(arange(t0,t1,st),ndec))) # EV 18/02/19
         t0 = float(tf[i])
-    tflow.append(float(tf[-1]))
+    wtimes.append(float(tf[-1]))
+    dZone['wtimes']=wtimes[1:] # remove time 0
     # combines both lists
-    tflow.extend(tlist)
-    tflow.sort();tlist = unique(tflow);#print 'timeper',len(tflow),tflow,tlist
+    tlist.extend(wtimes)
+    tlist.sort();tlist = unique(tlist);#print 'timeper',len(tflow),tflow,tlist
     tlist = tlist[tlist<=float(tf[-1])] # to shorten if final time is smaller than times in zones
     #print ('tflow',tflow,'tlist',tlist) 
     dZone['tlist']=tlist

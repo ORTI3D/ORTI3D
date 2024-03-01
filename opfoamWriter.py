@@ -31,7 +31,8 @@ class opfoamWriter:
         if 'observation' in os.listdir(fDir):shutil.rmtree(fDir+r'observation')
         os.mkdir(fDir+r'observation')
         self.ttable = self.core.makeTtable()
-        self.tlist = self.ttable['tlist']
+        self.tlist = self.ttable['tlist'] # all times including zones
+        self.wtimes = self.ttable['wtimes'] # writing times
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
         else : self.nlay = 1
         self.ncell_lay = self.opf.ncell_lay
@@ -205,6 +206,7 @@ class opfoamWriter:
         if tunit== 3: self.dtu = 3600
         if tunit== 2: self.dtu = 60
         if tunit== 1 : self.dtu = 1
+        self.core.dtu=self.dtu
         self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*self.dtu)
         self.ttable = self.core.makeTtable()
         fslt = self.core.dicval['OpenFlow']['fslv.3']
@@ -233,15 +235,9 @@ class opfoamWriter:
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
         # creating the writetimes file
-        s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
-        t1=self.core.dicaddin['Time'];
-        if 'write' in t1:
-            if t1['write']==0: # we write only the time here and not in zones
-                lfin,lstp=t1['final'],t1['steps']
-                s1=''
-                for i in range(len(lfin)):
-                    s1+='\n'.join(linspace(stp,lfin[i],int(lfin[i]/lstp[i])))
-                    s1+='\n'
+        #s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
+        #if 'write' in t1:
+        s1='\n'.join([str(int(t*self.dtu)) for t in self.wtimes])
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -491,7 +487,7 @@ class opfoamWriter:
         
     def writeObservation(self):
         if 'Obspts' not in self.core.dicaddin.keys(): return
-        if self.core.dicaddin['Obspts'][0]==0 : return
+        if len(self.core.dicaddin['Obspts'])==0 : return
         obs =self.core.dicaddin['Obspts'][1];nobs = len(obs)
         dicz = self.core.diczone['Observation'].dic['obs.1']
         grd = self.core.addin.getFullGrid()
@@ -1143,7 +1139,8 @@ class opfReader:
     def inivar(self):
         self.ncell_lay = self.opf.ncell_lay
         self.ttable = self.core.makeTtable()
-        self.tlist = self.ttable['tlist']
+        #self.tlist = self.ttable['tlist']
+        self.tlist = self.ttable['wtimes']
         self.nlay = getNlayers(self.core)
         self.MshType = self.core.getValueFromName('OpenFlow','MshType')
         self.orientation = self.core.addin.getDim() # 'z' or 'y' for xsect or 'r' for radial
@@ -1226,8 +1223,8 @@ class opfReader:
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if spc==0: data = rd1(self.tlist[iper+1]*self.dtu,name)
-            else : data = rd2(self.tlist[iper+1]*self.dtu,iesp)
+            if spc==0: data = rd1(self.tlist[iper]*self.dtu,name)
+            else : data = rd2(self.tlist[iper]*self.dtu,iesp)
             V = reshape(data,shp1)            
             if self.core.addin.getDim() not in ['Xsection','Radial']:
                 V = V[-1::-1] # layers are bottom to top in opf

@@ -57,7 +57,7 @@ class Menus:
             self.gui.visu.zonesCore2qgs()
         self.gui.varBox.chooseCategory(mtype)
         self.gui.visu.initDomain()
-        tl2 = self.core.getTlist2()
+        tl2 = self.core.ttable['wtimes'] #self.core.getTlist2()
         self.gui.guiShow.setNames('Model_Tstep_L',tl2)
         self.gui.guiShow.setChemSpecies(listSpec)
         self.dialogs.onMessage(self.gui,'File opened')

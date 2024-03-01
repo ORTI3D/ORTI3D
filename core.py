@@ -323,17 +323,17 @@ class Core:
         else : return info  #EV 11/12/19   
         
     def runModel(self,modName,info=False):
-        if modName in ['Modflow','Modflow_USG']:
-            sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'Mt3dms':
-            sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'MfUsgTrans': # OA 19/8/19
-            sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'Pht3d':
-            sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName in ['OpenFlow','OpenTrans','OpenChem']:
-            sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        a = self.returnState(modName,info);print(a)
+        if modName in ['Modflow','Modflow_USG']: self.runProgress('runMflow.bat')
+            #sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Mt3dms': self.runProgress('runMt3d.bat')
+            #sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'MfUsgTrans': self.runProgress('runUtrp.bat')
+            #sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Pht3d': self.runProgress('runPht3d.bat')
+            #sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName in ['OpenFlow','OpenTrans','OpenChem']: self.runProgress('runOpf.bat')
+            #sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        a = self.returnState(modName,info);
         return a
 
     def writeBatchFile(self,modName):
@@ -389,7 +389,7 @@ class Core:
             sbin=self.baseDir+'\\bin'
             s= '@echo off\n call '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
             s += 'cd '+self.fileDir+'\n'
-            s += 'call '+sbin+'\muFlowRT.exe >log.txt \n echo.'
+            s += 'call '+sbin+'\muFlowRT.exe \n echo.'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
             #process = sbp.Popen('runOpf.bat', shell=True) #, stdout=sbp.PIPE)
@@ -413,18 +413,31 @@ class Core:
             p = sbp.Popen(s).wait()#),creationflags=CREATE_NEW_CONSOLE).wait(); #OA 8/6/19
             #subprocess.call('start /wait '+s, shell=True)
 
-    def runProgress(self):
+    def runProgress(self,cmd):
         """Returns the nth before last line of a file (n=1 gives last line)"""
-        tt = self.getTlist2();tmax=int(tt[-1]*86400)
-        self.runproc=0
-        while self.runproc<tmax:
-            time.sleep(0.1)
-            with open(self.fileDir+os.sep+'log.txt') as f:
-                last = deque(f, 50)
-                for l in last:
-                    if 'time =' in l:
-                        self.runproc = int(l.split()[2]);print(self.runproc)
-                        break
+        t1=self.dicaddin['Time'];
+        lfin,lstp=t1['final'],t1['steps']
+        print (self.gui,self.gui.notify.text())
+        self.setRunTime('0')
+        wtimes=[]
+        for i in range(len(lfin)):
+            stp,fin=float(lstp[i])*self.dtu,float(lfin[i])*self.dtu
+            wtimes.extend(list(linspace(stp,fin,int(fin/stp)).astype('int')))
+        s=''
+        if 'log.txt' in os.listdir(self.fileDir): os.system("del log.txt")
+        f1=open(self.fileDir+'log.txt','a')
+        with sbp.Popen(cmd, stdout=sbp.PIPE, bufsize=100,universal_newlines=True) as p:
+            for line in p.stdout:
+                s +=line
+                if 'time =' in line: 
+                    if line.split()[2] in wtimes : 
+                        self.setRunTime(line.split()[2])
+                        f1.write(s);s=''
+        rc = p.returncode
+        f1.close()
+        
+    def setRunTime(self,time):
+        if self.gui !=None: self.gui.onNotify('run time : '+str(time))
     
     def returnState(self,modName,info):
         if info !=False and modName[:6]=='Modflo':
@@ -766,6 +779,7 @@ class Core:
         not fully finished
         '''
         if 'Obspts' not in self.dicaddin.keys(): return [False]*len(esp)
+        if len(self.dicaddin['Obspts'])==0: return [False]*len(esp)
         if zname in self.dicaddin['Obspts'][1]: return [True]*len(esp)
         else : return [False]*len(esp)
         
