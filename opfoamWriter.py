@@ -486,22 +486,38 @@ class opfoamWriter:
         self.writePhqFoam()
         
     def writeObservation(self):
+        # write the cell number of the observation points
         if 'Obspts' not in self.core.dicaddin.keys(): return
         if len(self.core.dicaddin['Obspts'])==0 : return
-        obs =self.core.dicaddin['Obspts'][1];nobs = len(obs)
-        dicz = self.core.diczone['Observation'].dic['obs.1']
+        obs =self.core.dicaddin['Obspts']
+        obsp = obs[1];nobs = len(obsp);
+        dicz = self.core.diczone['Observation'].dic['obs.1'];#print('opf write obs',obsp,dicz)
         grd = self.core.addin.getFullGrid()
         s=str(nobs)+' 2\n'
         for i in range(nobs):
-            io = dicz['name'].index(obs[i])
+            io = dicz['name'].index(obsp[i])
             x,y = dicz['coords'][io][0];media=dicz['media'][io]
             if self.MshType==0: #structured
                 ix,iy,a =zone2index(self.core,[x],[y],0)
-                s += obs[i]+' '+str(iy[0]*grd['nx']+ix[0])+' '+str(media)+'\n'
+                s += obsp[i]+' '+str(iy[0]*grd['nx']+ix[0])+' '+str(media)+'\n'
             else : #usntructured
                 idx,val=zmesh(self.core,dicz,media,0)
-                s += obs[i]+' '+str(idx[0])+' '+str(media)+'\n'
-        f1=open(self.fDir+r'constant/options/obspts','w');f1.write(s);f1.close()
+                s += obsp[i]+' '+str(idx[0])+' '+str(media)+'\n'
+        sct=r'constant/options'
+        f1=open(self.fDir+sct+r'/obspts','w');f1.write(s);f1.close()
+        # write the variables to be written
+        if len(obs[2])>0: # Flow
+            s = ' '.join(arange(len(obs[2])).astype('str'))
+            f1=open(self.fDir+sct+r'/obsFlow','w');f1.write(s);f1.close()
+        if len(obs[3])>0: # Transport
+            s = ' '.join(arange(len(obs[3])).astype('str'))
+            f1=open(self.fDir+sct+r'/obsTrans','w');f1.write(s);f1.close()
+        lspec = self.core.addin.chem.getListSpecies()
+        if len(obs[4])>0: # Chemistry
+            s = ''
+            for e in obs[4]: s+=str(lspec.index(e))+' '
+            f1=open(self.fDir+sct+r'/obsChem','w');f1.write(s);f1.close()
+            
         
     def getConditions(self):
         '''

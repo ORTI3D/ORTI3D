@@ -104,7 +104,8 @@ class addin:
         self.core.dicaddin['obsTracer'] = {}
         self.core.dicaddin['obsChemistry'] = {}
         self.core.dicaddin['Obspts'] = []
-        self.structure['button']['5.Observation']=[{'name':'Obspts','pos':0,'short':'Sel'}]
+        self.structure['button']['5.Observation']=[{'name':'ImpObs','pos':0,'short':'Imp'}]
+        self.structure['button']['5.Observation'].append({'name':'Obspts','pos':0,'short':'Sel'})
 
         name = 'Pback' # dict for the pest zoens parameters
         self.core.dicaddin['Pback1'] = {} # to choose the parameters
@@ -403,20 +404,52 @@ class addin:
                 if nameB == 'MChemistry': # OA 1/3/19 for exchange species
                     self.chem.Base[nameB]['exchange']['text'] = dic['exchange']['text'] 
             self.core.dicaddin[nameB] = self.chem.Base
-        # observation points
+            
+        # observation points import data
+        if actionName == 'Ad_ImpObs':
+            data = [('Type','Choice',('Head',['Head','Transport','Chemistry']))]
+            dialg = self.dialogs.genericDialog(self.gui,'Import data',data)
+            dic2 = dialg.getValues()
+            if dic2 != None:
+                typ = dic2[0];print(typ)
+            m = self.dialogs.impObsData(self.gui,self.core,typ)
+            m.show() #all work on dicaddin obs done in the dialogs (by EV!)
+        
+        # observation points selection
         if actionName == 'Ad_Obspts':
+            # first choose points : two first elts of the dicaddin['opbspts'] list)
+            if 'obs.1' not in self.core.diczone['Observation'].dic.keys():
+                self.dialogs.onMessage(self.gui,'No obs points');return
             lz=self.core.diczone['Observation'].dic['obs.1']['name']
             dco= self.core.dicaddin['Obspts']
             lpt=[]
-            if len(dco)>0: chk,ptlist=dco
+            if len(dco)>0: chk,ptlist=dco[:2]
             else : chk,ptlist=0,[]
             for n in lz: lpt.append((n,n in ptlist))
             data = [('Write','Check',chk),('Points','CheckList',(lz[0],lpt))]
             dialg = self.dialogs.genericDialog(self.gui,'Select Points',data)
             dic2 = dialg.getValues()
             if dic2 != None:
-                self.core.dicaddin['Obspts'] = dic2
+                self.core.dicaddin['Obspts'][:2] = dic2
             print(dic2)
+            # then choose the variables to be shown, 3 next elts of dicaddin
+            if len(dco)>2: fllist,trlist,chlist=dco[2:]
+            else : fllist,trlist,chlist=[],[],[]
+            lflo,ltr,lch=[],[],[]
+            for n in ['Head','Wcontent']: lflo.append((n,n in fllist))
+            for n in ['Tracer','Temperature']: ltr.append((n,n in trlist))
+            lspec = self.chem.getListSpecies()
+            for n in lspec: lch.append((n,n in chlist))
+            data = [('Flow','CheckList',(lflo[0],lflo)),
+                    ('Transport','CheckList',(ltr[0],ltr)),
+                    ('Chemistry','CheckList',(lch[0],lch))]
+            dialg = self.dialogs.genericDialog(self.gui,'Select Variables',data)
+            dic2 = dialg.getValues()
+            if dic2 != None:
+                self.core.dicaddin['Obspts'][2:] = dic2
+            print(dic2)
+            
+            
         # Pest
         if actionName == 'Ad_Pback':
             dic = self.pest.getDicBack1() # choose the line to modify

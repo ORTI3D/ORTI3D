@@ -119,18 +119,6 @@ class Menus:
         else : 
             self.data=self.core.importData(fDir,fName)
             self.dialogs.onMessage(self.gui,'Data imported')
-    
-    def OnImportHead(self,evt=None):
-        m=impObsData(self.gui,self.core,'Head')
-        m.show()
-    
-    def OnImportTracer(self,evt=None):
-        m=impObsData(self.gui,self.core,'Tracer')
-        m.show()
-        
-    def OnImportChemistry(self,evt=None):
-        m=impObsData(self.gui,self.core,'Chemistry')
-        m.show()
         
     #def OnImportSolutions(self,evt=None):                               #EV 14/11/19
     #    """import a text file to store solutions"""

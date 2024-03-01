@@ -141,15 +141,15 @@ class orti3dGui(QMainWindow):
         i3dgeoAction = QAction("&3Dgeom", self, 
                 statusTip="import disrw file",
                 triggered=self.menus.OnImport3DgeomDis)
-        iobsHAction = QAction("&Head observation data", self, #EV 21/12
-                statusTip="import data text file",
-                triggered=self.menus.OnImportHead)
-        iobsTAction = QAction("&Tracer observation data", self, 
-                statusTip="import data text file",
-                triggered=self.menus.OnImportTracer)
-        iobsCAction = QAction("&Chemistry observation data", self, 
-                statusTip="import data text file",
-                triggered=self.menus.OnImportChemistry)
+#        iobsHAction = QAction("&Head observation data", self, #EV 21/12
+#                statusTip="import data text file",
+#                triggered=self.menus.OnImportHead)
+#        iobsTAction = QAction("&Tracer observation data", self, 
+#                statusTip="import data text file",
+#                triggered=self.menus.OnImportTracer)
+#        iobsCAction = QAction("&Chemistry observation data", self, 
+#                statusTip="import data text file",
+#                triggered=self.menus.OnImportChemistry)
         #isoluAction = QAction("&Solutions", self,                         #EV 14/11/19
                 #statusTip="import chemical solutions from text file",
                 #triggered=self.menus.OnImportSolutions)
@@ -160,9 +160,9 @@ class orti3dGui(QMainWindow):
                 statusTip="import user species from postfix",
                 triggered=self.menus.OnImportPostfixSpecies)
         menuImport.addAction(i3dgeoAction)
-        menuImport.addAction(iobsHAction)
-        menuImport.addAction(iobsTAction)
-        menuImport.addAction(iobsCAction)
+        #menuImport.addAction(iobsHAction)
+        #menuImport.addAction(iobsTAction)
+        #menuImport.addAction(iobsCAction)
         menuImport.addAction(iuspecAction)
         menuImport.addAction(ipostfAction)        # OA 30/6/19
         # export menu
