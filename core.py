@@ -156,6 +156,7 @@ class Core:
     
     def getTlist2(self):
         tlist = array(self.ttable['tlist'])
+        if self.dicaddin['Model']['group'][:4]=='Open': tlist=array(self.ttable['wtimes'])
         return tlist[1:] #(tlist[:-1]+tlist[1:])/2.
         
 #*************************** load, save,run models ********************    
@@ -323,16 +324,16 @@ class Core:
         else : return info  #EV 11/12/19   
         
     def runModel(self,modName,info=False):
-        if modName in ['Modflow','Modflow_USG']: self.runProgress('runMflow.bat')
-            #sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'Mt3dms': self.runProgress('runMt3d.bat')
-            #sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'MfUsgTrans': self.runProgress('runUtrp.bat')
-            #sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName == 'Pht3d': self.runProgress('runPht3d.bat')
-            #sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
-        if modName in ['OpenFlow','OpenTrans','OpenChem']: self.runProgress('runOpf.bat')
-            #sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName in ['Modflow','Modflow_USG']: #self.runProgress('runMflow.bat')
+            sbp.run(['runMflow.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Mt3dms': #self.runProgress('runMt3d.bat')
+            sbp.run(['runMt3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'MfUsgTrans': #self.runProgress('runUtrp.bat')
+            sbp.run(['runUtrp.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName == 'Pht3d': #self.runProgress('runPht3d.bat')
+            sbp.run(['runPht3d.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
+        if modName in ['OpenFlow','OpenTrans','OpenChem']: #self.runProgress('runOpf.bat')
+            sbp.run(['runOpf.bat'],creationflags=sbp.CREATE_NEW_CONSOLE)
         a = self.returnState(modName,info);
         return a
 
@@ -389,7 +390,7 @@ class Core:
             sbin=self.baseDir+'\\bin'
             s= '@echo off\n call '+sbin+'\\opflib\\mySetvars_OF8.bat\n'
             s += 'cd '+self.fileDir+'\n'
-            s += 'call '+sbin+'\muFlowRT.exe \n echo.'
+            s += 'call '+sbin+'\muFlowRT.exe >log.txt \n echo.'
             os.chdir(self.fileDir)
             f1 = open('runOpf.bat','w');f1.write(s);f1.close()
             #process = sbp.Popen('runOpf.bat', shell=True) #, stdout=sbp.PIPE)
@@ -505,8 +506,9 @@ class Core:
                 return('Model fail to converge')
                 
         if info!=False and modName in ['OpenFlow','OpenTrans','OpenChem']:
-            time_model=int(float(self.dicaddin['Time']['final'][-1])*86400)
+            time_model=int(float(self.dicaddin['Time']['final'][-1])*self.dtu)
             lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',30)
+            print(time_model);print(lines)
             for i in range(29,-1,-1):
                 if 'time =' in lines[i]:
                     time_file=int(lines[i].split()[2])
@@ -737,7 +739,7 @@ class Core:
         '''returns the units for a given line and keyword index'''
         s = ''
         tlist = ['-','sec','min','hours','days','years']
-        llist = ['-','ft','m','cm']
+        llist = ['-','cm','m','km','ft']
         if modName in ['Modflow','Mt3dms']:
             tunit = tlist[self.dicval['Modflow']['dis.2'][4]]
             lunit = llist[self.dicval['Modflow']['dis.2'][5]]
@@ -794,6 +796,7 @@ class Core:
         layers_in : list of layer or 'all' for all layers of one zone
         ss : solute ss='' or sorbed species ss='S'
         """
+        print('in core obspt', group,zname)
         ofile=self.isObsFile(zname,esp) # returns a list for the given variables
         if self.addin.getDim() in ['Xsection','Radial']: layers_in='all'
     ### Get some parameters
@@ -900,11 +903,11 @@ class Core:
             #print('iz2 :',iz2)
        ## For chemistry
         elif group=='Chemistry': 
-            iesp,lesp = 0,self.addin.chem.getListSpecies()
+            iesp,lesp = 0,self.addin.chem.getListSpecies();print(lesp)
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
             else : opt = 'Chemistry'
             for e in esp:
-                if e in lesp: iesp = lesp.index(e) 
+                if e in lesp: iesp = lesp.index(e) ;print('in core ptobs',e,iesp)
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)

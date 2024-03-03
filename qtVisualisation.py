@@ -338,7 +338,7 @@ class qtVisualisation(FigureCanvasQTAgg):
     def createMap(self):
         try : file = self.gui.map
         except : 
-            self.gui.onMessage(self.gui,'Please select a Map to display')
+            self.gui.onMessage('Please select a Map to display')
             self.gui.guiShow.dlgShow.onTickBox('Model','Map','B',False)#EV 8/12/21
             self.gui.guiShow.dicVisu['Model']['Map']=False 
         else : #EV 8/12/21
@@ -399,7 +399,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.cnv.artists = []
         V = 11;Zmin=amin(amin(Z));Zmax=amax(amax(Z*(Z<1e5)));
         if Zmax==Zmin : # test min=max -> pas de contour
-            self.gui.onMessage(self.gui,' values all equal to '+str(Zmin))
+            self.gui.onMessage(' values all equal to '+str(Zmin))
             return
         if value == None or len(value)<4: value = [Zmin,Zmax,(Zmax-Zmin)/10.,2,'auto',[]]
         # adapt the number and values of the contours

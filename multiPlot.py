@@ -218,7 +218,8 @@ class multiPlot(QDialog):
             dicOut['splist']=['Wcontent']
         elif self.res=='Transport' :
             dicOut['splist']=[self.rgroup.currentText()]
-        else:dicOut['splist']=[self.rgroup.currentText()]
+        else:
+            dicOut['splist']=[self.rgroup.currentText()]
         #if ptyp=='B' : dicIn['ptyp']='B0'
         #if ptyp=='P' : dicIn['ptyp']='P0'
         #if ptyp=='X' : dicIn['ptyp']='XY'
@@ -274,8 +275,9 @@ class multiPlot(QDialog):
         ncols = int(ceil(sqrt(nplots)))
         nrows = int(ceil(nplots/ncols))
     ## get iper, plot x and y label, group
-        iper, self.axlabel, self.aylabel, group= self.getUnitLab(
+        iper, self.axlabel, self.aylabel= self.getUnitLab(
                 self.ptyp,self.splist)
+        group = self.res # a pb with group above (OA 3/24)
     ## build the plots
         self.figure.clf();#print("multip",self.splist)
     ## Calibration graph
@@ -391,24 +393,21 @@ class multiPlot(QDialog):
         if ptyp[0] in ['P','V']: ##Profile
             curTime = int(self.Tstep.currentIndex())
             iper = curTime ; axlabel='Distance '+'('+ulength+')' 
-        if 'Head' in splist: group='Flow'; aylabel='Head '+'('+ulength+')'
-        elif 'Wcontent' in splist : group = 'Flow' ; aylabel = 'Wcontent' # OA 21/2/2019
+        if 'Head' in splist: aylabel='Head '+'('+ulength+')'
+        elif 'Wcontent' in splist : aylabel = 'Wcontent' # OA 21/2/2019
         elif ('Tracer' in splist) or ('Temperature' in splist) : 
-            group = 'Transport' 
-            #print('ptyp[1]',ptyp[1],len(ptyp[1]))
             if ptyp[1]=='2': aylabel = 'Mass discharge (kg/'+utime+')'
             elif ptyp[1]=='3': 
                 aylabel = 'Mass flux (kg/'+utime+'/'+ulength+'\u00b2)' 
             else: aylabel= 'Concentration (kg/'+ulength+'\u00b3)'
         else : 
-            group = 'Chemistry'
             if ptyp[1]=='2': aylabel = 'Mass discharge (mol/'+utime+')'
             elif ptyp[1]=='3': 
                 aylabel = 'Mass flux (mol/'+utime+'/'+ulength+'\u00b2)' 
             else: aylabel = 'Concentration (mol/L)'
         if ptyp[0]=='V':
             axlabel, aylabel = aylabel,axlabel
-        return iper, axlabel, aylabel, group
+        return iper, axlabel, aylabel
     
     def getDataObs(self,splist,zname,opt):
         '''read observed values and returns it

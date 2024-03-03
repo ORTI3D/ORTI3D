@@ -63,7 +63,7 @@ class Ui_Var(object):
         self.gridLayout.addWidget(self.choiceL,2)
 
         label = QLabel(self.hlWidget)
-        label.setText("     Media")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
+        label.setText("  Media")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
         #label.setFixedWidth(55)
         self.gridLayout.addWidget(label)
         self.choice3D = QComboBox(self.hlWidget)
@@ -73,18 +73,20 @@ class Ui_Var(object):
         self.choice3D.activated['QString'].connect(self.onViewVariable)
         self.gridLayout.addWidget(self.choice3D, 3)
 
-        label = QLabel(self.hlWidget)
-        label.setText("     Backg.")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
+        labBck = QLabel(self.hlWidget)
+        labBck.setText("  Backg.")#;label.setSizePolicy(policy);label.setMaximumWidth(30)
         #label.setFixedWidth(55)
-        self.gridLayout.addWidget(label)
+        self.gridLayout.addWidget(labBck)
         self.backg = QLineEdit(self.hlWidget)
-        #self.backg.setSizePolicy(policy)
         self.backg.setMaximumWidth(55);
-        #self.backg.returnPressed.connect(self.onBackOk) # OA removed 25/9/18
         self.gridLayout.addWidget(self.backg)
         
+        self.units = QLabel(self.hlWidget)
+        self.units.setText('')
+        self.gridLayout.addWidget(self.units)
+        
         self.butOK = QPushButton(self.hlWidget) # OA added 25/9/18
-        self.butOK.setMaximumWidth(30)    # OA added 25/9/18         
+        self.butOK.setMaximumWidth(25)    # OA added 25/9/18         
         self.butOK.setText('Ok')    # OA added 25/9/18         
         self.butOK.clicked.connect(self.onBackOk)  # OA added 25/9/18
         self.gridLayout.addWidget(self.butOK)  # OA added 25/9/18
@@ -193,6 +195,7 @@ class Ui_Var(object):
         self.base.changeVisu()
         self.onSetVariable() #EV 26.11.20
         self.onViewVariable() #EV 08.11.21
+        self.units.setText(self.core.getUnits(self.gui.currentModel,line,0))
             
     def onChoiceMedia(self,evt):
         """changes the media in visualization and stores the current media"""
@@ -342,7 +345,7 @@ class Ui_ModifZone(object):
             but.setFlat(True)
             zoneSizer.addWidget(but)
             but.clicked.connect(self.clk)
-        version = QLabel("       version 23/02/2024 ")
+        version = QLabel("       version 03/03/2024 ")
         zoneSizer.addWidget(version)
         #version.SetFont(wx.Font(7, wx.DEFAULT, wx.NORMAL, wx.NORMAL))
         self.obs = Observer()
