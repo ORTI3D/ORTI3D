@@ -507,9 +507,9 @@ class Core:
                 
         if info!=False and modName in ['OpenFlow','OpenTrans','OpenChem']:
             time_model=int(float(self.dicaddin['Time']['final'][-1])*self.dtu)
-            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',30)
-            print(time_model);print(lines)
-            for i in range(29,-1,-1):
+            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',80)
+            #print(time_model);print(lines)
+            for i in range(79,-1,-1):
                 if 'time =' in lines[i]:
                     time_file=int(lines[i].split()[2])
                     break
@@ -618,10 +618,13 @@ class Core:
             return val
             
     def getSingleValueFromName(self,modName,vName,nb): # OA 22/7/20 added nb
-        val = self.getValueFromName(modName,vName,nb)
         #if type(val)==type([]): return float(val)
-        try : return float(val)
-        except ValueError : return val
+        print('hello')
+        try : 
+            val = self.getValueFromName(modName,vName,nb)
+            return float(val)
+        except : 
+            return 0
         
     def setValueFromName(self,modName,vName,value):
         if vName in self.KwList[modName]:
