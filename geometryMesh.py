@@ -561,8 +561,37 @@ class unstructured:
         core.lcellInterp = [] # to reset the values where to search (default cell centers)
         return lzout
     
-    def writeVTKgeom(self,npt,sp,nh,lnh,lh):
-        ''' returns a string for the geometry part of the VTK file'''
+    def stringVTKgeom(self):
+        ''' returns a string for the geometry part of the VTK file, with triangles'''
+        def fmtlist(a):
+            return str(a).replace('[','').replace(']','').replace(',','')
+        pts=self.elcenters
+        zb=self.core.Zblock
+        zmid=(zb[:-1]+zb[1:])/2;nlay,npts=shape(zmid)
+        # point coord list
+        sp = ''
+        for il in range(nlay):
+            sp += fmtlist(c_[pts,zmid[il]])+'\n'
+        #wedge cells
+        tri = self.trg.triangles
+        ntri = len(tri)
+        cells = c_[ones((ntri,1))*6,tri,tri+npts]
+        for i in range(1,nlay-1):
+            c1 = c_[ones((ntri,1))*6,tri+i*npts,tri+(i+1)*npts]
+            cells = r_[cells,c1]
+        ncells = len(cells)  
+        s='# vtk DataFile Version 2.0\n'
+        s+='Unstructured Grid Example\nASCII\nDATASET UNSTRUCTURED_GRID\n'
+        s+='POINTS '+str(npts)+' float\n'+sp
+        s+='\nCELLS '+str(ncells)+' '+str(ncells*3)+'\n'
+        s+= fmtlist(cells)+'\n'
+        s+= '\nCELL_TYPES '+str(ncells)+'\n' 
+        s+= '\n'.join((ones(ncells)*6).astype('int').astype('str'))
+        s+='\n'
+        return s
+    
+    def writeVTKgeom_back(self,npt,sp,nh,lnh,lh):
+        ''' returns a string for the geometry part of the VTK file, old one with polygons'''
         def fmtlist(a):
             return str(a).replace('[','').replace(']','').replace(',','')
         #4 pts/fcup: 12; 3:13; 5: 15; 6: 16
