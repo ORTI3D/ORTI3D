@@ -868,18 +868,19 @@ def writeVTKstruct(core,modName,data,opt='scalars'):
             s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     else : # unstructured
         mesh.makeBC(modName)
-        points,fc,bfc,fcup = mesh.getPointsFaces();print(mesh.ncell,len(fcup))
-        npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
-        s = mesh.writeVTKgeom(npt,sp,nh,lnh,lh)
+        #points,fc,bfc,fcup = mesh.getPointsFaces();print(mesh.ncell,len(fcup))
+        #npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
+        nc = mesh.ncell*mesh.nlay
+        s = mesh.stringVTKgeom() #npt,sp,nh,lnh,lh)
         if opt=='scalars':
-            data = ravel(data)[idx] # add cells that have been divided
-            s += 'CELL_DATA '+str(nh)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
-            s += ' '.join([str(data[i])+'\n' for i in range(nh)])
+            data = ravel(data) # add cells that have been divided
+            s += 'POINT_DATA '+str(nc)+'\nSCALARS pointData float\nLOOKUP_TABLE default\n'
+            s += ' '.join([str(data[i])+'\n' for i in range(nc)])
         elif opt=='vectors':
-            s += 'CELL_DATA '+str(nh)+'\nVECTORS cellData float\nLOOKUP_TABLE default\n'
+            s += 'POINT_DATA '+str(nc)+'\nVECTORS vectorData float\n'
             vx,vy,vz = data;
-            vx,vy,vz=ravel(vx)[idx],ravel(vy)[idx],ravel(vz)[idx]
-            s += ' '.join([str(vx[i])+' '+str(vy[i])+' '+str(vz[i])+'\n' for i in range(nh)])
+            vx,vy,vz=ravel(vx),ravel(vy),ravel(vz)
+            s += ' '.join([str(vx[i])+' '+str(vy[i])+' '+str(vz[i])+'\n' for i in range(nc)])
     return s
     
 def facesZone1toZone2(core,zn0,zn1):

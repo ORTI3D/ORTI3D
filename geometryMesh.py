@@ -565,28 +565,37 @@ class unstructured:
         ''' returns a string for the geometry part of the VTK file, with triangles'''
         def fmtlist(a):
             return str(a).replace('[','').replace(']','').replace(',','')
-        pts=self.elcenters
+        pts=self.elcenters*1;
+        pts[:,0]-=amin(pts[:,0]);pts[:,1]-=amin(pts[:,1]);
         zb=self.core.Zblock
         zmid=(zb[:-1]+zb[1:])/2;nlay,npts=shape(zmid)
         # point coord list
         sp = ''
-        for il in range(nlay):
-            sp += fmtlist(c_[pts,zmid[il]])+'\n'
-        #wedge cells
+        for il in range(nlay): 
+            arr=c_[pts,zmid[il]]
+            sp+='\n'.join([str(a)+' '+str(b)+' '+str(c) for a,b,c in arr])+'\n'
         tri = self.trg.triangles
         ntri = len(tri)
-        cells = c_[ones((ntri,1))*6,tri,tri+npts]
-        for i in range(1,nlay-1):
-            c1 = c_[ones((ntri,1))*6,tri+i*npts,tri+(i+1)*npts]
-            cells = r_[cells,c1]
+        #if 2D writes only triangles
+        if nlay==1:
+            cells = c_[ones((ntri,1))*3,tri]
+            ctype,ptcell=4,4
+        #if 3D wedge cells
+        else:
+            ctype,ptcell=13,7
+            cells = c_[ones((ntri,1))*6,tri,tri+npts]
+            for i in range(1,nlay-1):
+                c1 = c_[ones((ntri,1))*6,tri+i*npts,tri+(i+1)*npts]
+                cells = r_[cells,c1]
         ncells = len(cells)  
         s='# vtk DataFile Version 2.0\n'
         s+='Unstructured Grid Example\nASCII\nDATASET UNSTRUCTURED_GRID\n'
-        s+='POINTS '+str(npts)+' float\n'+sp
-        s+='\nCELLS '+str(ncells)+' '+str(ncells*3)+'\n'
-        s+= fmtlist(cells)+'\n'
-        s+= '\nCELL_TYPES '+str(ncells)+'\n' 
-        s+= '\n'.join((ones(ncells)*6).astype('int').astype('str'))
+        s+='POINTS '+str(npts*nlay)+' float\n'+sp
+        s+='CELLS '+str(ncells)+' '+str(ncells*ptcell)+'\n'
+        #s+= fmtlist(cells.astype('int'))+'\n'
+        s+='\n'.join([' '.join(b.astype('int').astype('str')) for b in cells])+'\n'
+        s+= 'CELL_TYPES '+str(ncells)+'\n' 
+        s+= '\n'.join([str(ctype)]*ncells)
         s+='\n'
         return s
     

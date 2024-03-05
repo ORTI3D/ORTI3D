@@ -211,8 +211,8 @@ class Menus:
             self.dialogs.onMessage(self.gui,'file '+fName+' saved')
 
     def OnExportVectorVtk(self,evt=None): # modif 28/3/17 oa for correct name
-        model = self.gui.currentModel;print(model)
-        data = self.gui.guiShow.vect3;print('menu 218',len(data));print(shape(data[0]))
+        model = self.gui.currentModel;
+        data = self.gui.guiShow.vect3;
         if not shape(data) : #EV 11/12/19
             self.dialogs.onMessage(self.gui,'Select a result to export')
             return
@@ -242,7 +242,6 @@ class Menus:
             s += '] \n }'
             f1=open(fDir+os.sep+fName+'.series','w');f1.write(s);f1.close()
         self.dialogs.onMessage(self.gui,'file '+fName+' saved')
-
             
     def OnHelpI(self,evt=None): #,lang):
         """calling help file"""
