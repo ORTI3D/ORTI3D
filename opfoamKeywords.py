@@ -60,7 +60,7 @@ class  OpF:
         'khy.1':{'comm':'Hydraulic cond. parms','cond':'','kw':['OKTYP'],
                  'detail':[['','Kh/Kv ratio','value']],
                 'type':['choice'],'default':[0]},
-        'khy.2':{'comm':'Hor hydraulic cond.','cond':'OFXSECT==0','kw':['OKH'],
+        'khy.2':{'comm':'Hor hydraulic cond.','cond':'OFXSECT==0 or ONCOL>1','kw':['OKH'],
                  'detail':[],'type':['arrfloat'],'default':[10],
                  'units':['L/T']},
         'khy.3':{'comm':'Vert K or ratio/value','cond':'','kw':['OKV'],
