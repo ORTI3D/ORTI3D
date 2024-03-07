@@ -315,14 +315,14 @@ class opfoamWriter:
         s += 'location \"constant\"; object g;}\n'
         s += ' dimensions [0 1 -2 0 0 0 0];\n value  '
         if self.orientation[1] == 'D':s += '( 0 0 -9.81 );'
-        elif self.orientation[0] in ['R','X']: s += '( 0 -9.81 0 );'
+        elif self.orientation[0] in ['R','X']: s += '( 0 -9.81 0 );' #Xsect and rad are drawn in x,y plane
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         self.writeScalField('constant','eps',self.eps,self.bcD0)
         # permeability
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
-        if self.orientation[0] in ['R','X']: 
+        if self.orientation[0]=='X' and self.core.getValueFromName('OpenFlow','ONCOL',0)==1: 
             K=vrt/self.dtu/9.81e6
         else :
             K = self.getVariable('OpenFlow','khy.2')/self.dtu/9.81e6;self.K=K
@@ -958,7 +958,7 @@ class opfoamWriter:
                 ie = phases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 IS = phases['data'][ie][1] #backgr SI and concentration of phase
                 conc = phases['data'][ie][ip+2] #backgr SI and concentration of phase
-                s += esp+' '+str(IS)+' '+str(float(conc)/unique(self.eps)[0])+'\n' #
+                s += esp+' '+str(IS)+' '+str(float(conc))+'\n' #
         # exchanger
         exc=chem['Exchange'];
         nbex = len(unique(dInd['Exchange']))
@@ -967,7 +967,7 @@ class opfoamWriter:
             for esp in listE['e']: # go through phase list
                 ie = exc['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = exc['data'][ie][ix+1] #backgr SI and concentration of phase
-                s += esp+' '+str(float(conc)/unique(self.eps)[0])+'\n' 
+                s += esp+' '+str(float(conc))+'\n' 
             if len(listE['e'])>0 :s += '-equilibrate with solution '+str(ix)+'\n'
         # surface
         surf=chem['Surface'];
@@ -977,7 +977,7 @@ class opfoamWriter:
             for esp in listE['s']: # go through phase list
                 ie = surf['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = surf['data'][ie][isu+1] #backgr SI and concentration of phase
-                s += esp+' '+str(float(conc)/unique(self.eps)[0])+' ' #
+                s += esp+' '+str(float(conc))+' ' #
                 s += ' '.join(surf['data'][ie][6:8])+' \n'
             if len(listE['s'])>0 :s += '-equilibrate with solution '+str(isu)+'\n-no_edl\n'
         # gas phase

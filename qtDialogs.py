@@ -403,8 +403,9 @@ class myNBpanelGrid(QTableWidget):
                 first_row = selected[0].topRow()
                 first_col = selected[0].leftColumn()
                 #copied text is split by '\n' and '\t' to paste to the cells
-                rowText = self.clip.text().split('\n')
-                self.setRowCount(len(rowText)-1) # OA 19/8/19
+                rowText = self.clip.text().split('\n');#print(rowText)
+                if rowText[-1]=='':self.setRowCount(len(rowText)-1)
+                else : self.setRowCount(len(rowText))
                 for r, row in enumerate(rowText):
                     for c, text in enumerate(row.split('\t')):
                         self.setItem(first_row+r, first_col+c, QTableWidgetItem(text))

@@ -163,7 +163,7 @@ def makeZblock(core):
         modName = 'OpenFlow'; lineTop='dis.6' ; lineBot='dis.7'
     #### stucture of Zblock
     if core.addin.getDim() not in ['Radial','Xsection']: # 2 or 3D case
-        if core.addin.mesh==None or core.getValueFromName(modName,'MshType')==0:
+        if core.addin.mesh==None or core.addin.MshType==0:
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
             #if mgroup[0]=='M': #Min3p amd Modfow USG
@@ -227,7 +227,7 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         parms = core.dicinterp[modName][line][im] # EV 19/02/20
         z, mess = zone2interp(core,modName,line,im,parms,refer,iper=0) # EV 19/02/20
     elif intp==3 :# EV 11/02/20
-        if  core.addin.mesh==None or core.getValueFromName(modName,'MshType')==0: # OA 19/4/20
+        if  core.addin.mesh==None or core.addin.MshType==0: # OA 19/4/20
             z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
             if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
@@ -300,11 +300,9 @@ def getMesh3Dcenters(core):
 def block(core,modName,line,intp=False,opt=None,iper=0):
     #print("block",core.addin.mesh)
     group = core.dicaddin['Model']['group']
-    if group[:3]=='Mod': modName1='Modflow'
-    if group[:3]=='Ope': modName1='OpenFlow'
     if core.addin.mesh == None : # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
-    elif core.getValueFromName(modName1,'MshType')==0:
+    elif core.addin.MshType==0:
         m = blockRegular(core,modName,line,intp,opt,iper)
         (l,r,c) = shape(m)
         return reshape(m[:,::-1,:],(l,r*c)) # OA 22/2/22
@@ -315,9 +313,7 @@ def block1(core,modName,line,intp=False,opt=None,nvar=2):
     #a special block for n variables (2 for drn,ghb or chd, 3 for riv)
     iper=0
     group = core.dicaddin['Model']['group']
-    if group[:3]=='Mod': modName1='Modflow'
-    if group[:3]=='Ope': modName1='OpenFlow'
-    if core.addin.mesh == None or core.getValueFromName(modName1,'MshType')==0: # OA 29/2/20 added mstType rect
+    if core.addin.mesh == None or core.addin.MshType==0: # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
     else : #mfUnstruct or modName[:5]=='Opgeo':
         blk = ones(nvar,(getNlayers(core),core.addin.mesh.getNumber('elements')))
@@ -436,38 +432,38 @@ def blockRegular(core,modName,line,intp,opt,iper):
     if type(intp)==type(0): intp=[intp] #OA 16/02/20 # EV 05/05/20
     if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
     #### interpolation and array option for 2D and 3D model #EV 07/02/20
-    if core.addin.getDim() in ['2D','3D']:
-        m0 = ones((nlayers,ny,nx))
-        lay = 0
-        for im in range(nmedia): # 3D case, includes 2D
-            #print('lin',line, 'im',im, 'intp', intp[im])
-            if intp[im]==1 :
-                parms = core.dicinterp[modName][line][im] # EV 19/02/20
-                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
-            elif intp[im]==3 :
+    #if core.addin.getDim() in ['2D','3D']:
+    m0 = ones((nlayers,ny,nx))
+    lay = 0
+    for im in range(nmedia): # 3D case, includes 2D
+        #print('lin',line, 'im',im, 'intp', intp[im])
+        if intp[im]==1 :
+            parms = core.dicinterp[modName][line][im] # EV 19/02/20
+            a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
+        elif intp[im]==3 :
+            a = zone2grid(core,modName,line,im,opt,iper)
+        elif intp[im]==4 :
+            #try : 
+            a = zone2array(core,modName,line,im) # EV 20/02/20
+            if a.size == 0 : #EV 01/04/20
                 a = zone2grid(core,modName,line,im,opt,iper)
-            elif intp[im]==4 :
-                #try : 
-                a = zone2array(core,modName,line,im) # EV 20/02/20
-                if a.size == 0 : #EV 01/04/20
-                    a = zone2grid(core,modName,line,im,opt,iper)
-                    core.dictype[modName][line][im]='one_value'
-            for il in range(int(lilay[im])): # several layers can exist in each media
-                m0[lay]=a
-                lay +=1
+                core.dictype[modName][line][im]='one_value'
+        for il in range(int(lilay[im])): # several layers can exist in each media
+            m0[lay]=a
+            lay +=1
     #### interpolation and array option for Xsection & radial model #EV 07/02/20
-    else : 
-        for im in range(nmedia): 
-            if intp[im]==1 :
-                parms = core.dicinterp[modName][line][im] # EV 19/02/20
-                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
-            elif intp[im]==3 :
-                a = zone2grid(core,modName,line,im,opt,iper)
-            elif intp[im]==4 :
-                a = zone2array()
-                if a.size == 0 : #EV 01/04/20
-                    a = zone2grid(core,modName,line,im,opt,iper)
-                    core.dictype[modName][line][im]='one_value'
+#    else : 
+#        for im in range(nmedia): 
+#            if intp[im]==1 :
+#                parms = core.dicinterp[modName][line][im] # EV 19/02/20
+#                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
+#            elif intp[im]==3 :
+#                a = zone2grid(core,modName,line,im,opt,iper)
+#            elif intp[im]==4 :
+#                a = zone2array()
+#                if a.size == 0 : #EV 01/04/20
+#                    a = zone2grid(core,modName,line,im,opt,iper)
+#                    core.dictype[modName][line][im]='one_value'
         #a = zone2grid(core,modName,line,0,opt,iper)
         m0 = reshape(a,(ny,1,nx))
         m0 = m0[-1::-1]
@@ -641,7 +637,7 @@ def isclosed(core,x,y): # OA all modified 19/12/21
     group = core.dicaddin['Model']['group']
     if group[:3]=='Mod': modName='Modflow'
     if group[:3]=='Ope': modName='OpenFlow'
-    if mesh == None or core.getValueFromName(modName,'MshType')<1: # OA 12/1/21
+    if mesh == None or core.addin.MshType==0: # OA 12/1/21
         nx,ny,xv,yv=getXYvects(core) #print('x0',x[0],'y0',y[0])
         ix0,iy0,ix1,iy1 = minDiff(x[0],xv),minDiff(y[0],yv),minDiff(x[-1],xv),minDiff(y[-1],yv)
         return (ix0==ix1 and iy0==iy1)
@@ -848,7 +844,7 @@ def writeVTKstruct(core,modName,data,opt='scalars'):
     if scalars data is an array, if vector, data is a lsit of three arrays
     '''
     mesh = core.addin.mesh
-    if mesh==None or core.getValueFromName(modName,'MshType')==0:
+    if mesh==None or core.addin.MshType==0:
         a,b,xv1,yv1 = getXYvects(core);#print 'geom l 141',plane,layer
         nlay = getNlayers(core)
         ym,zm,xm = meshgrid(yv1,ones(nlay+1),xv1)
@@ -945,7 +941,7 @@ def zone2interp(core,modName,line,media,option,refer=None,iper=None): # EV 19/02
     
     #### create the vector of points on which interpolation will be done
     mess = None
-    if core.addin.mesh == None or core.getValueFromName(modName,'MshType')==0 :
+    if core.addin.mesh == None or core.addin.MshType==0 :
         nx,ny,xv,yv = getXYvects(core);nz=0
         xv,yv = (xv[1:]+xv[:-1])/2.,(yv[1:]+yv[:-1])/2.;#print 'xv',xv,yv
         xm,ym = meshgrid(xv,yv)
@@ -1101,7 +1097,7 @@ def zone2array(core,modName,line,im):
         grd = core.addin.getFullGrid()
         intp = True # OA 3/4/20 this l an dl. below
         #if line in ['lpf.8']: intp=True #'dis.6','dis.7',
-        if core.addin.mesh == None: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
+        if core.addin.mesh == None or core.addin.MshType==0: xx,yy=getXYmeshCenters(core,'Z',0) # OA 24/7/20
         else : m = core.addin.mesh.getCenters();xx,yy = m[0],m[1] # OA 24/7/20
         if ysign==-1: # OA 13/6/20 added this and below
             arr = arr[-1::-1,:]
