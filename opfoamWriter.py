@@ -1317,11 +1317,11 @@ class opTransReader(opfReader):
     def __init__(self,core,opfoam):
         self.core,self.opf = core, opfoam
         self.inivar()
-        self.listE = core.addin.pht3d.getDictSpecies();
         
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
         '''reads the concentrations iesp=-1 for tracer (not used for others)
         opt not used, used for mt3dms'''
+        self.listE = core.addin.pht3d.getDictSpecies();
         fDir = self.core.fileDir
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
@@ -1356,18 +1356,24 @@ class opTransReader(opfReader):
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
         """      
+        self.listE = core.addin.pht3d.getDictSpecies();
+        if self.flagMask==0: 
+            self.readMask(iesp,specname);self.flagMask=1
         pobs=zeros((len(iper),len(irow)))+0.;print('in read',iesp,specname)
         #fDir = self.core.fileDir
         if iesp !=-1: 
             ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
             lesp1 = ['pH','pe']
             lesp1.extend(lesp)
+            lesp1.extend(self.listE['p'])
         for i in range(len(iper)):
             ip = iper[i];#print(ip)
             if iesp==-1: # transport
                 if specname[:4]=='Trac': sp = 'C'
                 else : sp = 'T'
-                A = self.readScalar(sp,ip)
+                return self.readScalar(sp,ip)
+            if specname in lesp1: #search in species file
+                A = self.readScalar('dum',ip,iesp=lesp1.index(specname),spc=1)
             elif '(g)' in specname: #gas species
                 iesp = lgcomp.index(specname)
                 A = self.readScalar('Cg'+str(iesp),ip)
