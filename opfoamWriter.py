@@ -240,7 +240,7 @@ class opfoamWriter:
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
         # write times (below is not really used now)
-        intv = int(float(self.core.dicaddin['Time']['steps'][0])*self.dtu)
+        intv = int(float(self.core.dicaddin['Time']['steps'][-1])*self.dtu)
         s += 'writeInterval '+str(intv)+ ';\n'
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
@@ -1371,15 +1371,16 @@ class opTransReader(opfReader):
             if iesp==-1: # transport
                 if specname[:4]=='Trac': sp = 'C'
                 else : sp = 'T'
-                return self.readScalar(sp,ip)
-            if specname in lesp1: #search in species file
-                A = self.readScalar('dum',ip,iesp=lesp1.index(specname),spc=1)
-            elif '(g)' in specname: #gas species
-                iesp = lgcomp.index(specname)
-                A = self.readScalar('Cg'+str(iesp),ip)
-            else : #chem species
-                iesp = lcomp.index(specname)+4
-                A = self.readScalar('Cw'+str(iesp),ip)
+                A = self.readScalar(sp,ip)
+            else:
+                if specname in lesp1: #search in species file
+                    A = self.readScalar('dum',ip,iesp=lesp1.index(specname),spc=1)
+                elif '(g)' in specname: #gas species
+                    iesp = lgcomp.index(specname)
+                    A = self.readScalar('Cg'+str(iesp),ip)
+                else : #chem species
+                    iesp = lcomp.index(specname)+4
+                    A = self.readScalar('Cw'+str(iesp),ip)
             pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
         return pobs
 
