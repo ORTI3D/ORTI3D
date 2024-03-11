@@ -1300,7 +1300,9 @@ class opFlowReader(opfReader):
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
         """
-        if specname == 'Head': short = 'hp'
+        if specname == 'Head': 
+            if self.core.dicaddin['Model']['type'] == 'Unsaturated':short = 'hp'
+            else : short = 'h'
         elif specname == 'Wcontent': short = 'sw'
         if ofile==True:
             if len(irow==1): # verify that its a one point
