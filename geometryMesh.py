@@ -258,8 +258,8 @@ class unstructured:
         if modName=='OpenFlow' and 'dis.2' not in dct.keys(): 
             self.core.dicval[modName]['dis.1'][0]=0;
             #self.points,self.elts,self.dicD,self.dcoo1,self.dicFeats = [],[],{},[],{}
-        mshType = self.core.getValueFromName(modName,'MshType')
-        if mshType>1: # case of true unstructured grid built through gmesh
+        self.mshType = self.core.MshType
+        if self.mshType>1: # case of true unstructured grid built through gmesh
             fmsh = self.core.fileName+'_out.msh'
             os.chdir(self.core.fileDir)
             if fmsh not in os.listdir(os.getcwd()): opt = 'new'
@@ -312,7 +312,7 @@ class unstructured:
         '''
         create an array bcindx that gather the cell number and the 
         '''
-        if self.core.getValueFromName(modName,'MshType')>0:
+        if self.MshType>0:
             self.ncell_lay = len(self.carea)
             lbc,lnb = [],[]
             for k in self.dicFeats.keys():
@@ -567,7 +567,7 @@ class unstructured:
             return str(a).replace('[','').replace(']','').replace(',','')
         pts=self.elcenters*1;
         pts[:,0]-=amin(pts[:,0]);pts[:,1]-=amin(pts[:,1]);
-        zb=self.core.Zblock
+        zb=makeZblock(self.core)
         zmid=(zb[:-1]+zb[1:])/2;nlay,npts=shape(zmid)
         # point coord list
         sp = ''

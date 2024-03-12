@@ -182,7 +182,7 @@ class PHT3D:
         else : mmol=0.
         return float(mmol)
             
-    def getDictSpecies(self):
+    def getDictSpecies(self,opt=None):
         chem=self.Base['Chemistry'];dicE={}
         if chem['Solutions']==None:
             return {'k':[],'i':[],'kim':[],'p':[],'g':[],'e':[],'kp':[],'s':[]}
@@ -228,17 +228,17 @@ class PHT3D:
                         continue  # case of phases defined in kinetic minerals
                     if (d['data'][ir][0]): dicE[short[ik]].append(d['rows'][ir]) 
         gcomp = len(dicE['g'])
-        # other dissolved species (complexes...)
-##        lists=[]
-##        if chem.has_key('Species'):
-##            for n in chem['Species']['rows']:lists.append(n);
+        if opt=='delta': # add the delta to minerals
+            a=[]
+            for n in dicE['p']: a.extend([n,'d_'+n])
+            dicE['p'] = a
         ncomp=mcomp+len(dicE['kim'])+gcomp
         for k in ['p','e','s','kp']:ncomp+=len(dicE[k])
         dicE['ncomp'],dicE['mcomp'],dicE['gcomp'] = ncomp,mcomp-2,gcomp
         return dicE
         
-    def getListSpecies(self):
-        dicE, listE = self.getDictSpecies(),[]
+    def getListSpecies(self,opt=None):
+        dicE, listE = self.getDictSpecies(opt=opt),[]
         short=['k','i','kim','g','p','e','s','kp']
         for s in short: listE.extend(dicE[s])
         return listE

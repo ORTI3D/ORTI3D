@@ -53,6 +53,7 @@ class opfoamWriter:
         self.tlist = self.ttable['tlist'] # all times including zones
         self.wtimes = self.ttable['wtimes'] # writing times
         #geometry
+        zb=makeZblock(self.core)
         if self.orientation[0] not in ['R','X']: self.nlay = getNlayers(self.core)
         else : self.nlay = 1
         self.ncell_lay = self.opf.ncell_lay
@@ -938,7 +939,7 @@ class opfoamWriter:
         listS = listE['i'];listS.extend(listE['k']);listS.extend(listE['kim'])
         #listS.sort()
         for isol in range(self.nsolu):
-            s += '\nSolution '+str(isol)+' \n units mol/L \n'
+            s += '\nSolution '+str(isol)+' \n units mol/kgw \n'
             for esp in listS: # go through species list
                 if esp in solu['rows']:
                     ie=solu['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
@@ -1214,6 +1215,7 @@ class opfReader:
                 data = ones(self.ncell)*float(s1)
             return data
         
+        '''
         def rd2(t,iesp): #read in Species
             f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species','r')
             s = f1.read();f1.close()
@@ -1223,6 +1225,15 @@ class opfReader:
             if iesp==0: data[data>1e+29]=7 # for pH
             else : data[data>1e+29]=0
             return data
+        '''
+        def rd2(t,iesp): #read in Species
+            m=loadtxt(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species')
+            data = zeros(self.ncell)
+            data[self.phmask] = m[:,iesp]
+            if iesp==0: data[data>1e+29]=7 # for pH
+            else : data[data>1e+29]=0
+            return data
+       
         ntime=len(self.tlist)
         if self.MshType==0:
             nlay,nx,ny = self.getGeom(self.core)
@@ -1323,7 +1334,7 @@ class opTransReader(opfReader):
     def readUCN(self,core,opt,tstep,iesp,specname=''): 
         '''reads the concentrations iesp=-1 for tracer (not used for others)
         opt not used, used for mt3dms'''
-        self.listE = core.addin.pht3d.getDictSpecies();
+        self.listE = core.addin.pht3d.getDictSpecies(opt='delta');
         fDir = self.core.fileDir
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
@@ -1336,7 +1347,9 @@ class opTransReader(opfReader):
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
             tstep = 1
         if iesp==-1: # tracer or temp 1st letter
-            return self.readScalar(specname[:1],tstep)
+            if specname[:4]=='Trac': sp = 'C'
+            else : sp = 'T'
+            return self.readScalar(sp,tstep)
         ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
@@ -1358,7 +1371,7 @@ class opTransReader(opfReader):
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
         """      
-        self.listE = core.addin.pht3d.getDictSpecies();
+        self.listE = core.addin.pht3d.getDictSpecies(opt='delta');
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
         pobs=zeros((len(iper),len(irow)))+0.;print('in read',iesp,specname)

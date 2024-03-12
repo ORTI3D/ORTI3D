@@ -206,20 +206,20 @@ class Core:
         group = self.dicaddin['Model']['group'];self.addin.group = group;print(group)
         self.makeUsedModelList(group)
         self.makeTtable()
-        MshType = 0                    
+        self.MshType = 0                    
         self.mfUnstruct = False  # OA 13/3/21
         if self.gui!=None: self.gui.currentModel = 'Modflow'
         if group == 'Modflow USG': # OA 02/20
             self.mfUnstruct = True
+            self.MshType = self.getValueFromName('Modflow','MshType')
             self.addin.setMfUnstruct();
             self.addin.setGridInModel('old')
-            MshType = self.getValueFromName('Modflow','MshType')
             #if self.mfUnstruct and self.getValueFromName('Modflow','MshType')>0:#OA 4/3/20   
             #    self.flgMesh = 1 #18/12/20                      
         if group == 'Openfoam': # OA 02/20
             if self.gui!=None: self.gui.currentModel = 'OpenFlow'
+            self.MshType = self.getValueFromName('OpenFlow','MshType')
             self.addin.setGridInModel('old')
-            MshType = self.getValueFromName('OpenFlow','MshType')
             self.flowReader = opFlowReader(self,self.addin.mesh)
             self.transReader = opTransReader(self,self.addin.mesh)
         if group[:5] == 'Modfl': #OA 02/20
@@ -230,7 +230,7 @@ class Core:
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        self.addin.MshType = MshType
+        self.addin.MshType = self.MshType
         if self.gui != None and MshType>0: self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
         if type(self.Zblock)!=type(ones(3)): self.Zblock = makeZblock(self)
         self.addin.setChemType()

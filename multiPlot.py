@@ -165,7 +165,7 @@ class multiPlot(QDialog):
         
     def getSpecies(self):
     ## get the names of model chemical species
-        species = self.core.addin.chem.getListSpecies() 
+        species = self.core.addin.chem.getListSpecies(opt='delta') 
         dic={'Species':list(zip(species,[False]*len(species)))}
         return dic
     

@@ -167,7 +167,7 @@ def makeZblock(core):
             Zblock = zeros((nlay+1,ny,nx)) 
         else : #unstructured grids
             #if mgroup[0]=='M': #Min3p amd Modfow USG
-            Zblock = zeros((nlay+1,core.addin.mesh.getNumber('elements')))
+            Zblock = zeros((nlay+1,core.addin.mesh.ncell_lay))
             #elif mgroup[0]=='O': # openfoam
             #Zblock = zeros((nlay+1,core.addin.mesh.nnod)) # openfoam   
         #### extend the number of type at the number of media # EV 10/02/20
@@ -230,12 +230,14 @@ def getTopBotm(core,modName,line,intp,im,refer,mat):#,optionT # EV 19/02/20
         if  core.addin.mesh==None or core.addin.MshType==0: # OA 19/4/20
             z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
         else : 
-            if modName == 'Opgeo': z = zone2mesh(core,modName,line,im,loc='nodes') #OA 17/2/20 replace mgroup
-            else : z = zone2mesh(core,modName,line,im,loc='elements')
+            z = zone2mesh(core,modName,line,im,loc='elements')
     elif intp==4 : # EV 11/02/20
         z = zone2array(core,modName,line,im) # EV 20/02/20
         if z.size == 0 : #EV 01/04/20
-            z = zone2grid(core,modName,line,im)
+            if  core.addin.mesh==None or core.addin.MshType==0: # OA 19/4/20
+                z = zone2grid(core,modName,line,im) # OA 18/7/19 modif type mesh for min"p
+            else : 
+                z = zone2mesh(core,modName,line,im,loc='elements')
             core.dictype[modName][line][im]='one_value'
     if shape(refer)==shape(z) : return minimum(z,refer-0.1)
     else : return z
@@ -863,10 +865,10 @@ def writeVTKstruct(core,modName,data,opt='scalars'):
             s += 'CELL_DATA '+str(ndata)+'\nSCALARS cellData float\nLOOKUP_TABLE default\n'
             s += ' '.join([str(data[i])+'\n' for i in range(ndata)])
     else : # unstructured
-        mesh.makeBC(modName)
+        #mesh.makeBC(modName)
         #points,fc,bfc,fcup = mesh.getPointsFaces();print(mesh.ncell,len(fcup))
         #npt,sp,nh,lnh,lh,idx = mesh.pointsHexaForVTK(modName,points,fcup)
-        nc = mesh.ncell*mesh.nlay
+        nc = mesh.ncell_lay*mesh.nlay
         s = mesh.stringVTKgeom() #npt,sp,nh,lnh,lh)
         if opt=='scalars':
             data = ravel(data) # add cells that have been divided
@@ -1062,7 +1064,7 @@ def onMessage1(core,txt):
 
 def zone2array(core,modName,line,im):
     fNameExt = core.dicarray[modName][line][im] #EV 05/05/20
-    #print('inzon2arr',fNameExt)
+    print('inzon2arr',fNameExt)
     fDir = core.fileDir
     ext=fNameExt[-3:]
     arr=array([]) ; zdx,zdy,ysign=None,None,-1 # OA 26/7/20 set ysign default to -1 (modflow)
@@ -1084,7 +1086,7 @@ def zone2array(core,modName,line,im):
         try : 
             ysign,zdx,zdy,arr=core.importGridVar(fDir,fNameExt) # OA 13/6/20 add ysign
             #zdy = zdy[::-1] # OA added 9/4/20
-            arr=arr.astype(np.float)
+            arr=arr.astype(np.float);#print(shape(arr))
         except OSError : onMessage1(core,txt1) 
         except : onMessage1(core,txt2) 
     else : #if ext == 'txt' or ext == 'dat' :
