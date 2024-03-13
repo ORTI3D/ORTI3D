@@ -219,6 +219,7 @@ class Core:
         if group == 'Openfoam': # OA 02/20
             if self.gui!=None: self.gui.currentModel = 'OpenFlow'
             self.MshType = self.getValueFromName('OpenFlow','MshType')
+            self.addin.MshType = self.MshType
             self.addin.setGridInModel('old')
             self.flowReader = opFlowReader(self,self.addin.mesh)
             self.transReader = opTransReader(self,self.addin.mesh)
@@ -230,8 +231,7 @@ class Core:
             self.addin.min3p.buildMesh(opt='read')
             self.flowReader = min3pReader(self,fDir,fName)
             self.transReader = min3pReader(self,fDir,fName)
-        self.addin.MshType = self.MshType
-        if self.gui != None and MshType>0: self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
+        if self.gui != None and self.MshType>0: self.gui.onGridMesh('Mesh') #EV 30/09/19 # OA removed on 8/2/20
         if type(self.Zblock)!=type(ones(3)): self.Zblock = makeZblock(self)
         self.addin.setChemType()
         #self.usePostfix()

@@ -624,7 +624,7 @@ class addin:
             self.core.dicval['Min3pFlow'][l3]=[1,1,0.0,1.0] 
             self.min3p.buildMesh()
         elif mgroup == 'Openfoam': # oa 9/2/20 added rect, 29/2 removed
-            self.mesh= self.opfoam
+            self.mesh= self.opfoam;self.mesh.MshType = self.core.MshType
             if self.xsect: self.core.setValueFromName('OpenFlow','OFXSECT',1)
             self.core.dicval['OpenFlow']['dis.4']=list(g['dx']) # pb with setting list
             self.core.dicval['OpenFlow']['dis.5']=list(g['dy'])

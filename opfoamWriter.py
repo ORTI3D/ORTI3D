@@ -1346,7 +1346,7 @@ class opTransReader(opfReader):
                 os.mkdir(fDir+os.sep+dname)
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)
             tstep = 1
-        if iesp==-1: # tracer or temp 1st letter
+        if iesp==-1: # tracer or temp 
             if specname[:4]=='Trac': sp = 'C'
             else : sp = 'T'
             return self.readScalar(sp,tstep)
