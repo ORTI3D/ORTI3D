@@ -434,6 +434,10 @@ class opfoamWriter:
             #     lp=unique(amax(self.zb)-self.zb[-1])[0]*9.81*1e3
             #     pBC={'bottom':{'type':'fixedValue','value':'uniform '+str(lp)}}
             # self.writeScalField('0','p',p0,pBC,dim='[1 -1 -2 0 0 0 0]')
+            if self.orientation in ['Xsection','Radial']:
+                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -9810'}
+            else :
+                self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -9810'}
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :

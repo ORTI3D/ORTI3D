@@ -488,7 +488,7 @@ class modflowWriter:
         else : return npts,lpts,lindx,zvar,k,larea # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
-        mesh=core.addin.mesh #EV 14/01/21
+        mesh=core.addin.mesh ;print('in wtranz1, ncell, ncell_lay',mesh.ncell,mesh.ncell_lay)
         for iz in range(nzones): #creates a list of points for each zone
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
             if len(ilay) == 0: 
@@ -497,7 +497,7 @@ class modflowWriter:
             #lpts.append([]);larea.append([]) # OA 1/8/21 removed
             zvar.append(zvect)
             npts += len(irow)
-            if mesh == None or core.addin.MshType<1:  # OA 13/1/22 this and below
+            if mesh == None or core.MshType<1:  # OA 13/1/22 this and below
                 zarea = sum(array(dx[icol])*dy[ny-1-array(irow)])
             else : 
                 zarea = sum(mesh.carea[mod(irow,mesh.ncell_lay)])
@@ -508,7 +508,7 @@ class modflowWriter:
                     l0.append(str(ilay[i]+1).rjust(10)+' '+str(irow[i]+1).rjust(9)+' '+\
                        str(icol[i]+1).rjust(9))
                     l1.append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21
-                elif core.addin.MshType<1: # OA 15/1/21 unstruct but regular
+                elif core.MshType<1: # OA 15/1/21 unstruct but regular
                     l0.append(str((ilay[i]+1)*((ny-irow[i]-1)*nx+icol[i]+1)).rjust(10)) #☺ OA 21/2/22
                     l1.append(dx[icol[i]]*dy[ny-1-irow[i]]/zarea)  # OA 6/6/21                    
                 else : #unstruct grid irow is the node number
@@ -593,7 +593,7 @@ class modflowWriter:
                 if ltyp1[t]=='importArray': ilay=list(filter((t).__ne__, ilay))
         if len(ilay)==0 : 
             return None,None,None,None
-        if core.addin.mesh == None or core.addin.MshType<1: # OA 4/3/20
+        if core.addin.mesh == None or core.MshType<1: # OA 4/3/20
             icol,irow,zmat = zone2index(core,x,y,z) # OA 25/4/19
             nx,ny,xvect,yvect = getXYvects(core)
             if isclosed(core,x,y) : 
@@ -847,7 +847,7 @@ class modflowReader:
         """ read .head file 
         in free flow Thksat from flo file must be added (not done)"""    
         nlay,ncol,nrow = self.getGeom(core)       #OA 4/3/20  
-        if core.addin.MshType>0 : #OA modif 18/12/20   
+        if core.MshType>0 : #OA modif 18/12/20   
             nlay,ncell = getNlayers(core),core.addin.mfU.getNumber('elements')
             hd=zeros((nlay,ncell));#print('mfw 491', shape(hd))
         else :
@@ -864,7 +864,7 @@ class modflowReader:
             f1.seek(iper*nlay*blok+blok*il+bk0) #vpmwin
             data = arr2(ftyp)  # OA 12/10/21 replaced nb0 by ftyp
             data.fromfile(f1,ncell)
-            if core.mfUnstruct  and core.addin.MshType>0: 
+            if core.mfUnstruct  and core.MshType>0: 
                 hd[il] = data
             else : 
                 m = reshape(data,(nrow,ncol)) #
