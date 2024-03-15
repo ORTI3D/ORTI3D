@@ -314,9 +314,12 @@ class opfoamWriter:
         # gravity field g
         s = 'FoamFile{version 2.0;format ascii;class uniformDimensionedVectorField;'
         s += 'location \"constant\"; object g;}\n'
-        s += ' dimensions [0 1 -2 0 0 0 0];\n value  '
-        if self.orientation[1] == 'D':s += '( 0 0 -9.81 );'
-        elif self.orientation[0] in ['R','X']: s += '( 0 -9.81 0 );' #Xsect and rad are drawn in x,y plane
+        s += ' dimensions [0 1 -2 0 0 0 0];\n value '
+        self.g = 9.81
+        if 'press.3' in self.core.dicval['OpenFlow'].keys():
+            self.g = float(self.core.dicval['OpenFlow']['press.3'][0])
+        if self.orientation[1] == 'D':s += '( 0 0 -'+str(self.g)+' );'
+        elif self.orientation[0] in ['R','X']: s += '( 0 -'+str(self.g)+' 0 );' #Xsect and rad are drawn in x,y plane
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
@@ -435,9 +438,9 @@ class opfoamWriter:
             #     pBC={'bottom':{'type':'fixedValue','value':'uniform '+str(lp)}}
             # self.writeScalField('0','p',p0,pBC,dim='[1 -1 -2 0 0 0 0]')
             if self.orientation in ['Xsection','Radial']:
-                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -9810'}
+                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -'+str(self.g*1000)}
             else :
-                self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -9810'}
+                self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -'+str(self.g*1000)}
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :
@@ -1294,9 +1297,9 @@ class opFlowReader(opfReader):
         self.inivar()
         
     def readHeadFile(self,core,iper):
-        '''reads h as the head'''
-        if self.core.dicaddin['Model']['type'] == '2phases':
-            return self.readScalar('p',iper)/9.8e4
+        '''reads h as the head, or hp, or p'''
+        if self.core.dicaddin['Model']['type'] == '2phase':
+            return self.readScalar('p',iper)
         elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
             return self.readScalar('hp',iper)
         else:

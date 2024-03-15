@@ -84,6 +84,7 @@ class Core:
     def initAll(self):
         self.radfact,self.Zblock,self.grd = 1.,None,None
         self.mfUnstruct,self.ttable,self.lcellInterp = False,None,[] # OA 9/1/21
+        self.MshType = 0
         for mod in self.modelList:
             self.dicval[mod] = self.initVal(mod)
             self.dictype[mod] = self.initArray(mod) # ,self.dicarray[mod] #EV 06/02/20

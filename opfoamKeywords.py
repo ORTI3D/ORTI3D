@@ -11,7 +11,7 @@ class  OpF:
         self.groups={
         'FPRM':['fprm.1'],
         'DIS':['dis.'+str(i) for i in range(1,9)],
-        'HorP':['head.1','head.2','press.1','press.2'],
+        'HorP':['head.1','head.2','press.1','press.2','press.3'],
         'KHY':['khy.'+str(i) for i in range(1,6)],
         'WEL':['wel'],
         'RCH':['rch'],
@@ -57,6 +57,8 @@ class  OpF:
                  'detail':[],'type':['arrfloat'],'default':[0.]},
         'press.2':{'comm':'Fixed pressure','cond':'OFPMS==2','kw':['OFPR'],
                  'detail':[],'type':['arrfloat'],'default':[0.]},
+        'press.3':{'comm':'gravity norm','cond':'OFPMS==2','kw':['OFPR'],
+                 'detail':[],'type':['float'],'default':[9.81]},
         'khy.1':{'comm':'Hydraulic cond. parms','cond':'','kw':['OKTYP'],
                  'detail':[['','Kh/Kv ratio','value']],
                 'type':['choice'],'default':[0]},
