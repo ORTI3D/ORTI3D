@@ -23,7 +23,7 @@ class  OpF:
         }
         self.lines={
         'fprm.1':{'comm':'Flow parameters','cond':'','kw':['OFPMS','OFPMEQ','OFXSECT'],
-                'detail':[['type of flow','saturated','unsaturated','2phase'],
+                'detail':[['type of flow','saturated','unsaturated','2phases'],
                     ['pressure equilibrium','no','yes'],'Xsection'],
                 'type':['choice','choice','int'],
                 'default':[0,0,0]},

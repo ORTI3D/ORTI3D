@@ -248,7 +248,7 @@ class opfoamWriter:
         # creating the writetimes file
         #s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
         #if 'write' in t1:
-        s1='\n'.join([str(int(t*self.dtu)) for t in self.wtimes])
+        s1='\n'.join([str(int(round(t*self.dtu))) for t in self.wtimes])
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -429,18 +429,9 @@ class opfoamWriter:
             p0 = self.getVariable('OpenFlow','press.1')
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
-                p0 += ravel(dzm[-1::-1])*9.81*1e3 #♦ opf is ordered from btoom to top
+                p0 += ravel(dzm[-1::-1])*9.81*1e3 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            # seems to create pbs
-            # pBC={}
-            # if len(self.zb)>2: # more than one layer
-            #     lp=unique(amax(self.zb)-self.zb[-1])[0]*9.81*1e3
-            #     pBC={'bottom':{'type':'fixedValue','value':'uniform '+str(lp)}}
-            # self.writeScalField('0','p',p0,pBC,dim='[1 -1 -2 0 0 0 0]')
-            if self.orientation in ['Xsection','Radial']:
-                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -'+str(self.g*1000)}
-            else :
-                self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -'+str(self.g*1000)}
+            self.dicBC=self.bcFromFixValues(self.dicBC)
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :
@@ -449,6 +440,36 @@ class opfoamWriter:
             self.writeScalField('0','hp',0,self.dicBC,dim='[0 1 0 0 0 0 0]')            
             self.writeScalField('0','sw',1,self.bcD0,'[0 0 0 0 0 0 0]')
             
+    def correspZonesBC(self,dicz,bcgrid):
+        '''to get bc corresponding to zones
+        valid only for rectangular domain'''
+        nbc= len(dicz['name'])
+        indx=[0]*nbc
+        for i in range(nbc):
+            icell=where(bcgrid[0]==i+1)[0] # this is a list, we'll search for it
+            for j in range(4): # rectangular : 4 bcs
+                lcell=where(self.opf.bfaces[:,3]==-(j+1))[0]
+                if len(lcell)==len(icell):
+                    lcell1=self.opf.bfaces[lcell][:,2]
+                    if sort(lcell1)==sort(icell):
+                        indx[i]=j
+        return indx
+    
+    def bcFromFixValues(self,dicBC):
+        '''
+        for pressure it is necessary to have true fixed value BC at the cell 
+        where fixed values were set. we use opf.bfaces last column=-(numBC+1)
+        '''
+        dicz = self.core.diczone['OpenFlow'].dic['press.2']
+        bcgrid=zone2grid(self.core,'OpenFlow','press.2',0,opt='zon')
+        nbc= len(dicz['name'])
+        indx = self.correspZonesBC(dicz,bcgrid)
+        for i in range(nbc):
+            val=dicz['value'][i]
+            cond={'type':'fixedValue','value':'uniform '+val}
+            dicBC['bc'+str(indx[i])]=cond
+        return dicBC
+        
     def writeTransport(self):
         C0 = self.getVariable('OpenTrans','cinit') # initial concentrations
         self.writeScalField('0','C',C0,self.bcD0,dim='[1 -3 0 0 0 0 0]')
@@ -990,20 +1011,14 @@ class opfoamWriter:
             if len(listE['s'])>0 :s += '-equilibrate with solution '+str(isu)+'\n-no_edl\n'
         # gas phase
         gases=chem['Gases'];
-        #nbg = len(unique(dInd['Gases']))
-        back_p = self.core.dicval['OpenFlow']['press.1'][0] #!! only backg of lay 0
-        for ig in range(self.nsolu):
+        nbg = self.nsolu*1
+        if self.core.dicaddin['Model']['type'] =='2phases': 
+            back_p = self.getPressureSolu()
+        else: back_p = [1]*nbg
+        for ig in range(nbg):
             if len(listE['g'])>0 : 
                 s += '\nGas_Phase '+str(ig)+'\n'
-                # if 'gfix' in dicz.dic.keys():
-                #     if ig==int(dicz.dic['gfix']['value'][0]):
-                #         s+= '-fixed_pressure  1 \n'
-                #     else :
-                #         s+= '-fixed_volume \n -volume 1.0\n'
-                # else :
-                #     s+= '-fixed_volume \n -volume 1.0\n'
-                if back_p==0: s+= '-fixed_pressure \n -pressure 1 \n'
-                else : s+= '-fixed_pressure \n -pressure '+str(back_p/101325) +'\n'
+                s+= '-fixed_pressure \n -pressure '+str(back_p[ig]) +'\n'
             for esp in listE['g']: # go through phase list
                 ie = gases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = gases['data'][ie][ig+2] #backgr SI and concentration of phase
@@ -1038,6 +1053,21 @@ class opfoamWriter:
             f1 = open(fDir+os.sep+'constant\\options\\immobile','w')
             f1.write(s);f1.close()
             
+    def getPressureSolu(self):
+        '''get the pressures for the boundary conditions (only for rectangular)
+        returns a list of pressure with solution number
+        '''
+        # pressures for zoens with pfix
+        diczp = self.core.diczone['OpenFlow'].dic['press.2'] # they have to be at places of pfix
+        diczg = self.core.diczone['OpenChem'].dic['gfix'] # they have to be at places of pfix
+        pgrid=zone2grid(self.core,'OpenFlow','press.2',0,opt='zon')
+        ggrid=zone2grid(self.core,'OpenChem','gfix',0,opt='zon')
+        nz=len(diczg['name'])
+        lp=[0]*nz
+        for iz in range(nz):        
+            p=diczp['value'][int(unique(pgrid[ggrid==iz+1]))-1]
+            lp[int(diczg['value'][iz])]=float(p)/101325
+        return lp
 
     def writePhqFoam(self):
         '''phqfoam contains the nb of cell, nb of mobile components and species
@@ -1298,7 +1328,7 @@ class opFlowReader(opfReader):
         
     def readHeadFile(self,core,iper):
         '''reads h as the head, or hp, or p'''
-        if self.core.dicaddin['Model']['type'] == '2phase':
+        if self.core.dicaddin['Model']['type'] == '2phases':
             return self.readScalar('p',iper)
         elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
             return self.readScalar('hp',iper)

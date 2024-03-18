@@ -82,7 +82,10 @@ class guiShow:
         else : 
             self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
             self.gui.onParticle(True)
-            
+        if self.core.dicaddin['Model']['group'] =='Openfoam': opt='delta'
+        else : opt = ''
+        listSpec = self.core.addin.chem.getListSpecies(opt=opt) # just the names
+        self.setChemSpecies(listSpec)            
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)
@@ -226,7 +229,7 @@ class guiShow:
             if name=='Temperature':
                 arr = self.core.transReader.readUCN(self.core,'T',tstep,-1,'Temperature');#print shape(arr),arr                
             else:
-                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Conc');#print shape(arr),arr
+                arr = self.core.transReader.readUCN(self.core,'Mt3dms',tstep,-1,'Tracer');#print shape(arr),arr
         if group=='Chemistry':
             if name=='Species':
                 iesp = self.getNames('Chemistry_Species_L').index(spec)

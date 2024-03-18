@@ -10,7 +10,7 @@ import numpy as np
 import os
 from numpy.linalg import solve
 from scipy.stats import tvar as variance
-from scipy.spatial import Delaunay
+#from scipy.spatial import Delaunay
 #from qtDialogs import *
 from config import *
 from pykrige.ok import OrdinaryKriging
@@ -212,6 +212,7 @@ def makeSimul(core,data,asearch,zbounds=(-3,3)):
     return Z1
 
 ###################################  VORONOI INTERPOLATION ##################
+'''
 def getPolyList(listP,xb,yb):
     polylist = []
     #add points on sides
@@ -298,7 +299,7 @@ def triangle_csc(pts):
     x = np.linalg.solve(A,b)
     bary_coords = x[:-1]
     return np.sum(pts * np.tile(bary_coords.reshape((pts.shape[0], 1)), (1, pts.shape[1])), axis=0)
-
+'''
 ################################### OTHER THINGS ##################
 
 def irreg2mat(core,XP,YP,Z):

@@ -323,14 +323,23 @@ class unstructured:
             self.nbc = len(unique(bcindx[:,1]))
             self.bcindx = bcindx  
         else: 
-            bcindx = None
             grd = self.core.addin.getFullGrid()
             nx,ny,dx,dy = grd['nx'],grd['ny'],grd['dx'],grd['dy']
             self.ncell_lay = nx*ny
             dxm,dym = meshgrid(dx,dy)
             self.carea = ravel(dxm*dym)
             self.nbc = 4
-        
+            bc0=range(nx*(ny-1),nx*ny)
+            bc1=range(nx-1,nx*ny,nx)
+            bc2=range(nx)
+            bc3=range(0,(nx-1)*ny,nx)
+            bcindx=zeros((nx*2+ny*2,2))
+            i0=0;i1=len(bc0);bcindx[i0:i1,0]=bc0;bcindx[i0:i1,1]=-1
+            i0=i1;i1=i0+len(bc1);bcindx[i0:i1,0]=bc1;bcindx[i0:i1,1]=-2
+            i0=i1;i1=i0+len(bc2);bcindx[i0:i1,0]=bc2;bcindx[i0:i1,1]=-3
+            i0=i1;i1=i0+len(bc3);bcindx[i0:i1,0]=bc3;bcindx[i0:i1,1]=-4
+            self.bcindx=bcindx
+            
     def getPointsFaces(self):
         '''
         uses the "usg" type mesh to build the points and faces necessary for opf

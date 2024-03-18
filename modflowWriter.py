@@ -488,7 +488,7 @@ class modflowWriter:
         else : return npts,lpts,lindx,zvar,k,larea # added 18/10/20
         nper,nzones = shape(zlist);#print 'mfw trans nz',line,nper,nzones
         nper -=1 # there is one period less than times 
-        mesh=core.addin.mesh ;print('in wtranz1, ncell, ncell_lay',mesh.ncell,mesh.ncell_lay)
+        mesh=core.addin.mesh ;#print('in wtranz1, ncell, ncell_lay',mesh.ncell,mesh.ncell_lay)
         for iz in range(nzones): #creates a list of points for each zone
             ilay,irow,icol,zvect = self.xyzone2Mflow(core,line,iz)#OA 25/4/19,zvect
             if len(ilay) == 0: 
@@ -768,7 +768,7 @@ class modflowWriter:
             for l in range(nlay):
                 s += self.writeMatModflow(m[l],ktyp,opt) # OA 10/8/20 add opt
                 if l<nlay-1: s += '\n'
-        elif self.core.addin.mesh != None: # unstructured case write nlay vectors
+        elif self.core.MshType>0: # unstructured case write nlay vectors
             if len(shape(m))==2: # OA 1/5/20 added for lpf layer
                 nlay,a=shape(m);
                 for l in range(nlay):

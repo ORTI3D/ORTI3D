@@ -42,7 +42,6 @@ class Menus:
     def onOpen1(self,fDir,fName): # OA 16/12/18 to be able to use only that part
         self.core.openModel(fDir,fName)
         a = self.core.makeTtable()
-        listSpec = self.core.addin.chem.getListSpecies() # just the names
         self.core.addin.set3D()
         mtype = self.core.dicaddin['Model']['group']
         self.gui.guiShow.openModel() # OA 14/10
@@ -59,7 +58,6 @@ class Menus:
         self.gui.visu.initDomain()
         tl2 = self.core.ttable['wtimes'] #self.core.getTlist2()
         self.gui.guiShow.setNames('Model_Tstep_L',tl2)
-        self.gui.guiShow.setChemSpecies(listSpec)
         self.dialogs.onMessage(self.gui,'File opened')
             
     def OnSave(self,evt=None):

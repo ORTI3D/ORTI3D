@@ -433,33 +433,33 @@ def blockRegular(core,modName,line,intp,opt,iper):
     if type(intp)==type(0): intp=[intp] #OA 16/02/20 # EV 05/05/20
     if len(intp)<nmedia: intp=intp*nmedia ## to extend intp at the number of media
     #### interpolation and array option for 2D and 3D model #EV 07/02/20
-    #if core.addin.getDim() in ['2D','3D']:
-    m0 = ones((nlayers,ny,nx))
-    lay = 0
-    for im in range(nmedia): # 3D case, includes 2D
-        #print('lin',line, 'im',im, 'intp', intp[im])
-        if intp[im]==1 :
-            parms = core.dicinterp[modName][line][im] # EV 19/02/20
-            a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
-        elif intp[im]==3 :
-            a = zone2grid(core,modName,line,im,opt,iper)
-        elif intp[im]==4 :
-            #try : 
-            a = zone2array(core,modName,line,im) # EV 20/02/20
-            if a.size == 0 : #EV 01/04/20
+    if core.addin.getDim() in ['2D','3D']:
+        m0 = ones((nlayers,ny,nx))
+        lay = 0
+        for im in range(nmedia): # 3D case, includes 2D
+            #print('lin',line, 'im',im, 'intp', intp[im])
+            if intp[im]==1 :
+                parms = core.dicinterp[modName][line][im] # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
+            elif intp[im]==3 :
                 a = zone2grid(core,modName,line,im,opt,iper)
-                core.dictype[modName][line][im]='one_value'
-        for il in range(int(lilay[im])): # several layers can exist in each media
-            m0[lay]=a
-            lay +=1
+            elif intp[im]==4 :
+                #try : 
+                a = zone2array(core,modName,line,im) # EV 20/02/20
+                if a.size == 0 : #EV 01/04/20
+                    a = zone2grid(core,modName,line,im,opt,iper)
+                    core.dictype[modName][line][im]='one_value'
+            for il in range(int(lilay[im])): # several layers can exist in each media
+                m0[lay]=a
+                lay +=1
     #### interpolation and array option for Xsection & radial model #EV 07/02/20
-#    else : 
+    else : 
 #        for im in range(nmedia): 
 #            if intp[im]==1 :
 #                parms = core.dicinterp[modName][line][im] # EV 19/02/20
 #                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
 #            elif intp[im]==3 :
-#                a = zone2grid(core,modName,line,im,opt,iper)
+        a = zone2grid(core,modName,line,0,opt,iper)
 #            elif intp[im]==4 :
 #                a = zone2array()
 #                if a.size == 0 : #EV 01/04/20
@@ -468,6 +468,7 @@ def blockRegular(core,modName,line,intp,opt,iper):
         #a = zone2grid(core,modName,line,0,opt,iper)
         m0 = reshape(a,(ny,1,nx))
         m0 = m0[-1::-1]
+        
     linesRadial = ['bcf.4','bcf.6','bcf.7','bcf.8','lpf.8','lpf.10','lpf.11',
         'btn.11','rct.2a','rct.2b','rch.2']
     dx = array(g['dx'])

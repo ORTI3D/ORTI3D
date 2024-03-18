@@ -447,9 +447,9 @@ class Core:
                 if modName == 'Modflow':time_model=self.dicval['Modflow']['dis.2'][4]
                 else : time_model=self.dicval['Modflow']['disu.4'][5] # EV 3/12/21
                 if time_model==0 : 
-                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[4]
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[4]
                 else : 
-                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',lastline).split()[(time_model+1)]
+                    time_out=self.getTxtFileLastLine(self.fileName+'.lst',3).split()[(time_model+1)]
                 time_last=self.getTlist2()[-1]
                 if float(time_out)==float(time_last):
                     if modName == 'Modflow':

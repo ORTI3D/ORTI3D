@@ -85,9 +85,10 @@ class BaseParms:
         messg = self.core.writeModel(modName)
         tt = self.core.makeTtable()
         #tl2 = self.core.getTlist2()
-        listSpec = self.core.addin.chem.getListSpecies(opt='delta') # just the names
+        if self.core.dicaddin['Model']['group'] =='Openfoam': opt='delta'
+        else : opt = ''
+        listSpec = self.core.addin.chem.getListSpecies(opt=opt) # just the names
         self.gui.guiShow.init() # OA 22/8/19 added
-        self.gui.guiShow.setChemSpecies(listSpec)
         #self.gui.guiShow.resetDicContour() # the show panel nows that everything has to be reread # OA modifs 1/10/19
         self.gui.guiShow.setNames('Model_Tstep_L',tt['wtimes']) #EV 16/12/21
         return messg
