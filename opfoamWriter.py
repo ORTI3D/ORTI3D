@@ -980,7 +980,7 @@ class opfoamWriter:
               'Surface':mod(pht,10)}
         # mineral phases
         phases=chem['Phases'];
-        nbph = len(unique(dInd['Phases']))
+        nbph = int(max(dInd['Phases']))+1
         for ip in range(nbph):
             if len(listE['p'])>0 : s += '\nEquilibrium_Phases '+str(ip)+'\n'
             for esp in listE['p']: # go through phase list
@@ -1094,7 +1094,7 @@ class opfoamWriter:
         val0 = ravel(dInd['Solutions']) 
         s = str(nreac)+' '+str(self.ncomp)+' '+str(self.gcomp)+' '+str(self.nsolu)+' 1\n' # solid-units=1 mol/l here
         if len(unique(val0))==1:  # just one solution or phase...
-            s += '0  0 \n'  
+            s += '0  '+str(int(val0[0]))+' \n'  
         else :
             s += '-1 '+' '.join([str(int(a)) for a in val0]) + '\n'
         #phase, exchange, surface, gases
@@ -1103,7 +1103,7 @@ class opfoamWriter:
             val = ravel(dInd[longn[indx]]);
             if len(listE[sp])>0: # there is at least one speces in this group
                 if len(unique(val))==1:  # just one solution or phase...
-                    s += '0  0 \n'  
+                    s += '0  '+str(int(val[0]))+' \n'  
                 else :
                     s += '-1 '+' '.join([str(int(a)) for a in val]) + '\n'
             else:
