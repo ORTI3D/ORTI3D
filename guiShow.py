@@ -57,9 +57,13 @@ class guiShow:
         self.visu.Glist = self.Glist
         self.curVar, self.curVarView = {},None
         modgroup = self.core.addin.getModelGroup();self.modgroup = modgroup
-        self.MshType = 0
-        if 'USG' in modgroup: self.MshType = self.core.getValueFromName('Modflow','MshType')
-        if modgroup == 'Openfoam': self.MshType = self.core.getValueFromName('OpenFlow','MshType')
+        
+    def reset(self):           
+        self.MshType = self.core.MshType
+        if self.core.dicaddin['Model']['group'] =='Openfoam': opt='delta'
+        else : opt = ''
+        listSpec = self.core.addin.chem.getListSpecies(opt=opt) # just the names
+        self.setChemSpecies(listSpec) 
       
     def openModel(self):
         self.init()
@@ -82,10 +86,7 @@ class guiShow:
         else : 
             self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
             self.gui.onParticle(True)
-        if self.core.dicaddin['Model']['group'] =='Openfoam': opt='delta'
-        else : opt = ''
-        listSpec = self.core.addin.chem.getListSpecies(opt=opt) # just the names
-        self.setChemSpecies(listSpec)            
+            self.reset()
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)
