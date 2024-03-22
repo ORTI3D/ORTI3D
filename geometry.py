@@ -454,18 +454,17 @@ def blockRegular(core,modName,line,intp,opt,iper):
                 lay +=1
     #### interpolation and array option for Xsection & radial model #EV 07/02/20
     else : 
-#        for im in range(nmedia): 
-#            if intp[im]==1 :
-#                parms = core.dicinterp[modName][line][im] # EV 19/02/20
-#                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
-#            elif intp[im]==3 :
-        a = zone2grid(core,modName,line,0,opt,iper)
-#            elif intp[im]==4 :
-#                a = zone2array()
-#                if a.size == 0 : #EV 01/04/20
-#                    a = zone2grid(core,modName,line,im,opt,iper)
-#                    core.dictype[modName][line][im]='one_value'
-        #a = zone2grid(core,modName,line,0,opt,iper)
+        for im in range(nmedia): 
+            if intp[im]==1 :
+                parms = core.dicinterp[modName][line][im] # EV 19/02/20
+                a,mess = zone2interp(core,modName,line,im,parms,iper=iper) # EV 19/02/20
+            elif intp[im]==3 :
+                a = zone2grid(core,modName,line,0,opt,iper)
+            elif intp[im]==4 :
+                a = zone2array(core,modName,line,im)
+                if a.size == 0 : #EV 01/04/20
+                    a = zone2grid(core,modName,line,im,opt,iper)
+                    core.dictype[modName][line][im]='one_value'
         m0 = reshape(a,(ny,1,nx))
         m0 = m0[-1::-1]
         

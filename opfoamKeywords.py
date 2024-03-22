@@ -109,7 +109,7 @@ class  OpF:
         'fslv.3':{'comm':'Timing','cond':'','kw':['SODT0','SOMXDT','SOMXCO'],
                 'detail':['deltaT0','maxDeltaT','maxCourant'],
                 'type':['float','float','float'],
-                'default':[1,100,0.75]}
+                'default':[1e-3,1,0.75]}
         }
 
 #Transport
