@@ -97,7 +97,12 @@ class opfoam(unstructured):
         xm,ym = meshgrid(xv,yv)
         points = c_[reshape(xm,(npt,1)),reshape(ym,(npt,1))]
         dxm,dym = meshgrid(dx,dy)
-        self.carea = ravel(dxm*dym);self.nbc=4
+        self.nbc=4
+        if self.core.addin.getDim() in ['2D','3D']:
+            self.carea = ravel(dxm*dym);
+        else : #xsection
+            dz = self.core.dicval['OpenFlow']['dis.6'][0]-self.core.dicval['OpenFlow']['dis.7'][0]
+            self.carea = ravel(dxm*dz)
         self.points,self.faces,self.fcup = points,faces,fcup
         self.elx,self.ely=points[fcup,0],points[fcup,1]
         return points,faces,bfaces,fcup

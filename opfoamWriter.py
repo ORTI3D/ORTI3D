@@ -417,12 +417,14 @@ class opfoamWriter:
             h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation in ['Xsection','Radial']:
                 self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
+                self.dicBC['bc2']={'type':'fixedGradient','gradient':'uniform -1'}
             else :
                 self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -1'}
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1: # equilibrated pressure
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 h0 -= ravel(dzm) 
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
+            self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         elif self.core.dicaddin['Model']['type'] == '2phases': 
@@ -431,7 +433,7 @@ class opfoamWriter:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 p0 += ravel(dzm[-1::-1])*9.81*1e3 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            self.dicBC=self.bcFromFixValues(self.dicBC)
+            self.dicBC=self.bcFromFixValues(self.dicBC,'press.2')
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :
@@ -443,31 +445,37 @@ class opfoamWriter:
     def correspZonesBC(self,dicz,bcgrid):
         '''to get bc corresponding to zones
         valid only for rectangular domain'''
+        nrow,ncol=shape(bcgrid)
         nbc= len(dicz['name'])
-        indx=[0]*nbc
+        indx=[-1]*nbc
         for i in range(nbc):
-            icell=where(bcgrid[0]==i+1)[0] # this is a list, we'll search for it
+            a=where(bcgrid==i+1) # this is a list, we'll search for it
+            icell=a[0]*nrow+a[1]
             for j in range(4): # rectangular : 4 bcs
                 lcell=where(self.opf.bfaces[:,3]==-(j+1))[0]
                 if len(lcell)==len(icell):
                     lcell1=self.opf.bfaces[lcell][:,2]
-                    if sort(lcell1)==sort(icell):
+                    if sum(sort(lcell1)-sort(icell))==0:
                         indx[i]=j
         return indx
     
-    def bcFromFixValues(self,dicBC):
+    def bcFromFixValues(self,dicBC,line):
         '''
         for pressure it is necessary to have true fixed value BC at the cell 
         where fixed values were set. we use opf.bfaces last column=-(numBC+1)
         '''
-        dicz = self.core.diczone['OpenFlow'].dic['press.2']
-        bcgrid=zone2grid(self.core,'OpenFlow','press.2',0,opt='zon')
+        dicz = self.core.diczone['OpenFlow'].dic[line]
+        bcgrid=zone2grid(self.core,'OpenFlow',line,0,opt='zon')
+        valgrid=zone2grid(self.core,'OpenFlow',line,0)
         nbc= len(dicz['name'])
         indx = self.correspZonesBC(dicz,bcgrid)
         for i in range(nbc):
-            val=dicz['value'][i]
-            cond={'type':'fixedValue','value':'uniform '+val}
-            dicBC['bc'+str(indx[i])]=cond
+            if indx[i]>=0:
+                val =valgrid[bcgrid==indx[i]+1]
+                lval=' '.join([str(v) for v in val])
+                lst= 'List<scalar> '+str(len(val))+'('+lval+')'
+                cond={'type':'fixedValue','value':'nonuniform '+lst}
+                dicBC['bc'+str(indx[i])]=cond
         return dicBC
         
     def writeTransport(self):
@@ -720,8 +728,6 @@ class opfoamWriter:
             lcell,ncell,zcell = [],[],[]
             nx,ny,xv,yv = getXYvects(self.core)
             dx,dy = xv[1:]-xv[:-1],yv[1:]-yv[:-1]
-            dxm,dym = meshgrid(dx,dy)
-            self.carea = ravel(dxm*dym)
             for media in range(self.nlay):
                 m = zone2grid(self.core,modName,line,media) 
                 m1 = zone2grid(self.core,modName,line,media,opt='zon')

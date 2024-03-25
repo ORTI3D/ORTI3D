@@ -577,7 +577,7 @@ def fillZone(nx,ny,nxp,nyp,nzp):
     return ind
 
 def zone2index(core,x,y,z,opt=None):
-    """ returns indices of cells below a poly zone"""
+    """ returns indices of cells below a poly zone and z values"""
     nx,ny,xvect,yvect = getXYvects(core)
     nxp,nyp,nzp=array([minDiff(x[0],xvect)]),array([minDiff(y[0],yvect)]),array(z)
     #print 'zoneindex',nxp,nyp,nzp

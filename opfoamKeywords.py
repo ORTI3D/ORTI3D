@@ -223,7 +223,7 @@ class  OpC:
         self.groups={
         'CHPRM':['chprm'],
         'SOLU':['sactiv','sinit','sfix','swel','srch','sghb','sriv'],
-        'GAS':['ginit','gfix','gwel'],
+        'GAS':['ginit','gfix','gwel','grch'],
         'CHSLV':['chslv'],
         }
         self.lines={
@@ -249,6 +249,8 @@ class  OpC:
         'gfix':{'comm':'fixed gas','cond':'','kw':['OSGAS'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'gwel':{'comm':'well gas','cond':'','kw':['OWGAS'],
+                'detail':[],'type':['arrfloat'],'default':[0.]},
+        'grch':{'comm':'Recharge gas','cond':'','kw':['ORGAS'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'chslv':{'comm':'solver for Cwi','cond':'','kw':['OCHSO'],
                  'detail':[['solver','PBiCG'],['preconditioner','DIC','DILU'],

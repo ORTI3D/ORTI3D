@@ -94,7 +94,9 @@ class PHT3D:
         lph=['C','Backg_SI','Backg_Moles']
         for i in range(nphase):
             lph.append('Ass'+str(i+1)+'_Moles')
-            #lph.extend(['Ass'+str(i+1)+'_SI','Ass'+str(i+1)+'_Moles'])
+        lgs=['C','Backg_SI','Backg_Prop']
+        for i in range(nphase):
+            lgs.append('Ass'+str(i+1)+'_Prop')
         lex=['C','Backgrd']
         for i in range(nexch): lex.append('Assembl'+str(i+1))
         lsu=['C','Site_back']
@@ -102,7 +104,7 @@ class PHT3D:
         lsu.extend(['Specif_area','mass','name','switch'])
         lkp=lk[:-1]
         lkp.remove('IM')
-        lcols=[lc1,lk,lph,lex,lkp,lsu,lph]
+        lcols=[lc1,lk,lph,lex,lkp,lsu,lgs]
         # to exclude the kinetic minerals from minerals
         le1=self.tempDbase['PHASES']
         l0=self.tempDbase['RATES']
