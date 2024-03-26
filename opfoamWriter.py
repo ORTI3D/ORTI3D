@@ -446,16 +446,16 @@ class opfoamWriter:
         '''to get bc corresponding to zones
         valid only for rectangular domain'''
         nrow,ncol=shape(bcgrid)
-        nbc= len(dicz['name'])
-        indx=[-1]*nbc
-        for i in range(nbc):
+        nbz= len(dicz['name'])
+        indx=[-1]*nbz
+        for i in range(nbz):
             a=where(bcgrid==i+1) # this is a list, we'll search for it
             icell=a[0]*nrow+a[1]
             for j in range(4): # rectangular : 4 bcs
                 lcell=where(self.opf.bfaces[:,3]==-(j+1))[0]
                 if len(lcell)==len(icell):
                     lcell1=self.opf.bfaces[lcell][:,2]
-                    if sum(sort(lcell1)-sort(icell))==0:
+                    if all(sort(lcell1)==sort(icell)):
                         indx[i]=j
         return indx
     
@@ -467,15 +467,18 @@ class opfoamWriter:
         dicz = self.core.diczone['OpenFlow'].dic[line]
         bcgrid=zone2grid(self.core,'OpenFlow',line,0,opt='zon')
         valgrid=zone2grid(self.core,'OpenFlow',line,0)
-        nbc= len(dicz['name'])
+        nbz= len(dicz['name'])
         indx = self.correspZonesBC(dicz,bcgrid)
-        for i in range(nbc):
-            if indx[i]>=0:
-                val =valgrid[bcgrid==indx[i]+1]
-                lval=' '.join([str(v) for v in val])
-                lst= 'List<scalar> '+str(len(val))+'('+lval+')'
-                cond={'type':'fixedValue','value':'nonuniform '+lst}
-                dicBC['bc'+str(indx[i])]=cond
+        for iz in range(nbz):
+            if indx[iz]>=0:
+                val =valgrid[bcgrid==iz+1]
+                if len(val)>1:
+                    lval=' '.join([str(v) for v in val])
+                    lst= 'List<scalar> '+str(len(val))+'('+lval+')'
+                    cond={'type':'fixedValue','value':'nonuniform '+lst}
+                else :
+                    cond={'type':'fixedValue','value':'uniform '+str(val[0])}                    
+                dicBC['bc'+str(indx[iz])]=cond
         return dicBC
         
     def writeTransport(self):
