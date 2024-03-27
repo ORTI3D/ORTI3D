@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from modflowWriter import *
 from mtphtWriter import *
 from mtUsgWriter import *
-from min3pWriter import *
+#from min3pWriter import *
 import xml.dom.minidom as xdom
 from geometry import *
 from importExport import *
@@ -22,9 +22,9 @@ from modflowKeywords import Mf
 from mtPhtKeywords import Mt
 from mtUsgKeywords import Mtu  # OA 27/7/19
 from pht3dKeywords import Ph
-from min3pFlowKeywords import m3F
-from min3pTransKeywords import m3T
-from min3pChemKeywords import m3C
+#from min3pFlowKeywords import m3F
+#from min3pTransKeywords import m3T
+#from min3pChemKeywords import m3C
 from opfoamKeywords import OpF
 from opfoamKeywords import OpT
 from opfoamKeywords import OpC
@@ -38,8 +38,8 @@ class Core:
     it can be used on graphic mode or batche mode
     """
     def __init__(self,gui=None):
-        self.modelList = ['Modflow','Mt3dms','MfUsgTrans','Pht3d','Min3pFlow', # OA 27/7/19 added MfUsgTrans
-            'Min3pTrans','Min3pChem','OpenFlow','OpenTrans','OpenChem','Observation','Pest']
+        self.modelList = ['Modflow','Mt3dms','MfUsgTrans','Pht3d', # OA 27/7/19 added MfUsgTrans
+            'OpenFlow','OpenTrans','OpenChem','Observation','Pest']
         self.gui = gui
         self.baseDir = os.getcwd(); # OA 11/9/18 2 lines below modfiied
         if gui!=None:
@@ -63,9 +63,9 @@ class Core:
         self.dickword['Mt3dms'] = Mt()
         self.dickword['MfUsgTrans'] = Mtu()
         self.dickword['Pht3d'] = Ph()
-        self.dickword['Min3pFlow'] = m3F()
-        self.dickword['Min3pTrans'] = m3T()
-        self.dickword['Min3pChem'] = m3C()
+        #self.dickword['Min3pFlow'] = m3F()
+        #self.dickword['Min3pTrans'] = m3T()
+        #self.dickword['Min3pChem'] = m3C()
         self.dickword['Observation'] = Obs()
         self.dickword['OpenFlow'] = OpF()
         self.dickword['OpenTrans'] = OpT()

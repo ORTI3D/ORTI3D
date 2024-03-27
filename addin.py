@@ -1,6 +1,6 @@
 from config import *
 from Pht3d import *
-from Min3p import *
+#from Min3p import *
 from modflowUsg import *
 from opfoam import *
 from geometry import *
@@ -38,7 +38,7 @@ class addin:
     def initAddin(self):
         self.structure={'button':{},'menu':{}}
         self.pht3d = PHT3D(self.core)
-        self.min3p = Min3p(self.core)
+        #self.min3p = Min3p(self.core)
         self.opfoam = opfoam(self.core)
         self.mfU = modflowUsg(self.core)
         self.pest = Pest(self.core)
