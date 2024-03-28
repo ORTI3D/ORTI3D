@@ -183,11 +183,11 @@ class multiPlot(QDialog):
             else : dic = {**dicObsZone,**dicSpecies}
         elif res =='Transport': 
             dicSpecies={'Species':[('Tracer',False),('Temperature',False)]}
-            if typ=='X' and dim=='3D': 
+            if typ!='X' and dim=='3D': 
                 dic = {**dicObsZone,**dicLayers,**dicSpecies} #EV 26/08/19
             else : dic = {**dicObsZone,**dicSpecies}
         else : 
-            if typ=='X' and dim=='3D': 
+            if typ!='X' and dim=='3D': 
                 dic = {**dicObsZone,**dicLayers}
             else : dic = dicObsZone
         return dic

@@ -1050,7 +1050,7 @@ class modflowReader:
         """for typ=flux return fluxes for a series of obs cell
         for typ=head return the heads
         iper is a list of periods indices"""
-        if core.addin.MshType==0: # OA 18/12/20
+        if core.MshType==0: # OA 18/12/20
             try : f1 = open(self.fDir+os.sep+self.fName+'.flo','rb')
             except IOError : return None
         nper=len(iper);
@@ -1081,7 +1081,7 @@ class modflowReader:
         try : f1 = open(self.fDir+os.sep+self.fName+'.head','rb')
         except IOError: return None
         nlay,ncol,nrow = self.getGeom(core)       #OA 18/12/20  + if below                                    
-        if core.mfUnstruct and core.addin.MshType>0:#OA 4/3/20   
+        if core.mfUnstruct and core.MshType>0:#OA 4/3/20   
             ncell = core.addin.mfU.getNumber('elements');ncol=ncell*1
         else :
             ncell = ncol*nrow
