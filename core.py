@@ -789,6 +789,7 @@ class Core:
         lTrans=['Tracer','Temperature']
         lout=[]
         if 'Obspts' not in self.dicaddin.keys(): return [False]*len(esp)
+        if len(self.dicaddin['Obspts'])<2: return [False]*len(esp)
         if len(self.dicaddin['Obspts'][1])==0 or self.dicaddin['Obspts'][0]==0: return [False]*len(esp)
         if zname in self.dicaddin['Obspts'][1]: 
             if group=='Flow':
