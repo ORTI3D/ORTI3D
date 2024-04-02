@@ -6,7 +6,7 @@ from opfoam import *
 from geometry import *
 #from matplotlib import pylab # for having grafs in batch
 from Pest import *
-from instantFit import *
+#from instantFit import *
 from modflowWriter import *
 from opfoamWriter import *
 #from multiPlot import * # oa 28/11/18
@@ -126,7 +126,7 @@ class addin:
         self.mesh = None  # OA added 25.9.18
         self.setChemType()
         self.setMfUnstruct()
-        self.fit = instant(self.gui,self.core)
+        #self.fit = instant(self.gui,self.core)
         self.particle = {}
         
     def resetAddin(self):
@@ -146,7 +146,7 @@ class addin:
         val[lmodules.index('PCG')] = not bool
         if self.core.dicaddin['Model']['group'] == 'Modflow USG': # OA 3/7/22
             val[lmodules.index('DISU')] = bool
-        val[lmodules.index('SMS')] = bool
+            val[lmodules.index('SMS')] = bool
         self.core.dicaddin['UsedM_Modflow'] = (lmodules,val)
         
     def setChemType(self):

@@ -64,7 +64,22 @@ class opfoam(unstructured):
             thick = Zblock[0]-Zblock[-1]
             #self.fahl = [array(lg)*thick[i] for i,lg in enumerate(self.fahl)]
 
-    
+    def getUnits(self):
+        tunit = self.core.dicval['OpenFlow']['dis.3'][4]
+        if tunit== 5 : self.dtu = 86400*365
+        if tunit== 4 : self.dtu = 86400
+        if tunit== 3: self.dtu = 3600
+        if tunit== 2: self.dtu = 60
+        if tunit== 1 : self.dtu = 1
+        self.core.dtu=self.dtu
+        lunit = self.core.dicval['OpenFlow']['dis.3'][5]
+        if lunit==1: self.lu = 0.01
+        if lunit==2 : self.lu=1
+        if lunit==3: self.lu= 1000
+        if lunit==4: self.lu= 0.3048 # feet
+        self.core.lu=self.lu
+        return self.dtu,self.lu
+
     def opfRect(self):
         grd = self.core.addin.getFullGrid()
         dx,dy = array(grd['dx']), array(grd['dy']);

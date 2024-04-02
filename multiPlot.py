@@ -329,7 +329,10 @@ class multiPlot(QDialog):
                     self.llabel=[label[i+1]+'(sim)' for i in range(len(label)-1)]
                     if self.ptyp[0] == 'V' :
                         myplot=self._ax.plot(yy,self.x[-1::-1],marker='o')
-                    elif self.ptyp[0] == 'P' :myplot=self._ax.plot(self.x,yy,marker='o')
+                    elif self.ptyp[0] == 'P':myplot=self._ax.plot(self.x,yy,marker='o')
+                    elif self.ptyp[0] == 'B':
+                        myplot=self._ax.plot(self.x[0],yy[0])
+                        for ic in range(1,len(self.x)): self._ax.plot(self.x[ic],yy[ic])
                     else:myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
                     if self.ptyp[0]=='B': ## observed data for time series only

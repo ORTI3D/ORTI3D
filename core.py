@@ -157,8 +157,9 @@ class Core:
     
     def getTlist2(self):
         tlist = array(self.ttable['tlist'])
-        if self.dicaddin['Model']['group'][:4]=='Open': tlist=array(self.ttable['wtimes'])
-        return tlist[1:] #(tlist[:-1]+tlist[1:])/2.
+        if self.dicaddin['Model']['group'][:4]=='Open': 
+            tlist=array(self.ttable['wtimes']);return tlist
+        else : return tlist[1:] #(tlist[:-1]+tlist[1:])/2.
         
 #*************************** load, save,run models ********************    
     def openModel(self,fDir,fName):
@@ -222,6 +223,7 @@ class Core:
             self.MshType = self.getValueFromName('OpenFlow','MshType')
             self.addin.MshType = self.MshType
             self.addin.setGridInModel('old')
+            self.dtu,self.lu=self.addin.opfoam.getUnits()
             self.flowReader = opFlowReader(self,self.addin.mesh)
             self.transReader = opTransReader(self,self.addin.mesh)
         if group[:5] == 'Modfl': #OA 02/20
@@ -507,14 +509,14 @@ class Core:
                 return('Model fail to converge')
                 
         if info!=False and modName in ['OpenFlow','OpenTrans','OpenChem']:
-            time_model=int(float(self.dicaddin['Time']['final'][-1])*self.dtu)
-            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',80)
+            #time_model=int(float(self.dicaddin['Time']['final'][-1])*self.dtu)
+            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',1)
             #print(time_model);print(lines)
-            for i in range(79,-1,-1):
-                if 'time =' in lines[i]:
-                    time_file=int(lines[i].split()[2])
-                    break
-            if time_file==time_model: return 'Normal termination of OpenFoam'
+#            for i in range(79,-1,-1):
+#                if 'time =' in lines[i]:
+#                    time_file=int(lines[i].split()[2])
+#                    break
+            if lines[0][:6]=='Normal': return 'Normal termination of OpenFoam'
             else : return 'Model fail to converge'
             
     def getTxtFileLastLine(self,fname,line):
@@ -779,14 +781,23 @@ class Core:
             iz=iy*1;nrow=1;iy=zeros(len(iz)).astype('int')
         return z2[iz,nrow-iy-1,ix]  
             
-    def isObsFile(self,zname,esp):
+    def isObsFile(self,group,zname,esp):
         '''returns a list of bool stating if for the given zone and given species there
         is a file written by opf
-        not fully finished
         '''
+        lFlow=['Head','Wcontent']
+        lTrans=['Tracer','Temperature']
+        lout=[]
         if 'Obspts' not in self.dicaddin.keys(): return [False]*len(esp)
-        if len(self.dicaddin['Obspts'])==0: return [False]*len(esp)
-        if zname in self.dicaddin['Obspts'][1]: return [True]*len(esp)
+        if len(self.dicaddin['Obspts'][1])==0 or self.dicaddin['Obspts'][0]==0: return [False]*len(esp)
+        if zname in self.dicaddin['Obspts'][1]: 
+            if group=='Flow':
+                for e in esp: lout.append(e in lFlow)
+            if group=='Transport':
+                for e in esp: lout.append(e in lTrans)
+            if group=='Chemistry':
+                for e in esp: lout.append(e in self.dicaddin['Obspts'][4])
+            return lout
         else : return [False]*len(esp)
         
     def onPtObs(self,typ,iper,group,zname,esp,layers_in=0,ss=''): #EV 23/03/20
@@ -796,12 +807,12 @@ class Core:
         iper is a period number
         group : Flow, Transport, Chemistry
         zname : zone name
-        esp : list of species (F:Head,Wcontent,Flux; T:Tracer, C:species)
+        esp : list of species (F:Head,Wcontent,Flux;Tracer, C:species)
         layers_in : list of layer or 'all' for all layers of one zone
         ss : solute ss='' or sorbed species ss='S'
         """
         print('in core obspt', group,zname)
-        ofile=self.isObsFile(zname,esp) # returns a list for the given variables
+        ofile=self.isObsFile(group,zname,esp) # returns a list for the given variables
         if self.addin.getDim() in ['Xsection','Radial']: layers_in='all'
     ### Get some parameters
         zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
@@ -873,7 +884,7 @@ class Core:
         '''pt is a list of tables (iper,irows) for each species/layers for the given zone'''
         labels=[''] 
        ## For Head and Wcontent (pt index is the layer)
-        if esp[0] in ['Head','Wcontent']: 
+        if group=='Flow': 
             m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0],ofile=ofile[0],zname=zname)
             #print(shape(m),ix2,iym,iz2)
             if layers_in == 'all': # +below OA 11/4/2 to consider all
@@ -893,7 +904,7 @@ class Core:
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss)
             else: 
                 opt = esp[0];ss='' # OA 19/3/19
-                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss) #tracer -1
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss,ofile=ofile[0],zname=zname) #tracer -1
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -904,21 +915,20 @@ class Core:
                 if typ[0]=='V':
                     str1 = ','.join(str(l) for l in layers)
                     labels.append('lay'+str1)
-            #print('iz2 :',iz2)
        ## For chemistry
         elif group=='Chemistry': 
             iesp,lesp = 0,self.addin.chem.getListSpecies();print(lesp)
             if mtype == 'Mod': opt ='Pht3d' # OA added 25/5
             else : opt = 'Chemistry'
-            for e in esp:
+            for i,e in enumerate(esp):
                 if e in lesp: iesp = lesp.index(e) ;print('in core ptobs',e,iesp)
-                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss)
+                m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss,ofile=ofile[i],zname=zname)
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)
                     labels.append(str(e)+'_all layers')
                 else :
                     for il in layers:
-                        pt.append(m[:,iz2==il]) 
+                        pt.append(m[:,iz2==il]);
                         if typ[0]!='V':labels.append(e+'_lay'+str(il)) #EV 20/04/20
                     if typ[0]=='V':
                         str1 = ','.join(str(l) for l in layers)
@@ -967,17 +977,22 @@ class Core:
        ## Time-serie graph
         if typ[0]=='B': 
             labels[0]='time';
-            if ofile[0]:
-                t2,p1=pt[0][:,0],pt[0][:,1:2]
-                return t2,p1,labels
-            p1=zeros((len(t2),len(pt))); ## p1 : to make a table of (ntimes,nspecies)
+#            if ofile[0]:
+#                t2,p1=pt[0][:,0],pt[0][:,1:2]
+#                return t2,p1,labels
+            p1=[]; ## p1 : to make a table of (ntimes,nspecies)
+            tlst2=[]
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
-                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1);## conc, pt[i] is a table (nper,nrow) 
-                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
-                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch1[i],axis=1); ## total discharge [mol.T-1]
-                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux1[i],axis=1); ## average flux [mol.T-1.M-2]
-                elif typ[1]=='4': p1[:,i]=sum(pt[i]*vol1[i],axis=1); ## mass [mol] #EV 23/03/20 
-            return t2,p1,labels
+                if ofile[i]:
+                    tlst2.append(pt[i][:,0]*86400/self.dtu);pt[i]=pt[i][:,1:2]
+                else: 
+                    tlst2.append(t2)
+                if typ[1]=='0': p1.append(mean(pt[i],axis=1));## conc, pt[i] is a table (nper,nrow) 
+                elif typ[1]=='1': p1.append(sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) )## weighted conc
+                elif typ[1]=='2': p1.append(sum(pt[i]*disch1[i],axis=1)); ## total discharge [mol.T-1]
+                elif typ[1]=='3': p1.append(mean(pt[i]*flux1[i],axis=1)); ## average flux [mol.T-1.M-2]
+                elif typ[1]=='4': p1.append(sum(pt[i]*vol1[i],axis=1)); ## mass [mol] #EV 23/03/20 
+            return tlst2,p1,labels
        ## Profile
         elif typ[0]=='P':  
             if MshType==0:

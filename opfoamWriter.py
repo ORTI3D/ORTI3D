@@ -5,7 +5,7 @@ Created on Sun May 17 10:55:23 2020
 @author: olivier
 """ 
 from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,where,shape,\
-    amin,amax,mod,ravel
+    amin,amax,mod,ravel,delete
 from numpy import in1d
 from opfoamKeywords import OpF,OpT
 from geometry import *
@@ -35,20 +35,7 @@ class opfoamWriter:
         if '0' not in os.listdir(fDir): os.mkdir(fDir+'0')
         if 'observation' in os.listdir(fDir):shutil.rmtree(fDir+r'observation')
         os.mkdir(fDir+r'observation')
-        #units
-        tunit = self.core.dicval['OpenFlow']['dis.3'][4]
-        if tunit== 5 : self.dtu = 86400*365
-        if tunit== 4 : self.dtu = 86400
-        if tunit== 3: self.dtu = 3600
-        if tunit== 2: self.dtu = 60
-        if tunit== 1 : self.dtu = 1
-        self.core.dtu=self.dtu
-        lunit = self.core.dicval['OpenFlow']['dis.3'][5]
-        if lunit==1: self.lu = 0.01
-        if lunit==2 : self.lu=1
-        if lunit==3: self.lu= 1000
-        if lunit==4: self.lu= 0.3048 # feet
-        self.core.lu=self.lu
+        self.dtu,self.lu=self.core.addin.opfoam.getUnits()
         self.ttable = self.core.makeTtable()
         self.tlist = self.ttable['tlist'] # all times including zones
         self.wtimes = self.ttable['wtimes'] # writing times
@@ -96,7 +83,7 @@ class opfoamWriter:
             if self.core.dicplugins[pl_name]['active']>0:
                 self.core.plugins.writer(pl_name)
         self.writeObservation()
-                
+            
     def writeGeom(self,fDir,points,faces,bfaces,fcup):
         '''
         core is the model,fDir the major openfoam folder
@@ -532,7 +519,7 @@ class opfoamWriter:
     def writeObservation(self):
         # write the cell number of the observation points
         if 'Obspts' not in self.core.dicaddin.keys(): return
-        if len(self.core.dicaddin['Obspts'])==0 : return
+        if len(self.core.dicaddin['Obspts'][1])==0 or self.core.dicaddin['Obspts'][0]==0: return
         obs =self.core.dicaddin['Obspts']
         obsp = obs[1];nobs = len(obsp);
         dicz = self.core.diczone['Observation'].dic['obs.1'];#print('opf write obs',obsp,dicz)
@@ -558,9 +545,8 @@ class opfoamWriter:
             f1=open(self.fDir+sct+r'/obsTrans','w');f1.write(s);f1.close()
         lspec = self.core.addin.chem.getListSpecies()
         if len(obs[4])>0: # Chemistry
-            s = ''
-            for e in obs[4]: s+=str(lspec.index(e))+' '
-            f1=open(self.fDir+sct+r'/obsChem','w');f1.write(s);f1.close()
+            s = ' '.join(obs[4])
+            f1=open(self.fDir+sct+r'/obsSolu','w');f1.write(s);f1.close()
             
         
     def getConditions(self):
@@ -642,17 +628,29 @@ class opfoamWriter:
                 lct.append('t')
             if self.group == 'Chem' and self.core.getValueFromName('OpenTrans','OTTYP',0)==1: lct=['t'] # if chem only temperature can be used
             for typ in lct:
+                # we need to write chfix (for hfix places) and cfix (no hfix there)
                 a = typ+'fix'
-                if a in self.ttable.keys():
-                    lcell,ncell,zcell = self.getOptionCells(a,a)
-                    mat = self.ttable[a]
-                    self.writeOptionData(mat,lcell,ncell,zcell,a,formt='float')
+                if vfix in self.ttable.keys():
+                    lcell,ncell,zcell = self.getOptionCells(vfix,vfix)
+                    mat = zeros(shape(self.ttable[vfix])) # all conc to 0
+                    if a in self.ttable.keys():
+                        mat1 = self.ttable[a]
+                        lcell1,ncell1,zcell1 = self.getOptionCells(a,a)
+                        lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
+                        mat2 = mat1.copy()
+                        for iw,w in enumerate(lcell1):# replace by c in corresponding zone
+                            if w in lcell: 
+                                mat[:,lcell.index(w)] = mat1[:,iw] 
+                                lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
+                                mat2=delete(mat2,iw,1)
+                        self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
+                        if len(lcell2)>0:
+                            self.writeOptionData(mat2,lcell2,ncell2,zcell2,typ+'fix',formt='float')
 
                 for n in ['wel','ghb','riv']:
                     if n in self.ttable.keys():# pumping or injection
-                        lcell,ncell,zcell = self.getOptionCells(n,typ+n)
-                        mat = self.ttable[n]
-                        mat = zeros(shape(mat)) # A dummy way to set all solutions to 0
+                        lcell,ncell,zcell = self.getOptionCells(n,typ+n) # this is head conditions
+                        mat = zeros(shape(self.ttable[n])) # A dummy way to set all solutions to 0
                         if typ+n in self.ttable.keys(): # find the injecting wells with conc
                             mat1 = self.ttable[typ+n]
                             lcell1,ncell1,zcell1 = self.getOptionCells(typ+n,typ+n)
@@ -675,11 +673,23 @@ class opfoamWriter:
         if self.group == 'Chem':
             ## need to know if ph.4 is at a flow bc or at a well
             self.solucell=[] # solucell conaint the list of fixed chem cells
-            if 'sfix' in self.ttable.keys():
-                lcell,ncell,zcell = self.getOptionCells('sfix','sfix')
-                self.solucell,self.solunb = lcell,zcell
-                mat = self.ttable['sfix']
-                self.writeOptionData(mat,lcell,ncell,zcell,'sfix',formt='int')
+            if vfix in self.ttable.keys():
+                lcell,ncell,zcell = self.getOptionCells(vfix,vfix)
+                mat = zeros(shape(self.ttable[vfix])) # all conc to 0
+                if 'sfix' in self.ttable.keys():
+                    mat1 = self.ttable[a]
+                    lcell1,ncell1,zcell1 = self.getOptionCells('sfix','sfix')
+                    self.solucell,self.solunb = lcell1,zcell1 # store for later use
+                    lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
+                    mat2 = mat1.copy()
+                    for iw,w in enumerate(lcell1):# replace by c in corresponding zone
+                        if w in lcell: 
+                            mat[:,lcell.index(w)] = mat1[:,iw] 
+                            lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
+                            mat2=delete(mat2,iw,1)
+                    if len(lcell2)>0:
+                        self.writeOptionData(mat2,lcell2,ncell2,zcell2,'sfix',formt='float')
+                self.writeOptionData(mat,lcell,ncell,zcell,'shfix',formt='float') # rint even if no sfix cells
 
             if 'srch' in self.ttable.keys():# chem recharge
                 lcell0,ncell0,zcell0 = self.getOptionCells('rch','hrch')
@@ -1260,18 +1270,6 @@ class opfReader:
                 s1 = s.split('uniform')[1].split(';')[0]
                 data = ones(self.ncell)*float(s1)
             return data
-        
-        '''
-        def rd2(t,iesp): #read in Species
-            f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species','r')
-            s = f1.read();f1.close()
-            s1 = s.split('\n');ncell = self.ncell;nmask = len(self.phmask)
-            data = zeros(ncell)
-            data[self.phmask] = np.array(s1[nmask*iesp:nmask*(iesp+1)]).astype('float')
-            if iesp==0: data[data>1e+29]=7 # for pH
-            else : data[data>1e+29]=0
-            return data
-        '''
         def rd2(t,iesp): #read in Species
             m=loadtxt(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species')
             data = zeros(self.ncell)
@@ -1410,7 +1408,7 @@ class opTransReader(opfReader):
             return self.readScalar('Cw'+str(iesp),iper=tstep,spc=0)
         
 
-    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss=''):
+    def getPtObs(self,core,irow,icol,ilay,iper,opt,iesp=0,specname='',ss='',ofile=False,zname=''):
         """a function to get values of one variable at given point or points.
         irow, icol and ilay must be lists of the same length. iper is also
         a list containing the periods for which data are needed. opt is not used
@@ -1418,6 +1416,17 @@ class opTransReader(opfReader):
         ss is for solute ('') or sorbed ('S' ) species. 
         """      
         self.listE = core.addin.pht3d.getDictSpecies(opt='delta');
+        if iesp==-1:
+            if specname[:4] == 'Trac': short = 'C'
+            else : short = 'T'
+        else : # chemistry
+            ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
+            iesp = lcomp.index(specname)+4
+            short='Cw'+str(iesp)
+        if ofile==True:
+            if len(irow==1): # verify that its a one point
+                m = loadtxt(self.core.fileDir+os.sep+'observation\\obs_'+zname+'_'+short+'.txt')
+                return m
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
         pobs=zeros((len(iper),len(irow)))+0.;print('in read',iesp,specname)
