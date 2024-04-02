@@ -333,7 +333,7 @@ class multiPlot(QDialog):
                     elif self.ptyp[0] == 'B':
                         myplot=self._ax.plot(self.x[0],yy[0])
                         for ic in range(1,len(self.x)): self._ax.plot(self.x[ic],yy[ic])
-                    else:myplot=self._ax.plot(self.x,yy)
+                    else: myplot=self._ax.plot(self.x,yy)
                     self.arryy.append(yy) ; self.arrx.append(self.x) ## for export
                     if self.ptyp[0]=='B': ## observed data for time series only
                         if lylist=='all' : layers=['all']
@@ -354,13 +354,15 @@ class multiPlot(QDialog):
                     self._ax.tick_params(axis='both', labelsize=8)
                     self._ax.figure.canvas.draw()
             if self.pOrder=='Species': ## for time series chemistry only
-                self.arryy=[]
+                #self.arryy=[]
                 for i in range(nplots):
                     self._ax=self.figure.add_subplot(nrows,ncols,i+1)
-                    self.yyarray= np.empty((len(self.tlist),0)) ; self.llabel0=[] ; lobslab=[]
+                    self.xarray,self.yyarray= [],[]; #np.empty((len(self.tlist),0)) ; 
+                    self.llabel0=[] ; lobslab=[]
                     for j in range(len(self.zolist)):
-                        self.x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[j],[self.splist[i]],lylist) 
-                        self.yyarray = np.append(self.yyarray,yy,axis=1)
+                        x,yy,label =  self.core.onPtObs(self.ptyp,iper,group,self.zolist[j],[self.splist[i]],lylist) 
+                        #self.yyarray = np.append(self.yyarray,yy,axis=1)
+                        self.xarray.append(x[0]);self.yyarray.append(yy[0])
                         label=[str(self.zolist[j]+'_lay'+lylist.split(',')[x]+'(sim)') for x in range(len(lylist.split(',')))]
                         self.llabel0.append(label)
                         if self.ptyp[0]=='B': ## observed data for time series only
@@ -371,10 +373,13 @@ class multiPlot(QDialog):
                                         lobslab.append(self.zolist[j]+'_lay'+str(lobs)+'(obs)')
                                         color=j*len(layers)+layers.index(lobs) #EV 26/08/19
                                         myplot2=self._ax.scatter(xobs,yobs,c='C'+str(color)) #EV 26/08/19
-                    self.arryy.append(self.yyarray)
+                    #self.arryy.append(self.yyarray)
                     self.llabel0.append(lobslab)
                     self.llabel = [item for sublist in self.llabel0 for item in sublist]
-                    myplot=self._ax.plot(self.x,self.yyarray)
+                    #myplot=self._ax.plot(self.xarray,self.yyarray)
+                    self._ax.plot(self.xarray[0],self.yyarray[0])
+                    for j in range(len(self.zolist)):
+                        self._ax.plot(self.xarray[j],self.yyarray[j])
                     self._ax.set_title(self.splist[i],fontweight="bold", size=9)
                     self._ax.legend(self.llabel,fontsize = 8,loc='best')
                     self._ax.set_ylabel(self.aylabel, fontsize = 8)
