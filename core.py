@@ -981,18 +981,19 @@ class Core:
 #            if ofile[0]:
 #                t2,p1=pt[0][:,0],pt[0][:,1:2]
 #                return t2,p1,labels
-            p1=[]; ## p1 : to make a table of (ntimes,nspecies)
-            tlst2=[]
+            #p1=[]; ## p1 : to make a table of (ntimes,nspecies)
+            tlst2 = self.getTlist2()
+            p1=zeros((len(tlst2),len(pt)))
+            #tlst2=[]
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
                 if ofile[i]:
                     tlst2.append(pt[i][:,0]*86400/self.dtu);pt[i]=pt[i][:,1:2]
-                else: 
-                    tlst2.append(t2)
-                if typ[1]=='0': p1.append(mean(pt[i],axis=1));## conc, pt[i] is a table (nper,nrow) 
-                elif typ[1]=='1': p1.append(sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) )## weighted conc
-                elif typ[1]=='2': p1.append(sum(pt[i]*disch1[i],axis=1)); ## total discharge [mol.T-1]
-                elif typ[1]=='3': p1.append(mean(pt[i]*flux1[i],axis=1)); ## average flux [mol.T-1.M-2]
-                elif typ[1]=='4': p1.append(sum(pt[i]*vol1[i],axis=1)); ## mass [mol] #EV 23/03/20 
+                #else: tlst2.append(t2)
+                if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1);## conc, pt[i] is a table (nper,nrow) 
+                elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc
+                elif typ[1]=='2': p1[:,i]=sum(pt[i]*disch1[i],axis=1); ## total discharge [mol.T-1]
+                elif typ[1]=='3': p1[:,i]=mean(pt[i]*flux1[i],axis=1); ## average flux [mol.T-1.M-2]
+                elif typ[1]=='4': p1[:,i]=sum(pt[i]*vol1[i],axis=1); ## mass [mol] #EV 23/03/20 
             return tlst2,p1,labels
        ## Profile
         elif typ[0]=='P':  
