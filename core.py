@@ -887,7 +887,7 @@ class Core:
        ## For Head and Wcontent (pt index is the layer)
         if group=='Flow': 
             m = self.flowReader.getPtObs(self,iym,ix2,iz2,iper,esp[0],ofile=ofile[0],zname=zname)
-            #print(shape(m),ix2,iym,iz2)
+            if ofile[0]: tlong=m[:,0];m=m[:,1:2]
             if layers_in == 'all': # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -906,6 +906,7 @@ class Core:
             else: 
                 opt = esp[0];ss='' # OA 19/3/19
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss,ofile=ofile[0],zname=zname) #tracer -1
+                if ofile[i]: tlong=m[:,0];m=m[:,1:2]
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -924,6 +925,7 @@ class Core:
             for i,e in enumerate(esp):
                 if e in lesp: iesp = lesp.index(e) ;print('in core ptobs',e,iesp)
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,iesp,e,ss=ss,ofile=ofile[i],zname=zname)
+                if ofile[i]: tlong=m[:,0];m=m[:,1:2]
                 if layers_in == 'all':  # +below OA 11/4/2 to consider all
                     pt.append(m)
                     labels.append(str(e)+'_all layers')
@@ -983,11 +985,11 @@ class Core:
 #                return t2,p1,labels
             #p1=[]; ## p1 : to make a table of (ntimes,nspecies)
             tlst2 = self.getTlist2()
+            if ofile[0]:
+                tlst2=tlong*86400/self.dtu
             p1=zeros((len(tlst2),len(pt)))
             #tlst2=[]
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below
-                if ofile[i]:
-                    tlst2.append(pt[i][:,0]*86400/self.dtu);pt[i]=pt[i][:,1:2]
                 #else: tlst2.append(t2)
                 if typ[1]=='0': p1[:,i]=mean(pt[i],axis=1);## conc, pt[i] is a table (nper,nrow) 
                 elif typ[1]=='1': p1[:,i]=sum(pt[i]*flux1[i],axis=1)/sum(flux,axis=1) ## weighted conc

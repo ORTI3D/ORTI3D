@@ -519,6 +519,7 @@ class opfoamWriter:
     def writeObservation(self):
         # write the cell number of the observation points
         if 'Obspts' not in self.core.dicaddin.keys(): return
+        if len(self.core.dicaddin['Obspts'])<2: return
         if len(self.core.dicaddin['Obspts'][1])==0 or self.core.dicaddin['Obspts'][0]==0: return
         obs =self.core.dicaddin['Obspts']
         obsp = obs[1];nobs = len(obsp);
