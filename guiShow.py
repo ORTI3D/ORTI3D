@@ -86,7 +86,7 @@ class guiShow:
         else : 
             self.gui.guiShow.dlgShow.getBoxNames('Flow_Particles_B',False)
             self.gui.onParticle(True)
-            self.reset()
+        self.reset()
 
     def getCurrentTime(self): return self.dlgShow.getCurrentTime()
     def getNames(self,nameBox): return self.dlgShow.getNames(nameBox)

@@ -211,6 +211,7 @@ class modflowWriter:
         llist = ['lpf.'+str(a) for a in range(8,14)];#take four lines
         value = []
         for l2 in llist:
+            print(l2)
             cond = self.Fkey.lines[l2]['cond'];
             if self.testCondition(cond) == False : continue
             v0 = self.core.getValueLong('Modflow',l2,0);#print('mfw 173', l2,v0)
