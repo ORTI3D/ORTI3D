@@ -438,8 +438,7 @@ class addin:
             lflo,ltr,lch=[],[],[]
             for n in ['Head','Wcontent']: lflo.append((n,n in fllist))
             for n in ['Tracer','Temperature']: ltr.append((n,n in trlist))
-            lspec = self.chem.getListSpecies()
-            for n in lspec: lch.append((n,n in chlist))
+            for n in ['Solutes','Gases']: lch.append((n,n in chlist))
             data = [('Flow','CheckList',(lflo[0],lflo)),
                     ('Transport','CheckList',(ltr[0],ltr)),
                     ('Chemistry','CheckList',(lch[0],lch))]

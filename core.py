@@ -784,6 +784,7 @@ class Core:
     def isObsFile(self,group,zname,esp):
         '''returns a list of bool stating if for the given zone and given species there
         is a file written by opf
+        for species if solutes is 1 (first in the list) then all species have been written
         '''
         lFlow=['Head','Wcontent']
         lTrans=['Tracer','Temperature']
@@ -797,7 +798,7 @@ class Core:
             if group=='Transport':
                 for e in esp: lout.append(e in lTrans)
             if group=='Chemistry':
-                for e in esp: lout.append(e in self.dicaddin['Obspts'][4])
+                if 'Solutes' in self.dicaddin['Obspts'][4] : return [True]*len(esp)
             return lout
         else : return [False]*len(esp)
         

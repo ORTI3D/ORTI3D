@@ -240,7 +240,7 @@ class opfoamWriter:
         f1.write(s1);f1.close()
         
     def writeFvSchemes(self):
-        schemeDict = {'ddtSchemes':{'default':'backward'},
+        schemeDict = {'ddtSchemes':{'default':'Euler'},
         'gradSchemes':{'default':'Gauss linear'},
         'divSchemes':{'default':'none','div(phiw,T)':'Gauss vanLeer','div(phiw,C)':'Gauss vanLeer',
             'div(phiw,Cwi)':'Gauss vanLeer','div(phig,Cgi)':'Gauss vanLeer' }, #vanLeer,SuperBee
@@ -544,10 +544,11 @@ class opfoamWriter:
         if len(obs[3])>0: # Transport
             s = ' '.join(arange(len(obs[3])).astype('str'))
             f1=open(self.fDir+sct+r'/obsTrans','w');f1.write(s);f1.close()
-        lspec = self.core.addin.chem.getListSpecies()
+        lChem = ['Solutes','Gases']
         if len(obs[4])>0: # Chemistry
-            s = ' '.join(obs[4])
-            f1=open(self.fDir+sct+r'/obsSolu','w');f1.write(s);f1.close()
+            s = ''
+            for o in lChem: s+=str((o in obs[4])*1)+' '
+            f1=open(self.fDir+sct+r'/obsChem','w');f1.write(s);f1.close()
             
         
     def getConditions(self):
