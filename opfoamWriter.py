@@ -12,7 +12,10 @@ from geometry import *
 import struct 
 
 import os,shutil
-
+"""
+we use user time units, i.e. if units is d, muw /d instead of /s
+g  m/d2, writetimes in d, 
+"""
 class opfoamWriter:
     def __init__(self,core,opfoam):
         '''core is the model, opf the openoam object'''
@@ -108,6 +111,8 @@ class opfoamWriter:
         #    zlist = [0,1]
         else : 
             zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
+
+        points=points/self.lu
         nf0=shape(faces)[0];nfb=shape(bfaces)[0];nf=nf0+nfb
         # points now same height for layer top
         sp = 'FoamFile \n{ version 2.0;\n format ascii;\n class vectorField;\n'
@@ -205,12 +210,13 @@ class opfoamWriter:
         
     def writeCtrlDict(self):
         ''' we still have simple definition of maxDeltaT'''
-        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])*self.dtu)
+        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])) #*self.dtu
+        intv = float(self.core.dicaddin['Time']['steps'][-1])
         self.ttable = self.core.makeTtable()
         fslt = self.core.dicval['OpenFlow']['fslv.3']
-        ctrlDict={'startTime':0,'endTime': int(self.maxT),
-                  'deltaT':int(max(round(fslt[0]*self.dtu/200,0)*100,1)), 
-                  'maxCo':fslt[2],'maxDeltaT':int(fslt[1]*self.dtu)}
+        ctrlDict={'startTime':0,'endTime': int(ceil(self.maxT)),
+                  'deltaT':fslt[0], #*self.dtu
+                  'maxCo':fslt[2],'maxDeltaT':fslt[1]} #*self.dtu
         tslv = self.core.dicval['OpenTrans']['tslv']
         if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
@@ -222,20 +228,20 @@ class opfoamWriter:
         s += 'application '+solv+';\n'
         s += ' startFrom startTime;\n stopAt endTime;\n writeControl adjustableRunTime;\n'
         s += ' purgeWrite 0;\n writeFormat ascii;\n writePrecision 6;\n'
-        s += ' writeCompression uncompressed;\n timeFormat fixed;\n timePrecision 0;\n'
+        s += ' writeCompression uncompressed;\n timeFormat fixed;\n'
+        s += 'timePrecision '+str(max(-int(floor(log10(intv))),0))+';\n'
         s += ' runTimeModifiable yes;\n'
         #if self.core.dicaddin['Model']['type'] =='Unsaturated': s+='timeStepControl Picard;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
         # write times (below is not really used now)
-        intv = int(float(self.core.dicaddin['Time']['steps'][-1])*self.dtu)
-        s += 'writeInterval '+str(intv)+ ';\n'
+        s += 'writeInterval '+str(int(ceil(intv)))+ ';\n'
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
         # creating the writetimes file
         #s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
         #if 'write' in t1:
-        s1='\n'.join([str(int(round(t*self.dtu))) for t in self.wtimes])
+        s1='\n'.join([str(int(t)) for t in self.wtimes]) # *self.dtu)
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -286,12 +292,14 @@ class opfoamWriter:
         '''returns a variable, ordered in opf order (high nb higher z)'''
         var = self.core.getValueLong(modName,line,0)[-1::-1]
         d0 = self.core.dickword[modName].lines[line]#;print ('d0',d0)
-        if 'units' in d0: 
-            s = d0['units'][0]
-            if s=='L': var *= self.lu
-            if s=='L/T': var *= self.lu/self.dtu*86400 # all in day for muflow
-            if s=='L3/T': var *= self.lu**3/self.dtu*86400
-            if s=='L-1':var /= self.lu # other units are not translated
+#        if 'units' in d0: 
+#            s = d0['units'][0]
+#            if s=='L': var *= self.lu
+#            if s=='L/T': var *= self.lu/self.dtu 
+#            if s=='L2/T': var *= self.lu**2/self.dtu
+#            if s=='L/T2': var *= self.lu/self.dtu**2
+#            if s=='L3/T': var *= self.lu**3/self.dtu
+#            if s=='L-1':var /= self.lu # other units are not translated
         return ravel(var)
     
     def writeConstantFields(self):
@@ -302,25 +310,28 @@ class opfoamWriter:
         s = 'FoamFile{version 2.0;format ascii;class uniformDimensionedVectorField;'
         s += 'location \"constant\"; object g;}\n'
         s += ' dimensions [0 1 -2 0 0 0 0];\n value '
-        self.g = 9.81
-        if 'press.3' in self.core.dicval['OpenFlow'].keys():
-            self.g = float(self.core.dicval['OpenFlow']['press.3'][0])
+        self.g = 9.81*self.dtu**2
+        if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
+            self.g = float(self.core.dicval['OpenFlow']['press.3'][0])*self.dtu**2
         if self.orientation[1] == 'D':s += '( 0 0 -'+str(self.g)+' );'
         elif self.orientation[0] in ['R','X']: s += '( 0 -'+str(self.g)+' 0 );' #Xsect and rad are drawn in x,y plane
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         self.writeScalField('constant','eps',self.eps,self.bcD0)
-        # permeability
+        # g m.s-2, rho kg.m-3; mu kg.m-1.s-1; k m2 -> k*rho*g/mu=m.s-1
+        # g m.d-2; mu kg.m-1.d-1 -> k*rho*g/mu=m.d-1 donc ok
+        # permeability given in L(m,cm..)/T (d,h,min..)
+        # K (m/s) *g*rho_wbase/mu_wbase)->m2; K_orti *self.lu/self.dtu -> m/s
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
         if self.orientation[0]=='X' and self.core.getValueFromName('OpenFlow','ONCOL',0)==1: 
-            K=vrt/self.dtu/9.81e6
+            K=vrt*self.lu/self.dtu/9.81e6
         else :
-            K = self.getVariable('OpenFlow','khy.2')/self.dtu/9.81e6;self.K=K
+            K = self.getVariable('OpenFlow','khy.2')*self.lu/self.dtu/9.81e6;self.K=K # 
             for il in range(self.nlay):
                 r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
                 if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
-                    kv[r] = vrt[r]/self.dtu/9.81e6
+                    kv[r] = vrt[r]*self.lu/self.dtu/9.81e6 # 
                 else : # ratio
                     kv[r] = K[r]/vrt[r]
         self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
@@ -345,9 +356,9 @@ class opfoamWriter:
             self.writeScalField('constant','n_vg',n_vg,self.dicBC,dim='[0 0 0 0 0 0 0]')            
         # thermal
         if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
-            cps = self.getVariable('OpenTrans','tcps')
+            cps = self.getVariable('OpenTrans','tcps')*self.lu**2/self.dtu**2
             self.writeScalField('constant','cps',cps,self.dicBC,dim='[0 2 -2 -1 0 0 0]')            
-            lbds = self.getVariable('OpenTrans','tlbds')
+            lbds = self.getVariable('OpenTrans','tlbds')*self.lu/self.dtu**3
             self.writeScalField('constant','lbds',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
             
         # transport properties dict
@@ -362,13 +373,15 @@ class opfoamWriter:
             s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
-        s += 'phase.w{rho	rho [1 -3 0 0 0 0 0] 1e3;mu mu [1 -1 -1 0 0 0 0] 1e-3;}\n'
-        s += 'phase.g{rho	rho [1 -3 0 0 0 0 0] 1.2;mu mu [1 -1 -1 0 0 0 0] 1e-5;}\n'
+        s += 'rhow rhow [1 -3 0 0 0 0 0] '+str(self.lu* 1e3)+';\n'
+        s += 'muw muw [1 -1 -1 0 0 0 0] '+str(self.dtu*1e-3)+';\n'
+        s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(self.lu*1.2)+';\n'
+        s += 'mug mug [1 -1 -1 0 0 0 0] '+str(self.dtu*1e-5)+';\n'
         if self.group in ['Chem','Trans']:
             s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0]*self.lu)+';\n'
             s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1]*self.lu)+';\n'
-            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][0])+';\n'
-            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][1])+';\n'            
+            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][0]*self.dtu)+';\n'
+            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][1]*self.dtu)+';\n'            
             s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
         if self.group == 'Chem':
             s += 'activateTransport 1;\n'
@@ -383,7 +396,7 @@ class opfoamWriter:
                 s += 'activateTransport 1;\n'
             if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 s += 'activateThermal 1;\n'
-                s += 'lbdaTw lbdaTw [1 1 -3 -1 0 0 0] '+str(core.dicval['OpenTrans']['tlbds'][0])+';\n'
+                s += 'lbdaTw lbdaTw [1 1 -3 -1 0 0 0] '+str(core.dicval['OpenTrans']['tlbds'][0]*self.dtu**3)+';\n'
             if core.getValueFromName('OpenTrans','OIREAC',0):
                 s += 'lbdaw lbdaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
@@ -397,7 +410,7 @@ class opfoamWriter:
         # considering recharge
         self.writeVectField('0','Uw',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
         self.writeVectField('0','Ug',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
-        self.writeScalField('0','p',1e5,self.bcD0,'[1 -1 -2 0 0 0 0]')  
+        self.writeScalField('0','p',1e5*self.lu*self.dtu**2,self.bcD0,'[1 -1 -2 0 0 0 0]')  
         swi=self.getVariable('OpenFlow','uns.5')
         # head h or pressure
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
@@ -583,7 +596,7 @@ class opfoamWriter:
             mult = [];
             for iz in range(nz) : 
                 kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
-                mult.append(kr*(self.lu**3)/self.dtu*86400)
+                mult.append(kr) #*(self.lu**3)/self.dtu)
             self.writeOptionData(qmat,lcell,ncell,zcell,vr+'wel',mult=mult)
             
         if ('rch' in self.core.diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
@@ -624,10 +637,11 @@ class opfoamWriter:
 
         if self.group in ['Chem','Trans']: #temperature can be needed for chemistry
             lct=[]
-            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]: # c or c and t
-                lct.append('c')
-            if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:# t or c and t
-                lct.append('t')
+            if self.group == 'Trans':
+                if self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]: # c or c and t
+                    lct.append('c')
+                if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:# t or c and t
+                    lct.append('t')
             if self.group == 'Chem' and self.core.getValueFromName('OpenTrans','OTTYP',0)==1: lct=['t'] # if chem only temperature can be used
             for typ in lct:
                 # we need to write chfix (for hfix places) and cfix (no hfix there)
@@ -679,7 +693,7 @@ class opfoamWriter:
                 lcell,ncell,zcell = self.getOptionCells(vfix,vfix)
                 mat = zeros(shape(self.ttable[vfix])) # all conc to 0
                 if 'sfix' in self.ttable.keys():
-                    mat1 = self.ttable[a]
+                    mat1 = self.ttable['sfix']
                     lcell1,ncell1,zcell1 = self.getOptionCells('sfix','sfix')
                     self.solucell,self.solunb = lcell1,zcell1 # store for later use
                     lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
@@ -859,13 +873,13 @@ class opfoamWriter:
                 else : zz = float(mat[it,iz].split()[0])
                 val[sc0[iz]:sc1[iz],2] = zz*array(mult[iz])
                 val[sc0[iz]:sc1[iz],3] = array(mult2[iz])
-            val[:,0] = self.tlist[it]*self.dtu/86400
+            val[:,0] = self.tlist[it]#*self.dtu/86400
             val1 = val[ag]*1
             floatlist=ravel(val1.astype('float'));
             s += '\n'.join([' '.join(x) for x in val1.astype('str')])
             s+='\n'
             fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
-        val1[:,0] = self.tlist[-1]*(1+1e-6)*self.dtu/86400 # last time step
+        val1[:,0] = self.tlist[-1]*(1+1e-6) #*self.dtu/86400 # last time step
         #val1[:,2:4] = 0
         floatlist=ravel(val1.astype('float'));#print(floatlist)
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
@@ -1291,13 +1305,13 @@ class opfReader:
         if iper==None:
             data = np.zeros((ntime,self.ncell))
             for i,t in enumerate(self.tlist):
-                if spc==0: data[i+1,:]= rd1(t*self.dtu,name)
-                else : data[i+1,:]= rd2(t*self.dtu,iesp)
+                if spc==0: data[i+1,:]= rd1(t,name) # *self.dtu
+                else : data[i+1,:]= rd2(t,iesp) # *self.dtu
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if spc==0: data = rd1(self.tlist[iper]*self.dtu,name)
-            else : data = rd2(self.tlist[iper]*self.dtu,iesp)
+            if spc==0: data = rd1(self.tlist[iper],name) # *self.dtu
+            else : data = rd2(self.tlist[iper],iesp) # *self.dtu
             V = reshape(data,shp1)            
             if self.core.addin.getDim() not in ['Xsection','Radial']:
                 V = V[-1::-1] # layers are bottom to top in opf
@@ -1323,10 +1337,10 @@ class opfReader:
             return vx,vy,vz
 
         ntime=len(self.tlist)
-        vx,vy,vz = rd1(self.tlist[iper+1]*self.dtu,'U'+opt)
-        vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
-        vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
-        vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]*self.dtu
+        vx,vy,vz = rd1(self.tlist[iper+1],'U'+opt)#*self.dtu
+        vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1] #*self.dtu
+        vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
+        vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
         #print("vector 0",vx[0,0],vy[0,0],vz[0,0])
         return vx,vy,vz
 
@@ -1387,7 +1401,7 @@ class opTransReader(opfReader):
         if self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(fDir+os.sep+'endSteadyT');s=f1.readline();f1.close()
             s = s.split()[0] # to remove \n
-            dname = str(int(self.tlist[1]*self.dtu))
+            dname = str(int(self.tlist[1])) #*self.dtu
             if dname not in os.listdir(fDir):
                 os.mkdir(fDir+os.sep+dname)
             os.system('copy '+fDir+os.sep+s+os.sep+'C '+fDir+os.sep+dname)

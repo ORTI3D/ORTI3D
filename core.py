@@ -684,7 +684,7 @@ class Core:
         #print('vtype', vtype, 'valIn', valIn, 'kw', kw)
         cond = self.dickword[modName].lines[line]['cond']
         if self.testCondition(modName,cond,'any')==False: return None # OA 22/7/20 added any
-        size = self.getSizeKw(modName,kw)
+        #size = self.getSizeKw(modName,kw)
         kw = kw.split('(')[0]
         #print('size',size, 'kw', kw)
         numtype = self.dickword[modName].lines[line]['type'][ik];#int, float or lay
@@ -987,7 +987,7 @@ class Core:
             #p1=[]; ## p1 : to make a table of (ntimes,nspecies)
             tlst2 = self.getTlist2()
             if ofile[0]:
-                tlst2=tlong*86400/self.dtu
+                tlst2=tlong #*86400/self.dtu
             p1=zeros((len(tlst2),len(pt)))
             #tlst2=[]
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below

@@ -205,18 +205,25 @@ class impFile:
         for i in range(4): f1.readline()
         a=f1.readline();b=a.split()
         nlay,nrow,ncol=int(b[0]),int(b[1]),int(b[2]);print (nlay,nrow,ncol)
-        f1.readline();f1.readline()
-        nc=0;wx=[]
+        f1.readline();
         #reading col width
-        while nc<ncol:
-            a=f1.readline().split();wx.extend(a);nc+=len(a)
-        wx=array(wx).astype('float')
+        a=f1.readline();b=a.split()
+        nc=0;wx=[]
+        if int(b[0])==0: 
+            wx=ones(ncol)*float(b[1].split('(')[0])
+        else:
+            while nc<ncol:
+                a=f1.readline().split();wx.extend(a);nc+=len(a)
+            wx=array(wx).astype('float')
         #reading row height
-        f1.readline()
         nr=0;hy=[]
-        while nr<nrow:
-            a=f1.readline().split();hy.extend(a);nr+=len(a)
-        hy=array(hy).astype('float')
+        f1.readline();b=a.split()
+        if int(b[0])==0: 
+            hy=ones(nrow)*float(b[1].split('(')[0])
+        else:
+            while nr<nrow:
+                a=f1.readline().split();hy.extend(a);nr+=len(a)
+            hy=array(hy).astype('float')
         #reading layer top
         ztop=zeros((nlay,nrow,ncol));flgTop=zeros(nlay)
         for ilay in range(nlay):
@@ -236,7 +243,7 @@ class impFile:
                 nc=0;z=[]
                 while nc<ncol:
                     a=f1.readline().split();z.extend(a);nc+=len(a)
-                zbot[ilay,irow]=array(z).astype('float')
+                zbot[irow]=array(z).astype('float')
         f1.close()
         # writing 
         for ilay in range(nlay):
@@ -254,7 +261,7 @@ class impFile:
             f2.write(' '.join(wx.astype('str'))+'\n')
             f2.write(' '.join(hy.astype('str'))+'\n')
             for irow in range(nrow):
-                f2.write(' '.join(zbotm[irow].astype('str'))+'\n')
+                f2.write(' '.join(zbot[irow].astype('str'))+'\n')
             f2.close()
         return True
                   

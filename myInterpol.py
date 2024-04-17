@@ -9,7 +9,7 @@ Created on Thu Jan 26 05:19:46 2017
 import numpy as np
 import os
 from numpy.linalg import solve
-from scipy.stats import tvar as variance
+#from scipy.stats import tvar as variance
 #from scipy.spatial import Delaunay
 #from qtDialogs import *
 from config import *
