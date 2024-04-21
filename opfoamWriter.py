@@ -112,7 +112,7 @@ class opfoamWriter:
         else : 
             zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
 
-        points=points/self.lu
+        points=points
         nf0=shape(faces)[0];nfb=shape(bfaces)[0];nf=nf0+nfb
         # points now same height for layer top
         sp = 'FoamFile \n{ version 2.0;\n format ascii;\n class vectorField;\n'
@@ -126,7 +126,7 @@ class opfoamWriter:
             if type(z)==type(0.): z = [z]*nplay
             coo = zeros((shape(points)[0],3))
             coo[:,0],coo[:,1],coo[:,2] = points[:,0]-x0,points[:,1]-y0,z
-            coo *= self.lu
+            #coo *= self.lu
             sp += ')\n('.join([' '.join(x) for x in coo.astype('str')]) 
             sp += ')\n'
         sp += ')'       
@@ -241,7 +241,7 @@ class opfoamWriter:
         # creating the writetimes file
         #s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
         #if 'write' in t1:
-        s1='\n'.join([str(int(t)) for t in self.wtimes]) # *self.dtu)
+        s1='\n'.join([str(t) for t in self.wtimes]) # *self.dtu)
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -310,7 +310,7 @@ class opfoamWriter:
         s = 'FoamFile{version 2.0;format ascii;class uniformDimensionedVectorField;'
         s += 'location \"constant\"; object g;}\n'
         s += ' dimensions [0 1 -2 0 0 0 0];\n value '
-        self.g = 9.81*self.dtu**2
+        self.g = 9.81/self.lu*self.dtu**2
         if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
             self.g = float(self.core.dicval['OpenFlow']['press.3'][0])*self.dtu**2
         if self.orientation[1] == 'D':s += '( 0 0 -'+str(self.g)+' );'
@@ -319,19 +319,20 @@ class opfoamWriter:
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         self.writeScalField('constant','eps',self.eps,self.bcD0)
+        rhow=1e3*self.lu**3;muw=1e-3*self.lu*self.dtu
         # g m.s-2, rho kg.m-3; mu kg.m-1.s-1; k m2 -> k*rho*g/mu=m.s-1
         # g m.d-2; mu kg.m-1.d-1 -> k*rho*g/mu=m.d-1 donc ok
         # permeability given in L(m,cm..)/T (d,h,min..)
         # K (m/s) *g*rho_wbase/mu_wbase)->m2; K_orti *self.lu/self.dtu -> m/s
         vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
         if self.orientation[0]=='X' and self.core.getValueFromName('OpenFlow','ONCOL',0)==1: 
-            K=vrt*self.lu/self.dtu/9.81e6
+            K=vrt*muw/(rhow*self.g)
         else :
-            K = self.getVariable('OpenFlow','khy.2')*self.lu/self.dtu/9.81e6;self.K=K # 
+            K = self.getVariable('OpenFlow','khy.2')*muw/(rhow*self.g);self.K=K # 
             for il in range(self.nlay):
                 r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
                 if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
-                    kv[r] = vrt[r]*self.lu/self.dtu/9.81e6 # 
+                    kv[r] = vrt[r]*muw/(rhow*self.g) # 
                 else : # ratio
                     kv[r] = K[r]/vrt[r]
         self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
@@ -350,7 +351,7 @@ class opfoamWriter:
         if self.core.dicaddin['Model']['type'] in ['Unsaturated','2phases']: 
             swm = self.getVariable('OpenFlow','uns.2')
             self.writeScalField('constant','sw_min',swm,self.dicBC,dim='[0 0 0 0 0 0 0]')            
-            a_vg = self.getVariable('OpenFlow','uns.3')
+            a_vg = self.getVariable('OpenFlow','uns.3') # in L-1 in interface
             self.writeScalField('constant','alpha_vg',a_vg,self.dicBC,dim='[0 -1 0 0 0 0 0]')            
             n_vg = self.getVariable('OpenFlow','uns.4')
             self.writeScalField('constant','n_vg',n_vg,self.dicBC,dim='[0 0 0 0 0 0 0]')            
@@ -360,8 +361,12 @@ class opfoamWriter:
             self.writeScalField('constant','cps',cps,self.dicBC,dim='[0 2 -2 -1 0 0 0]')            
             lbds = self.getVariable('OpenTrans','tlbds')*self.lu/self.dtu**3
             self.writeScalField('constant','lbds',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
+        # sorption foc
+        if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
+            foc = self.getVariable('OpenTrans','rct.3')
+            self.writeScalField('constant','foc',foc,self.dicBC,dim='[0 0 0 0 0 0 0]')            
             
-        # transport properties dict
+        ####--------- transport properties dict ------------------
         s = 'FoamFile{version 2.0;format ascii;class dictionary;location "constant";object transportProperties;}\n'
         if core.dicval['OpenFlow']['dis.8'][3] == 0: s += 'flowStartSteady 1;\n'
         else :s += 'flowStartSteady 0;\n'
@@ -373,13 +378,13 @@ class opfoamWriter:
             s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
-        s += 'rhow rhow [1 -3 0 0 0 0 0] '+str(self.lu* 1e3)+';\n'
-        s += 'muw muw [1 -1 -1 0 0 0 0] '+str(self.dtu*1e-3)+';\n'
-        s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(self.lu*1.2)+';\n'
-        s += 'mug mug [1 -1 -1 0 0 0 0] '+str(self.dtu*1e-5)+';\n'
+        s += 'rhow rhow [1 -3 0 0 0 0 0] '+str(rhow)+';\n'
+        s += 'muw muw [1 -1 -1 0 0 0 0] '+str(muw)+';\n'
+        s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(1.2*self.lu*3)+';\n'
+        s += 'mug mug [1 -1 -1 0 0 0 0] '+str(1e-5*self.lu*self.dtu)+';\n'
         if self.group in ['Chem','Trans']:
-            s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0]*self.lu)+';\n'
-            s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1]*self.lu)+';\n'
+            s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0])+';\n'
+            s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1])+';\n'
             s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][0]*self.dtu)+';\n'
             s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][1]*self.dtu)+';\n'            
             s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
@@ -551,11 +556,15 @@ class opfoamWriter:
         sct=r'constant/options'
         f1=open(self.fDir+sct+r'/obspts','w');f1.write(s);f1.close()
         # write the variables to be written
+        lFlow=['Head','Wcontent','Darcy V']
         if len(obs[2])>0: # Flow
-            s = ' '.join(arange(len(obs[2])).astype('str'))
+            s = ' ' #.join(arange(len(obs[2])).astype('str'))
+            for o in lFlow: s+=str((o in obs[2])*1)+' '
             f1=open(self.fDir+sct+r'/obsFlow','w');f1.write(s);f1.close()
+        lTrans=['Tracer','Temperature']
         if len(obs[3])>0: # Transport
-            s = ' '.join(arange(len(obs[3])).astype('str'))
+            s = ' '#.join(arange(len(obs[3])).astype('str'))
+            for o in lTrans: s+=str((o in obs[3])*1)+' '
             f1=open(self.fDir+sct+r'/obsTrans','w');f1.write(s);f1.close()
         lChem = ['Solutes','Gases']
         if len(obs[4])>0: # Chemistry
@@ -569,6 +578,8 @@ class opfoamWriter:
         it is used to get the cells where conditions are set
         '''
         ncl = self.ncell_lay
+        top,botm=self.core.dicval['OpenFlow']['dis.6'][0],self.core.dicval['OpenFlow']['dis.7'][0]
+        grd = self.core.addin.getFullGrid()
         if self.core.dicaddin['Model']['type'] == '2phases': 
             vr = 'p';vr1 = 'p';vfix='press.2'
         elif self.core.dicaddin['Model']['type'] == 'Unsaturated': 
@@ -610,7 +621,10 @@ class opfoamWriter:
             mult = [0]*len(lcell)
             for iz in range(len(lcell)):
                 if len(lcell[iz])>0:
-                    mult[iz] = self.carea[mod(lcell[iz],ncl)]*self.lu# thickness will be calc in fvOptions
+                    if self.orientation[0] not in ['R','X']:
+                        mult[iz] = self.carea[mod(lcell[iz],ncl)]
+                    else: # valid only for Xsection, wrong for radial
+                        mult[iz]= grd['dx'][mod(lcell[iz],grd['nx'])]*(top-botm)
             self.writeOptionData(rmat,lcell,ncell,zcell,'hrch',mult=mult)
 
         for n in ['riv','drn','ghb']:
@@ -659,9 +673,9 @@ class opfoamWriter:
                                 mat[:,lcell.index(w)] = mat1[:,iw] 
                                 lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
                                 mat2=delete(mat2,iw,1)
-                        self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
                         if len(lcell2)>0:
                             self.writeOptionData(mat2,lcell2,ncell2,zcell2,typ+'fix',formt='float')
+                    self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
 
                 for n in ['wel','ghb','riv']:
                     if n in self.ttable.keys():# pumping or injection
@@ -987,10 +1001,9 @@ class opfoamWriter:
         solu = chem['Solutions'];
         dicz = core.diczone['OpenChem']
         lsolu=[]
-        if 'sfix' in dicz.dic.keys():
-            lsolu = list([int(a) for a in unique(core.ttable['sfix'])])
-        if 'swel' in dicz.dic.keys():
-            lsolu = list([int(a) for a in unique(core.ttable['swel'])])
+        for n in ['sfix','swel','sghb','srch']:
+            if n in dicz.dic.keys():
+                lsolu.extend(list([int(a) for a in unique(core.ttable[n])]))
         if 'sinit' in dicz.dic.keys():
             self.linit = unique([a.strip() for a in dicz.dic['sinit']['value']]) # all cell types
             lsinit = unique([int(a.strip()[:-3]) for a in dicz.dic['sinit']['value']]) # solutions
@@ -1124,10 +1137,11 @@ class opfoamWriter:
         longn=['Solutions','Solutions','Solutions','Gases','Phases','Exchange','Surface',
                'Phases']
         nreac = len(self.ractiv)
-        # now write phqfoam        
+        # now write phqfoam  
+        tunits=int(self.core.dicval['OpenFlow']['dis.3'][4])-1
         # initial solutions : background(0) + zones (linit or val0)
+        s = str(nreac)+' '+str(self.ncomp)+' '+str(self.gcomp)+' '+str(self.nsolu)+' '+str(tunits)+'\n' # solid-units=1 mol/l here
         val0 = ravel(dInd['Solutions']) 
-        s = str(nreac)+' '+str(self.ncomp)+' '+str(self.gcomp)+' '+str(self.nsolu)+' 1\n' # solid-units=1 mol/l here
         if len(unique(val0))==1:  # just one solution or phase...
             s += '0  '+str(int(val0[0]))+' \n'  
         else :
@@ -1277,7 +1291,7 @@ class opfReader:
         iesp=-1 : tracer, '''
         #print(name,iper,iesp,spc)
         def rd1(t,n): # read classical
-            f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
+            f1=open(self.core.fileDir+os.sep+str(t)+os.sep+n,'r')
             s = f1.read();f1.close()
             if 'nonuniform' in s:
                 s1 = s.split('<scalar>')[1].split('(')[1].split(')')[0].split('\n')
@@ -1287,7 +1301,7 @@ class opfReader:
                 data = ones(self.ncell)*float(s1)
             return data
         def rd2(t,iesp): #read in Species
-            m=loadtxt(self.core.fileDir+os.sep+str(int(t))+os.sep+'Species')
+            m=loadtxt(self.core.fileDir+os.sep+str(t)+os.sep+'Species')
             data = zeros(self.ncell)
             data[self.phmask] = m[:,iesp]
             if iesp==0: data[data>1e+29]=7 # for pH
@@ -1322,7 +1336,7 @@ class opfReader:
         reads velocity vector at a given time, w for water, g for gas
         '''
         def rd1(t,n):
-            f1=open(self.core.fileDir+os.sep+str(int(t))+os.sep+n,'r')
+            f1=open(self.core.fileDir+os.sep+str(t)+os.sep+n,'r')
             s = f1.read();f1.close()
             if 'nonuniform' in s:
                 s1=s.replace('(','').replace(')','')
@@ -1375,6 +1389,7 @@ class opFlowReader(opfReader):
             if self.core.dicaddin['Model']['type'] == 'Unsaturated':short = 'hp'
             else : short = 'h'
         elif specname == 'Wcontent': short = 'sw'
+        elif specname == 'Darcy V': short = 'Uw'
         if ofile==True:
             if len(irow==1): # verify that its a one point
                 m = loadtxt(self.core.fileDir+os.sep+'observation\\obs_'+zname+'_'+short+'.txt')

@@ -126,6 +126,7 @@ class addin:
         self.mesh = None  # OA added 25.9.18
         self.setChemType()
         self.setMfUnstruct()
+        self.setMtSpeciesList()
         #self.fit = instant(self.gui,self.core)
         self.particle = {}
         
@@ -436,7 +437,7 @@ class addin:
             if len(dco)>2: fllist,trlist,chlist=dco[2:]
             else : fllist,trlist,chlist=[],[],[]
             lflo,ltr,lch=[],[],[]
-            for n in ['Head','Wcontent']: lflo.append((n,n in fllist))
+            for n in ['Head','Wcontent','Darcy V']: lflo.append((n,n in fllist))
             for n in ['Tracer','Temperature']: ltr.append((n,n in trlist))
             for n in ['Solutes','Gases']: lch.append((n,n in chlist))
             data = [('Flow','CheckList',(lflo[0],lflo)),

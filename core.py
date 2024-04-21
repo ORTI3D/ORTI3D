@@ -786,7 +786,7 @@ class Core:
         is a file written by opf
         for species if solutes is 1 (first in the list) then all species have been written
         '''
-        lFlow=['Head','Wcontent']
+        lFlow=['Head','Wcontent','Darcy V']
         lTrans=['Tracer','Temperature']
         lout=[]
         if 'Obspts' not in self.dicaddin.keys(): return [False]*len(esp)
@@ -907,7 +907,7 @@ class Core:
             else: 
                 opt = esp[0];ss='' # OA 19/3/19
                 m = self.transReader.getPtObs(self,iym,ix2,iz2,iper,opt,-1,esp[0],ss,ofile=ofile[0],zname=zname) #tracer -1
-                if ofile[i]: tlong=m[:,0];m=m[:,1:2]
+                if ofile[0]: tlong=m[:,0];m=m[:,1:2]
             if layers_in == 'all':  # +below OA 11/4/2 to consider all
                 pt.append(m)
                 labels.append('all layers')
@@ -986,8 +986,8 @@ class Core:
 #                return t2,p1,labels
             #p1=[]; ## p1 : to make a table of (ntimes,nspecies)
             tlst2 = self.getTlist2()
-            if ofile[0]:
-                tlst2=tlong #*86400/self.dtu
+            if len(ofile)>0:
+                if ofile[0]: tlst2=tlong #*86400/self.dtu
             p1=zeros((len(tlst2),len(pt)))
             #tlst2=[]
             for i in range(len(pt)): # OA 11/4/20 modified flux to flux1 below

@@ -68,7 +68,7 @@ class multiPlot(QDialog):
                 v1, v2 = mval[mm.index('UPW')],mval[mm.index('UZF')]
                 mod=self.core.dicaddin['Model']['group']
                 if ((v1==2 or v2==2) and (mod =='Modflow series')) or (mod[:4]=='Open'):
-                    self.rgroup.addItems(['Head','Wcontent'])#,'Flux']) #EV 02/03/20
+                    self.rgroup.addItems(['Head','Wcontent','Darcy V']) #EV 02/03/20
                 else : self.rgroup.addItems(['Head'])
             if self.res in ['Transport','Chemistry'] : 
                 self.rgroup.addItems(
@@ -215,13 +215,9 @@ class multiPlot(QDialog):
         ptyp=self.typ
         rtyp = int(self.rgroup.currentIndex()) #EV 02/03/20
         dicOut['ptyp']=ptyp+str(rtyp)
-        if self.rgroup.currentText() in ['Wcontent']:#,'Flux']: 
+        if self.rgroup.currentText() in ['Wcontent','Darcy V']: 
             dicOut['ptyp']=ptyp+'0'
-            dicOut['splist']=['Wcontent']
-        elif self.res=='Transport' :
-            dicOut['splist']=[self.rgroup.currentText()]
-        else:
-            dicOut['splist']=[self.rgroup.currentText()]
+        dicOut['splist']=[self.rgroup.currentText()]
         #if ptyp=='B' : dicIn['ptyp']='B0'
         #if ptyp=='P' : dicIn['ptyp']='P0'
         #if ptyp=='X' : dicIn['ptyp']='XY'
