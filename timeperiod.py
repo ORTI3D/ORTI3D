@@ -38,7 +38,9 @@ def makeTransientTable(core):
         if ndec==0:lll=lll.astype('int')
         wtimes.extend(list(lll)) # EV 18/02/19
         t0 = float(tf[i])
-    wtimes.append(float(tf[-1]))
+    lll=around(float(tf[-1]),ndec)
+    if ndec==0: lll=int(lll)
+    wtimes.append(lll)
     dZone['wtimes']=wtimes[1:] # remove time 0
     # combines both lists
     tlist.extend(wtimes)
