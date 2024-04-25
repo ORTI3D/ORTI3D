@@ -510,14 +510,13 @@ class Core:
                 
         if info!=False and modName in ['OpenFlow','OpenTrans','OpenChem']:
             #time_model=int(float(self.dicaddin['Time']['final'][-1])*self.dtu)
-            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',1)
+            lines= self.getTxtFileLastNLines(self.fileDir+os.sep+'log.txt',3)
             #print(time_model);print(lines)
-#            for i in range(79,-1,-1):
-#                if 'time =' in lines[i]:
-#                    time_file=int(lines[i].split()[2])
-#                    break
-            if lines[0][:6]=='Normal': return 'Normal termination of OpenFoam'
-            else : return 'Model fail to converge'
+            for i in range(2,-1,-1):
+                if len(lines[i])>6:
+                    if lines[i][:6]=='Normal': 
+                        return 'Normal termination of OpenFoam'
+            return 'Model fail to converge'
             
     def getTxtFileLastLine(self,fname,line):
         f1 = open(fname,'r')
