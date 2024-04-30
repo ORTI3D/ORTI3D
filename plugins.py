@@ -10,7 +10,7 @@ class plugins:
     
     def __init__(self,core):
         self.core = core
-        self.pl_list=['Radon','immobile oil'] #'sorptionAW'
+        self.pl_list=['Coupling']#,'Immobile oil'] #'sorptionAW'
         for pl_name in self.pl_list:
             if pl_name not in core.dicplugins.keys():
                 core.dicplugins[pl_name]={'active':False,'data':None}
@@ -56,8 +56,25 @@ class plugins:
             if retour != None:
                 self.core.dicplugins[pl_name]['active']=retour[0]
                 self.core.dicplugins[pl_name]['data']=float(retour[1])
+                
+        if pl_name=='Coupling':
+            act=self.core.dicplugins[pl_name]['active']
+            data = [('Use coupling?','Check',act)] 
+            dialg = self.dialogs.genericDialog(self.gui,'Coupling',data)
+            retour = dialg.getValues()
+            if retour != None:
+                self.core.dicplugins[pl_name]['active']=retour[0]
+            d = self.core.dicplugins[pl_name]['data']
+            dic = {'hEqn':{}}
+            dic['hEqn']['rows']=['0','1']
+            dic['hEqn']['cols']=['Ykey','Xvar','Xref','typ','nparms','a0','a1','a2']
+            dic['hEqn']['data']=[['muw','T',25,'linear',1,-1e-3],
+                    ['muw','C',0,'linear',1,1e-2]]
+            dialg = self.dialogs.myNoteBook(self.gui,"coupling",dic)
+            retour = dialg.getValues()
+            if retour != None:
+                self.core.dicplugins[pl_name]['data']=retour          
             
-    
     def writer(self,pl_name):
         '''this is called when opfoam writes its files'''
         if pl_name=='sorptionAW':
@@ -79,4 +96,16 @@ class plugins:
                 else : s+=' 0\n'
             f1=open(self.core.fileDir+'constant\\options\\gasDecay','w')
             f1.write(s);f1.close()
+            
+        if pl_name=='Coupling':
+            if self.core.dicplugins[pl_name]['active']==0: return
+            lDic = self.core.dicplugins[pl_name]['data']
+            s = ''
+            for k in lDic.keys():
+                dic=lDic[k];print(dic)
+                for d in dic['data']:
+                    s +=' '.join(str(a) for a in d)+'\n'
+            f1=open(self.core.fileDir+'constant\\options\\coupling','w')
+            f1.write(s);f1.close()
+            
         

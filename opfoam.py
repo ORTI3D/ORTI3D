@@ -178,7 +178,7 @@ class opfoam(unstructured):
         nbs,ncomp,gcomp,lcomp,lspec,i = len(listS),0,len(listE['g']),[],[],0
         while i<nbs:
             if listE['i'][i] == 'O(0)': lspec.append('O(0)')
-            if listE['i'][i] in ['H(1)','H(+1)']: lspec.append('H(1)')
+            elif listE['i'][i] in ['H(1)','H(+1)']: lspec.append('H(1)')
             elif '(' in listE['i'][i]: 
                 lspec.append(listE['i'][i])
                 lcomp.append(listE['i'][i]);ncomp +=1

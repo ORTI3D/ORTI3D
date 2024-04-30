@@ -239,9 +239,8 @@ class opfoamWriter:
         f1=open(self.fDir+os.sep+'system'+os.sep+'controlDict','w');
         f1.write(s);f1.close()
         # creating the writetimes file
-        #s1 = '\n'.join((self.tlist*self.dtu).astype('int').astype('str'))
-        #if 'write' in t1:
-        s1='\n'.join([str(t) for t in self.wtimes]) # *self.dtu)
+        s1 = str(int(self.core.dicval['OpenFlow']['dis.3'][4])-1)+' \n'
+        s1 +='\n'.join([str(t) for t in self.wtimes]) # *self.dtu)
         f1=open(self.fDir+r'constant/options/writetimes','w');
         f1.write(s1);f1.close()
         
@@ -378,8 +377,8 @@ class opfoamWriter:
             s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
-        s += 'rhow rhow [1 -3 0 0 0 0 0] '+str(rhow)+';\n'
-        s += 'muw muw [1 -1 -1 0 0 0 0] '+str(muw)+';\n'
+        s += 'rhowRef rhowRef [1 -3 0 0 0 0 0] '+str(rhow)+';\n'
+        s += 'muwRef muwRef [1 -1 -1 0 0 0 0] '+str(muw)+';\n'
         s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(1.2*self.lu*3)+';\n'
         s += 'mug mug [1 -1 -1 0 0 0 0] '+str(1e-5*self.lu*self.dtu)+';\n'
         if self.group in ['Chem','Trans']:
@@ -1099,6 +1098,15 @@ class opfoamWriter:
         s = '\n'.join(listE['kim'])
         if len(s)>0:
             f1 = open(fDir+os.sep+'constant\\options\\immobile','w')
+            f1.write(s);f1.close()
+        # also writes the gas file in constant (gases are just % here)
+        s = ''
+        for ig in range(nbg):
+            for esp in listE['g']: # go through phase list
+                ie = gases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
+                conc = gases['data'][ie][ig+2] #backgr SI and concentration of phase
+                s += ' '+str(float(conc))+'\n' #
+            f1 = open(fDir+os.sep+'constant\\options\\gases','w')
             f1.write(s);f1.close()
             
     def getPressureSolu(self):

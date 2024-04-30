@@ -241,8 +241,13 @@ class PHT3D:
         
     def getListSpecies(self,opt=None):
         dicE, listE = self.getDictSpecies(opt=opt),[]
-        short=['k','i','kim','g','p','e','s','kp']
-        for s in short: listE.extend(dicE[s])
+        if opt==None: 
+            short=['k','i','kim','g','p','e','s','kp']
+            for s in short: listE.extend(dicE[s])
+        else : # case of opf the species are ardered differently
+            for s in ['k','i','kim']: listE.extend(dicE[s])
+            listE.sort()
+            for s in ['g','p','e','s','kp']: listE.extend(dicE[s])            
         return listE
         
     def importDB(self,fname):
