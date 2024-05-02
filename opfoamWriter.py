@@ -210,11 +210,11 @@ class opfoamWriter:
         
     def writeCtrlDict(self):
         ''' we still have simple definition of maxDeltaT'''
-        self.maxT = int(float(self.core.dicaddin['Time']['final'][-1])) #*self.dtu
+        self.maxT = self.core.dicaddin['Time']['final'][-1] #*self.dtu
         intv = float(self.core.dicaddin['Time']['steps'][-1])
         self.ttable = self.core.makeTtable()
         fslt = self.core.dicval['OpenFlow']['fslv.3']
-        ctrlDict={'startTime':0,'endTime': int(ceil(self.maxT)),
+        ctrlDict={'startTime':0,'endTime': self.maxT,
                   'deltaT':fslt[0], #*self.dtu
                   'maxCo':fslt[2],'maxDeltaT':fslt[1]} #*self.dtu
         tslv = self.core.dicval['OpenTrans']['tslv']
@@ -310,10 +310,11 @@ class opfoamWriter:
         s += 'location \"constant\"; object g;}\n'
         s += ' dimensions [0 1 -2 0 0 0 0];\n value '
         self.g = 9.81/self.lu*self.dtu**2
-        if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
-            self.g = float(self.core.dicval['OpenFlow']['press.3'][0])*self.dtu**2
-        if self.orientation[1] == 'D':s += '( 0 0 -'+str(self.g)+' );'
-        elif self.orientation[0] in ['R','X']: s += '( 0 -'+str(self.g)+' 0 );' #Xsect and rad are drawn in x,y plane
+        #if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
+        #    self.g = float(self.core.dicval['OpenFlow']['press.3'][0]) #*self.dtu**2
+        sg =  '{:+.4g}'.format(-self.g)
+        if self.orientation[1] == 'D':s += '( 0 0 '+sg+' );'
+        elif self.orientation[0] in ['R','X']: s += '( 0 '+sg+' 0 );' #Xsect and rad are drawn in x,y plane
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
@@ -414,7 +415,6 @@ class opfoamWriter:
         # considering recharge
         self.writeVectField('0','Uw',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
         self.writeVectField('0','Ug',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
-        self.writeScalField('0','p',1e5*self.lu*self.dtu**2,self.bcD0,'[1 -1 -2 0 0 0 0]')  
         swi=self.getVariable('OpenFlow','uns.5')
         # head h or pressure
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
@@ -432,10 +432,12 @@ class opfoamWriter:
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         elif self.core.dicaddin['Model']['type'] == '2phases': 
-            p0 = self.getVariable('OpenFlow','press.1')
+            #!!! pressure is given in atm
+            self.atmPa = 101325 # atm to Pa
+            p0 = self.getVariable('OpenFlow','press.1')*self.atmPa/self.lu*self.dtu**2
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
-                p0 += ravel(dzm[-1::-1])*9.81*1e3 # opf is ordered from btoom to top
+                p0 += ravel(dzm[-1::-1])*self.g*1e3 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.dicBC=self.bcFromFixValues(self.dicBC,'press.2')
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
@@ -445,6 +447,7 @@ class opfoamWriter:
             self.writeScalField('0','h',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.writeScalField('0','hp',0,self.dicBC,dim='[0 1 0 0 0 0 0]')            
             self.writeScalField('0','sw',1,self.bcD0,'[0 0 0 0 0 0 0]')
+            self.writeScalField('0','p',1e5*self.lu*self.dtu**2,self.bcD0,'[1 -1 -2 0 0 0 0]')  
             
     def correspZonesBC(self,dicz,bcgrid):
         '''to get bc corresponding to zones
@@ -595,7 +598,7 @@ class opfoamWriter:
             hmat = self.ttable[vfix];nr,nz = shape(hmat)
             mult = []
             for iz in range(len(lcell)) : 
-                if vr=='p': a=1
+                if vr=='p': a=self.atmPa
                 else: a=self.lu
                 mult.append([a]*ncell[iz])
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
