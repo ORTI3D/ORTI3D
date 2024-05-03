@@ -35,7 +35,8 @@ class opfoamWriter:
         os.mkdir(fDir+r'constant/options')
         if 'polyMesh' not in os.listdir(fDir+'constant'): os.mkdir(fDir+r'constant/polyMesh')
         fDir1 = fDir +r'constant/polyMesh/'
-        if '0' not in os.listdir(fDir): os.mkdir(fDir+'0')
+        if '0' in os.listdir(fDir): shutil.rmtree(fDir+'0')
+        os.mkdir(fDir+r'0')
         if 'observation' in os.listdir(fDir):shutil.rmtree(fDir+r'observation')
         os.mkdir(fDir+r'observation')
         self.dtu,self.lu=self.core.addin.opfoam.getUnits()
@@ -318,7 +319,7 @@ class opfoamWriter:
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
-        self.writeScalField('constant','eps',self.eps,self.bcD0)
+        #self.writeScalField('constant','eps',self.eps,self.bcD0)
         rhow=1e3*self.lu**3;muw=1e-3*self.lu*self.dtu
         # g m.s-2, rho kg.m-3; mu kg.m-1.s-1; k m2 -> k*rho*g/mu=m.s-1
         # g m.d-2; mu kg.m-1.d-1 -> k*rho*g/mu=m.d-1 donc ok
@@ -415,6 +416,7 @@ class opfoamWriter:
         # considering recharge
         self.writeVectField('0','Uw',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
         self.writeVectField('0','Ug',[0,0,0],self.bcD0,'[0 1 -1 0 0 0 0]')
+        self.writeScalField('0','eps',self.eps,self.dicBC,dim='[0 0 0 0 0 0 0]')
         swi=self.getVariable('OpenFlow','uns.5')
         # head h or pressure
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
@@ -660,19 +662,19 @@ class opfoamWriter:
                     lct.append('t')
             if self.group == 'Chem' and self.core.getValueFromName('OpenTrans','OTTYP',0)==1: lct=['t'] # if chem only temperature can be used
             for typ in lct:
-                # we need to write chfix (for hfix places) and cfix (no hfix there)
-                a = typ+'fix'
-                if vfix in self.ttable.keys():
-                    lcell,ncell,zcell = self.getOptionCells(vfix,vfix)
+                # we need to write chfix (for hfix places) and cfix (no hfix at these cells)
+                a = typ+'fix' #cfix or tfix
+                if vfix in self.ttable.keys(): #vfix is head or pressure
+                    lcell,ncell,zcell = self.getOptionCells(vfix,vfix,zbool=False) # head data
                     mat = zeros(shape(self.ttable[vfix])) # all conc to 0
                     if a in self.ttable.keys():
-                        mat1 = self.ttable[a]
+                        mat1 = self.ttable[a] # get c or t fixed values
                         lcell1,ncell1,zcell1 = self.getOptionCells(a,a)
                         lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
                         mat2 = mat1.copy()
                         for iw,w in enumerate(lcell1):# replace by c in corresponding zone
                             if w in lcell: 
-                                mat[:,lcell.index(w)] = mat1[:,iw] 
+                                mat[:,lcell.index(w)] = mat1[:,iw] #if iw in hfix get conc
                                 lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
                                 mat2=delete(mat2,iw,1)
                         if len(lcell2)>0:
@@ -706,7 +708,7 @@ class opfoamWriter:
             ## need to know if ph.4 is at a flow bc or at a well
             self.solucell=[] # solucell conaint the list of fixed chem cells
             if vfix in self.ttable.keys():
-                lcell,ncell,zcell = self.getOptionCells(vfix,vfix)
+                lcell,ncell,zcell = self.getOptionCells(vfix,vfix,zbool=False)
                 mat = zeros(shape(self.ttable[vfix])) # all conc to 0
                 if 'sfix' in self.ttable.keys():
                     mat1 = self.ttable['sfix']
@@ -756,7 +758,7 @@ class opfoamWriter:
                 self.writeOptionData(mat,lcell,ncell,zcell,'gwel',formt='int')
 
 
-    def getOptionCells(self,line,fname):
+    def getOptionCells(self,line,fname,zbool=True):
         '''
         writes the cell numbers in constant/polyMesh/sets, lcell is the list of cells
         for each considered zone, ncell the nb of these cells
@@ -784,7 +786,7 @@ class opfoamWriter:
                     nl1=self.nlay-media-1
                     lcell[iz-1].extend(list(nl1*nx*ny+idx[0]*nx+idx[1]))
                     ncell[iz-1] += len(idx[0])
-                    if len(dicz['coords'][iz-1][0])>2: zv1 = list(m[idx[0],idx[1]])
+                    if len(dicz['coords'][iz-1][0])>2 and zbool: zv1 = list(m[idx[0],idx[1]])
                     else : zv1 = [0]*(idx[1]-idx[0])
                     zcell[iz-1].extend(zv1)
         else :#unstructured
@@ -798,7 +800,7 @@ class opfoamWriter:
                 for im in lmedia:
                     lc1.extend(lc0+nclay*(self.nlay-im-1));  # nlay-im because inversion vs modflow
                 lcell.append(lc1);ncell.append(len(lc0)*len(lmedia))
-                if len(dicz['coords'][iz][0])>2: zv1 = zval # only for variable lines
+                if len(dicz['coords'][iz][0])>2 and zbool: zv1 = zval # only for variable lines
                 else : zv1 = [0]*len(lc0)
                 zcell.append(zv1*len(lmedia));
         # remove cells that can be in two zones, the last one is to be kept
