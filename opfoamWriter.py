@@ -84,6 +84,7 @@ class opfoamWriter:
             if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
                 self.writeSorptionDecay()
         for pl_name in self.core.plugins.pl_list:
+            if pl_name not in self.core.dicplugins.keys(): continue
             if self.core.dicplugins[pl_name]['active']>0:
                 self.core.plugins.writer(pl_name)
         self.writeObservation()
@@ -358,10 +359,10 @@ class opfoamWriter:
             self.writeScalField('constant','n_vg',n_vg,self.dicBC,dim='[0 0 0 0 0 0 0]')            
         # thermal
         if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
-            cps = self.getVariable('OpenTrans','tcps')*self.lu**2/self.dtu**2
+            cps = self.getVariable('OpenTrans','tcps')/self.lu**2 * self.dtu**2
             self.writeScalField('constant','cps',cps,self.dicBC,dim='[0 2 -2 -1 0 0 0]')            
-            lbds = self.getVariable('OpenTrans','tlbds')*self.lu/self.dtu**3
-            self.writeScalField('constant','lbds',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
+            lbds = self.getVariable('OpenTrans','tlbds')/self.lu*self.dtu**3
+            self.writeScalField('constant','lbdaTs',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
         # sorption foc
         if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
             foc = self.getVariable('OpenTrans','rct.3')
@@ -402,7 +403,8 @@ class opfoamWriter:
                 s += 'activateTransport 1;\n'
             if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 s += 'activateThermal 1;\n'
-                s += 'lbdaTw lbdaTw [1 1 -3 -1 0 0 0] '+str(core.dicval['OpenTrans']['tlbds'][0]*self.dtu**3)+';\n'
+                s += 'cpw cpw [0 2 -2 -1 0 0 0] '+'{:.4g}'.format(core.dicval['OpenTrans']['temp.1'][0]*self.dtu**2)+';\n'
+                s += 'lbdaTw lbdaTw [1 1 -3 -1 0 0 0] '+'{:.4g}'.format(core.dicval['OpenTrans']['temp.1'][1]*self.dtu**3)+';\n'
             if core.getValueFromName('OpenTrans','OIREAC',0):
                 s += 'lbdaw lbdaw [0 0 -1 0 0 0 0] '+str(core.dicaddin['MtReact']['data'][0][2])+';\n'
         s += 'nlay '+str(self.nlay)+'; ncell_lay '+str(self.ncell_lay)+';'
@@ -565,10 +567,11 @@ class opfoamWriter:
             s = ' ' #.join(arange(len(obs[2])).astype('str'))
             for o in lFlow: s+=str((o in obs[2])*1)+' '
             f1=open(self.fDir+sct+r'/obsFlow','w');f1.write(s);f1.close()
-        lTrans=['Tracer','Temperature']
         if len(obs[3])>0: # Transport
-            s = ' '#.join(arange(len(obs[3])).astype('str'))
-            for o in lTrans: s+=str((o in obs[3])*1)+' '
+            a=((self.core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]) and ('Tracer' in obs[3]))
+            s = ' '+str(a*1)
+            a=((self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]) and ('Temperature' in obs[3]))
+            s += ' '+str(a*1)
             f1=open(self.fDir+sct+r'/obsTrans','w');f1.write(s);f1.close()
         lChem = ['Solutes','Gases']
         if len(obs[4])>0: # Chemistry
@@ -670,13 +673,16 @@ class opfoamWriter:
                     if a in self.ttable.keys():
                         mat1 = self.ttable[a] # get c or t fixed values
                         lcell1,ncell1,zcell1 = self.getOptionCells(a,a)
-                        lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
-                        mat2 = mat1.copy()
+                        lcell2,ncell2,zcell2,flg = [],[],[],0
+                        #lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
+                        #mat2 = mat1.copy()
                         for iw,w in enumerate(lcell1):# replace by c in corresponding zone
-                            if w in lcell: 
-                                mat[:,lcell.index(w)] = mat1[:,iw] #if iw in hfix get conc
-                                lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
-                                mat2=delete(mat2,iw,1)
+                            if w in lcell:  # !! w is a list
+                                mat[:,lcell.index(w)] = mat1[:,iw] # replace column in mat correspondng ot the zone
+                            else:
+                                lcell2.append(w);ncell2.append(ncell1[iw]);zcell2.append(zcell2[iw])
+                                if flg==0: mat2=mat1[:,iw:iw+1];flg=1
+                                else : mat2=c_[mat2,mat1[:,iw]]
                         if len(lcell2)>0:
                             self.writeOptionData(mat2,lcell2,ncell2,zcell2,typ+'fix',formt='float')
                     self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
@@ -785,10 +791,13 @@ class opfoamWriter:
                     idx = where(m1==iz);# id0 layer, id1 cell
                     nl1=self.nlay-media-1
                     lcell[iz-1].extend(list(nl1*nx*ny+idx[0]*nx+idx[1]))
+                    #lcell.extend(list(nl1*nx*ny+idx[0]*nx+idx[1]))
                     ncell[iz-1] += len(idx[0])
+                    #ncell += len(idx[0])
                     if len(dicz['coords'][iz-1][0])>2 and zbool: zv1 = list(m[idx[0],idx[1]])
                     else : zv1 = [0]*(idx[1]-idx[0])
                     zcell[iz-1].extend(zv1)
+                    #zcell.extend(zv1)
         else :#unstructured
             lcell,ncell,zcell = [],[],[]
             for iz in range(len(dicz['name'])):
@@ -897,7 +906,7 @@ class opfoamWriter:
             s += '\n'.join([' '.join(x) for x in val1.astype('str')])
             s+='\n'
             fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
-        val1[:,0] = self.tlist[-1]*(1+1e-6) #*self.dtu/86400 # last time step
+        val1[:,0] = self.tlist[-1]*(1+2e-5) #*self.dtu/86400 # last time step
         #val1[:,2:4] = 0
         floatlist=ravel(val1.astype('float'));#print(floatlist)
         s += '\n'.join([' '.join(x) for x in val1.astype('str')])
@@ -922,7 +931,7 @@ class opfoamWriter:
         s += name+';}\n\n'
         s += 'dimensions '+dim+';\n\n'
         if amax(values)==amin(values):
-            s += 'internalField uniform '+str(amin(values))+';\n'
+            s += 'internalField uniform '+'{:.3e}'.format(amin(values))+';\n'
         else :
             s += 'internalField nonuniform List<scalar>\n'+str(len(values))+'('
             s += '\n'.join(['{:.3e}'.format(a) for a in values])+');\n'
