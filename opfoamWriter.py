@@ -680,7 +680,7 @@ class opfoamWriter:
                             if w in lcell:  # !! w is a list
                                 mat[:,lcell.index(w)] = mat1[:,iw] # replace column in mat correspondng ot the zone
                             else:
-                                lcell2.append(w);ncell2.append(ncell1[iw]);zcell2.append(zcell2[iw])
+                                lcell2.append(w);ncell2.append(ncell1[iw]);zcell2.append(zcell1[iw])
                                 if flg==0: mat2=mat1[:,iw:iw+1];flg=1
                                 else : mat2=c_[mat2,mat1[:,iw]]
                         if len(lcell2)>0:
