@@ -89,8 +89,9 @@ class valueDialog:
                 else:
                     if i < len(self.val[ll]):
                         val = self.val[ll][i]
-                    else:
-                        val = 0
+                    else: # value of the given keyword does not exist in val
+                        val = lk['default'][i]
+                        self.val[ll].append(val)
                 if type(val) in [type('r'), type('r')]: continue
                 if lk['type'][0][:3] == 'arr': continue  # do not store array
                 kwd = kwd.split('(')[0]

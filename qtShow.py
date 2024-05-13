@@ -151,8 +151,8 @@ class Ui_Show(object):
                 retour = str(item.currentText()) # case of list, retour is the name
         else: retour = item.isChecked() # a check box retour is True or False 
         if name in self.guiShow.Vtypes['Array']: self.guiShow.resetDicContour()
-        #print(retour,self.guiShow.dicVisu)
         self.guiShow.dicVisu[group][name] = retour
+        print("dicvisu",retour,self.guiShow.dicVisu)
         if name == 'Plane': 
             a = shape(self.core.Zblock)
             if len(a) == 3 : nz,ny,nx = a
@@ -219,6 +219,7 @@ class Ui_Show(object):
             else : 
                 m = multiPlot(self.gui,self.core,typ,res)
             m.show()
+            self.multip=m
         else : #EV 14/08/19
             mess=onMessage(self.gui,'Create an observation zone to plot the resuts.')
             return mess

@@ -107,6 +107,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.cbar = self.fig.add_axes([.91,.05,.03,.9]) #left,bottom, wide,height    
         self.cbar_on = False
         self.cbar.axis('off')
+        self.cbar.clear()
         self.cnv = self.fig.add_axes([.05,.05,.85,.9]) #left,bottom, wide,height     
         #self.toolbar.update()    
         self.pos = self.mpl_connect('motion_notify_event', self.onPosition)
@@ -166,19 +167,8 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.cbar.axis('off');
             self.cbar.tick_params(axis='x',bottom=False,labelbottom=False)
             self.cbar.tick_params(axis='y',right=False,labelright=False,labelleft=False)
-            #self.cbar.clear();
+            self.cbar.clear();
         self.draw()
-
-#    def changeTitre(self,titre):
-#        s='';ori=self.curOri
-#        if ori in ['X','Y','Z']:
-#            plan=self.curPlan;
-#            x1,y1 = self.model.Aquifere.getXYticks()
-#            zl = self.model.Aquifere.getParm('zList')
-#        if ori=='Z': s=' Z = '+ str(zl[plan])
-#        if ori=='X': s=' X = '+ str(x1[plan])
-#        if ori=='Y': s=' Y = '+ str(y1[plan])
-#        pl.title(self.traduit(str(titre))+s[:9],fontsize=20)
 
     def createAndShowObject(self,dataM,dataV,opt,value=None,color=None):
         """create the Contour, Vector, dataM are data for matrix, V for vector,
@@ -204,6 +194,7 @@ class qtVisualisation(FigureCanvasQTAgg):
 #            try : self.cbar.clf() #OA 7/2/24
 #            except : 
 #                self.cbar = None
+        print("in draw obj",typObj,bool)
         if typObj == 'Map' and self.Map == None and bool == False : return
         exec('self.draw'+typObj+'('+str(bool)+')')
         
@@ -271,65 +262,58 @@ class qtVisualisation(FigureCanvasQTAgg):
         
     def createGrid(self,col=None,ori='Z',layer=0): 
         if self.Grid == None:
-            col=(.6,.6,.6);self.Grid=[0,0,col];
+            col=(.6,.6,.6);self.Grid=[0,col];
         else :
-            for i in range(2): self.Grid[i].set_visible(False)
-        if col == None: col=self.Grid[2]
-        else : self.Grid[2]=col
+            self.Grid[0].set_visible(False)
+        if col == None: col=self.Grid[1]
+        else : self.Grid[1]=col
         self.cnv.collections=[]; 
         self.mUnstruct = 0;#=[]
+        cmap = mpl.cm.jet #EV 26.11.20
 
         if self.mesh != None and self.mshType>0:# case irregular mesh (from matplotlib2dviewer)
             self.mUnstruct = 1 #OA 17/12/20
+            self.Triangles = self.mesh.trg
             xcoo = self.mesh.elx
             ycoo = self.mesh.ely;ncell=len(ycoo)
             pol = [list(zip(xcoo[i],ycoo[i])) for i in range(ncell)]
-            cmap = mpl.cm.jet #EV 26.11.20
-            self.Grid[0] = PolyCollection(pol,cmap=cmap); # OA 17/12/20
-            self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
-            self.Grid[0].set_edgecolor((.5,.5,.5,0))  # OA 17/12/20
-            #self.Grid[1] = PolyCollection(pol[:2]);#self.Grid[1].set_color((1,1,1))  # OA 17/12/20
-            self.Triangles = self.mesh.trg
                  
         else: #rectangular cases
             xl,yl = getXYmeshSides(self.core,self.curOri,self.curLayer)
-            dep=list(zip(ravel(xl[:-1,:]),ravel(yl[:-1,:])))
-            arr=list(zip(ravel(xl[1:,:]),ravel(yl[1:,:])))
-            self.Grid[0] = LineCollection(list(zip(dep,arr)))
-            dep=list(zip(ravel(xl[:,:-1]),ravel(yl[:,:-1])))
-            arr=list(zip(ravel(xl[:,1:]),ravel(yl[:,1:])))
-            self.Grid[1] = LineCollection(list(zip(dep,arr)))
-        for i in [0,1]: 
-            self.cnv.add_collection(self.Grid[i]) # OA 17/12/20 collec[0]= replaced by add
-            self.Grid[i].set_transform(self.transform)
-            self.Grid[i].set_linewidth(0.5) #EV 10/12/2020
-            self.Grid[i].set_facecolor((1,1,1,0)) #EV 15/01/21
-            self.Grid[i].set_edgecolor((.5,.5,.5,1)) #EV 15/01/21
+            xl,yl = xl[0,:],yl[:,0]
+            pol=[]
+            for j in range(len(yl)-2,-1,-1):
+                for i in range(len(xl)-1):
+                    xcoo=[xl[i],xl[i+1],xl[i+1],xl[i],xl[i]]
+                    ycoo=[yl[j],yl[j],yl[j+1],yl[j+1],yl[j]]
+                    pol.append(list(zip(xcoo,ycoo)))
+                    
+        self.Grid[0] = PolyCollection(pol,cmap=cmap); # OA 17/12/20
+        self.cnv.add_collection(self.Grid[0]) # OA 17/12/20 collec[0]= replaced by add
+        self.Grid[0].set_transform(self.transform)
+        self.Grid[0].set_linewidth(0.5) #EV 10/12/2020
+        self.Grid[0].set_facecolor((1,1,1,0)) #EV 15/01/21
+        self.Grid[0].set_edgecolor((.5,.5,.5,1)) #EV 15/01/21
         self.redraw()
         
     def drawGrid(self, bool):
-        col = self.Grid[2]
+        col = self.Grid[1]
         if self.curOri != 'Z':
             self.createGrid(col=col,ori=self.curOri,layer=self.curLayer)
-        if self.mUnstruct:
-            if bool:
-                #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
-                self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
-                self.Grid[0].set_visible(True) #EV 15/01/21
-            else:
-                #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21 #EV 15/02/21
-                self.Grid[0].set_edgecolor((1,1,1,0))  # OA 17/12/20  
-                #self.Grid[0].set_visible(False) 
-        else :
-            for i in [0,1]: 
-                self.cnv.collections[i].set_visible(bool)
-                self.cnv.collections[i].set_color(col)
+        if bool:
+            #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21
+            self.Grid[0].set_edgecolor((.5,.5,.5))  # OA 17/12/20
+            self.Grid[0].set_visible(True) #EV 15/01/21
+        else:
+            #self.Grid[0].set_facecolor((1,1,1,0))#(1,1,1))  # OA 17/12/20 #EV 15/01/21 #EV 15/02/21
+            self.Grid[0].set_edgecolor((1,1,1,0))  # OA 17/12/20  
+            #self.Grid[0].set_visible(False) 
         self.redraw()
         
     def changeGrid(self,color):
         a=color.Get();col=(a[0]/255,a[1]/255,a[2]/255)
-        for i in [0,1]: self.Grid[i].set_color(col)
-        self.Grid[2]=col
+        for i in [0]: self.Grid[i].set_color(col)
+        self.Grid[1]=col
         self.redraw()
     #####################################################################
     #             Draw a map or a variable as an image
@@ -351,37 +335,29 @@ class qtVisualisation(FigureCanvasQTAgg):
         
     def drawMap(self, bool):
         if self.Map == None: self.createMap()
-        if self.Map != None :
-#        self.Map.set_visible(bool)
-            self.cnv.images=[self.Map] #
+        else :
+            #self.cnv.images=[self.Map] #
+            print("in drawMap")
             self.cnv.images[0].set_visible(bool)
-            self.redraw()
+            #self.redraw()
 
     def createImage(self,data):
         #print 'vis img',len(xt),len(yt),shape(mat)
-        X,Y,Z = data;Z1 = array(Z)#;print(shape(Z1))
+        X,Y,Z = data;Z1 = ravel(array(Z))#;print(shape(Z1))
         modgroup = self.core.addin.getModelGroup();#print 'visu l 301',modgroup
-        if self.mUnstruct: #OA 17/12/20
-            self.grdArray = Z1
-            self.Grid[0].set_array(Z1)
-            obj = self.Grid[0]
-            obj.update_scalarmappable() ; obj.autoscale() ; obj.changed() #EV 15/02/21
-        else: # classical square grid
-            obj=pl.pcolormesh(X,Y,Z,cmap='jet') #,norm='Normalize') #EV 27/08/19
-            self.cnv.images=[obj] # OA 20/11/20 removed from frist condition, put here
+        self.grdArray = Z1
+        self.Grid[0].set_array(Z1)
+        obj = self.Grid[0]
+        obj.update_scalarmappable() ; obj.autoscale() ; obj.changed() #EV 15/02/21
         self.fig.colorbar(obj, cax=self.cbar, orientation='vertical',fraction=0.05,pad=0)
         self.cbar.axis('on')
         self.redraw(Imgopt=True)
         
     def drawImage(self,bool):
-        if self.mUnstruct: #OA 17/12/20
-            if bool : 
-                self.Grid[0].set_array(self.grdArray)
-            else:
-                self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
+        if bool : 
+            self.Grid[0].set_array(self.grdArray)
         else:
-            if len(self.cnv.images)>0: #EV 07/01/2021
-                self.cnv.images[0].set_visible(bool)
+            self.Grid[0].set_facecolor((1,1,1,0)); #EV 15/01/21
             #self.cbar.figure.gcf().set_visible(bool)
         self.redraw(Imgopt=bool)
 
@@ -478,18 +454,12 @@ class qtVisualisation(FigureCanvasQTAgg):
     """vector has been created as the first item of lincollection list
     during domain intialization"""
     def createVector(self,data,scale,color):
-        X,Y,U,V = data
-        if self.mesh !=None :
+        X,Y,U,V = data;X=ravel(X);Y=ravel(Y);U=ravel(U);V=ravel(V)
+        if self.mesh !=None and self.mshType>0:
             X,Y = self.mesh.elcenters[:,0],self.mesh.elcenters[:,1]; #print X,Y,U,V
-        """ modifie les values de vectors existants
-        if U == None: #first vector no color
-            a=ravel(U);ech =( max(a)-min(a))/40;col=(0,0,1)
-        else : 
-            a,b,ech,col = self.Vector.data
-            self.drawVector(False) """
         if scale ==None: # no scale provided
             scale = 1
-        l=len(ravel(X))
+        l=len(X)
         dep=concatenate([X.reshape((l,1)),Y.reshape((l,1))],axis=1)
         b=X+U*scale;c=Y+V*scale;print(X,Y,b,c)
         arr=concatenate([b.reshape((l,1)),c.reshape((l,1))],axis=1)

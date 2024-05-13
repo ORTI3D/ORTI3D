@@ -149,25 +149,19 @@ class BaseTop:
         opt, iper, plane, section = None,0, 'Z',self.gui.currentMedia;
         #print('topb gcurvar',mod,line,section,var)
 #            mat = self.curVar[line]*1
-        mdgroup = self.core.addin.getModelGroup() # OA 3/2/21 added
-        if line in ['drn.1','riv.1','ghb.1']:
+        #mdgroup = self.core.addin.getModelGroup() # OA 3/2/21 added
+        if line[:3] in ['drn','riv','ghb']:
             if self.core.dictype[mod][line][section]=='importArray': #EV 26.11.20
                 mat =  self.getTransientArray(line,var)[0];# OA 16/1/21 added 0
             else: 
-                if 'USG' in mdgroup: # OA 16/1/21
+                if self.core.MshType>0: # OA 16/1/21
                     mat=zone2mesh(self.core,mod,line,section,var=var)  # OA 16/1/21
                 else :
                     mat=zone2grid(self.core,mod,line,section,opt=var,iper=0)
         else:
-#            if self.core.addin.getDim()=='3D' and 'USG' in mdgroup: # OA 3/2/21
-#                mat = zone2mesh(self.core,mod,line,media=section,iper=0)
-#                if self.core.dictype[mod][line][section]=='importArray':#EV 15/2/21 
-#                    mat = self.core.getValueLong(mod,line,0)[section]
-#            else :
             mat = self.core.getValueLong(mod,line,0)[section];#added section
         #self.curVar[line] = mat*1;
-        X,Y = getXYmeshSides(self.core,plane,section)
-        if 'USG' in mdgroup: # OA 20/11/20
+        if self.core.MshType>0: # OA 20/11/20
             return None,None,mat  # OA 16/1/21 removed [0]
         #if self.core.addin.getDim() in ['Radial','Xsection']:
             #m2 = mat[-1::-1,0,:]
@@ -175,7 +169,11 @@ class BaseTop:
             #if plane=='Z': m2 = mat[section,:,:] #-1 for different orientation in modflow and real world
             #elif plane=='Y': m2 = mat[:,section,:]
             #elif plane=='X': m2 = mat[:,:,section]
-        return X,Y,mat #m2
+        else :
+            X,Y = getXYmeshCenters(self.core,plane,section)
+            nx,ny=len(X[0,:]),len(Y[:,0])
+            if self.core.addin.getDim() in ['Radial','Xsection']:return X,Y,mat[-1::-1,:] #m2
+            else: return X,Y,reshape(ravel(mat),(ny,nx))[-1::-1,:] #♦strange
     
     def getTransientArray(self,line,var): #EV 26.11.20
         line=line.split('.')[0]

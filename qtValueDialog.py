@@ -69,7 +69,6 @@ class qtValueDialog(QDialog):
 
         # modif SPH to propagate the model
         # #print('debug SPH 240118:',self.currentModel)
-        #self.boxkeys = qtBoxKeys(self,parent)# line before the modif
         self.boxkeys = qtBoxKeys(self,parent,gui.currentModel)# line after the modif
 
 
@@ -95,8 +94,6 @@ class qtValueDialog(QDialog):
      
 class qtBoxKeys:
 
-    #modif SPH 240118 to propagate the model
-    # def __init__(self,Main,parent):# line before the modif
     def __init__(self, Main, parent,currentModel):
         self.currentModel = currentModel
     # end modif SPH

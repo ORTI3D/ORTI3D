@@ -200,6 +200,8 @@ class Core:
                 self.dicinterp[model].update(dict1) # EV 20/02/20
             elif typ=='addin': 
                 self.addin.update1(dict1)
+            elif typ=='plugins': 
+                self.dicplugins=dict1
             #print self.dicaddin
         #self.addin.initAddin() seems to make trouble
         if self.gui!=None: self.gui.onInitGui(self)
@@ -814,7 +816,7 @@ class Core:
         """
         print('in core obspt', group,zname)
         ofile=self.isObsFile(group,zname,esp) # returns a list for the given variables
-        if self.addin.getDim() in ['Xsection','Radial']: layers_in='all'
+        #if self.addin.getDim() in ['Xsection','Radial']: layers_in='all'
     ### Get some parameters
         zlist=self.diczone['Observation'].dic['obs.1'] ## list of zone observation
         nx,ny,xvect,yvect = getXYvects(self) 

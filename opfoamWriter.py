@@ -321,7 +321,10 @@ class opfoamWriter:
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         #self.writeScalField('constant','eps',self.eps,self.bcD0)
-        rhow=1e3*self.lu**3;muw=1e-3*self.lu*self.dtu
+        rhow = self.core.getValueFromName('OpenFlow','OFRHOW',0)**self.lu**3
+        rhog = self.core.getValueFromName('OpenFlow','OFRHOG',0)**self.lu**3
+        muw = self.core.getValueFromName('OpenFlow','OFMUW',0)*self.lu*self.dtu
+        mug = self.core.getValueFromName('OpenFlow','OFMUG',0)*self.lu*self.dtu
         # g m.s-2, rho kg.m-3; mu kg.m-1.s-1; k m2 -> k*rho*g/mu=m.s-1
         # g m.d-2; mu kg.m-1.d-1 -> k*rho*g/mu=m.d-1 donc ok
         # permeability given in L(m,cm..)/T (d,h,min..)
@@ -375,15 +378,16 @@ class opfoamWriter:
         mt0 = core.dicaddin['Model']['type']
         mType= ['Confined','Unconfined','Unsaturated','2phases'].index(mt0)
         if mType>=2:
-            s += 'activateCapillarity 1;\n'
+            actCap = self.core.getValueFromName('OpenFlow','OFCAPL',0)
+            s += 'activateCapillarity '+str(actCap)+';\n'
             #s += 'sw_min '+str(core.dicval['OpenFlow']['uns.2'][0])+';'
             s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
         s += 'rhowRef rhowRef [1 -3 0 0 0 0 0] '+str(rhow)+';\n'
         s += 'muwRef muwRef [1 -1 -1 0 0 0 0] '+str(muw)+';\n'
-        s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(1.2*self.lu*3)+';\n'
-        s += 'mug mug [1 -1 -1 0 0 0 0] '+str(1e-5*self.lu*self.dtu)+';\n'
+        s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(rhog)+';\n'
+        s += 'mug mug [1 -1 -1 0 0 0 0] '+str(mug)+';\n'
         if self.group in ['Chem','Trans']:
             s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0])+';\n'
             s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1])+';\n'
@@ -443,7 +447,7 @@ class opfoamWriter:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 p0 += ravel(dzm[-1::-1])*self.g*1e3 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            self.dicBC=self.bcFromFixValues(self.dicBC,'press.2')
+            self.dicBC=self.bcFromFixValues(self.dicBC,'press.2',mult=self.atmPa/self.lu*self.dtu**2)
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         else :
@@ -456,7 +460,7 @@ class opfoamWriter:
     def correspZonesBC(self,dicz,bcgrid):
         '''to get bc corresponding to zones
         valid only for rectangular domain'''
-        nrow,ncol=shape(bcgrid)
+        ncol,nrow=shape(bcgrid)
         nbz= len(dicz['name'])
         indx=[-1]*nbz
         for i in range(nbz):
@@ -470,7 +474,7 @@ class opfoamWriter:
                         indx[i]=j
         return indx
     
-    def bcFromFixValues(self,dicBC,line):
+    def bcFromFixValues(self,dicBC,line,mult=1):
         '''
         for pressure it is necessary to have true fixed value BC at the cell 
         where fixed values were set. we use opf.bfaces last column=-(numBC+1)
@@ -485,10 +489,10 @@ class opfoamWriter:
                 val =valgrid[bcgrid==iz+1]
                 if len(val)>1:
                     lval=' '.join([str(v) for v in val])
-                    lst= 'List<scalar> '+str(len(val))+'('+lval+')'
+                    lst= 'List<scalar> '+str(len(val*mult))+'('+lval+')'
                     cond={'type':'fixedValue','value':'nonuniform '+lst}
                 else :
-                    cond={'type':'fixedValue','value':'uniform '+str(val[0])}                    
+                    cond={'type':'fixedValue','value':'uniform '+str(val[0]*mult)}                    
                 dicBC['bc'+str(indx[iz])]=cond
         return dicBC
         
@@ -603,7 +607,7 @@ class opfoamWriter:
             hmat = self.ttable[vfix];nr,nz = shape(hmat)
             mult = []
             for iz in range(len(lcell)) : 
-                if vr=='p': a=self.atmPa
+                if vr=='p': a=self.atmPa*self.lu*self.dtu**2
                 else: a=self.lu
                 mult.append([a]*ncell[iz])
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
@@ -879,7 +883,8 @@ class opfoamWriter:
             val[sc0[iz]:sc1[iz],3] = array(mult2[iz])
         ag = argsort(val[:,1]) # to sort by cell number
         val1 =val[ag]*1
-        s += '\n'.join([' '.join(x) for x in val1.astype('str')])
+        s += '\n'.join(['%f %i %e %e'%(x[0],x[1],x[2],x[3]) for x in val1])
+        #s += '\n'.join([' '.join(x) for x in val1.astype('str')])
         s += '\n'
         floatlist=ravel(val1.astype('float'));
         fb.write(struct.pack('%sf' % len(floatlist), *floatlist))        
@@ -903,13 +908,14 @@ class opfoamWriter:
             val[:,0] = self.tlist[it]#*self.dtu/86400
             val1 = val[ag]*1
             floatlist=ravel(val1.astype('float'));
-            s += '\n'.join([' '.join(x) for x in val1.astype('str')])
-            s+='\n'
+            s += '\n'.join(['%f %i %e %e'%(x[0],x[1],x[2],x[3]) for x in val1])
+            #s += '\n'.join([' '.join('{:.4e}'.format(a)) for b in val1 for x in b])
+            s += '\n'
             fb.write(struct.pack('%sf' % len(floatlist), *floatlist))
         val1[:,0] = self.tlist[-1]*(1+2e-5) #*self.dtu/86400 # last time step
         #val1[:,2:4] = 0
         floatlist=ravel(val1.astype('float'));#print(floatlist)
-        s += '\n'.join([' '.join(x) for x in val1.astype('str')])
+        s += '\n'.join(['%f %i %e %e'%(x[0],x[1],x[2],x[3]) for x in val1])
         f1=open(fD1+r'options/'+fname+'_a','w');f1.write(s);f1.close()
         fb.write(struct.pack('%sf' % len(floatlist), *floatlist));fb.close()
         print('option '+fname+' written')
@@ -1008,7 +1014,8 @@ class opfoamWriter:
         s = ''
         s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
-        s += '-p '+' '.join(listE['p'])+'\n\n'
+        s += '-p '+' '.join(listE['p'])+'\n'
+        s += '-k'+' '.join(listE['kp'])+'\n\n'
         chem = core.addin.pht3d.Base['Chemistry'];print(chem.keys())
         ncell = self.ncell_lay
         solu = chem['Solutions'];
@@ -1073,9 +1080,10 @@ class opfoamWriter:
         # gas phase
         gases=chem['Gases'];
         nbg = self.nsolu*1
-        if self.core.dicaddin['Model']['type'] =='2phases': 
-            back_p = self.getPressureSolu()
-        else: back_p = [1]*nbg
+#        if self.core.dicaddin['Model']['type'] =='2phases': 
+#            back_p = self.getPressureSolu()
+#        else: 
+        back_p = [1]*nbg
         for ig in range(nbg):
             if len(listE['g'])>0 : 
                 s += '\nGas_Phase '+str(ig)+'\n'
@@ -1084,7 +1092,7 @@ class opfoamWriter:
                 ie = gases['rows'].index(esp);#print esp,phases['rows'],ip,phases['data'][ip] # index of the phase
                 conc = gases['data'][ie][ig+2] #backgr SI and concentration of phase
                 s += esp+' '+str(float(conc))+'\n' #
-        # kinetics (up to now just one)
+        # kinetics
         rates = chem['Rates'];
         parmk = core.addin.pht3d.calcNbParm()
         lkin = listE['k'];lkin.extend(listE['kim'])
@@ -1136,7 +1144,7 @@ class opfoamWriter:
         lp=[0]*nz
         for iz in range(nz):        
             p=diczp['value'][int(unique(pgrid[ggrid==iz+1]))-1]
-            lp[int(diczg['value'][iz])]=float(p)/101325
+            lp[int(diczg['value'][iz])]=float(p)
         return lp
 
     def writePhqFoam(self):
@@ -1279,6 +1287,7 @@ class opfReader:
         if tunit== 3: self.dtu = 3600
         if tunit== 2: self.dtu = 60
         if tunit== 1 : self.dtu = 1
+        self.atmPa = 101325
         
     def readMask(self,iesp,specname):
         self.phmask = list(range(self.ncell))
@@ -1388,7 +1397,8 @@ class opFlowReader(opfReader):
     def readHeadFile(self,core,iper):
         '''reads h as the head, or hp, or p'''
         if self.core.dicaddin['Model']['type'] == '2phases':
-            return self.readScalar('p',iper)
+            p = self.readScalar('p',iper)
+            return p/self.atmPa/self.dtu**2 # from [1-1-2] to atm
         elif self.core.dicaddin['Model']['type'] == 'Unsaturated':
             return self.readScalar('hp',iper)
         else:
@@ -1407,8 +1417,11 @@ class opFlowReader(opfReader):
         , iesp is a list containing the indice of the species 
         ss is for solute ('') or sorbed ('S' ) species. 
         """
+        mult=1
         if specname == 'Head': 
             if self.core.dicaddin['Model']['type'] == 'Unsaturated':short = 'hp'
+            elif self.core.dicaddin['Model']['type'] == '2phases':
+                short = 'p';mult=1/self.atmPa/self.dtu**2
             else : short = 'h'
         elif specname == 'Wcontent': short = 'sw'
         elif specname == 'Darcy V': short = 'Uw'
@@ -1419,7 +1432,7 @@ class opFlowReader(opfReader):
         pobs=zeros((len(iper),len(irow)))+0.;
         for i in range(len(iper)):
             ip = iper[i]
-            A = self.readScalar(short,ip)
+            A = self.readScalar(short,ip)*mult
             pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
         return pobs
 
@@ -1451,6 +1464,7 @@ class opTransReader(opfReader):
         lesp1 = ['pH','pe']
         lesp1.extend(lesp)
         lesp1.extend(self.listE['p'])
+        lesp1.extend(self.listE['kp'])
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
         elif '(g)' in specname: #gas species
@@ -1469,26 +1483,31 @@ class opTransReader(opfReader):
         ss is for solute ('') or sorbed ('S' ) species. 
         """      
         self.listE = core.addin.pht3d.getDictSpecies(opt='delta');
+        flgEsp=False
         if iesp==-1:
             if specname[:4] == 'Trac': short = 'C'
             else : short = 'T'
         else : # chemistry
             ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
-            iesp = lcomp.index(specname)+4
-            short='Cw'+str(iesp)
-        if ofile==True:
+            if specname in lcomp:
+                iesp = lcomp.index(specname)+4
+                short='Cw'+str(iesp)
+            else :
+                flgEsp=True
+        if ofile and flgEsp==False:
             if len(irow==1): # verify that its a one point
                 m = loadtxt(self.core.fileDir+os.sep+'observation\\obs_'+zname+'_'+short+'.txt')
                 return m
         if self.flagMask==0: 
             self.readMask(iesp,specname);self.flagMask=1
-        pobs=zeros((len(iper),len(irow)))+0.;print('in read',iesp,specname)
+        pobs=zeros((len(iper),len(irow)))+0.;#print('in read',iesp,specname)
         #fDir = self.core.fileDir
         if iesp !=-1: 
             ncomp,gcomp,lcomp,lgcomp,lesp = self.opf.findSpecies(core)
             lesp1 = ['pH','pe']
             lesp1.extend(lesp)
             lesp1.extend(self.listE['p'])
+            lesp1.extend(self.listE['kp'])
         for i in range(len(iper)):
             ip = iper[i];#print(ip)
             if iesp==-1: # transport

@@ -42,10 +42,7 @@ class guiShow:
         self.gui,self.visu,self.Tstep = gui,gui.visu,0  # OA 20/11/19 added tstep
         cfg = Config(self.core)
         self.gtyp = cfg.gtyp
-        if self.gtyp=='wx': 
-            self.dlgShow = cfg.show.Show(self,self.gui,self.core)
-        elif self.gtyp in ['qt','qgis']: 
-            self.dlgShow = gui.dlgShow
+        self.dlgShow = gui.dlgShow
         self.dialogs = cfg.dialogs
         self.dicplots={'X_head':None,'X_tracer':None}
         self.curName, self.arr3= None, None #EV 11/12/19
@@ -140,11 +137,11 @@ class guiShow:
         plane, layer, tstep = m['Plane'],m['Layer'],m['Tstep'];
         self.Tstep = tstep
         #self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
+        print("in guishow click2",m)
+        self.visu.drawObject('Map',m['Map'])
         if m['Variable'] : 
             self.visu.createImage(self.getCurrentVariable(plane,layer))
             m['Map'] = False
-        elif m['Map'] : 
-            self.visu.drawObject('Map',True)
         elif name == 'Grid' :#EV 15/02/2021
             self.visu.drawObject('Grid',retour)
         else :
@@ -163,6 +160,7 @@ class guiShow:
         #print('guish 159',Cgroup,Cname,tstep,species)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
+            print("l 163",shape(self.arr3))
             if self.arr3 is None : # EV 8/12/21
                 mess=onMessage(self.gui,'No result')
                 self.dlgShow.onTickBox(group,name,'B',False)
@@ -278,7 +276,7 @@ class guiShow:
         var = vbox.choiceV.currentIndex()
         if vbox.chkView.isChecked(): 
             X,Y,mat = vbox.base.getCurVariable(var)
-        if self.MshType>0:
+        if self.core.MshType>0:
             c = self.core.addin.mesh.elcenters
             xc,yc = c[:,0],c[:,1]
             d = sqrt((x-xc)**2+(y-yc)**2);

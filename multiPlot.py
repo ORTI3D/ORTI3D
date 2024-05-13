@@ -226,21 +226,20 @@ class multiPlot(QDialog):
         nblay=getNlayers(self.core) #EV 26/08/19
         if 'Layers' not in dic.keys():
             dic['Layers']= [('0', 2) for i in range(nblay)] #EV 26/08/19
-        dicOut['zolist']=[dic['Zones'][i][0] for i in range(
-                len(dic['Zones'])) if dic['Zones'][i][1]==2]
+        dicOut['zolist']=[dic['Zones'][i][0] for i in range(len(dic['Zones'])) if dic['Zones'][i][1]==2]
         if ptyp!='X':
-            lylist=[dic['Layers'][i][0] for i in range(
-                    len(dic['Layers'])) if dic['Layers'][i][1]>0]
+            lylist=[dic['Layers'][i][0] for i in range(len(dic['Layers'])) if dic['Layers'][i][1]>0]
             dicOut['lylist']=','.join(lylist)
-        #print('muli opt 235',dicOut['lylist'])
+        dim=self.core.addin.getDim()
+        if dim in ['Xsection','Radial']: dicOut['lylist']='0'
+        print('muli opt 235',dicOut['lylist'])
         if self.res in ['Transport','Chemistry']:
             if ptyp in ['X','P','V']: dicOut['plotOrder']='Zones'
             else :
                 plotOrder=int(self.plgroup.currentIndex())
                 if plotOrder==0 : dicOut['plotOrder']='Zones'
                 if plotOrder==1 : dicOut['plotOrder']='Species'
-            dicOut['splist']=[dic['Species'][i][0] for i in range(
-                    len(dic['Species'])) if dic['Species'][i][1]==2]
+            dicOut['splist']=[dic['Species'][i][0] for i in range(len(dic['Species'])) if dic['Species'][i][1]==2]
         else :dicOut['plotOrder']='Zones' 
         if 'All observations' in dicOut['zolist'] :  #EV 7/7/21
             if 'All observations' in self.zname :  #EV 7/7/21

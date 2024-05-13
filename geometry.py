@@ -303,12 +303,24 @@ def block(core,modName,line,intp=False,opt=None,iper=0):
     group = core.dicaddin['Model']['group']
     if core.addin.mesh == None : # OA 29/2/20 added mstType rect
         return blockRegular(core,modName,line,intp,opt,iper)
-    elif core.MshType==0:
+    elif modName[:4]=='Open' and core.MshType==0: # for openfoam
         m = blockRegular(core,modName,line,intp,opt,iper)
-        (l,r,c) = shape(m)
-        return reshape(m[:,::-1,:],(l,r*c)) # OA 22/2/22
+        shp = getOpfGeom(core)
+        m = reshape(m,shp)
+        if core.addin.getDim() in ['Xsection','Radial']:return m[:,-1::-1,:]
+        else: return m
     else : #mfUnstruct or modName[:5]=='Opgeo':
         return blockUnstruct(core,modName,line,intp,opt,iper)
+    
+def getOpfGeom(core):
+        '''send back the geometry, transforms xsect and radial to vertical
+        '''
+        grd = core.addin.getFullGrid()
+        ncol, nrow = grd['nx'], grd['ny']
+        nlay=getNlayers(core);#print iper, nlay,ncol,nrow
+        if core.addin.getDim() in ['Xsection','Radial']:
+            nrow=ncol;ncol=nlay;nlay=1;
+        return (nlay,ncol,nrow)
     
 def block1(core,modName,line,intp=False,opt=None,nvar=2):
     #a special block for n variables (2 for drn,ghb or chd, 3 for riv)

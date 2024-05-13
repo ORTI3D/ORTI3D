@@ -13,14 +13,14 @@ class plugins:
         self.pl_list=['Coupling']#,'Immobile oil'] #'sorptionAW'
         for pl_name in self.pl_list:
             if pl_name not in core.dicplugins.keys():
-                core.dicplugins[pl_name]={'active':False,'data':None}
+                core.dicplugins[pl_name]={'active':False,'data':[]}
     
     def setGui(self,gui):
         self.gui= gui
         cfg = Config(self.core)
         if gui != None:
             self.dialogs = cfg.dialogs
-        
+                    
     def action(self):
         '''this is the action when the plugin is called (generally a dialog)'''
         pl_name = self.gui.menuBar().sender().text()[1:];
@@ -58,18 +58,30 @@ class plugins:
                 self.core.dicplugins[pl_name]['data']=float(retour[1])
                 
         if pl_name=='Coupling':
-            act=self.core.dicplugins[pl_name]['active']
-            data = [('Use coupling?','Check',act)] 
-            dialg = self.dialogs.genericDialog(self.gui,'Coupling',data)
+            act=0
+            if pl_name in self.core.dicplugins.keys():
+                act=self.core.dicplugins[pl_name]['active']
+            else : 
+                self.core.dicplugins[pl_name]={'active':0,'data':[]}
+            #first dialog
+            quest = [('Use coupling?','Check',act)] 
+            dialg = self.dialogs.genericDialog(self.gui,'Coupling',quest)
             retour = dialg.getValues()
             if retour != None:
                 self.core.dicplugins[pl_name]['active']=retour[0]
-            d = self.core.dicplugins[pl_name]['data']
             dic = {'hEqn':{}}
-            dic['hEqn']['rows']=['0','1']
-            dic['hEqn']['cols']=['Ykey','Xvar','Xref','typ','nparms','a0','a1','a2']
-            dic['hEqn']['data']=[['muw','T',25,'linear',1,-1e-3],
-                    ['muw','C',0,'linear',1,1e-2]]
+            dic['hEqn']['rows']=['','','']
+            dic['hEqn']['cols']=['Chk','Ykey','Xvar','Xref','typ','nparms','a0','a1','a2']
+            dic['hEqn']['data']=[[False,'muw','T',25,'linear',1,-1e-3],
+                    [False,'muw','C',0,'linear',1,1e-2],
+                    [False,'K','eps',0,'kozeny',0,0]]
+            #print("dic plug ",dic)
+            dics = self.core.dicplugins[pl_name]['data']
+            if len(dics)>0:
+                for k in dic.keys():
+                    if k in dics.keys(): 
+                        for i,l in enumerate(dics[k]['data']):
+                            dic[k]['data'][i]=l
             dialg = self.dialogs.myNoteBook(self.gui,"coupling",dic)
             retour = dialg.getValues()
             if retour != None:
@@ -98,13 +110,15 @@ class plugins:
             f1.write(s);f1.close()
             
         if pl_name=='Coupling':
+            if pl_name not in self.core.dicplugins.keys(): return
             if self.core.dicplugins[pl_name]['active']==0: return
             lDic = self.core.dicplugins[pl_name]['data']
             s = ''
             for k in lDic.keys():
                 dic=lDic[k];print(dic)
                 for d in dic['data']:
-                    s +=' '.join(str(a) for a in d)+'\n'
+                    if d[0]: #d[0] is to check state
+                        s +=' '.join(str(a) for a in d[1:])+'\n'
             f1=open(self.core.fileDir+'constant\\options\\coupling','w')
             f1.write(s);f1.close()
             
