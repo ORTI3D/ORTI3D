@@ -724,13 +724,14 @@ class opfoamWriter:
                     mat1 = self.ttable['sfix']
                     lcell1,ncell1,zcell1 = self.getOptionCells('sfix','sfix')
                     self.solucell,self.solunb = lcell1,zcell1 # store for later use
-                    lcell2,ncell2,zcell2 = lcell1.copy(),ncell1.copy(),zcell1.copy()
-                    mat2 = mat1.copy()
+                    lcell2,ncell2,zcell2,flg = [],[],[],0
                     for iw,w in enumerate(lcell1):# replace by c in corresponding zone
-                        if w in lcell: 
-                            mat[:,lcell.index(w)] = mat1[:,iw] 
-                            lcell2.pop(iw);ncell2.pop(iw);zcell2.pop(iw)
-                            mat2=delete(mat2,iw,1)
+                        if w in lcell:  # !! w is a list
+                            mat[:,lcell.index(w)] = mat1[:,iw] # replace column in mat correspondng ot the zone
+                        else:
+                            lcell2.append(w);ncell2.append(ncell1[iw]);zcell2.append(zcell1[iw])
+                            if flg==0: mat2=mat1[:,iw:iw+1];flg=1
+                            else : mat2=c_[mat2,mat1[:,iw]]
                     if len(lcell2)>0:
                         self.writeOptionData(mat2,lcell2,ncell2,zcell2,'sfix',formt='float')
                 self.writeOptionData(mat,lcell,ncell,zcell,'shfix',formt='float') # rint even if no sfix cells
