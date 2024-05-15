@@ -336,10 +336,9 @@ class qtVisualisation(FigureCanvasQTAgg):
     def drawMap(self, bool):
         if self.Map == None: self.createMap()
         else :
-            #self.cnv.images=[self.Map] #
-            print("in drawMap")
-            self.cnv.images[0].set_visible(bool)
-            #self.redraw()
+            if len(self.cnv.images)>0:
+                self.cnv.images[0].set_visible(bool)
+            self.redraw()
 
     def createImage(self,data):
         #print 'vis img',len(xt),len(yt),shape(mat)

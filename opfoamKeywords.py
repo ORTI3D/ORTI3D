@@ -143,7 +143,7 @@ class  OpT:
                 'detail':[['model','none','millington10','millington7']],
                 'type':['choice'],'default':[1]},
         'diffu.2':{'comm':'D0 values','cond':'','kw':['ODFFW','ODFFG'],
-                'detail':[],'type':['float','float'],'default':[1e-10,1e-6],
+                'detail':['Dw m2/s','Dg m2/s'],'type':['float','float'],'default':[1e-10,1e-6],
                 'units':['m2/s','m2/s']},
                    
         'cactiv':{'comm':'active zone','cond':'','kw':['OCACT'],

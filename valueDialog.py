@@ -288,4 +288,5 @@ class valueDialog:
                 typ = 'text'
             else :
                 bcontent = curVal
+            txt += ' : '+det1
         return txt,bcontent,bselect,typ # OA 6/11/18 changed order
