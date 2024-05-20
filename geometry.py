@@ -384,7 +384,7 @@ def zone2mesh(core,modName,line,media=0,iper=0,loc='elements',opt=None,var=0): #
             v1 = v.split('$')[1].split('\n')[var] # OA 16/1/21
             try : zval.append(float(v1))
             except ValueError : pass
-        elif '\n' in v: # a transient zone added OA 20/2/20
+        elif '\n' in v: # a transient zone, added OA 20/2/20
             zval.append(float(core.ttable[line][iper,iz]))
         else : 
             zval.append(float(v))
@@ -531,9 +531,10 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
                     if diczone['name'][i] in opt: 
                         zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
             else :
-                if line in ['drn.1','riv.1','ghb.1']: #EV 26/11/20
-                    zv0=float(core.ttable[line][iper,i].split()[opt])
-                else : zv0=float(core.ttable[line][iper,i])
+                if line[:3] in ['drn','riv','ghb']: #EV 26/11/20
+                    zv0=float(core.ttable[line][iper,i].split()[0])
+                else : 
+                    zv0=float(core.ttable[line][iper,i])
         if line!='obs.1' and opt=='zon': zv0=i+1 # OA removed  10/2/22
         #if type(zv0)!=type(5.) and '$' in diczone['value'][i]: zv0 = float(diczone['value'][i].split('$')[2])# added 17/04/2017
         #else : zv0 = float(diczone['value'][i])
