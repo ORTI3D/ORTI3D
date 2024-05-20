@@ -311,7 +311,7 @@ class opfoamWriter:
         s = 'FoamFile{version 2.0;format ascii;class uniformDimensionedVectorField;'
         s += 'location \"constant\"; object g;}\n'
         s += ' dimensions [0 1 -2 0 0 0 0];\n value '
-        self.g = 9.81/self.lu*self.dtu**2
+        self.g = self.core.getValueFromName('OpenFlow','OFGRAV',0)/self.lu*self.dtu**2
         #if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
         #    self.g = float(self.core.dicval['OpenFlow']['press.3'][0]) #*self.dtu**2
         sg =  '{:+.4g}'.format(-self.g)
@@ -329,17 +329,22 @@ class opfoamWriter:
         # g m.d-2; mu kg.m-1.d-1 -> k*rho*g/mu=m.d-1 donc ok
         # permeability given in L(m,cm..)/T (d,h,min..)
         # K (m/s) *g*rho_wbase/mu_wbase)->m2; K_orti *self.lu/self.dtu -> m/s
-        vrt = self.getVariable('OpenFlow','khy.3');kv=vrt*1
-        if self.orientation[0]=='X' and self.core.getValueFromName('OpenFlow','ONCOL',0)==1: 
-            K=vrt*muw/(rhow*self.g)
-        else :
-            K = self.getVariable('OpenFlow','khy.2')*muw/(rhow*self.g);self.K=K # 
+        g0=9.81/self.lu*self.dtu**2
+        K = self.getVariable('OpenFlow','khy.2')*muw/(rhow*g0);self.K=K # 
+        vrt = self.getVariable('OpenFlow','khy.3');
+        if self.orientation[0]=='3D':
             for il in range(self.nlay):
                 r = range((self.nlay-il-1)*self.ncell_lay,(self.nlay-il)*self.ncell_lay)
                 if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
-                    kv[r] = vrt[r]*muw/(rhow*self.g) # 
+                    kv[r] = vrt[r]*muw/(rhow*g0) #don't put g, it can be 0 
                 else : # ratio
                     kv[r] = K[r]/vrt[r]
+        else :
+            if self.core.dicval['OpenFlow']['khy.1'][0] == 1:  # Kv type value
+                kv = vrt*muw/(rhow*g0) #don't put g, it can be 0 
+            else : # ratio
+                kv = K/vrt
+            
         self.writeScalField('constant','Kh',K,self.bcD0,dim='[0 2 0 0 0 0 0]')
         self.writeScalField('constant','Kv',kv,self.bcD0,dim='[0 2 0 0 0 0 0]')
         storC = self.getVariable('OpenFlow','khy.4')
@@ -488,11 +493,11 @@ class opfoamWriter:
             if indx[iz]>=0:
                 val =valgrid[bcgrid==iz+1]
                 if len(val)>1:
-                    lval=' '.join([str(v) for v in val])
+                    lval=' '.join(['{:.4e}'.format(v) for v in val])
                     lst= 'List<scalar> '+str(len(val*mult))+'('+lval+')'
                     cond={'type':'fixedValue','value':'nonuniform '+lst}
                 else :
-                    cond={'type':'fixedValue','value':'uniform '+str(val[0]*mult)}                    
+                    cond={'type':'fixedValue','value':'uniform '+'{:.4e}'.format(val[0]*mult)}                    
                 dicBC['bc'+str(indx[iz])]=cond
         return dicBC
         
@@ -597,7 +602,8 @@ class opfoamWriter:
             vr = 'h';vr1 = 'hp';vfix='head.2'
         else : 
             vr = 'h';vr1='h';vfix='head.2'
-        if vfix in self.core.diczone['OpenFlow'].dic.keys():
+        diczone = self.core.diczone
+        if vfix in diczone['OpenFlow'].dic.keys():
             add=[]
             lcell,ncell,zcell = self.getOptionCells(vfix,vr+'fix')
             if vr=='p' and self.core.dicval['OpenFlow']['fprm.1'][1]==1: # need to equilibrate pressure
@@ -612,16 +618,28 @@ class opfoamWriter:
                 mult.append([a]*ncell[iz])
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
 
-        if 'wel' in self.core.diczone['OpenFlow'].dic.keys():
+        if 'wel' in diczone['OpenFlow'].dic.keys():
             lcell,ncell,zcell = self.getOptionCells('wel',vr+'wel')
             qmat = self.ttable['wel'];nr,nz = shape(qmat)
             mult = [];
             for iz in range(nz) : 
                 kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
-                mult.append(kr) #*(self.lu**3)/self.dtu)
+                mult.append(kr)
             self.writeOptionData(qmat,lcell,ncell,zcell,vr+'wel',mult=mult)
+
+        if 'wel2p' in diczone['OpenFlow'].dic.keys():
+            lcell,ncell,zcell = self.getOptionCells('wel2p','pwel')
+            qmat = self.ttable['wel2p'];nr,nz = shape(qmat)
+            mult,mult2 = [],[];
+            for iz in range(nz) : 
+                kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
+                mult.append(kr)
+                val = diczone['OpenFlow'].dic['wel2p']['value'][0].split('$')[1][:-2]
+                mult2.append(kr*float(val))
+            self.writeOptionData(qmat,lcell,ncell,zcell,'pwel',mult=mult)
+            self.writeOptionData(qmat,lcell,ncell,zcell,'fwel',mult=mult2)
             
-        if ('rch' in self.core.diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
+        if ('rch' in diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
             lcell,ncell,zcell = self.getOptionCells('rch','hrch')
             vbase = self.core.dicval['OpenFlow']['rch'][0]
             if 'rch' in self.ttable.keys():
@@ -646,7 +664,7 @@ class opfoamWriter:
                 lcell,ncell,zcell = self.getOptionCells(n,'h'+n)
                 mat = self.ttable[n];nr,nz = shape(mat);
                 mult, mult2 = [],[]
-                dicz = self.core.diczone['OpenFlow'].dic[n]
+                dicz = diczone['OpenFlow'].dic[n]
                 for iz in range(len(lcell)) : 
                     if len(lcell[iz])==0:
                         mult.append([]);mult2.append([]);continue
@@ -704,7 +722,7 @@ class opfoamWriter:
                         self.writeOptionData(mat,lcell,ncell,zcell,typ+n,formt='int')
 
                 a = typ+'rch'
-                if (a in self.core.diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
+                if (a in diczone['OpenTrans'].dic.keys()) or (self.core.dicval['OpenTrans']['crch'][0] != 0):
                     lcell,ncell,zcell = self.getOptionCells(a,a)
                     vbase = self.core.dicval['OpenTrans'][a][0]
                     if a in self.ttable.keys():
@@ -803,7 +821,7 @@ class opfoamWriter:
                     else : zv1 = [0]*(idx[1]-idx[0])
                     zcell[iz-1].extend(zv1)
                     #zcell.extend(zv1)
-        else :#unstructured
+        else : #unstructured
             lcell,ncell,zcell = [],[],[]
             for iz in range(len(dicz['name'])):
                 lmedia = dicz['media'][iz];
@@ -845,12 +863,6 @@ class opfoamWriter:
                 lcell.append(list(lc_toplay))
                 ncell.append(len(lc_toplay))
                 zcell.append(0)
-#        s ='FoamFile{version 2.0;format ascii;class cellSet;location \"constant/polyMest/sets\";object '+fname+';}\n'
-#        s += '\n'+str(sum(ncell))+'\n(\n'
-#        s += '\n'.join([str(a) for lc1 in lcell for a in lc1])+'\n)'
-#        fD1 = self.fDir+'constant\\polyMesh\\'
-#        if 'sets' not in os.listdir(fD1): os.mkdir(fD1+'sets')
-#        f1=open(self.fDir+'constant\\polyMesh\\sets\\'+fname,'w');f1.write(s);f1.close()
         return lcell,ncell,zcell
     
     def writeOptionData(self,mat,lcell,ncell,zcell,fname,mult=None,mult2=None,formt='float',add=[]): 

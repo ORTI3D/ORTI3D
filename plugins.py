@@ -10,7 +10,7 @@ class plugins:
     
     def __init__(self,core):
         self.core = core
-        self.pl_list=['Coupling']#,'Immobile oil'] #'sorptionAW'
+        self.pl_list=['Coupling','Foam']#,'Immobile oil'] #'sorptionAW'
         for pl_name in self.pl_list:
             if pl_name not in core.dicplugins.keys():
                 core.dicplugins[pl_name]={'active':False,'data':[]}
@@ -24,16 +24,6 @@ class plugins:
     def action(self):
         '''this is the action when the plugin is called (generally a dialog)'''
         pl_name = self.gui.menuBar().sender().text()[1:];
-        if pl_name=='sorptionAW':
-            act=self.core.dicplugins[pl_name]['active']
-            data = [('Use Air-Water sorption?','Check',act)] 
-            dialg = self.dialogs.genericDialog(self.gui,'AWsorption',data)
-            retour = dialg.getValues()
-            if retour != None:
-                self.core.dicplugins[pl_name]['active']=True
-                dk={'kw':'OISAW','detail':['Air-water sorption','no','active'],'type':'choice','default':0}
-                self.core.dickword['OpenTrans'].addKeyword('rct.1',dk)
-                self.core.addin.setMtSpeciesList(['Koc','RC1','RC2','AW_a','AW_b'])
                 
         if pl_name=='immobile':
             act=self.core.dicplugins[pl_name]['active']
@@ -85,7 +75,26 @@ class plugins:
             dialg = self.dialogs.myNoteBook(self.gui,"coupling",dic)
             retour = dialg.getValues()
             if retour != None:
-                self.core.dicplugins[pl_name]['data']=retour          
+                self.core.dicplugins[pl_name]['data']=retour  
+                
+        if pl_name=='Foam':
+        # foam injection
+            if pl_name in self.core.dicplugins.keys():
+                act=self.core.dicplugins[pl_name]['active']
+                d = self.core.dicplugins[pl_name]['data']
+            else : 
+                d=[1e4,1000,0.35,1e-4,1e4];act=0
+                self.core.dicplugins[pl_name]={'active':0,'data':d}
+            data = [('Use Foam?','Check',act),
+                    ('Fmmob','Text',d[0]),('epdry','Text',d[1]),
+                    ('Fmdry','Text',d[2]),('Cref','Text',d[3]),
+                    ('Fc','Text',d[4])] 
+            dialg = self.dialogs.genericDialog(self.gui,'Foam',data)
+            retour = dialg.getValues()
+            if retour != None:
+                self.core.dicplugins[pl_name]['active']=retour[0]
+                self.core.dicplugins[pl_name]['data']=retour[1:]
+            #print(self.core.dicplugins)
             
     def writer(self,pl_name):
         '''this is called when opfoam writes its files'''
@@ -122,4 +131,8 @@ class plugins:
             f1=open(self.core.fileDir+'constant\\options\\coupling','w')
             f1.write(s);f1.close()
             
-        
+        if pl_name=='Foam':
+            s='\n'.join(self.core.dicplugins[pl_name]['data'])
+            f1=open(self.core.fileDir+'constant\\options\\foam','w')
+            f1.write(s);f1.close()
+       

@@ -42,11 +42,12 @@ class Pest:
         if self.core.dicaddin['Pback1'] != {}:
             return self.core.dicaddin['Pback1']
         else :
-            dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+            dic = {'OpenFlow':{},'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+            OPFlist=['khy.2']
             MFlist=['lpf.8','lpf.9','lpf.10','lpf.11','bas.5','rch.2','wel.1']
             MTlist=['btn.11','btn.13','dsp.2','dsp.3','dsp.4','vsc.3a','rct.2b']
             PHlist=[]#'Rates','Solutions','Kinetic_Minerals','Phases','Surface'] #EV 23/09/19
-            modlist=[MFlist,MTlist,PHlist]
+            modlist=[OPFlist,MFlist,MTlist,PHlist]
             for i,md in enumerate (list(dic.keys())) :
                 Mlines=self.core.dickword[md].lines ; comm=[]
                 l0 = modlist[i]#list(self.core.dickword[md].lines.keys())
@@ -57,21 +58,8 @@ class Pest:
                 dic[md] = list(zip(comm,[False]*len(l0)))
             return dic
         
-    def getDicBack1_old(self):
-        '''Return a dic to choose the lines that will be used to vary parameters'''
-        if self.core.dicaddin['Pback1'] != {}:
-            #print ('exist1', self.core.dicaddin['Pback1'])
-            return self.core.dicaddin['Pback1']
-        else :
-            dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
-            for md in list(dic.keys()) :
-                l0 = list(self.core.dickword[md].lines.keys())
-                dic[md] = list(zip(l0,[False]*len(l0)))
-            #print ('dic1',dic)
-            return dic
-
     def getDicBack2(self):
-        dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+        dic = {'OpenFlow':{},'Modflow':{},'Mt3dms':{},'Pht3d':{}}
         cols = ['Use','media','value','min','max','Transf','Group'] #EV 25/07/19
         nbMed = len(self.core.dicaddin['3D']['topMedia']) #EV 06/11
         if self.core.dicaddin['Pback2'] != {}:
@@ -125,7 +113,7 @@ class Pest:
                             dic1[md].append((comm,False))
             return dic1
         else :
-            dic = {'Modflow':{},'Mt3dms':{},'Pht3d':{}}
+            dic = {'OpenFlow':{},'Modflow':{},'Mt3dms':{},'Pht3d':{}}
             for md in list(dic.keys()) :
                 l0 = list(self.core.diczone[md].dic.keys())
                 Mlines=self.core.dickword[md].lines ; comm=[]
@@ -219,6 +207,7 @@ class Pest:
         format for zones ['MF,MT,PH]_line_zo_[v,x,y]_zname
         if PH [k,s,p,m,u,i]'''
         self.dicCatg={ #EV 06/11
+           'Khy.2': 'Kh',   #value of horizontal hydraulic conductivity 
            'lpf.8': 'Kh',   #value of horizontal hydraulic conductivity 
            'lpf.9': 'Kv',   #value of vertical hydraulic conductivity
            'lpf.10': 'Ss',  #value of 1nd storage coefficient
