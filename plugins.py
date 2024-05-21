@@ -59,12 +59,15 @@ class plugins:
             retour = dialg.getValues()
             if retour != None:
                 self.core.dicplugins[pl_name]['active']=retour[0]
-            dic = {'hEqn':{}}
+            dic = {'hEqn':{},'CgEqn':{}}
             dic['hEqn']['rows']=['','','']
             dic['hEqn']['cols']=['Chk','Ykey','Xvar','Xref','typ','nparms','a0','a1','a2']
             dic['hEqn']['data']=[[False,'muw','T',25,'linear',1,-1e-3],
                     [False,'muw','C',0,'linear',1,1e-2],
                     [False,'K','eps',0,'kozeny',0,0]]
+            dic['CgEqn']['rows']=['']
+            dic['CgEqn']['cols']=['Chk','Ykey','Xvar','Xref','typ','nparms','a0','a1','a2']
+            dic['CgEqn']['data']=[[False,'Deffg','T',25,'linear',1,-1e-3]]
             #print("dic plug ",dic)
             dics = self.core.dicplugins[pl_name]['data']
             if len(dics)>0:
