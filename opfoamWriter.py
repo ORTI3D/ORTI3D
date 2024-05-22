@@ -321,8 +321,8 @@ class opfoamWriter:
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         #self.writeScalField('constant','eps',self.eps,self.bcD0)
-        rhow = self.core.getValueFromName('OpenFlow','OFRHOW',0)**self.lu**3
-        rhog = self.core.getValueFromName('OpenFlow','OFRHOG',0)**self.lu**3
+        rhow = self.core.getValueFromName('OpenFlow','OFRHOW',0)*self.lu**3
+        rhog = self.core.getValueFromName('OpenFlow','OFRHOG',0)*self.lu**3
         muw = self.core.getValueFromName('OpenFlow','OFMUW',0)*self.lu*self.dtu
         mug = self.core.getValueFromName('OpenFlow','OFMUG',0)*self.lu*self.dtu
         # g m.s-2, rho kg.m-3; mu kg.m-1.s-1; k m2 -> k*rho*g/mu=m.s-1
@@ -389,15 +389,15 @@ class opfoamWriter:
             s += 'sw_max '+str(core.dicval['OpenFlow']['uns.1'][1])+';\n'
             #s += 'alpha_vg alpha_vg [0 -1 0 0 0 0 0] '+str(core.dicval['OpenFlow']['uns.3'][0])+';\n'
             #s += 'n_vg '+str(core.dicval['OpenFlow']['uns.4'][0])+';\n'
-        s += 'rhowRef rhowRef [1 -3 0 0 0 0 0] '+str(rhow)+';\n'
-        s += 'muwRef muwRef [1 -1 -1 0 0 0 0] '+str(muw)+';\n'
+        s += 'rhowRef rhowRef [1 -3 0 0 0 0 0] '+'{:.4g}'.format(rhow)+';\n'
+        s += 'muwRef muwRef [1 -1 -1 0 0 0 0] '+'{:.4g}'.format(muw)+';\n'
         s += 'rhog	rhog [1 -3 0 0 0 0 0] '+str(rhog)+';\n'
         s += 'mug mug [1 -1 -1 0 0 0 0] '+str(mug)+';\n'
         if self.group in ['Chem','Trans']:
             s += 'alphaL alphaL [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][0])+';\n'
             s += 'alphaT alphaT [0 1 0 0 0 0 0] '+str(core.dicval['OpenTrans']['dsp'][1])+';\n'
-            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][0]*self.dtu)+';\n'
-            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+str(core.dicval['OpenTrans']['diffu.2'][1]*self.dtu)+';\n'            
+            s += 'Dw0 Dw0 [0 2 -1 0 0 0 0] '+'{:.4g}'.format(core.dicval['OpenTrans']['diffu.2'][0]*self.dtu/self.lu**2)+';\n'
+            s += 'Dg0 Dg0 [0 2 -1 0 0 0 0] '+'{:.4g}'.format(core.dicval['OpenTrans']['diffu.2'][1]*self.dtu/self.lu**2)+';\n'            
             s += 'diffusionEqn '+str(core.dicval['OpenTrans']['diffu.1'][0])+';\n'
         if self.group == 'Chem':
             s += 'activateTransport 1;\n'
@@ -639,6 +639,11 @@ class opfoamWriter:
             self.writeOptionData(qmat,lcell,ncell,zcell,'pwel',mult=mult)
             self.writeOptionData(qmat,lcell,ncell,zcell,'fwel',mult=mult2)
             
+        if 'uns.6' in diczone['OpenFlow'].dic.keys(): #sw fix
+            lcell,ncell,zcell = self.getOptionCells('uns.6','ffix')
+            qmat = self.ttable['uns.6'];nr,nz = shape(qmat)
+            self.writeOptionData(qmat,lcell,ncell,zcell,'ffix')
+
         if ('rch' in diczone['OpenFlow'].dic.keys()) or (self.core.dicval['OpenFlow']['rch'][0] != 0):
             lcell,ncell,zcell = self.getOptionCells('rch','hrch')
             vbase = self.core.dicval['OpenFlow']['rch'][0]
@@ -793,7 +798,7 @@ class opfoamWriter:
         for each considered zone, ncell the nb of these cells
         lcell is ordered in opf order, i.e. highest nb is higher layer
         '''
-        if line[:3] in ['hea','pre','wel','rch','ghb','riv','drn']: modName = 'OpenFlow'
+        if line[:3] in ['hea','pre','wel','rch','ghb','riv','drn','uns']: modName = 'OpenFlow'
         if line[0] in ['c','t']: modName = 'OpenTrans'
         if len(line)==4 and line[0] in ['s','g']: modName = 'OpenChem'
         d0 = self.core.diczone[modName].dic

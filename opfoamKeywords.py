@@ -18,7 +18,7 @@ class  OpF:
         'GHB':['ghb'],
         'RIV':['riv'],
         'DRN':['drn'],
-        'UNS':['uns.'+str(i) for i in range(1,6)], # unsaturated
+        'UNS':['uns.'+str(i) for i in range(1,7)], # unsaturated
         'FSLV':['fslv.'+str(i) for i in range(1,4)] # solver
         }
         self.lines={
@@ -102,6 +102,8 @@ class  OpF:
         'uns.4':{'comm':'n_vg','cond':'','kw':['ONVG'],
                  'detail':[],'type':['arrfloat'],'default':[1.5]},
         'uns.5':{'comm':'sw_init','cond':'','kw':['OSWINI'],
+                 'detail':[],'type':['arrfloat'],'default':[1.]},
+        'uns.6':{'comm':'sw_fix','cond':'','kw':['OSWFIX'],
                  'detail':[],'type':['arrfloat'],'default':[1.]},
         'fslv.1':{'comm':'solver for h','cond':'','kw':['SOFS','SOFPRE','SOFTOL','SOFRTOL','SOFSIMP'],
                  'detail':[['solver','PBiCGStab'],['preconditioner','DIC','DILU'],
