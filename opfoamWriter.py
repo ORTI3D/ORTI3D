@@ -220,7 +220,7 @@ class opfoamWriter:
                   'deltaT':fslt[0], #*self.dtu
                   'maxCo':fslt[2],'maxDeltaT':fslt[1]} #*self.dtu
         tslv = self.core.dicval['OpenTrans']['tslv']
-        if self.group=='Trans':  ctrlDict['dCmax'] = tslv[4]      
+        if self.group in ['Trans','Chem']:  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             f1=open(self.fDir+os.sep+'endSteadyF');s=f1.read();f1.close()
             ctrlDict['startTime'] = s
@@ -431,6 +431,7 @@ class opfoamWriter:
         swi=self.getVariable('OpenFlow','uns.5')
         # head h or pressure
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
+            self.atmPa = 101325 # atm to Pa
             h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation in ['Xsection','Radial']:
                 self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
@@ -443,10 +444,11 @@ class opfoamWriter:
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
+            p0 = self.atmPa/self.lu*self.dtu**2
+            self.writeScalField('0','p',p0,self.bcD0,dim='[1 -1 -2 0 0 0 0]')
             self.writeScalField('0','sw',swi,self.bcD0,'[0 0 0 0 0 0 0]')
         elif self.core.dicaddin['Model']['type'] == '2phases': 
             #!!! pressure is given in atm
-            self.atmPa = 101325 # atm to Pa
             p0 = self.getVariable('OpenFlow','press.1')*self.atmPa/self.lu*self.dtu**2
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
