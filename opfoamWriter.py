@@ -430,8 +430,8 @@ class opfoamWriter:
         self.writeScalField('0','eps',self.eps,self.dicBC,dim='[0 0 0 0 0 0 0]')
         swi=self.getVariable('OpenFlow','uns.5')
         # head h or pressure
+        self.atmPa = 101325 # atm to Pa
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
-            self.atmPa = 101325 # atm to Pa
             h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation in ['Xsection','Radial']:
                 self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
