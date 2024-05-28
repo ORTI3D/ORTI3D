@@ -81,7 +81,8 @@ class opfoamWriter:
             if self.core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
                 self.writeThermal()
         if self.group in ['Trans','Chem']: 
-            if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
+            #if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
+            if 'data' in self.core.dicaddin['MtReact'].keys():
                 self.writeSorptionDecay()
         for pl_name in self.core.plugins.pl_list:
             if pl_name not in self.core.dicplugins.keys(): continue
@@ -629,15 +630,15 @@ class opfoamWriter:
                 mult.append(kr)
             self.writeOptionData(qmat,lcell,ncell,zcell,vr+'wel',mult=mult)
 
-        if 'wel2p' in diczone['OpenFlow'].dic.keys():
-            lcell,ncell,zcell = self.getOptionCells('wel2p','pwel')
+        if 'wel2p' in diczone['OpenFlow'].dic.keys(): # 1st Qtot 2nd fraction water
+            lcell,ncell,zcell = self.getOptionCells('wel2p','pwel') 
             qmat = self.ttable['wel2p'];nr,nz = shape(qmat)
             mult,mult2 = [],[];
             for iz in range(nz) : 
                 kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
                 mult.append(kr)
-                val = diczone['OpenFlow'].dic['wel2p']['value'][0].split('$')[1][:-2]
-                mult2.append(kr*float(val))
+                val = diczone['OpenFlow'].dic['wel2p']['value'][0].split('$')[1].split('\n')
+                mult2.append(kr*float(val[1]))
             self.writeOptionData(qmat,lcell,ncell,zcell,'pwel',mult=mult)
             self.writeOptionData(qmat,lcell,ncell,zcell,'fwel',mult=mult2)
             
