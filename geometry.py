@@ -531,7 +531,7 @@ def zone2grid(core,modName,line,media,opt=None,iper=0):
                     if diczone['name'][i] in opt: 
                         zv0= int(diczone['name'].index(diczone['name'][i]))+1  #; print('zv0',diczone['name'][i],zv0)
             else :
-                if line[:3] in ['drn','riv','ghb']: #EV 26/11/20
+                if '$' in diczone['value'][i]: #EV 26/11/20
                     zv0=float(core.ttable[line][iper,i].split()[0])
                 else : 
                     zv0=float(core.ttable[line][iper,i])

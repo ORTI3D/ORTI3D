@@ -77,7 +77,7 @@ class  OpF:
         'wel':{'comm':'Wells','cond':'OFPMS<2','kw':['OWELL'],
                  'detail':[],'type':['arrfloat'],'default':[0.],'units':['L3/T']},
         'wel2p':{'comm':'Wells 2 phase','cond':'OFPMS==2','kw':['OWELL2P'],
-                 'names':['waterFraction'],
+                 'names':['Qtot','waterFraction'],
                  'detail':[],'type':['arrfloat'],'default':[0.],'units':['L3/T']},
         'rch':{'comm':'Recharge','cond':'','kw':['ORCH'],
                  'detail':[],'type':['arrfloat'],'default':[0.],'units':['L/T']},

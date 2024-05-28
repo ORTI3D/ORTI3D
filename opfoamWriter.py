@@ -322,7 +322,7 @@ class opfoamWriter:
         # porosity
         self.eps = self.getVariable('OpenTrans','poro')
         #self.writeScalField('constant','eps',self.eps,self.bcD0)
-        rhow = self.core.getValueFromName('OpenFlow','OFRHOW',0)*self.lu**3
+        rhow = self.core.getValueFromName('OpenFlow','OFRHOW',0)*self.lu**3;self.rhow=rhow
         rhog = self.core.getValueFromName('OpenFlow','OFRHOG',0)*self.lu**3
         muw = self.core.getValueFromName('OpenFlow','OFMUW',0)*self.lu*self.dtu
         mug = self.core.getValueFromName('OpenFlow','OFMUG',0)*self.lu*self.dtu
@@ -453,7 +453,7 @@ class opfoamWriter:
             p0 = self.getVariable('OpenFlow','press.1')*self.atmPa/self.lu*self.dtu**2
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1:
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
-                p0 += ravel(dzm[-1::-1])*self.g*1e3 # opf is ordered from btoom to top
+                p0 += ravel(dzm[-1::-1])/9.81*self.atmPa/self.lu*self.dtu**2 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             self.dicBC=self.bcFromFixValues(self.dicBC,'press.2',mult=self.atmPa/self.lu*self.dtu**2)
             self.writeScalField('0','p',p0,self.dicBC,dim='[1 -1 -2 0 0 0 0]')
@@ -487,6 +487,7 @@ class opfoamWriter:
         for pressure it is necessary to have true fixed value BC at the cell 
         where fixed values were set. we use opf.bfaces last column=-(numBC+1)
         '''
+        print(mult)
         dicz = self.core.diczone['OpenFlow'].dic[line]
         bcgrid=zone2grid(self.core,'OpenFlow',line,0,opt='zon')
         valgrid=zone2grid(self.core,'OpenFlow',line,0)
@@ -496,8 +497,8 @@ class opfoamWriter:
             if indx[iz]>=0:
                 val =valgrid[bcgrid==iz+1]
                 if len(val)>1:
-                    lval=' '.join(['{:.4e}'.format(v) for v in val])
-                    lst= 'List<scalar> '+str(len(val*mult))+'('+lval+')'
+                    lval=' '.join(['{:.4e}'.format(v*mult) for v in val])
+                    lst= 'List<scalar> '+str(len(val))+'('+lval+')'
                     cond={'type':'fixedValue','value':'nonuniform '+lst}
                 else :
                     cond={'type':'fixedValue','value':'uniform '+'{:.4e}'.format(val[0]*mult)}                    
