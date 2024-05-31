@@ -567,11 +567,11 @@ class opfoamWriter:
             io = dicz['name'].index(obsp[i])
             x,y = dicz['coords'][io][0];media=dicz['media'][io]
             if self.MshType==0: #structured
-                ix,iy,a =zone2index(self.core,[x],[y],0)
+                ix,iy,a =zone2index(self.core,[x],[y],io)
                 s += obsp[i]+' '+str(iy[0]*grd['nx']+ix[0])+' '+str(media)+'\n'
-            else : #usntructured
-                idx,val=zmesh(self.core,dicz,media,0)
-                s += obsp[i]+' '+str(idx[0])+' '+str(media)+'\n'
+            else : #unstructured
+                idx,val=zmesh(self.core,dicz,media,io)
+                s += obsp[i]+' '+str(idx[0][0])+' '+str(media)+'\n'
         sct=r'constant/options'
         f1=open(self.fDir+sct+r'/obspts','w');f1.write(s);f1.close()
         # write the variables to be written
