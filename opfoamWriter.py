@@ -1317,7 +1317,7 @@ class opfReader:
         else : fn='ractive'
         dr=self.core.fileDir+os.sep+'constant'+os.sep+'options'; 
         fname=dr+os.sep+fn
-        if fname in os.listdir(dr):
+        if fn in os.listdir(dr):
             a=loadtxt(fname);self.phmask = a.astype('int')
             
     def getGeom(self,core):
@@ -1404,7 +1404,7 @@ class opfReader:
             return vx,vy,vz
 
         ntime=len(self.tlist)
-        vx,vy,vz = rd1(self.tlist[iper+1],'U'+opt)#*self.dtu
+        vx,vy,vz = rd1(self.tlist[iper],'U'+opt)#*self.dtu
         vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1] #*self.dtu
         vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
         vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
