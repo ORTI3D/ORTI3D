@@ -181,9 +181,12 @@ class qtBoxKeys:
             self.previousValues = copy.deepcopy(self.values)
 
         #nb = len(self.values) # OA 23/9/19 removed
+        #print("nb",self.nb)
         for i in range(self.nb):
-            but = self.lValBut[i]
-            val = self.values[i]
+            but = self.lValBut[i];
+            if i<len(self.values): val = self.values[i]
+            else : val =''
+            #print(i,self.types[i])
             if self.types[i] in ['choice','laychoice']: #OA 2/10/19 added laychoice
                 self.values[i] = but.currentIndex()
                 continue
@@ -191,7 +194,7 @@ class qtBoxKeys:
                 self.values = self.vect
                 continue
             elif self.types[i]=='textlong': # added 21/11/19
-                self.values = [but.document().toPlainText()]
+                self.values[i] = but.document().toPlainText()
                 continue
             if but.text() not in ['formula','zone','array']:
                 if self.types[i] in ['int','vecint','arrint']:
@@ -202,7 +205,7 @@ class qtBoxKeys:
                     val=str(but.text())  # OA 10/9/18 added str
             else :  
                 val=str(but.text());#print(val)  # OA 10/9/18 added str
-            self.values[i]=val*1
+            self.values[i]=val*1;#print("in qtvaldialog",i, self.values[i])
 
         # try SPH 231215: save after any modif of the values
         # self.sph_addSave()

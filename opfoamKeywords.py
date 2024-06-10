@@ -234,9 +234,9 @@ class  OpC:
         'CHSLV':['chslv'],
         }
         self.lines={
-        'chprm':{'comm':'Chem parameters','cond':'','kw':['OCHNSTP','OCKOPT'],
-                'detail':['reaction stp interval','kinet options'],
-                'type':['int','Textlong'],'default':[10,'-tol 1e-8']},
+        'chprm':{'comm':'Chem parameters','cond':'','kw':['OCHNSTP','OCKOPT','OCSELSPEC'],
+                'detail':['reaction stp interval','kinet options','SelectOutSpecies'],
+                'type':['int','textlong','textlong'],'default':[10,'-tol 1e-8','']},
         'sactiv':{'comm':'active zone','cond':'','kw':['OSACT'],
                 'detail':[],'type':['arrfloat'],'default':[0.]},
         'sinit':{'comm':'Initial solutions','cond':'','kw':['OISOL'],

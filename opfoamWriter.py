@@ -1036,8 +1036,10 @@ class opfoamWriter:
         s = ''
         s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
-        s += '-p '+' '.join(listE['p'])+'\n'
-        s += '-k '+' '.join(listE['kp'])+'\n\n'
+        if len(listE['p'])>0 : s += '-p '+' '.join(listE['p'])+'\n'
+        if len(listE['kp'])>0 :s += '-k '+' '.join(listE['kp'])+'\n\n'
+        s1 = core.getValueFromName('OpenChem','OCSELSPEC',0)
+        if s1!=None: s+= s1+'\n'
         chem = core.addin.pht3d.Base['Chemistry'];print(chem.keys())
         ncell = self.ncell_lay
         solu = chem['Solutions'];
@@ -1487,6 +1489,9 @@ class opTransReader(opfReader):
         lesp1.extend(lesp)
         lesp1.extend(self.listE['p'])
         lesp1.extend(self.listE['kp'])
+        s1 = self.core.getValueFromName('OpenChem','OCSELSPEC',0)
+        if s1 != None: lesp1.extend(s1[2:].split())
+
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
         elif '(g)' in specname: #gas species

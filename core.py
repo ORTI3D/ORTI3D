@@ -618,7 +618,9 @@ class Core:
             line,ik = self.KwList[modName][vName]  # OA 23/7/20 3 lines below modified
             if len(self.dickword[modName].lines[line]['kw'])==1 and option !=-1 : # case where we want a va lue for a given layer
                 val = self.dicval[modName][line][option]
-            else: val = self.dicval[modName][line][ik];#classical case get the true keyword value
+            else : 
+                if ik<len(self.dicval[modName][line]): val = self.dicval[modName][line][ik];#classical case get the true keyword value
+                else : val =None
             return val
             
     def getSingleValueFromName(self,modName,vName,nb): # OA 22/7/20 added nb

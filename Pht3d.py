@@ -242,12 +242,14 @@ class PHT3D:
     def getListSpecies(self,opt=None):
         dicE, listE = self.getDictSpecies(opt=opt),[]
         if opt==None: 
-            short=['k','i','kim','g','p','e','s','kp']
+            short=['k','i','kim','g','p','kp']
             for s in short: listE.extend(dicE[s])
         else : # case of opf the species are ardered differently
             for s in ['k','i','kim']: listE.extend(dicE[s])
             listE.sort()
-            for s in ['g','p','e','s','kp']: listE.extend(dicE[s])            
+            for s in ['g','p','kp']: listE.extend(dicE[s])  
+        s1 = self.core.getValueFromName('OpenChem','OCSELSPEC',0)
+        if s1 != None: listE.extend(s1[2:].split())
         return listE
         
     def importDB(self,fname):
