@@ -228,7 +228,7 @@ class  OpC:
     def __init__(self):
         self.grpList=['CHPRM','SOLU','GAS','CHSLV']
         self.groups={
-        'CHPRM':['chprm'],
+        'CHPRM':['chprm','chopt'],
         'SOLU':['sactiv','sinit','sfix','swel','srch','sghb','sriv'],
         'GAS':['ginit','gfix','gwel','grch'],
         'CHSLV':['chslv'],
@@ -263,4 +263,8 @@ class  OpC:
                  'detail':[['solver','PBiCG'],['preconditioner','DIC','DILU'],
                            'tolerance','relTol'],
                  'type':['choice','choice','float','float'],'default':[0,1,1e-12,0]},
+        'chopt':{'comm':'specific options','cond':'',
+                'kw':['SU_OPT','NB_SOLU','NB_PHASE','NB_EXCH','NB_SURF'], #EV 2/7/21
+                'detail':['surface option','nb solutions','nb phases','nb exchange','nb surfaces'],
+                'type':['string','int','int','int','int'],'default':['no_edl',4,4,4,4]},
         }

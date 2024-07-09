@@ -76,10 +76,13 @@ class PHT3D:
         kw=['Solutions','Rates','Phases','Exchange','Kinetic_Minerals','Surface','Gases']
         dbkw=['SOLUTION_MASTER_SPECIES','RATES','PHASES','EXCHANGE_SPECIES',\
               'RATES','SURFACE_MASTER_SPECIES','GASES']
-        nsolu = int(self.core.getValueFromName('Pht3d','NB_SOLU'))+1
-        nphase = int(self.core.getValueFromName('Pht3d','NB_PHASE'))
-        nexch = int(self.core.getValueFromName('Pht3d','NB_EXCH'))
-        nsurf = int(self.core.getValueFromName('Pht3d','NB_SURF'))
+        group = self.core.dicaddin['Model']['group']
+        if group[:4]=='Open': modn='OpenChem'
+        else : modn='Pht3d' 
+        nsolu = int(self.core.getValueFromName(modn,'NB_SOLU'))+1
+        nphase = int(self.core.getValueFromName(modn,'NB_PHASE'))
+        nexch = int(self.core.getValueFromName(modn,'NB_EXCH'))
+        nsurf = int(self.core.getValueFromName(modn,'NB_SURF'))
         for n in kw: 
             dic[n]={'rows':[],'cols':[],'data':[],'mmol':[]}
         # creating all lists for columns names
