@@ -194,6 +194,7 @@ class Ui_Show(object):
             value = self.guiShow.getGlist(group,name)['value'];#print('qtshow on change',value, color)
             dialg = dialogContour(self.gui, "Contours",value,color)
             value = dialg.GetStrings()
+            color = dialg.GetColors()
 #            if value != None:
 #                c = dlgContour.coul;
 #                color=[(c[0].Red(),c[0].Green(),c[0].Blue()),(c[1].Red(),c[1].Green(),c[1].Blue()),

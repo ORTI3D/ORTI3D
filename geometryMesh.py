@@ -19,7 +19,7 @@ from scipy import zeros,ones,array,arange,r_,c_,around,argsort,unique,cumsum,whe
 
 def gmeshString(core,dicD,dicM):
     """creates a gmesh string to use in gmesh to generate the mesh
-    dicD is the domain zones, containing points, lines and domain
+    dicD is the domain zones, cogetZntaining points, lines and domain
     dicM is the media zones dict, they will be used to build the grid"""
     s,p_list,p_link = '',[],[]
     i_domn = dicD['name'].index('domain') # search for the line called domain
@@ -544,7 +544,7 @@ class unstructured:
         fDir = self.core.fileDir
         for i in range(self.nlay): 
             fNameExt = core.dicarray[modName]['dis.6'][i] #tops
-            if '.' not in fNameExt: # not an array
+            if ('.' not in fNameExt) or (core.dictype[modName]['dis.6'][i] != 'importArray'): # not an array
                 z1 = (xx*0+1)*float(core.dicval[modName]['dis.6'][i])
             else:
                 if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign

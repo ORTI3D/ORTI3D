@@ -1080,10 +1080,12 @@ class impObsData(QDialog) :
 #//////////////////////////////////////////////////////////////////////
 class dialogContour(QDialog):
 
-    def __init__(self, parent, title, valeur, col):
+    def __init__(self, parent, title, valeur, col=None):
         """ liste contient les attributs actuels des contours : val : [0]min, 1:max,
         2: intervalles, [3]decimales, 4:log, 5:user puis couleurs et transparence"""
         self.listCtrl,self.valeur,self.parent = [], valeur,parent;
+        if col==None: self.colors=[(0,0,255),(0,255,0),(255,0,0),10]
+        else : self.colors = col
         QDialog.__init__(self)
         self.setWindowTitle("Contour")
         self.glWidget = QWidget(self)
@@ -1108,19 +1110,32 @@ class dialogContour(QDialog):
             Vl = QLineEdit(self.glWidget);Vl.setText(str(valeur[i]))
             self.listCtrl.append(Vl)
             self.gl.addWidget(Vl,i+1,1,1,1)
-            
+        # log choice    
         txt = QLabel(self.glWidget);txt.setText('log')
         self.gl.addWidget(txt,5,0,1,1)
         self.log = QCheckBox(self.glWidget);self.log.setCheckState(valeur[4]=='log')
         self.gl.addWidget(self.log,5,1,1,1)
-
+        # user list coice
         self.butlist = QPushButton('User List',self.glWidget) # OA 1/10/19 added user list
         self.butlist.clicked.connect(self.onListUser)
         self.gl.addWidget(self.butlist,6,0,1,1)
         self.user = QCheckBox(self.glWidget)
         self.user.setCheckState(valeur[4]=='fix')
         self.gl.addWidget(self.user,6,1,1,1)
-        
+        #colors
+        self.col0 = QPushButton('Color1',self.glWidget)
+        self.col0.setStyleSheet('background-color: rgb'+str(self.colors[0])+';')
+        self.col0.clicked.connect(self.onColor0)
+        self.gl.addWidget(self.col0,7,1,1,1)
+        self.col1 = QPushButton('Color2',self.glWidget)
+        self.col1.setStyleSheet('background-color: rgb'+str(self.colors[1])+';')
+        self.col1.clicked.connect(self.onColor1)
+        self.gl.addWidget(self.col1,8,1,1,1)
+        self.col2 = QPushButton('Color3',self.glWidget)
+        self.col2.setStyleSheet('background-color: rgb'+str(self.colors[2])+';')
+        self.col2.clicked.connect(self.onColor2)
+        self.gl.addWidget(self.col2,9,1,1,1)
+
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setOrientation(Qt.Horizontal)
         self.buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok)
@@ -1132,6 +1147,15 @@ class dialogContour(QDialog):
 
     def accept1(self): self.close(); self.state = 'accept'
     def reject1(self): self.close(); self.state = 'reject'
+    def onColor0(self): 
+        self.colors[0] = QColorDialog.getColor().getRgb()
+        self.col0.setStyleSheet('background-color: rgb'+str(self.colors[0])+';')
+    def onColor1(self): 
+        self.colors[1] = QColorDialog.getColor().getRgb()
+        self.col1.setStyleSheet('background-color: rgb'+str(self.colors[1])+';')
+    def onColor2(self): 
+        self.colors[2] = QColorDialog.getColor().getRgb()
+        self.col2.setStyleSheet('background-color: rgb'+str(self.colors[2])+';')
 
     def GetStrings(self):
         """renvoie les valeurs des boites et ajoute la liste user a la fin """
@@ -1148,8 +1172,9 @@ class dialogContour(QDialog):
             v[4]='fix';v[5]=self.listuser
         if self.log.checkState(): v[4]='log'
         if self.auto.checkState(): v[4]='auto'
-        #print v
         return v
+    
+    def GetColors(self): return self.colors
     
     def onListUser(self,event):
         """ opens a dialog to set some values"""
