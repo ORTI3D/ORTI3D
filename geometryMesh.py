@@ -287,6 +287,16 @@ class unstructured:
             
     def getCenters(self): return self.nodes[:,0],self.nodes[:,1]
     
+    def getNodeCoords(self,n_numb,opt='global'):
+        # return the coords of a node from its number : opt can be global or phreeqc
+        if opt=='phreeqc':
+            # load ractive if phreeqc
+            ractive = np.loadtxt(self.core.fileDir+'\\constant\\options\\ractive')
+            n_numb = int(ractive(n_numb))
+        nb1 = np.mod(n_numb,self.ncell_lay)
+        ilay = self.nlay-int(np.floor(n_numb/self.ncell_lay))
+        return (self.elcenters[nb1],ilay)
+        
     def getNumber(self,typ): 
         if typ == 'nodes': return len(self.nodes)
         if typ == 'elements': return self.ncell_lay

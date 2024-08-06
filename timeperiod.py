@@ -79,7 +79,8 @@ def makeTransientTable(core):
                         t = tlist[it]
                         if t in tl2:
                             v=vl2[tl2.index(t)];tbl[it,iz]=str(v);vprec=v
-                        else : tbl[it,iz]=str(vprec)
+                        else : 
+                            tbl[it,iz]=str(vprec)
             dZone[line]=tbl
     #print('dzonz',dZone)
     return dZone;#print 'Aq ztrans',dZone
@@ -88,6 +89,7 @@ def text2list(txt):
     '''from the text of a zone returns a list of transient vlaues'''
     if type(txt) in [type(1),type(1.)]: return[txt]
     if len(txt)==0: return [txt]
+    parms=''
     if txt[0]=='$': # OA 25/4/19 all the lines in if loop modif(several parameters case)
         a,b,c = txt.split('$')
         parms = b.replace('\n','') # only the 3rd part contains the value
@@ -99,6 +101,8 @@ def text2list(txt):
     lout = []
     #print txt,lout
     for n in a:
-        b = n.split()
-        if len(b)>1:lout.append((b[0],' '.join(b[1:])))
+        b1 = n.split()
+        if len(b1)>1:
+            if len(parms)>0: lout.append((b1[0],b1[1]+' '+parms.split()[1]))
+            else : lout.append((b1[0],b1[1]))
     return lout

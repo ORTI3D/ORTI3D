@@ -145,7 +145,7 @@ class  OpT:
         'dsp':{'comm':'Dispersion','cond':'','kw':['ALPHL','ALPHT'],
                 'detail':[],'type':['float','float'],'default':[1.,0.1]},
         'diffu.1':{'comm':'Diffusion model','cond':'','kw':['ODFMOD'],
-                'detail':[['model','none','millington10','millington7']],
+                'detail':[['model','none','millington10','millington7','linear']],
                 'type':['choice'],'default':[1]},
         'diffu.2':{'comm':'D0 values','cond':'','kw':['ODFFW','ODFFG'],
                 'detail':['Dw m2/s','Dg m2/s'],'type':['float','float'],'default':[1e-10,1e-6],

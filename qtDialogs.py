@@ -46,8 +46,8 @@ class textDialog(QDialog): # Text dialog for batch, formula, initial chemistry
         return str(self.txed.document().toPlainText())     
         
 class genericDialog(QDialog): # Dialog for addin parameters and options for plot results
-    def __init__(self, gui, title, data):
-        self.gui,self.data,self.color = gui,data,data[0][2]  # OA 22/11/19 added color
+    def __init__(self, gui, title, data,opt=''):
+        self.gui,self.data,self.color,self.opt = gui,data,data[0][2],opt  # OA 22/11/19 added color
         QDialog.__init__(self)
         self.setWindowTitle(title)
         self.glWidget = QWidget(self)
@@ -150,7 +150,8 @@ class genericDialog(QDialog): # Dialog for addin parameters and options for plot
         self.tex.setText(file)
 
     def getValues(self):
-        self.exec_()
+        if self.opt=='modeless': self.show()
+        else : self.exec_()
         nb = len(self.data)
         val = [0]*nb
         for i in range(nb):

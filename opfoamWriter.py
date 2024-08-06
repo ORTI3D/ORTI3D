@@ -219,7 +219,8 @@ class opfoamWriter:
         fslt = self.core.dicval['OpenFlow']['fslv.3']
         ctrlDict={'startTime':0,'endTime': self.maxT,
                   'deltaT':fslt[0], #*self.dtu
-                  'maxCo':fslt[2],'maxDeltaT':fslt[1]} #*self.dtu
+                  'maxCo':fslt[2],'maxDeltaT':fslt[1]}
+        #if len(fslt)>2: ctrlDict['minDeltaT']=fslt[2];ctrlDict['maxCo']=fslt[3] # not used
         tslv = self.core.dicval['OpenTrans']['tslv']
         if self.group in ['Trans','Chem']:  ctrlDict['dCmax'] = tslv[4]      
         if self.group=='Trans' and self.core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
@@ -315,7 +316,7 @@ class opfoamWriter:
         self.g = self.core.getValueFromName('OpenFlow','OFGRAV',0)/self.lu*self.dtu**2
         #if self.core.getValueFromName('OpenFlow','OFPMS')==2: # xiphase
         #    self.g = float(self.core.dicval['OpenFlow']['press.3'][0]) #*self.dtu**2
-        sg =  '{:+.4g}'.format(-self.g)
+        sg =  '{:+.6g}'.format(-self.g)
         if self.orientation[1] == 'D':s += '( 0 0 '+sg+' );'
         elif self.orientation[0] in ['R','X']: s += '( 0 '+sg+' 0 );' #Xsect and rad are drawn in x,y plane
         f1=open(self.fDir+'constant/g','w');f1.write(s+'\n}');f1.close()
@@ -382,8 +383,8 @@ class opfoamWriter:
         if core.dicval['OpenFlow']['dis.8'][3] == 0: s += 'flowStartSteady 1;\n'
         else :s += 'flowStartSteady 0;\n'
         mt0 = core.dicaddin['Model']['type']
-        mType= ['Confined','Unconfined','Unsaturated','2phases'].index(mt0)
-        if mType>=2:
+        self.flowType= ['Confined','Unconfined','Unsaturated','2phases'].index(mt0)
+        if self.flowType>=2:
             actCap = self.core.getValueFromName('OpenFlow','OFCAPL',0)
             s += 'activateCapillarity '+str(actCap)+';\n'
             #s += 'sw_min '+str(core.dicval['OpenFlow']['uns.2'][0])+';'
@@ -407,7 +408,7 @@ class opfoamWriter:
         if self.group=='Trans' and core.getValueFromName('OpenTrans','OTSTDY',0)==1: # steady transport
             s += 'flowType 0;\ntransportSteady 1;\n'
         else :
-            s += 'flowType '+ str(mType+1)+';\n'
+            s += 'flowType '+ str(self.flowType+1)+';\n'
         if self.group in ['Trans','Chem']:
             if core.getValueFromName('OpenTrans','OTTYP',0) in [0,2]:
                 s += 'activateTransport 1;\n'
@@ -435,15 +436,16 @@ class opfoamWriter:
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
             h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation in ['Xsection','Radial']:
-                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
-                self.dicBC['bc2']={'type':'fixedGradient','gradient':'uniform -1'}
+                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform 1'}
+                self.dicBC['bc2']={'type':'fixedGradient','gradient':'uniform 1'}
             else :
                 self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -1'}
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1: # equilibrated pressure
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 h0 -= ravel(dzm) 
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
+            if 'head.2' in self.core.diczone['OpenFlow'].dic.keys():
+                self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             p0 = self.atmPa/self.lu*self.dtu**2
             self.writeScalField('0','p',p0,self.bcD0,dim='[1 -1 -2 0 0 0 0]')
@@ -451,7 +453,7 @@ class opfoamWriter:
         elif self.core.dicaddin['Model']['type'] == '2phases': 
             #!!! pressure is given in atm
             p0 = self.getVariable('OpenFlow','press.1')*self.atmPa/self.lu*self.dtu**2
-            if self.core.dicval['OpenFlow']['fprm.1'][1]==1:
+            if self.core.dicval['OpenFlow']['fprm.1'][1]==1:# create regular p with gradient
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 p0 += ravel(dzm[-1::-1])/9.81*self.atmPa/self.lu*self.dtu**2 # opf is ordered from btoom to top
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
@@ -487,7 +489,6 @@ class opfoamWriter:
         for pressure it is necessary to have true fixed value BC at the cell 
         where fixed values were set. we use opf.bfaces last column=-(numBC+1)
         '''
-        print(mult)
         dicz = self.core.diczone['OpenFlow'].dic[line]
         bcgrid=zone2grid(self.core,'OpenFlow',line,0,opt='zon')
         valgrid=zone2grid(self.core,'OpenFlow',line,0)
@@ -497,11 +498,11 @@ class opfoamWriter:
             if indx[iz]>=0:
                 val =valgrid[bcgrid==iz+1]
                 if len(val)>1:
-                    lval=' '.join(['{:.4e}'.format(v*mult) for v in val])
+                    lval=' '.join(['{:.5e}'.format(v*mult) for v in val])
                     lst= 'List<scalar> '+str(len(val))+'('+lval+')'
                     cond={'type':'fixedValue','value':'nonuniform '+lst}
                 else :
-                    cond={'type':'fixedValue','value':'uniform '+'{:.4e}'.format(val[0]*mult)}                    
+                    cond={'type':'fixedValue','value':'uniform '+'{:.5e}'.format(val[0]*mult)}                    
                 dicBC['bc'+str(indx[iz])]=cond
         return dicBC
         
@@ -618,7 +619,7 @@ class opfoamWriter:
             mult = []
             for iz in range(len(lcell)) : 
                 if vr=='p': a=self.atmPa*self.lu*self.dtu**2
-                else: a=self.lu
+                else: a=1
                 mult.append([a]*ncell[iz])
             self.writeOptionData(hmat,lcell,ncell,zcell,vr+'fix',mult=mult,add=add)
 
@@ -638,7 +639,7 @@ class opfoamWriter:
             for iz in range(nz) : 
                 kr = self.getPermScaled(lcell[iz]);#print(kr)#/self.thk[lcell[iz]]
                 mult.append(kr)
-                val = diczone['OpenFlow'].dic['wel2p']['value'][0].split('$')[1].split('\n')
+                val = diczone['OpenFlow'].dic['wel2p']['value'][iz].split('$')[1].split('\n') # water fraction
                 mult2.append(kr*float(val[1]))
             self.writeOptionData(qmat,lcell,ncell,zcell,'pwel',mult=mult)
             self.writeOptionData(qmat,lcell,ncell,zcell,'fwel',mult=mult2)
@@ -761,7 +762,9 @@ class opfoamWriter:
                             else : mat2=c_[mat2,mat1[:,iw]]
                     if len(lcell2)>0:
                         self.writeOptionData(mat2,lcell2,ncell2,zcell2,'sfix',formt='float')
-                self.writeOptionData(mat,lcell,ncell,zcell,'shfix',formt='float') # rint even if no sfix cells
+                    if self.flowType==3: fl='p'
+                    else : fl = 'h'
+                    self.writeOptionData(mat,lcell,ncell,zcell,'s'+fl+'fix',formt='float') # rint even if no sfix cells
 
             if 'srch' in self.ttable.keys():# chem recharge
                 lcell0,ncell0,zcell0 = self.getOptionCells('rch','hrch')
@@ -962,7 +965,7 @@ class opfoamWriter:
             s += 'internalField uniform '+'{:.3e}'.format(amin(values))+';\n'
         else :
             s += 'internalField nonuniform List<scalar>\n'+str(len(values))+'('
-            s += '\n'.join(['{:.3e}'.format(a) for a in values])+');\n'
+            s += '\n'.join(['{:.4e}'.format(a) for a in values])+');\n'
         s += '\nboundaryField\n{'
         bc1 = self.bcD0.copy()
         for k in self.bcD0.keys():
@@ -1455,8 +1458,9 @@ class opFlowReader(opfReader):
                 return m
         pobs=zeros((len(iper),len(irow)))+0.;
         for i in range(len(iper)):
-            ip = iper[i]
-            A = self.readScalar(short,ip)*mult
+            ip = iper[i];print(ip)
+            if short=='Uw': A = self.readVector(short,ip)*mult
+            else : A = self.readScalar(short,ip)*mult
             pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
         return pobs
 

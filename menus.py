@@ -240,10 +240,30 @@ class Menus:
             s += '] \n }'
             f1=open(fDir+os.sep+fName+'.series','w');f1.write(s);f1.close()
         self.dialogs.onMessage(self.gui,'file '+fName+' saved')
-            
+        
+    
+    def OnNodeSearch(self,evt=None):
+        #dialog to searhc the place of a node (only for unstructured)
+        if self.core.MshType == 0: return
+        data = [('Node number','Text',' '), #EV 22/07/2018 2D -> 2D horizontal
+                ('Type','Choice',('global',['global','phreeqc']))] # EV 27/04/20
+        dialg = self.dialogs.genericDialog(self.gui,'Node',data)
+        retour = dialg.getValues()
+        if retour != None:
+            # get coords
+            coords,ilay=self.core.addin.mesh.getNodeCoords(int(retour[0]),retour[1])
+            # plot the point
+            self.gui.visu.showNode(coords,True)
+            # send back the coords to a new dialog
+            data = [('Node x','Text',coords[0]),('Node y','Text',coords[1])]
+            dialg = self.dialogs.genericDialog(self.gui,'Node',data)
+            retour = dialg.getValues()
+            self.gui.visu.showNode(coords,False)
+       
     def OnHelpI(self,evt=None): #,lang):
         """calling help file"""
         os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"interfaceHelp.chm")
+        
     def OnHelpM(self,evt=None): #,lang):
         """calling help file"""
         os.startfile(self.gui.mainDir+os.sep+'doc'+os.sep+"modelsHelp.chm")

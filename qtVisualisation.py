@@ -118,6 +118,7 @@ class qtVisualisation(FigureCanvasQTAgg):
         self.Particles = {'line':[],'txt':[],'data':[],'color':(255,0,0)}
         self.curOri,self.curLayer = 'Z',0
         self.mesh,self.triangles,self.caxis = None,None,None #OA 17/12/20
+        self.nodePoint = None
         
     #####################################################################
     #                     Divers accesseur/mutateurs
@@ -780,6 +781,20 @@ class qtVisualisation(FigureCanvasQTAgg):
                 coords = lz['coords'][i]
                 self.addZone(lz['media'][i],lz['name'][i],lz['value'][i],coords,False)
         self.setUnvisibleZones()
+        self.redraw()
+    ##########################  show node position  ######################
+    def showNode(self,coords,bool):
+        """node coords
+        """
+        x,y = coords
+        if bool: 
+            self.nodePoint=Line2D([x],[y],marker='o',markersize=7,markerfacecolor='r')
+            self.cnv.add_line(self.nodePoint)
+        else :
+            print("in show, false",self.nodePoint)
+            if self.nodePoint != None: 
+                self.nodePoint.set_visible(False);self.nodePoint=None
+            
         self.redraw()
 
     #####################################################################
