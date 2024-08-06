@@ -255,7 +255,8 @@ class Menus:
             # plot the point
             self.gui.visu.showNode(coords,True)
             # send back the coords to a new dialog
-            data = [('Node x','Text',coords[0]),('Node y','Text',coords[1])]
+            data = [('Node x','Text',coords[0]),('Node y','Text',coords[1]),
+                    ('layer','Text',ilay)]
             dialg = self.dialogs.genericDialog(self.gui,'Node',data)
             retour = dialg.getValues()
             self.gui.visu.showNode(coords,False)
