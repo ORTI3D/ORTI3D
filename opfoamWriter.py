@@ -436,7 +436,7 @@ class opfoamWriter:
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
             h0 = self.getVariable('OpenFlow','head.1')
             if self.orientation in ['Xsection','Radial']:
-                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform 1'}
+                self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
                 self.dicBC['bc2']={'type':'fixedGradient','gradient':'uniform 1'}
             else :
                 self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -1'}
@@ -1037,6 +1037,7 @@ class opfoamWriter:
         3 write them in phreeqc format"""
         #s = 'Database '+fDir+'\pht3d_datab.dat \n'
         s = ''
+        #selected output
         s += 'Selected_output \n  -totals '+' '.join(self.lspec)+'\n'
         listE = core.addin.pht3d.getDictSpecies();print(listE)
         if len(listE['p'])>0 : s += '-p '+' '.join(listE['p'])+'\n'
@@ -1047,6 +1048,7 @@ class opfoamWriter:
         ncell = self.ncell_lay
         solu = chem['Solutions'];
         dicz = core.diczone['OpenChem']
+        # number of solutions
         lsolu=[]
         for n in ['sfix','swel','sghb','srch']:
             if n in dicz.dic.keys():
@@ -1060,7 +1062,7 @@ class opfoamWriter:
         lsolu.sort()
         self.lsolu,self.nsolu = lsolu,max(lsolu)+1
         listS = listE['i'];listS.extend(listE['k']);listS.extend(listE['kim'])
-        #listS.sort()
+        #write initial solutions
         for isol in range(self.nsolu):
             s += '\nSolution '+str(isol)+' \n units mol/kgw \n'
             for esp in listS: # go through species list
@@ -1494,7 +1496,9 @@ class opTransReader(opfReader):
         lesp1.extend(self.listE['p'])
         lesp1.extend(self.listE['kp'])
         s1 = self.core.getValueFromName('OpenChem','OCSELSPEC',0)
-        if s1 != None: lesp1.extend(s1[2:].split())
+        if s1 != None: 
+            s2 = s1.split('\n')
+            lesp1.extend(s2.split()[1:])
 
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
