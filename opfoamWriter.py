@@ -1498,7 +1498,7 @@ class opTransReader(opfReader):
         s1 = self.core.getValueFromName('OpenChem','OCSELSPEC',0)
         if s1 != None: 
             s2 = s1.split('\n')
-            lesp1.extend(s2.split()[1:])
+            for k in s2:lesp1.extend(k.split()[1:])
 
         if specname in lesp1: #search in species file
             return self.readScalar('dum',tstep,iesp=lesp1.index(specname),spc=1)
