@@ -1379,19 +1379,19 @@ class opfReader:
         if iper==None:
             data = np.zeros((ntime,self.ncell))
             for i,t in enumerate(self.tlist):
-                if spc==0: data[i+1,:]= rd1(t,name) # *self.dtu
+                if spc==0: data[i+1,:]= rd1(t,name) 
                 else : data[i+1,:]= rd2(t,iesp) # *self.dtu
             V = reshape(data,shp0)
             V = V[:,-1::-1] # layers are bottom to top in opf
         else:
-            if spc==0: data = rd1(self.tlist[iper],name) # *self.dtu
-            else : data = rd2(self.tlist[iper],iesp) # *self.dtu
+            if spc==0: data = rd1(self.tlist[iper],name) 
+            else : data = rd2(self.tlist[iper],iesp) 
             V = reshape(data,shp1)            
             if self.core.addin.getDim() not in ['Xsection','Radial']:
                 V = V[-1::-1] # layers are bottom to top in opf
         return V
     
-    def readVector(self,iper=0,opt='w'):
+    def readVector(self,name,iper):
         '''
         reads velocity vector at a given time, w for water, g for gas
         '''
@@ -1410,13 +1410,26 @@ class opfReader:
                 vx,vy,vz = 0,0,0
             return vx,vy,vz
 
-        ntime=len(self.tlist)
-        vx,vy,vz = rd1(self.tlist[iper],'U'+opt)#*self.dtu
+        #ntime=len(self.tlist)
+        vx,vy,vz = rd1(self.tlist[iper],name)#*self.dtu
         vx = reshape(vx,(self.nlay,self.ncell_lay))[-1::-1] #*self.dtu
         vy = reshape(vy,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
         vz = reshape(vz,(self.nlay,self.ncell_lay))[-1::-1]#*self.dtu
         #print("vector 0",vx[0,0],vy[0,0],vz[0,0])
         return vx,vy,vz
+    
+    def readPhiw(self,iper):
+        ''' returns phiw for one period '''
+        self.mesh = self.core.addin.mesh
+        f1=open(self.core.fileDir+os.sep+str(self.tlist[iper])+os.sep+'phiw','r')
+        s = f1.read();f1.close()
+        if 'nonuniform' in s:
+            s1 = s.split('<scalar>')[1].split('(')[1].split(')')[0].split('\n')
+            data = np.array(s1[1:-1]).astype('float')
+        else :
+            s1 = s.split('uniform')[1].split(';')[0]
+            data = ones(len(self.mesh.faces))*float(s1)
+        return data
 
 class opFlowReader(opfReader):  
     def __init__(self,core,opfoam):
@@ -1437,7 +1450,7 @@ class opFlowReader(opfReader):
         return self.readScalar('sw',iper)
 
     def readFloFile(self,core,iper):
-        return self.readVector(iper)       
+        return self.readVector('Uw',iper)       
 
     def getPtObs(self,core,irow,icol,ilay,iper,specname='',ofile=False,zname=''):
         """a function to get values of one variable at given point or points.
@@ -1460,10 +1473,11 @@ class opFlowReader(opfReader):
                 return m
         pobs=zeros((len(iper),len(irow)))+0.;
         for i in range(len(iper)):
-            ip = iper[i];print(ip)
+            ip = iper[i];
             if short=='Uw': A = self.readVector(short,ip)*mult
-            else : A = self.readScalar(short,ip)*mult
-            pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
+            else : 
+                A = self.readScalar(short,ip)*mult
+                pobs[i,:] = self.getPtsInArray(A,irow,icol,ilay)
         return pobs
 
 class opTransReader(opfReader):  

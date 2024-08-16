@@ -897,14 +897,17 @@ def facesZone1toZone2(core,zn0,zn1):
     '''
     this function takes two zones which must be in observation and finds
     the faces that are shardeby the two zones
-    the output is a list composed of lists of three values : the cell nb in
-    zone0, the corresponding cell in zone2 and the index of the connected face
-    in cell1 of zone0
+    the output is a list composed of lists of four values : 
+        the cell nb in zone1, 
+        the corresponding cell in zone2, 
+        the index of the connected face in cell1 of zone1
+        the face number (for opf) that connects the two cells
+        and 1 for face vector direction 1 to 2 and -1 fro the reverse
     '''
     mesh= core.addin.mesh
     dicz=core.diczone['Observation'].dic['obs.1']
     iz0,iz1 = dicz['name'].index(zn0),dicz['name'].index(zn1)
-    indx0 = zmesh(core,dicz,dicz['media'][iz0],iz0)[0]
+    indx0 = zmesh(core,dicz,dicz['media'][iz0],iz0)[0] # in fact zmesh does not use the media
     indx1 = zmesh(core,dicz,dicz['media'][iz1],iz1)[0]
     # find connexion between 0 and 1
     connect =[] # will contain icell zone0 then icell zone 1 and index of connection
@@ -912,8 +915,13 @@ def facesZone1toZone2(core,zn0,zn1):
         ngb = list(mesh.cneighb[ic0])
         for ic1 in ngb:
             if ic1 in indx1:
-                connect.append([ic0,ic1,ngb.index(ic1)]) 
-    return connect
+                fc = 0
+                if core.addin.getModelGroup()=='Openfoam':
+                    icmin=min(ic0,ic1);icmax=max(ic0,ic1)
+                    fc = where((mesh.faces[:,2]==icmin)&(mesh.faces[:,3]==icmax))[0][0]
+                    direct = -1+(icmin==ic0)*2
+                connect.append([ic0,ic1,ngb.index(ic1),fc,direct]) 
+    return array(connect)
     
 def facesZoneLimit(self,zn):
     '''

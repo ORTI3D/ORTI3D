@@ -390,7 +390,7 @@ class unstructured:
                 # store fcup
                 a = r_[M[i0c:i+1,0],M[i0c,0]]
                 fcup[ic] = a.astype('int')
-                i0c = i+1 # will be the starting point of th enext cell
+                i0c = i+1 # will be the starting point of the next cell
             else:
                 if (inb>ic)&(ifc!=M[i+1,0])&(inb>nbc): # store face only if not done already
                     faces.append([M[i,0],M[i+1,0],ic,inb,M[i,-1]])

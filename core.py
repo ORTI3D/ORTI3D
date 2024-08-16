@@ -946,14 +946,9 @@ class Core:
             #print('iper',iper)
             disx,disy = self.flowReader.getPtObs(self,iym,ix2,llay,iper,'flux'); ## provides the total flux from each cell [L3.T-1]  #EV 19/03/20 llay and not iz2
             disch = disx+disy # OA 19/3/20 modified
-            #print('disch :' ,shape(disy))
             thick = self.flowReader.getThicknessZone(self,iper,llay,ix2,iym) #EV 19/03/20 llay and not iz2
-            #print('thick :' ,thick)
             dx,dy = array(grd['dx'])[ix2],array(grd['dy'])[iy2]
-            if len(ix)==1: asin2 = acos2 = 1 # OA 19/3/20 just one point
-            #print('dy',dx,acos2)
-            #flux=1e-12
-            #if typ[1] in ['1','3'] : OA 13/5/20 removed condition
+            if len(ix)==1: asin2 = 1; acos2 = 1 # OA 19/3/20 just one point
             f1,f2 = disx*asin2/dy/thick,disy*acos2/dx/thick ## this is the flux [L3.T-1.M-2]
             flux = sqrt(f1**2+f2**2) ## flux shall be a vector
             flux[flux<1e-12]=1e-12
