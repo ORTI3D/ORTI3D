@@ -553,16 +553,19 @@ class unstructured:
         xx,yy,intp,z0 = points[:,0],points[:,1],False,1e6
         fDir = self.core.fileDir
         for i in range(self.nlay): 
-            fNameExt = core.dicarray[modName]['dis.6'][i] #tops
-            if ('.' not in fNameExt) or (core.dictype[modName]['dis.6'][i] != 'importArray'): # not an array
-                z1 = (xx*0+1)*float(core.dicval[modName]['dis.6'][i])
-            else:
+            if core.dictype[modName]['dis.6'][i] == 'importArray': # not an array
+                fNameExt = core.dicarray[modName]['dis.6'][i] #tops
                 if fNameExt[-3:] == 'var' : ysign,zdx,zdy,zgrd = core.importGridVar(self.core.fileDir,fNameExt) # OA 13/6/20 add ysign
                 elif fNameExt[-3:] == 'asc' : zgrd =core.importAscii(fDir,fNameExt)
                 else : zgrd = loadtxt(fDir+fNameExt)
                 if ysign == -1 : 
                     zgrd = zgrd[-1::-1];zdy = zdy[-1::-1]
                 z1 = linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)
+            elif core.dictype[modName]['dis.6'][i] == 'formula':
+                zgrd = core.getValueLong(modName,'dis.6',0)[i]
+                z1 = linIntpFromGrid(core,grd,zgrd,xx,yy,intp,zdx,zdy)                
+            else:
+                z1 = (xx*0+1)*float(core.dicval[modName]['dis.6'][i])
             lzout.append(minimum(z1,z0-dzmin)) # to avoid negative thickness
             z0 = z1*1
         # for the bottom

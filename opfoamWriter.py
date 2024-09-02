@@ -30,10 +30,10 @@ class opfoamWriter:
         self.group = options['group']
         #folrders
         if 'system' not in os.listdir(fDir): os.mkdir(fDir+'system')
-        if 'constant' not in os.listdir(fDir): os.mkdir(fDir+'constant')
-        if 'options' in os.listdir(fDir+'constant'):shutil.rmtree(fDir+r'constant/options')
+        if 'constant' in os.listdir(fDir): shutil.rmtree(fDir+r'constant');
+        os.mkdir(fDir+'constant')
         os.mkdir(fDir+r'constant/options')
-        if 'polyMesh' not in os.listdir(fDir+'constant'): os.mkdir(fDir+r'constant/polyMesh')
+        os.mkdir(fDir+r'constant/polyMesh')
         fDir1 = fDir +r'constant/polyMesh/'
         if '0' in os.listdir(fDir): shutil.rmtree(fDir+'0')
         os.mkdir(fDir+r'0')
@@ -61,7 +61,10 @@ class opfoamWriter:
         self.writeFvSchemes()
         self.writeFvSolutions()
         # write variables
-        self.bcD0={'top':{'type':'zeroGradient'},'bottom':{'type':'zeroGradient'}}
+        if self.nlay==1:
+            self.bcD0={'top':{'type':'empty'},'bottom':{'type':'empty'}}
+        else :
+            self.bcD0={'top':{'type':'zeroGradient'},'bottom':{'type':'zeroGradient'}}            
         for i in range(self.nbc):
             self.bcD0['bc'+str(i)] = {'type':'zeroGradient'}
         self.writeConstantFields();print('constant field written')
@@ -99,21 +102,21 @@ class opfoamWriter:
         nplay = shape(points)[0] # nb of points for each layer
         ncell = len(fcup) # nb of cells per layer
         # below approximative, just for flat layers
-        if core.addin.getDim()=='3D':
-            if 'importArray' in core.dictype[modName]['dis.6']:
+        if self.orientation == 'Radial': # radial case
+            zlist = [-points[:,0]/100,points[:,0]/100] # z_radial = x/100
+            zlist[0][points[:,0]==0]= -points[:,0][1]/100
+            zlist[1][points[:,0]==0]= points[:,0][1]/100
+        elif self.orientation == 'Xsection': # x section case
+            zlist = [0,1]
+        else : # core.addin.getDim()=='3D':
+            if ('importArray' in core.dictype[modName]['dis.6']) or ('formula' in core.dictype[modName]['dis.6']):
                 zlist = mesh.getZfromPoints(modName,points)
             else :
                 zlist= [unique(z) for z in core.Zblock]
             zlist = zlist[-1::-1] # layers are reversed, start from 0 in OpF
-        elif self.orientation == 'Radial': # radial case
-            zlist = [-points[:,0]/100,points[:,0]/100] # z_radial = x/100
-            zlist[0][points[:,0]==0]= -points[:,0][1]/100
-            zlist[1][points[:,0]==0]= points[:,0][1]/100
             #bfaces = bfaces[bfaces[:,-1]==-2] # the last face is the one at the well
-        #elif self.orientation == 'Xsection': # x section case
-        #    zlist = [0,1]
-        else : 
-            zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
+#        else : 
+#            zlist = [core.dicval[modName]['dis.7'][0],core.dicval[modName]['dis.6'][0]]
 
         points=points
         nf0=shape(faces)[0];nfb=shape(bfaces)[0];nf=nf0+nfb
@@ -198,16 +201,18 @@ class opfoamWriter:
             i1 = len(where(bfaces[:,3]==-i-1)[0])*nlay
             if i1==0:continue
             nbb+=1
-            sp1 += 'bc'+str(i)+' {type patch;'
+            sp1 += 'bc'+str(i)+' {type zeroGradient;'
             sp1 += 'nFaces '+str(i1)+';startFace '+str(i0)+';}\n'
             i0 += i1
         sp += str(nbb+2)+'\n (\n'+sp1;
         # top and bottom 
-        sp += 'top {type patch;startFace '+str(i0)+';nFaces  '+str(ncell)+';}\n'
+        tpb = 'patch'
+        if nlay==1: tpb='empty'
+        sp += 'top {type '+tpb+';startFace '+str(i0)+';nFaces  '+str(ncell)+';}\n'
         i0 += ncell
-        sp += 'bottom {type patch;startFace '+str(i0)+';nFaces  '+str(ncell)+';}\n'
-        i0 += ncell
-        #sp += 'defaultFaces {type empty;inGroups 1(empty);startFace '+str(i0)+';nFaces  '+str(ncell*2)+';}\n'
+        sp += 'bottom {type '+tpb+';startFace '+str(i0)+';nFaces  '+str(ncell)+';}\n'
+        #i0 += ncell
+        #sp += 'defaultFaces {type zeroGradient;inGroups 1(zeroGradient);startFace '+str(i0)+';nFaces  '+str(ncell*2)+';}\n'
         f1=open(fDir+os.sep+'boundary','w');f1.write(sp+')');f1.close()
         ####### il faut faire renumberMesh apres ??? pas sur
         
@@ -235,7 +240,8 @@ class opfoamWriter:
         s += ' writeCompression uncompressed;\n timeFormat fixed;\n'
         s += 'timePrecision '+str(max(-int(floor(log10(intv))),0))+';\n'
         s += ' runTimeModifiable yes;\n'
-        #if self.core.dicaddin['Model']['type'] =='Unsaturated': s+='timeStepControl Picard;\n\n'
+        if self.core.dicaddin['Model']['type'] =='Unsaturated': 
+            s+='timeStepControl Picard;\n\n'
         for k in ctrlDict.keys():
             s += k+' '+str(ctrlDict[k])+';\n'
         # write times (below is not really used now)
@@ -362,21 +368,21 @@ class opfoamWriter:
         # VG parms
         if self.core.dicaddin['Model']['type'] in ['Unsaturated','2phases']: 
             swm = self.getVariable('OpenFlow','uns.2')
-            self.writeScalField('constant','sw_min',swm,self.dicBC,dim='[0 0 0 0 0 0 0]')            
+            self.writeScalField('constant','sw_min',swm,self.bcD0,dim='[0 0 0 0 0 0 0]')            
             a_vg = self.getVariable('OpenFlow','uns.3') # in L-1 in interface
-            self.writeScalField('constant','alpha_vg',a_vg,self.dicBC,dim='[0 -1 0 0 0 0 0]')            
+            self.writeScalField('constant','alpha_vg',a_vg,self.bcD0,dim='[0 -1 0 0 0 0 0]')            
             n_vg = self.getVariable('OpenFlow','uns.4')
-            self.writeScalField('constant','n_vg',n_vg,self.dicBC,dim='[0 0 0 0 0 0 0]')            
+            self.writeScalField('constant','n_vg',n_vg,self.bcD0,dim='[0 0 0 0 0 0 0]')            
         # thermal
         if core.getValueFromName('OpenTrans','OTTYP',0) in [1,2]:
             cps = self.getVariable('OpenTrans','tcps')/self.lu**2 * self.dtu**2
-            self.writeScalField('constant','cps',cps,self.dicBC,dim='[0 2 -2 -1 0 0 0]')            
+            self.writeScalField('constant','cps',cps,self.bcD0,dim='[0 2 -2 -1 0 0 0]')            
             lbds = self.getVariable('OpenTrans','tlbds')/self.lu*self.dtu**3
-            self.writeScalField('constant','lbdaTs',lbds,self.dicBC,dim='[1 1 -3 -1 0 0 0]')            
+            self.writeScalField('constant','lbdaTs',lbds,self.bcD0,dim='[1 1 -3 -1 0 0 0]')            
         # sorption foc
         if self.core.getValueFromName('OpenTrans','OISOTH',0)>0  or self.core.getValueFromName('OpenTrans','OIREAC',0)>0: 
             foc = self.getVariable('OpenTrans','rct.3')
-            self.writeScalField('constant','foc',foc,self.dicBC,dim='[0 0 0 0 0 0 0]')            
+            self.writeScalField('constant','foc',foc,self.bcD0,dim='[0 0 0 0 0 0 0]')            
             
         ####--------- transport properties dict ------------------
         s = 'FoamFile{version 2.0;format ascii;class dictionary;location "constant";object transportProperties;}\n'
@@ -435,17 +441,19 @@ class opfoamWriter:
         self.atmPa = 101325 # atm to Pa
         if self.core.dicaddin['Model']['type'] == 'Unsaturated': 
             h0 = self.getVariable('OpenFlow','head.1')
+            
             if self.orientation in ['Xsection','Radial']:
                 self.dicBC['bc0']={'type':'fixedGradient','gradient':'uniform -1'}
                 self.dicBC['bc2']={'type':'fixedGradient','gradient':'uniform 1'}
             else :
                 self.dicBC['bottom']={'type':'fixedGradient','gradient':'uniform -1'}
+            
             if self.core.dicval['OpenFlow']['fprm.1'][1]==1: # equilibrated pressure
                 dzm=amax(self.zb)-(self.zb[1:]+self.zb[:-1])/2 # depth from top
                 h0 -= ravel(dzm) 
             self.writeScalField('0','h',0,self.dicBC,dim='[0 1 0 0 0 0 0]')
-            if 'head.2' in self.core.diczone['OpenFlow'].dic.keys():
-                self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
+            #if 'head.2' in self.core.diczone['OpenFlow'].dic.keys():
+            #    self.dicBC=self.bcFromFixValues(self.dicBC,'head.2')
             self.writeScalField('0','hp',h0,self.dicBC,dim='[0 1 0 0 0 0 0]')
             p0 = self.atmPa/self.lu*self.dtu**2
             self.writeScalField('0','p',p0,self.bcD0,dim='[1 -1 -2 0 0 0 0]')
@@ -656,7 +664,7 @@ class opfoamWriter:
                 rmat = self.ttable['rch'].astype(float);nr,nc = shape(rmat)
                 rmat  = c_[rmat,ones((nr,1))*vbase]# for the background
             else :
-                rmat  = ones((nr,1))*vbase# for the background                
+                rmat  = ones((len(self.ttable['tlist']),1))*vbase# for the background                
             mult = [0]*len(lcell)
             for iz in range(len(lcell)):
                 if len(lcell[iz])>0:
@@ -717,7 +725,7 @@ class opfoamWriter:
                                 else : mat2=c_[mat2,mat1[:,iw]]
                         if len(lcell2)>0:
                             self.writeOptionData(mat2,lcell2,ncell2,zcell2,typ+'fix',formt='float')
-                    self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
+                self.writeOptionData(mat,lcell,ncell,zcell,typ+'hfix',formt='float')
 
                 for n in ['wel','ghb','riv']:
                     if n in self.ttable.keys():# pumping or injection
@@ -748,6 +756,8 @@ class opfoamWriter:
             if vfix in self.ttable.keys():
                 lcell,ncell,zcell = self.getOptionCells(vfix,vfix,zbool=False)
                 mat = zeros(shape(self.ttable[vfix])) # all conc to 0
+                if self.flowType==3: fl='p'
+                else : fl = 'h'
                 if 'sfix' in self.ttable.keys():
                     mat1 = self.ttable['sfix']
                     lcell1,ncell1,zcell1 = self.getOptionCells('sfix','sfix')
@@ -762,9 +772,7 @@ class opfoamWriter:
                             else : mat2=c_[mat2,mat1[:,iw]]
                     if len(lcell2)>0:
                         self.writeOptionData(mat2,lcell2,ncell2,zcell2,'sfix',formt='float')
-                    if self.flowType==3: fl='p'
-                    else : fl = 'h'
-                    self.writeOptionData(mat,lcell,ncell,zcell,'s'+fl+'fix',formt='float') # rint even if no sfix cells
+                self.writeOptionData(mat,lcell,ncell,zcell,'s'+fl+'fix',formt='float') # rint even if no sfix cells
 
             if 'srch' in self.ttable.keys():# chem recharge
                 lcell0,ncell0,zcell0 = self.getOptionCells('rch','hrch')
@@ -812,6 +820,7 @@ class opfoamWriter:
         if line in d0.keys(): dicz = d0[line]
         else : dicz={'name':[]}
         nclay,nlay = self.ncell_lay,self.nlay
+        """
         if self.MshType ==0:
             lcell,ncell,zcell = [],[],[]
             nx,ny,xv,yv = getXYvects(self.core)
@@ -834,19 +843,30 @@ class opfoamWriter:
                     zcell[iz-1].extend(zv1)
                     #zcell.extend(zv1)
         else : #unstructured
-            lcell,ncell,zcell = [],[],[]
-            for iz in range(len(dicz['name'])):
-                lmedia = dicz['media'][iz];
-                if type(lmedia) != type([5,6]) : lmedia = [lmedia]
+        """
+        lcell,ncell,zcell = [],[],[]
+        for iz in range(len(dicz['name'])):
+            lmedia = dicz['media'][iz];
+            if type(lmedia) != type([5,6]) : lmedia = [lmedia]
+            if self.MshType==0:
+                nx,ny,xv,yv = getXYvects(self.core)
+                m = zone2grid(self.core,modName,line,lmedia[0]) 
+                m1 = zone2grid(self.core,modName,line,lmedia[0],opt='zon')
+                idx = where(m1==iz+1)
+                nl1 = self.nlay-lmedia[0]-1
+                lc0 = array(list(idx[0]*nx+idx[1]))
+                zval = array(list(m[idx[0],idx[1]]))
+            else : 
                 lc0,zval = zmesh(self.core,dicz,lmedia[0],iz)
                 if len(lc0)==1: lc0 = lc0[0]
-                lc1 = []
-                for im in lmedia:
-                    lc1.extend(lc0+nclay*(self.nlay-im-1));  # nlay-im because inversion vs modflow
-                lcell.append(lc1);ncell.append(len(lc0)*len(lmedia))
-                if len(dicz['coords'][iz][0])>2 and zbool: zv1 = zval # only for variable lines
-                else : zv1 = [0]*len(lc0)
-                zcell.append(zv1*len(lmedia));
+            #if len(lc0)==1: lc0 = lc0[0]
+            lc1 = []
+            for im in lmedia:
+                lc1.extend(lc0+nclay*(self.nlay-im-1));  # nlay-im because inversion vs modflow
+            lcell.append(lc1);ncell.append(len(lc0)*len(lmedia))
+            if len(dicz['coords'][iz][0])>2 and zbool: zv1 = zval # only for variable lines
+            else : zv1 = [0]*len(lc0)
+            zcell.append(zv1*len(lmedia));
         # remove cells that can be in two zones, the last one is to be kept
         nl = len(lcell)
         for i in range(nl-1,-1,-1):
