@@ -408,7 +408,7 @@ class addin:
             
         # observation points import data
         if actionName == 'Ad_ImpObs':
-            data = [('Type','Choice',('Head',['Head','Transport','Chemistry']))]
+            data = [('Type','Choice',('Head',['Head','Tracer','Chemistry']))]
             dialg = self.dialogs.genericDialog(self.gui,'Import data',data)
             dic2 = dialg.getValues()
             if dic2 != None:
@@ -665,7 +665,6 @@ class addin:
         nbL,lilay,dzL = makeLayers(self.core)
         toplist = [float(a) for a in self.core.addin.get3D()['topMedia']]
         nbM = len(lilay)
-        bot = float(self.core.addin.get3D()['zmin'])
         toplist.append(bot);#print toplist
         dic={'cols':['Media','Layer','z'],'rows':[str(a) for a in range(nbL)],'data': []}
         top,nl = toplist[0],0
