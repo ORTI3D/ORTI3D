@@ -137,7 +137,7 @@ class guiShow:
         plane, layer, tstep = m['Plane'],m['Layer'],m['Tstep'];
         self.Tstep = tstep
         #self.visu.drawObject('Grid',self.dicVisu['Model']['Grid'])
-        print("in guishow click2",m)
+        #print("in guishow click2",m)
         self.visu.drawObject('Map',m['Map'])
         if m['Variable'] : 
             self.visu.createImage(self.getCurrentVariable(plane,layer))
@@ -160,7 +160,7 @@ class guiShow:
         #print('guish 159',Cgroup,Cname,tstep,species)
         if Cgroup != None : 
             self.arr3 = self.getArray3D(Cgroup,Cname,tstep,species)
-            print("l 163",shape(self.arr3))
+            #print("l 163",shape(self.arr3))
             if self.arr3 is None : # EV 8/12/21
                 mess=onMessage(self.gui,'No result')
                 self.dlgShow.onTickBox(group,name,'B',False)
@@ -176,12 +176,13 @@ class guiShow:
         if self.dicVisu['Flow']['Veloc-vect']: 
             dataV = self.getVectors(plane,layer,tstep)
             opt = 'vector';
-        #print self.dicVisu
+        print(self.dicVisu)
         toshow = species
         if type(species)==type(bool): toshow = Cname # 28/3/17 oa to keep contour values for 
         glist = self.getGlist(Cgroup,toshow)
+        print(glist)
         value,color = glist['value'],glist['color'];#print('guishow 171',Cgroup,Cname,value,color)
-        if layer !=0 : self.visu.changeAxesOri(plane)
+        if name=='Plane' : self.visu.changeAxesOri(plane)
         self.visu.curLayer = layer
         self.visu.createAndShowObject(dataM,dataV,opt,value,color)
 

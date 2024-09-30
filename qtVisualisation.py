@@ -187,6 +187,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             elif self.gui.guiShow.swiImg == 'ImageContour':
                 self.createImage(dataM)
                 self.drawContour(True) # OA 22/8/19
+        value = self.gui.guiShow.getGlist('Flow','Veloc-vect')['value'];#print(value)
         if dataV == None : self.drawVector(False)
         else : self.createVector(dataV,value,color)
         
@@ -195,7 +196,7 @@ class qtVisualisation(FigureCanvasQTAgg):
 #            try : self.cbar.clf() #OA 7/2/24
 #            except : 
 #                self.cbar = None
-        print("in draw obj",typObj,bool)
+        #print("in draw obj",typObj,bool)
         if typObj == 'Map' and self.Map == None and bool == False : return
         exec('self.draw'+typObj+'('+str(bool)+')')
         
@@ -454,14 +455,15 @@ class qtVisualisation(FigureCanvasQTAgg):
     """vector has been created as the first item of lincollection list
     during domain intialization"""
     def createVector(self,data,scale,color):
+        #print("scale",scale)
         X,Y,U,V = data;X=ravel(X);Y=ravel(Y);U=ravel(U);V=ravel(V)
         if self.mesh !=None and self.mshType>0:
             X,Y = self.mesh.elcenters[:,0],self.mesh.elcenters[:,1]; #print X,Y,U,V
-        if scale ==None: # no scale provided
-            scale = 1
+        if scale==None:  scale = 1
+        else : scale=float(scale)
         l=len(X)
         dep=concatenate([X.reshape((l,1)),Y.reshape((l,1))],axis=1)
-        b=X+U*scale;c=Y+V*scale;print(X,Y,b,c)
+        b=X+U*scale;c=Y+V*scale;#print(X,Y,b,c)
         arr=concatenate([b.reshape((l,1)),c.reshape((l,1))],axis=1)
         self.Vector = LineCollection(list(zip(dep,arr)))
         self.Vector.set_transform(self.transform)
@@ -791,7 +793,7 @@ class qtVisualisation(FigureCanvasQTAgg):
             self.nodePoint=Line2D([x],[y],marker='o',markersize=7,markerfacecolor='r')
             self.cnv.add_line(self.nodePoint)
         else :
-            print("in show, false",self.nodePoint)
+            #print("in show, false",self.nodePoint)
             if self.nodePoint != None: 
                 self.nodePoint.set_visible(False);self.nodePoint=None
             
